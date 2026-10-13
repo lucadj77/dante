@@ -12,6 +12,7 @@ import {
 import { assignOrders, formatName, sanitizeTitle } from "./naming";
 import { basename, dirname, isMarkdown, join, rebase } from "./path";
 import { defaultSettings, parseSettings, serializeSettings, SETTINGS_FILE, type NovelSettings } from "./settings";
+import { snapshotDir, takeSnapshot } from "./snapshots";
 import { rewriteLinks } from "./wikilinks";
 
 /** Folders never scanned: app data, other tools' data, version control. */
@@ -27,6 +28,8 @@ export class Project {
   manuscript!: ManuscriptNode;
   /** Every file in the project, for link resolution. */
   files: string[] = [];
+  /** Scenes already copied to a snapshot in this session. */
+  private snapshotted = new Set<string>();
 
   constructor(public fs: ProjectFs) {}
 
@@ -66,6 +69,13 @@ export class Project {
     const node = findNode(this.manuscript, path);
     if (!node) throw new Error(`Not in the manuscript: ${path}`);
     return node;
+  }
+
+  /** Snapshot taken before the first change to a scene in each session. */
+  async autoSnapshot(path: string): Promise<void> {
+    if (this.snapshotted.has(path)) return;
+    this.snapshotted.add(path);
+    await takeSnapshot(this.fs, path);
   }
 
   // Reading and writing notes
@@ -253,6 +263,17 @@ export class Project {
         renames.set(folderNotePath(m.from), newNote);
       }
     }
+
+    // Snapshots follow their scene, again through temporary names.
+    const snapshotMoves: Move[] = [];
+    for (const [from, to] of renames) {
+      if (isMarkdown(from) && (await this.fs.exists(snapshotDir(from)))) {
+        snapshotMoves.push({ from: snapshotDir(from), to: snapshotDir(to) });
+      }
+    }
+    const snapshotTemps = snapshotMoves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
+    for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotMoves[i].from, snapshotTemps[i]);
+    for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotTemps[i], snapshotMoves[i].to);
 
     const after = before.map((f) => renames.get(f) ?? f);
     for (const file of before) {

@@ -12,6 +12,23 @@ export interface LevelSettings {
   pattern: string;
 }
 
+export interface DocxSettings {
+  font: string;
+  /** Points. */
+  fontSize: number;
+  /** 1, 1.5 or 2. */
+  lineSpacing: number;
+  /** First-line indent of paragraphs, in centimetres. */
+  indent: number;
+  /** Line between scenes, such as "* * *" or "#". */
+  sceneSeparator: string;
+  titlePage: boolean;
+  /** Page header with author, title and page number. */
+  header: boolean;
+  /** Each chapter starts on a new page. */
+  chapterNewPage: boolean;
+}
+
 export interface NovelSettings {
   title: string;
   author: string;
@@ -33,6 +50,10 @@ export interface NovelSettings {
       /** Restart chapter numbers at each part. */
       restartEachPart: boolean;
     };
+  };
+  export: {
+    /** Standard manuscript format, for publishers and agents. */
+    docx: DocxSettings;
   };
 }
 
@@ -65,6 +86,18 @@ export function defaultSettings(language = "en"): NovelSettings {
         numbering: "arabic",
         pattern: "{label} {number}: {title}",
         restartEachPart: false,
+      },
+    },
+    export: {
+      docx: {
+        font: "Times New Roman",
+        fontSize: 12,
+        lineSpacing: 2,
+        indent: 1.27,
+        sceneSeparator: "#",
+        titlePage: true,
+        header: true,
+        chapterNewPage: true,
       },
     },
   };

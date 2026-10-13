@@ -5,6 +5,7 @@
   import { readingMinutes, textStats } from "$lib/core/stats";
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
+  import SnapshotsPanel from "./SnapshotsPanel.svelte";
 
   interface Props {
     project: Project;
@@ -15,6 +16,8 @@
     sceneTexts: string[];
     activeText: string | null;
     onChanged: () => Promise<void>;
+    beforeRead: (path: string) => Promise<void>;
+    onRestored: () => void;
   }
   let p: Props = $props();
 
@@ -130,6 +133,10 @@
     {#if error}<p class="error">{error}</p>{/if}
   </section>
 
+  {#if node && node.kind === "scene"}
+    <SnapshotsPanel project={p.project} path={node.path} beforeRead={p.beforeRead} onRestored={p.onRestored} />
+  {/if}
+
   <section>
     <h3>{t("panel.statistics")}</h3>
     <table>
@@ -169,7 +176,7 @@
     overflow: auto;
     padding: 12px;
   }
-  section + section {
+  .panel > :global(section + section) {
     margin-top: 24px;
   }
   h3 {

@@ -15,8 +15,10 @@
     diskRev: number;
     fullscreen: boolean;
     onReload: () => Promise<void>;
+    /** Tells open scenes to reload from disk. */
+    onDiskChange: () => void;
   }
-  let { project, rev, diskRev, fullscreen = $bindable(), onReload }: Props = $props();
+  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange }: Props = $props();
 
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
@@ -303,6 +305,10 @@
         localRev++;
         await onReload();
       }}
+      beforeRead={async (path) => {
+        await editors.get(path)?.flush();
+      }}
+      onRestored={onDiskChange}
     />
   {/if}
 </div>

@@ -2,6 +2,7 @@
   import { formatHeading, formatNumber } from "$lib/core/numbering";
   import type { Project } from "$lib/core/project";
   import type { NovelSettings, NumberStyle } from "$lib/core/settings";
+  import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
   import { app, saveAppSettings, t } from "$lib/state.svelte";
 
@@ -27,6 +28,19 @@
   function preview(kind: "part" | "chapter", n: number, title: string) {
     const level = novel.structure[kind];
     return formatHeading(level.pattern, { label: level.label, number: formatNumber(n, level.numbering, novel.language), title });
+  }
+
+  let cleanBefore = $state(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
+  let cleaned = $state("");
+
+  async function clean() {
+    error = "";
+    try {
+      const n = await cleanSnapshots(project.fs, new Date(cleanBefore + "T00:00:00"));
+      cleaned = t("snap.cleaned", { n });
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
   }
 
   async function save() {
@@ -118,6 +132,16 @@
       <small>{t("settings.userNameHint")}</small>
     </label>
 
+    <h3>{t("snap.cleanTitle")}</h3>
+    <label
+      >{t("snap.cleanHint")}
+      <input type="date" bind:value={cleanBefore} />
+    </label>
+    <div class="clean">
+      <button type="button" onclick={clean}>{t("snap.clean")}</button>
+      {#if cleaned}<span>{cleaned}</span>{/if}
+    </div>
+
     <div class="actions">
       <button class="primary" type="submit">{t("settings.save")}</button>
       {#if saved}<span class="saved">{t("settings.saved")}</span>{/if}
@@ -188,6 +212,11 @@
     align-items: center;
     gap: 12px;
     margin-top: 24px;
+  }
+  .clean {
+    display: flex;
+    gap: 12px;
+    align-items: center;
   }
   .saved {
     color: var(--text-muted);

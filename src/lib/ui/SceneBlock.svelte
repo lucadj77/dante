@@ -41,6 +41,7 @@
   let pending: string | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let applyingRemote = false;
+  let snapshotting: Promise<void> | null = null;
   let conflict = $state(false);
   // svelte-ignore state_referenced_locally
   let seenDiskRev = props.diskRev;
@@ -50,7 +51,10 @@
   async function save() {
     clearTimeout(timer);
     if (pending === null) return;
+    // The session's first snapshot must hold the text from before this change.
+    await snapshotting;
     const text = pending;
+    if (text === null) return;
     pending = null;
     if (props.raw) await props.project.fs.writeText(path, text);
     else await props.project.writeBody(path, text);
@@ -82,6 +86,7 @@
         onChange(next) {
           props.onText(path, next);
           if (applyingRemote) return;
+          snapshotting ??= props.project.autoSnapshot(path).catch(() => {});
           pending = next;
           clearTimeout(timer);
           timer = setTimeout(save, 600);

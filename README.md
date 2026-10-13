@@ -43,9 +43,13 @@ My novel/
 - Typewriter, focus and full screen modes.
 - Novel settings (labels, numbering in digits, roman numerals or words, heading templates)
   and application settings (interface language, theme, font).
+- Snapshots: one taken automatically before the first change to a scene in each session,
+  named ones on demand, word-by-word comparison, restore, and clean-up of old automatic ones.
+  They live in `.dante/snapshots/` and follow their scene when it moves.
+- DOCX export in standard manuscript format (title page with word count, running header,
+  chapters on a new page a third of the way down, scene separators). Comments are removed and
+  pending revisions accepted or rejected.
 - Interface in English and Italian.
-
-Still to come in phase 1: snapshots and DOCX export.
 
 ## Development
 

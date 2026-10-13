@@ -5,17 +5,19 @@
   import { TauriFs } from "$lib/tauriFs";
   import type { MessageKey } from "$lib/i18n";
   import ManuscriptView from "./ManuscriptView.svelte";
+  import ExportView from "./ExportView.svelte";
   import SettingsView from "./SettingsView.svelte";
 
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
-  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "settings";
+  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "export" | "settings";
   const sections: { id: Section; icon: string }[] = [
     { id: "manuscript", icon: "¶" },
     { id: "codex", icon: "◆" },
     { id: "research", icon: "❖" },
     { id: "laboratory", icon: "⚗" },
     { id: "views", icon: "▦" },
+    { id: "export", icon: "⇪" },
   ];
   let section = $state<Section>("manuscript");
   let fullscreen = $state(false);
@@ -82,7 +84,9 @@
   {/if}
   <div class="content">
     {#if section === "manuscript"}
-      <ManuscriptView {project} {rev} {diskRev} onReload={reload} bind:fullscreen />
+      <ManuscriptView {project} {rev} {diskRev} onReload={reload} onDiskChange={() => diskRev++} bind:fullscreen />
+    {:else if section === "export"}
+      <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
       <SettingsView {project} onSaved={reload} />
     {:else}
