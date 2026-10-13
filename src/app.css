@@ -1,0 +1,115 @@
+:root {
+  --bg: #fbfaf7;
+  --bg-panel: #f3f1ec;
+  --bg-hover: #e9e6df;
+  --bg-active: #dfe7f2;
+  --text: #22201c;
+  --text-muted: #6d685f;
+  --border: #dedad2;
+  --accent: #2f5f9e;
+  --accent-text: #ffffff;
+  --danger: #a33b2b;
+  --editor-bg: #fffefb;
+  --wikilink: #2f5f9e;
+  --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1d1c1a;
+  --bg-panel: #242320;
+  --bg-hover: #2f2d29;
+  --bg-active: #2c3a4d;
+  --text: #e8e4dc;
+  --text-muted: #a29c91;
+  --border: #393631;
+  --accent: #7ea6dd;
+  --accent-text: #10151c;
+  --danger: #e07a68;
+  --editor-bg: #1f1e1c;
+  --wikilink: #8fb4e8;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui-font);
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--bg-hover);
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+button[aria-pressed="true"] {
+  background: var(--bg-active);
+  border-color: var(--accent);
+}
+
+input,
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--editor-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Editor */
+.cm-editor {
+  background: transparent;
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-content {
+  font-family: var(--editor-font);
+  font-size: var(--editor-size);
+  line-height: 1.7;
+  caret-color: var(--text);
+}
+.cm-scroller {
+  overflow: visible;
+}
+.cm-line.md-h1 { font-size: 1.6em; font-weight: 600; }
+.cm-line.md-h2 { font-size: 1.35em; font-weight: 600; }
+.cm-line.md-h3 { font-size: 1.15em; font-weight: 600; }
+.cm-line.md-h4 { font-weight: 600; }
+.cm-line.md-quote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--text-muted); }
+.md-em { font-style: italic; }
+.md-strong { font-weight: 700; }
+.md-strike { text-decoration: line-through; }
+.md-code { font-family: ui-monospace, monospace; font-size: 0.9em; background: var(--bg-panel); border-radius: 3px; }
+.md-wikilink { color: var(--wikilink); }
+.cm-line.cm-dimmed { opacity: 0.35; transition: opacity 0.15s; }
+.raw .cm-content { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.85em; }
