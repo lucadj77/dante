@@ -25,6 +25,7 @@ import { rewriteLinks } from "./wikilinks";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
+const TRASH = ".trash";
 
 interface Move {
   from: string;
@@ -202,6 +203,23 @@ export class Project {
     const to = join(parent.path, node.kind === "scene" ? name + ".md" : name);
     await this.apply([{ from: path, to }]);
     return to;
+  }
+
+  /**
+   * Moves a scene, chapter or part to the project's .trash folder, where Obsidian keeps
+   * deleted notes too, so it can be recovered. Returns where it went.
+   */
+  async trash(path: string): Promise<string> {
+    const node = this.node(path);
+    const name = basename(path);
+    let target = join(TRASH, name);
+    for (let n = 2; await this.fs.exists(target); n++) {
+      target = join(TRASH, node.kind === "scene" ? name.replace(/\.md$/, ` ${n}.md`) : `${name} ${n}`);
+    }
+    await this.fs.mkdir(TRASH);
+    await this.fs.rename(path, target);
+    await this.reload();
+    return target;
   }
 
   async createScene(parentPath: string, index: number, title: string, body = ""): Promise<string> {

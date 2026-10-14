@@ -226,6 +226,71 @@
     void run(() => project.move(source, parent.path, index));
   }
 
+  /** The tree's right-click menu, and the item whose name it asked to edit. */
+  let menu = $state<{ path: string; x: number; y: number } | null>(null);
+  let renaming = $state<string | null>(null);
+
+  function scenesIn(node: ManuscriptNode): number {
+    return node.kind === "scene" ? 1 : node.children.reduce((n, c) => n + scenesIn(c), 0);
+  }
+
+  async function confirm(message: string): Promise<boolean> {
+    try {
+      const { ask } = await import("@tauri-apps/plugin-dialog");
+      return await ask(message, { title: "Dante", kind: "warning", okLabel: t("tree.delete"), cancelLabel: t("tree.cancel") });
+    } catch {
+      return window.confirm(message);
+    }
+  }
+
+  /** Moves the item to the project's .trash folder, after asking. */
+  async function remove(path: string) {
+    menu = null;
+    const node = findNode(path);
+    if (!node || node.kind === "manuscript") return;
+    const label = (headingMap.get(path) ?? node.title).replace(/\n/g, " · ");
+    const count = scenesIn(node);
+    const message = node.kind === "scene"
+      ? t("tree.deleteScene", { title: label })
+      : count === 0 ? t("tree.deleteEmpty", { title: label })
+      : count === 1 ? t("tree.deleteContainerOne", { title: label })
+      : t("tree.deleteContainer", { title: label, count });
+    if (!(await confirm(message))) return;
+    for (const [p, e] of editors) if (p === path || p.startsWith(path + "/")) e.cancel();
+    await run(async () => {
+      await project.trash(path);
+    });
+  }
+
+  function moveBy(path: string, delta: number) {
+    menu = null;
+    const parent = parentOf(tree, path);
+    if (!parent) return;
+    const index = parent.children.findIndex((c) => c.path === path) + delta;
+    if (index < 0 || index >= parent.children.length) return;
+    void run(() => project.move(path, parent.path, index));
+  }
+
+  function menuNewScene(path: string) {
+    menu = null;
+    const node = findNode(path);
+    if (!node) return;
+    if (node.kind === "scene") return addAfter(path);
+    void run(() => project.createScene(node.path, node.children.length, t("untitledScene")), "start");
+  }
+
+  function menuRename(path: string) {
+    menu = null;
+    renaming = null;
+    // Set on the next tick, so asking twice for the same item still opens the field.
+    void tick()
+      .then(() => {
+        renaming = path;
+        return tick();
+      })
+      .then(() => (renaming = null));
+  }
+
   async function toggleFullscreen() {
     fullscreen = !fullscreen;
     try {
@@ -272,10 +337,27 @@
             onRename={rename}
             onDragStart={(path) => (dragging = path)}
             onDrop={drop}
+            onMenu={(path, x, y) => (menu = { path, x, y })}
+            onDelete={remove}
+            onMoveBy={moveBy}
+            {renaming}
           />
         {/each}
       </ul>
     </aside>
+  {/if}
+
+  {#if menu}
+    {@const node = findNode(menu.path)}
+    <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
+    <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px">
+      <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
+      <button role="menuitem" onclick={() => menuRename(menu!.path)}>{t("tree.rename")}</button>
+      <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
+      <button role="menuitem" onclick={() => moveBy(menu!.path, 1)}>{t("tree.moveDown")}</button>
+      <hr />
+      <button role="menuitem" class="danger" onclick={() => remove(menu!.path)}>{t("tree.deleteItem")}</button>
+    </div>
   {/if}
 
   <main class="center">
@@ -433,6 +515,40 @@
     min-width: 0;
     min-height: 0;
     background: var(--editor-bg);
+  }
+  .menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+  }
+  .menu {
+    position: fixed;
+    z-index: 21;
+    display: grid;
+    min-width: 200px;
+    padding: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  }
+  .menu button {
+    padding: 6px 10px;
+    border: none;
+    background: none;
+    text-align: left;
+  }
+  .menu button:hover {
+    background: var(--bg-hover);
+  }
+  .menu hr {
+    width: 100%;
+    margin: 4px 0;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+  .menu .danger {
+    color: var(--danger);
   }
   .format-row {
     display: flex;

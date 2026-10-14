@@ -147,6 +147,22 @@ describe("new project", () => {
   });
 });
 
+describe("trash", () => {
+  it("moves scenes and chapters to .trash without overwriting", async () => {
+    const fs = new MemoryFs({
+      "Manuscript/010 A/010 One.md": "one",
+      "Manuscript/010 A/020 Two.md": "two",
+      "Manuscript/020 B/010 One.md": "other",
+    });
+    const p = await Project.open(fs);
+    expect(await p.trash("Manuscript/010 A/010 One.md")).toBe(".trash/010 One.md");
+    expect(await p.trash("Manuscript/020 B/010 One.md")).toBe(".trash/010 One 2.md");
+    expect(await p.trash("Manuscript/010 A")).toBe(".trash/010 A");
+    expect(fs.files.get(".trash/010 A/020 Two.md")).toBe("two");
+    expect(p.manuscript.children.map((c) => c.path)).toEqual(["Manuscript/020 B"]);
+  });
+});
+
 describe("new project with earlier choices", () => {
   it("starts from them, keeping its own language's labels", async () => {
     const earlier = await Project.create(new MemoryFs({}), { title: "A", author: "L", language: "en" }, { chapter: "C", scene: "S" });

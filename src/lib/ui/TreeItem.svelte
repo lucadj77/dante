@@ -20,6 +20,12 @@
     onDrop: (target: string, position: DropPosition) => void;
     /** A scene outside any chapter, which the export does not put in one. */
     loose?: boolean;
+    /** Right click: the menu of actions on this item. */
+    onMenu: (path: string, x: number, y: number) => void;
+    onDelete: (path: string) => void;
+    onMoveBy: (path: string, delta: number) => void;
+    /** The item whose name the menu asked to edit. */
+    renaming: string | null;
   }
   let p: Props = $props();
 
@@ -30,6 +36,10 @@
   const isScene = $derived(p.node.kind === "scene");
   // Headings on two lines fit the tree on one.
   const label = $derived((p.headings.get(p.node.path) ?? p.node.title).replace(/\n/g, " · "));
+
+  $effect(() => {
+    if (p.renaming === p.node.path) startRename();
+  });
 
   function startRename() {
     draft = p.node.title;
@@ -69,9 +79,22 @@
     title={`${t(`kind.${p.node.kind}` as MessageKey)} · ${t("tree.renameHint")}`}
     onclick={() => p.onSelect(p.node.path)}
     ondblclick={startRename}
+    oncontextmenu={(e) => {
+      e.preventDefault();
+      p.onSelect(p.node.path);
+      p.onMenu(p.node.path, e.clientX, e.clientY);
+    }}
     onkeydown={(e) => {
       if (e.key === "Enter") p.onSelect(p.node.path);
       if (e.key === "F2") startRename();
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        p.onDelete(p.node.path);
+      }
+      if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.altKey && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        p.onMoveBy(p.node.path, e.key === "ArrowUp" ? -1 : 1);
+      }
     }}
     ondragstart={(e) => {
       e.dataTransfer?.setData("text/plain", p.node.path);
