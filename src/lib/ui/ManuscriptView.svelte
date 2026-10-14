@@ -352,14 +352,14 @@
   {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
-        <button onclick={newScene}>{t("tree.newScene")}</button>
-        <button onclick={() => newContainer("chapter")}>{t("tree.newChapter")}</button>
+        <button title={t("tip.newScene")} onclick={newScene}>{t("tree.newScene")}</button>
+        <button title={t("tip.newChapter")} onclick={() => newContainer("chapter")}>{t("tree.newChapter")}</button>
         {#if project.settings.structure.parts}
-          <button onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
+          <button title={t("tip.newPart")} onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
         {/if}
         <span class="fold">
-          <button title={t("tree.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}>⊟</button>
-          <button title={t("tree.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}>⊞</button>
+          <button title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}>⊟</button>
+          <button title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}>⊞</button>
         </span>
       </div>
       {#if tree.children.length === 0}
@@ -410,18 +410,18 @@
       <div class="group" role="group">
         {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
           {#if l !== "part" || project.settings.structure.parts}
-            <button aria-pressed={level === l} onclick={() => (level = l)}>{t(`level.${l}`)}</button>
+            <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}>{t(`level.${l}`)}</button>
           {/if}
         {/each}
       </div>
       <div class="group" role="group">
-        <button aria-pressed={typewriter} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
-        <button aria-pressed={focusMode} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
-        <button aria-pressed={fullscreen} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
-        <button aria-pressed={raw} title={t("editor.rawHint")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
+        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
+        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
+        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
+        <button aria-pressed={raw} title={t("tip.raw")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
         <button
           aria-pressed={app.settings.formatBar}
-          title={t("format.bar")}
+          title={t("tip.formatBar")}
           aria-label={t("format.bar")}
           onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}><b>B</b><i>I</i></button
         >

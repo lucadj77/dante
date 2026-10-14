@@ -1,6 +1,7 @@
 <script lang="ts">
   import "../app.css";
   import { app } from "$lib/state.svelte";
+  import Tooltip from "$lib/ui/Tooltip.svelte";
 
   let { children } = $props();
 
@@ -16,3 +17,4 @@
 </script>
 
 {@render children()}
+<Tooltip />

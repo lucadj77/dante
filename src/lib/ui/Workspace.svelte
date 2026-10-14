@@ -204,12 +204,12 @@
 <div class="workspace" class:fullscreen>
   {#if !fullscreen}
     <nav aria-label="Sections" class:wide={layout.wideNav}>
-      {#snippet item(id: string, icon: string, label: string, pressed: boolean | undefined, onclick: () => void)}
+      {#snippet item(id: string, icon: string, label: string, pressed: boolean | undefined, onclick: () => void, tip = label)}
         <button
           class="section"
           aria-pressed={pressed}
           aria-label={label}
-          data-tip={layout.wideNav ? undefined : label}
+          data-tip={tip}
           data-tip-side="right"
           data-section={id}
           {onclick}
@@ -225,14 +225,14 @@
           {#if layout.wideNav}<span class="label">{label}</span>{/if}
         </button>
       {/snippet}
-      {@render item("search", "", t("side.search"), searching, () => (searching = !searching))}
+      {@render item("search", "", t("side.search"), searching, () => (searching = !searching), t("tip.search"))}
       <hr />
       {#each sections as s (s.id)}
-        {@render item(s.id, s.icon, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); })}
+        {@render item(s.id, s.icon, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); }, t(`tip.section.${s.id}` as MessageKey))}
       {/each}
       <div class="spacer"></div>
-      {@render item("settings", "⚙", t("section.settings"), section === "settings", () => go("settings"))}
-      {@render item("close", "⏏", t("app.close"), undefined, onClose)}
+      {@render item("settings", "⚙", t("section.settings"), section === "settings", () => go("settings"), t("tip.section.settings"))}
+      {@render item("close", "⏏", t("app.close"), undefined, onClose, t("tip.close"))}
       {@render item("names", layout.wideNav ? "«" : "»", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
     </nav>
   {/if}
@@ -250,7 +250,7 @@
             class="panel-toggle"
             aria-pressed={!layout.left}
             aria-label={t(layout.left ? "nav.hideLeft" : "nav.showLeft")}
-            data-tip={t(layout.left ? "nav.hideLeft" : "nav.showLeft")}
+            data-tip={t(layout.left ? "tip.hideLeft" : "tip.showLeft")}
             onclick={() => toggle("left")}>◧</button
           >
         {/if}
@@ -265,8 +265,7 @@
             class:alone={!project.settings.title}
             aria-pressed={!layout.right}
             aria-label={t(layout.right ? "nav.hideRight" : "nav.showRight")}
-            data-tip={t(layout.right ? "nav.hideRight" : "nav.showRight")}
-            data-tip-side="end"
+            data-tip={t(layout.right ? "tip.hideRight" : "tip.showRight")}
             onclick={() => toggle("right")}>◨</button
           >
         {/if}

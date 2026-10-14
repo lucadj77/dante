@@ -141,14 +141,14 @@
   {#if layout.left}
   <aside class="tree" aria-label={p.title}>
     <div class="tree-actions">
-      <button onclick={() => newNote()}>{t("files.newNote")}</button>
-      <button onclick={() => newFolder()}>{t("files.newFolder")}</button>
+      <button title={t("tip.newNote")} onclick={() => newNote()}>{t("files.newNote")}</button>
+      <button title={t("tip.newFolder")} onclick={() => newFolder()}>{t("files.newFolder")}</button>
       {#if canImport}
-        <button onclick={() => importFiles()}>{t("files.import")}</button>
+        <button title={t("tip.import")} onclick={() => importFiles()}>{t("files.import")}</button>
       {/if}
       <span class="fold">
-        <button title={t("tree.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, [])}>⊟</button>
-        <button title={t("tree.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, folders)}>⊞</button>
+        <button title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, [])}>⊟</button>
+        <button title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, folders)}>⊞</button>
       </span>
     </div>
     {#if nodes.length === 0}

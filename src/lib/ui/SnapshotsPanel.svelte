@@ -88,7 +88,7 @@
     }}
   >
     <input bind:value={name} placeholder={t("snap.namePlaceholder")} aria-label={t("snap.namePlaceholder")} />
-    <button type="submit">{t("snap.take")}</button>
+    <button type="submit" title={t("tip.snapTake")}>{t("snap.take")}</button>
   </form>
   {#if snapshots.length === 0}
     <p class="muted">{t("snap.none")}</p>
@@ -101,8 +101,8 @@
           <span class="date">{when(s)}</span>
         </div>
         <div class="actions">
-          <button onclick={() => compare(s)}>{t("snap.compare")}</button>
-          <button onclick={() => restore(s)}>{t("snap.restore")}</button>
+          <button title={t("tip.snapCompare")} onclick={() => compare(s)}>{t("snap.compare")}</button>
+          <button title={t("tip.snapRestore")} onclick={() => restore(s)}>{t("snap.restore")}</button>
           <button class="delete" aria-label={t("snap.delete")} title={t("snap.delete")} onclick={() => remove(s)}>×</button>
         </div>
       </li>

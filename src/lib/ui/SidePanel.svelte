@@ -27,7 +27,7 @@
 <aside class="side">
   <div class="tabs" role="tablist">
     {#each tabs as tab (tab)}
-      <button role="tab" aria-selected={remembered.tab === tab} onclick={() => (remembered.tab = tab)}>{t(`side.${tab}`)}</button>
+      <button role="tab" aria-selected={remembered.tab === tab} title={t(`tip.side.${tab}`)} onclick={() => (remembered.tab = tab)}>{t(`side.${tab}`)}</button>
     {/each}
   </div>
   <div class="body">

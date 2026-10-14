@@ -349,13 +349,13 @@
             <button type="submit" class="primary" disabled={!newName.trim()}>{t("codex.create")}</button>
           </form>
         {:else if type}
-          <button class="primary" onclick={() => (newName = "")}>{t("codex.new", { type: type.name })}</button>
+          <button class="primary" title={t("tip.codexNew")} onclick={() => (newName = "")}>{t("codex.new", { type: type.name })}</button>
         {/if}
       </div>
       {#if type && selectedType}
         <div class="type-tools">
-          <button onclick={() => editTemplate(selectedType!)}>{t("codex.editTemplate")}</button>
-          <button onclick={() => (editing = { id: selectedType!, draft: structuredClone($state.snapshot(type)) })}>{t("codex.editType")}</button>
+          <button title={t("tip.editTemplate")} onclick={() => editTemplate(selectedType!)}>{t("codex.editTemplate")}</button>
+          <button title={t("tip.editType")} onclick={() => (editing = { id: selectedType!, draft: structuredClone($state.snapshot(type)) })}>{t("codex.editType")}</button>
         </div>
       {/if}
       {#if editing && editing.id === selectedType}
