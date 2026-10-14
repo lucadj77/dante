@@ -48,6 +48,25 @@ export class Project {
     public language = "en",
   ) {}
 
+  /**
+   * Sets up a new project in an empty folder: settings, the section folders, and a
+   * first chapter with a first scene.
+   */
+  static async create(
+    fs: ProjectFs,
+    details: { title: string; author: string; language: string },
+    names: { chapter: string; scene: string },
+  ): Promise<{ project: Project; scene: string }> {
+    await fs.mkdir("");
+    const settings = { ...defaultSettings(details.language), title: details.title, author: details.author };
+    await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
+    for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
+    const project = await Project.open(fs, details.language);
+    const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
+    const scene = await project.createScene(chapter, 0, names.scene);
+    return { project, scene };
+  }
+
   static async open(fs: ProjectFs, language = "en"): Promise<Project> {
     const project = new Project(fs, language);
     await project.reload();

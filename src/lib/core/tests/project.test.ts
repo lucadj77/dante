@@ -132,3 +132,15 @@ describe("project", () => {
     expect(fs.files.get("Manuscript/010 A/010 Same.md")).toBe("one");
   });
 });
+
+describe("new project", () => {
+  it("creates settings, section folders and a first scene in the novel's language", async () => {
+    const fs = new MemoryFs({});
+    const { project, scene } = await Project.create(fs, { title: "Il faro", author: "Luca", language: "it" }, { chapter: "Senza titolo", scene: "Senza titolo" });
+    expect(project.settings.title).toBe("Il faro");
+    expect(project.settings.structure.chapter.label).toBe("Capitolo");
+    expect(scene).toBe("Manoscritto/010 Senza titolo/010 Senza titolo.md");
+    expect(await fs.exists("Ricerca")).toBe(true);
+    expect(await fs.readText("dante.yaml")).toContain("title: Il faro");
+  });
+});

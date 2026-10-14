@@ -50,3 +50,43 @@ export function saveAppSettings(settings: AppSettings) {
 export function t(key: MessageKey, values?: Record<string, string | number>): string {
   return translate(app.settings.language, key, values);
 }
+
+export interface RecentProject {
+  path: string;
+  title: string;
+  /** ISO date of the last opening. */
+  opened: string;
+}
+
+const RECENT_KEY = "dante.recent-projects";
+const RECENT_MAX = 10;
+
+function loadRecent(): RecentProject[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(stored) ? stored.filter((r) => typeof r?.path === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Projects opened on this computer, most recent first. Kept with the app settings. */
+export const recent = $state<{ projects: RecentProject[] }>({ projects: loadRecent() });
+
+function saveRecent(projects: RecentProject[]) {
+  recent.projects = projects;
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(projects));
+  } catch {
+    // Not persisted; the list still applies to this session.
+  }
+}
+
+export function rememberProject(path: string, title: string) {
+  const others = recent.projects.filter((r) => r.path !== path);
+  saveRecent([{ path, title, opened: new Date().toISOString() }, ...others].slice(0, RECENT_MAX));
+}
+
+export function forgetProject(path: string) {
+  saveRecent(recent.projects.filter((r) => r.path !== path));
+}
