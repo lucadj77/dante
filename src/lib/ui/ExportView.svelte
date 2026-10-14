@@ -6,6 +6,7 @@
   import { app, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
   import HeadingLevel from "./HeadingLevel.svelte";
+  import FontPicker from "./FontPicker.svelte";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
 
@@ -207,7 +208,10 @@
         <label>{t("export.pageHeight")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageHeight} /></label>
       {/if}
     </div>
-    <label>{t("export.font")} <input bind:value={options.font} /></label>
+    <div class="field">
+      <span class="label">{t("export.font")}</span>
+      <FontPicker bind:value={options.font} />
+    </div>
     <div class="row">
       <label>{t("export.fontSize")} <input type="number" min="8" max="20" bind:value={options.fontSize} /></label>
       <label
@@ -327,6 +331,14 @@
 </div>
 
 <style>
+  .field {
+    display: grid;
+    gap: 4px;
+  }
+  .field .label {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
   .export {
     height: 100%;
     overflow: auto;
