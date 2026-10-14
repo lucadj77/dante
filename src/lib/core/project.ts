@@ -24,6 +24,8 @@ import {
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
 import { rewriteLinks } from "./wikilinks";
+import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
+import { today } from "./critic";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
@@ -41,6 +43,8 @@ export class Project {
   files: string[] = [];
   /** Folders in the project, for the file trees of the sections. */
   folders: string[] = [];
+  /** Copies made by a sync service when a file changed in two places. */
+  conflicts: ConflictCopy[] = [];
   /** Scenes already copied to a snapshot in this session. */
   private snapshotted = new Set<string>();
   private indexing: Promise<NoteIndex> | null = null;
@@ -121,6 +125,7 @@ export class Project {
     const folders: string[] = [];
     this.files = await this.scan("", folders);
     this.folders = folders;
+    this.conflicts = findConflicts(this.files);
     this.indexing = null;
   }
 
@@ -348,6 +353,30 @@ export class Project {
     const to = join(parent.path, node.kind === "scene" ? name + ".md" : name);
     await this.apply([{ from: path, to }]);
     return to;
+  }
+
+  /**
+   * Settles a conflict copy: keep the original as it is, take the copy's text instead, or
+   * write the copy's differences into the original as revisions signed by the copy's
+   * author, to accept or reject one by one. Whichever text is set aside goes to .trash;
+   * before a merge the original is also kept as a snapshot named `snapshotName`.
+   */
+  async resolveConflict(conflict: ConflictCopy, how: "original" | "copy" | "merge", snapshotName: string, fallbackAuthor: string): Promise<void> {
+    if (how === "copy" || (how === "merge" && !isMarkdown(conflict.original))) {
+      await this.fs.mkdir(TRASH);
+      await this.fs.rename(conflict.original, await this.freeName(TRASH, basename(conflict.original)));
+      await this.fs.rename(conflict.path, conflict.original);
+      await this.reload();
+      return;
+    }
+    if (how === "merge") {
+      await takeSnapshot(this.fs, conflict.original, snapshotName);
+      const original = await this.fs.readText(conflict.original);
+      const copy = await this.fs.readText(conflict.path);
+      const merged = mergeAsRevisions(splitNote(original).body, splitNote(copy).body, conflict.who ?? fallbackAuthor, today());
+      await this.fs.writeText(conflict.original, replaceBody(original, merged));
+    }
+    await this.trash(conflict.path);
   }
 
   /**

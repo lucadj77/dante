@@ -4,6 +4,7 @@ import { parseName } from "./naming";
 import { levelHeading, type LevelHeading } from "./numbering";
 import { basename, isMarkdown, join, stripExt } from "./path";
 import type { NovelSettings } from "./settings";
+import { conflictOf } from "./conflicts";
 
 export type ContainerKind = "part" | "chapter" | "prologue" | "epilogue";
 export type NodeKind = ContainerKind | "scene" | "manuscript";
@@ -63,8 +64,11 @@ async function loadChildren(fs: ProjectFs, dir: string, depth: number, settings:
   const entries = await fs.list(dir);
   const note = depth === 0 ? null : folderNotePath(dir);
   const children: ManuscriptNode[] = [];
+  const present = new Set(entries.map((e) => e.path));
   for (const entry of entries) {
     if (isHidden(entry.name) || entry.path === note) continue;
+    // A sync service's conflict copy is not a scene of its own: it is offered for merging.
+    if (!entry.isDir && conflictOf(entry.path, (p) => present.has(p))) continue;
     if (entry.isDir) {
       children.push(await loadContainer(fs, entry.path, depth + 1, settings));
     } else if (isMarkdown(entry.path)) {

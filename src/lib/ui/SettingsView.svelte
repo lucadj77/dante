@@ -114,6 +114,9 @@
       >{t("settings.userName")} <input bind:value={appSettings.userName} />
       <small>{t("settings.userNameHint")}</small>
     </label>
+    <label class="check" title={t("tip.revisions")}
+      ><input type="checkbox" bind:checked={appSettings.revisions} disabled={!appSettings.userName.trim()} /> {t("comments.revisionMode")}</label
+    >
 
     <h3>{t("snap.cleanTitle")}</h3>
     <label

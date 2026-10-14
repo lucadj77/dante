@@ -1,9 +1,10 @@
 import { EditorSelection, Prec, StateField, type EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap, showTooltip, type Tooltip } from "@codemirror/view";
+import { criticHandler } from "./critic";
 
 export type Format = "bold" | "italic" | "strike" | "highlight";
 export type LineFormat = "quote" | "bullet" | "ordered" | "task";
-export type Action = Format | LineFormat | "heading" | "code" | "link" | "wikilink" | "separator";
+export type Action = Format | LineFormat | "heading" | "code" | "link" | "wikilink" | "separator" | "comment";
 
 const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
@@ -174,7 +175,7 @@ export function insertSeparator(state: EditorState): TransactionSpec {
   };
 }
 
-function transaction(state: EditorState, action: Action): TransactionSpec {
+function transaction(state: EditorState, action: Exclude<Action, "comment">): TransactionSpec {
   switch (action) {
     case "bold":
     case "italic":
@@ -201,6 +202,11 @@ function transaction(state: EditorState, action: Action): TransactionSpec {
 
 /** Applies a formatting action to the editor's selection. */
 export function applyFormat(view: EditorView, action: Action): boolean {
+  if (action === "comment") {
+    const { from, to } = view.state.selection.main;
+    view.state.facet(criticHandler)?.newComment(view, from, to);
+    return true;
+  }
   view.dispatch(view.state.update(transaction(view.state, action), { userEvent: "input.format", scrollIntoView: true }));
   return true;
 }
@@ -209,7 +215,8 @@ export function applyFormat(view: EditorView, action: Action): boolean {
 export const ACTIONS: (Action | null)[] = [
   "bold", "italic", "strike", "highlight", null,
   "heading", "quote", "bullet", "ordered", "task", null,
-  "code", "link", "wikilink", "separator",
+  "code", "link", "wikilink", "separator", null,
+  "comment",
 ];
 
 /** What each button shows, as text, with an inline style where the glyph is the style itself. */
@@ -227,12 +234,13 @@ export const ICONS: Record<Action, { text: string; style?: string }> = {
   link: { text: "🔗︎" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
   separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
+  comment: { text: "💬︎" },
 };
 
 export type FormattingLabels = Record<Action, string>;
 
 /** Inline actions offered in the bar over a selection; the fixed bar has them all. */
-const SELECTION_ACTIONS: (Action | null)[] = ["bold", "italic", "strike", "highlight", null, "code", "link", "wikilink"];
+const SELECTION_ACTIONS: (Action | null)[] = ["bold", "italic", "strike", "highlight", null, "code", "link", "wikilink", null, "comment"];
 
 /** Fills `dom` with buttons that apply actions to the editor `view()` returns. */
 export function fillBar(dom: HTMLElement, actions: (Action | null)[], labels: FormattingLabels, view: () => EditorView | null) {

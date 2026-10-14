@@ -329,6 +329,12 @@
       .then(() => (renaming = null));
   }
 
+  /** The other view reads the files again, so what was just typed is written first. */
+  async function toggleRaw() {
+    await Promise.all([...editors.values()].map((e) => e.flush()));
+    raw = !raw;
+  }
+
   async function toggleFullscreen() {
     fullscreen = !fullscreen;
     try {
@@ -418,7 +424,14 @@
         <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
         <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
         <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
-        <button aria-pressed={raw} title={t("tip.raw")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
+        <button aria-pressed={raw} title={t("tip.raw")} onclick={toggleRaw}>{t("editor.raw")}</button>
+        <button
+          aria-pressed={app.settings.revisions}
+          class:tracking={app.settings.revisions}
+          title={app.settings.userName.trim() ? t("tip.revisions") : t("tip.revisionsNoName")}
+          disabled={!app.settings.userName.trim()}
+          onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}>{t("mode.revisions")}</button
+        >
         <button
           aria-pressed={app.settings.formatBar}
           title={t("tip.formatBar")}
@@ -508,7 +521,7 @@
   </main>
 
   {#if !fullscreen && layout.right}
-    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev}>
+    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
       {project}
@@ -637,6 +650,10 @@
   }
   .group button {
     font-size: 12px;
+  }
+  .group button.tracking {
+    color: var(--critic-add, #1a7f37);
+    border-color: currentColor;
   }
   .page {
     flex: 1;

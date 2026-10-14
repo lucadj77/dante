@@ -8,6 +8,7 @@ import { focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
 import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
+import { criticCommands, criticPreview, trackChanges, type CriticHandler } from "./critic";
 import type { TypographySettings } from "$lib/core/settings";
 
 export interface SceneEditorOptions {
@@ -30,18 +31,26 @@ export interface SceneEditorOptions {
   formatLabels: FormattingLabels;
   /** Following and suggesting wikilinks; without it, links are plain text. */
   links?: LinkHandler;
+  /** Starting comments and opening their threads. */
+  critic?: CriticHandler;
 }
 
 export interface SceneEditor {
   view: EditorView;
   setText(text: string): void;
   setModes(modes: { typewriter: boolean; focus: boolean }): void;
+  /** Revision mode signed by `author`, or off with null. */
+  setRevisions(author: string | null): void;
+  /** Read-only while someone else is editing the same file. */
+  setReadOnly(readOnly: boolean): void;
   focus(at: "start" | "end"): void;
   destroy(): void;
 }
 
 export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   const modes = new Compartment();
+  const revisions = new Compartment();
+  const locked = new Compartment();
   const split = (handler?: (before: string, after: string) => void) => (view: EditorView) => {
     if (!handler) return false;
     const { from, to } = view.state.selection.main;
@@ -82,10 +91,13 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     }),
     EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
     modes.of([]),
+    revisions.of([]),
+    locked.of([]),
     formatting(options.formatLabels),
     wikilinks(options.links),
+    criticCommands(options.critic),
   ];
-  if (options.preview) extensions.push(livePreview);
+  if (options.preview) extensions.push(livePreview, criticPreview);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
   if (options.placeholder) extensions.push(placeholderExt(options.placeholder));
 
@@ -102,6 +114,12 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     },
     setModes({ typewriter, focus }) {
       view.dispatch({ effects: modes.reconfigure([typewriter ? typewriterMode : [], focus ? focusMode : []]) });
+    },
+    setRevisions(author) {
+      view.dispatch({ effects: revisions.reconfigure(author ? trackChanges(author) : []) });
+    },
+    setReadOnly(readOnly) {
+      view.dispatch({ effects: locked.reconfigure(readOnly ? EditorState.readOnly.of(true) : []) });
     },
     focus(at) {
       view.focus();

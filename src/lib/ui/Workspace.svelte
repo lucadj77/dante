@@ -18,6 +18,8 @@
   import { linkTarget, resolveLink } from "$lib/core/wikilinks";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { folderNotePath } from "$lib/core/manuscript";
+  import ConflictsDialog from "./ConflictsDialog.svelte";
+  import { startPresence } from "./presence.svelte";
 
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
@@ -171,6 +173,15 @@
     rev++;
   }
 
+  onMount(() => startPresence(project));
+
+  /** Copies made by a sync service, shown above the sections until settled. */
+  const conflicts = $derived.by(() => {
+    void rev;
+    return project.conflicts;
+  });
+  let showConflicts = $state(false);
+
   onMount(() => {
     if (!(project.fs instanceof TauriFs)) return;
     const fs = project.fs;
@@ -200,6 +211,18 @@
 </script>
 
 <svelte:window onkeydown={onKey} />
+
+{#if showConflicts && conflicts.length}
+  <ConflictsDialog
+    {project}
+    {conflicts}
+    onClose={() => (showConflicts = false)}
+    onResolved={async () => {
+      await reload();
+      diskRev++;
+    }}
+  />
+{/if}
 
 <div class="workspace" class:fullscreen>
   {#if !fullscreen}
@@ -258,6 +281,11 @@
           <button onclick={back}>‹ {t("nav.back")}</button>
         {/if}
         <h1 class="section-name">{section === "files" ? filesRoot || project.settings.title : t(`section.${section}`)}</h1>
+        {#if conflicts.length}
+          <button class="conflicts" title={t("tip.conflicts")} onclick={() => (showConflicts = true)}
+            >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
+          >
+        {/if}
         {#if project.settings.title}<span class="project-name">{project.settings.title}</span>{/if}
         {#if panels}
           <button
@@ -434,6 +462,10 @@
     background: none;
     padding: 4px 8px;
     color: var(--accent);
+  }
+  .back-bar .conflicts {
+    color: var(--danger);
+    font-size: 13px;
   }
   .back-bar .panel-toggle {
     padding: 2px 6px;

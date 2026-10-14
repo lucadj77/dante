@@ -2,7 +2,10 @@ import { MemoryFs } from "./core/fs";
 
 /** A small novel to try the app without a folder, for example in a browser. */
 export function sampleProject(): MemoryFs {
+  const now = new Date().toISOString();
   return new MemoryFs({
+    // Anna, on another computer, is writing the envelope scene (for the next three minutes).
+    ".dante/presence/anna.json": JSON.stringify({ user: "Anna", path: "Manuscript/010 Homecoming/020 Letter/010 Envelope.md", since: now, updated: now }),
     "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\n",
     "Story Bible/Characters/Marta Rinaldi.md":
       "---\ntype: character\nrole: protagonist\nage: 42\naliases: [Marta]\n---\nMarta returns home after twenty years. She grew up in [[Rinaldi House]] with her mother, [[Elena Rinaldi|Elena]].\n",
@@ -16,9 +19,12 @@ export function sampleProject(): MemoryFs {
       "---\nstatus: draft\npov: \"[[Marta Rinaldi|Marta]]\"\n---\nThe phone rang at three in the morning. *Nobody* calls at three in the morning with good news.\n",
     "Manuscript/010 Homecoming/010 Homecoming.md": "---\nkind: part\n---\n",
     "Manuscript/010 Homecoming/010 Return/010 Arrival.md":
-      "---\nstatus: revised\npov: \"[[Marta Rinaldi|Marta]]\"\nplace: \"[[Rinaldi House]]\"\n---\nThe train arrived forty minutes late. Marta stepped down onto the platform and breathed the salt air she had tried to forget.\n\nNo one was waiting for her. She had expected that, and still it hurt.\n",
+      "---\nstatus: revised\npov: \"[[Marta Rinaldi|Marta]]\"\nplace: \"[[Rinaldi House]]\"\n---\nThe train arrived {--forty--}{>>@Anna 2026-10-14<<}{++fifty++}{>>@Anna 2026-10-14<<} minutes late. Marta stepped down onto the platform and {==breathed the salt air==}{>>@Anna 2026-10-14: Too early for the sea? We only see the harbour in part two.<<} she had tried to forget.\n\nNo one was waiting for her. She had expected that, and still it hurt.\n",
     "Manuscript/010 Homecoming/010 Return/020 The house.md":
       "---\nstatus: draft\n---\nThe key still turned in the lock. **Twenty years**, and the key still turned.\n",
+    // A copy Dropbox makes when two people change the same scene at once.
+    "Manuscript/010 Homecoming/010 Return/020 The house (Anna's conflicted copy 2026-10-14).md":
+      "---\nstatus: draft\n---\nThe key still turned in the old lock. **Twenty years**, and the key still turned.\n",
     "Manuscript/010 Homecoming/020 Letter/010 Envelope.md":
       "---\nstatus: idea\n---\nThe envelope was on the kitchen table, addressed to her in her mother's hand.\n",
     "Manuscript/900 Epilogue/900 Epilogue.md": "---\nkind: epilogue\n---\n",

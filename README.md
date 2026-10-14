@@ -5,7 +5,7 @@ same novel opens in Obsidian, in Claude Code or in any text editor, and can be s
 through Google Drive or Dropbox.
 
 The design is described in the [design document](https://claude.ai/code/artifact/6ae8607c-9d16-4657-a49c-c0faabf1db0a).
-This repository is at **phase 1: the manuscript**.
+This repository is at **phase 3: collaboration**.
 
 ## A project on disk
 
@@ -71,6 +71,35 @@ My novel/
 - Search from the section bar (Cmd/Ctrl+Shift+F) over names, aliases and text, with a preview of
   each result beside the text.
 - The section bar names its icons at once on hover, or beside them when widened.
+
+## What phase 3 adds
+
+Several people can work on the same folder shared through Dropbox or Google Drive.
+
+- Your name (in the settings) signs comments and revisions, written in
+  [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit) with a signature comment:
+
+  ```markdown
+  The door was {--closed--}{>>@Anna 2026-10-14<<}{++ajar++}{>>@Anna 2026-10-14<<}.
+  {==The wind smelled of salt.==}{>>@Luca 2026-10-13: too early for the sea?<<}{>>@Anna 2026-10-14: I'd move it<<}
+  ```
+
+  The editor draws additions, deletions and highlights as a word processor does and hides the
+  marks; a comment is a 💬 bubble. The raw Markdown view shows everything as written.
+- Select text and press 💬 (or `Cmd/Ctrl+Alt+M`) to comment. The right panel's Comments tab lists
+  the comments and changes of the text shown, with reply, resolve (removes the discussion from the
+  file), accept, reject, and accept or reject all.
+- Revision mode (toolbar or settings): what you type becomes an addition and what you delete a
+  deletion, signed with your name. Typing inside your own addition just edits it; edits inside
+  someone else's pending addition or inside highlighted text are applied directly.
+- Presence: the app writes `.dante/presence/<name>.json` with the scene or note being edited,
+  refreshed every minute. A scene someone else opened first is read-only, with a warning and an
+  "Edit anyway" button. A presence not refreshed for three minutes is ignored.
+- Conflict copies made by Dropbox (`… (Anna's conflicted copy …)`, also in Italian), Google Drive
+  (`… (1)` next to the original), Syncthing and similar are left out of the manuscript tree and
+  flagged at the top. The dialog compares the two texts and keeps the file, takes the copy, or
+  merges the copy's differences as revisions to accept one by one (existing comments are kept
+  whole). What is set aside goes to `.trash`; a merge keeps a snapshot of the file first.
 
 ## Development
 

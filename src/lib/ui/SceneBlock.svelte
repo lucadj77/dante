@@ -21,6 +21,8 @@
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels } from "./formatLabels";
   import { navigator } from "./navigation";
+  import { collaboration } from "./collaboration.svelte";
+  import { criticHandlerFor } from "./editors.svelte";
 
   interface Props {
     project: Project;
@@ -44,6 +46,7 @@
   const path = props.node.path;
 
   const links = navigator()?.links(path);
+  const collab = collaboration(path, { raw: () => props.raw });
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
   let lastSaved = "";
@@ -117,6 +120,7 @@
         placeholder: "…",
         onChange(next) {
           props.onText(path, next);
+          collab.changed();
           if (applyingRemote) return;
           snapshotting ??= props.project.autoSnapshot(path).catch(() => {});
           pending = next;
@@ -126,11 +130,16 @@
         onSplitScene: (before, after) => props.onSplitScene(path, before, after),
         onSplitChapter: (before, after) => props.onSplitChapter(path, before, after),
         onLeave: (direction) => props.onLeave(path, direction),
-        onFocus: () => props.onFocus(path),
+        onFocus: () => {
+          props.onFocus(path);
+          collab.focused();
+        },
         formatLabels: formatLabels(),
         links,
+        critic: criticHandlerFor(path),
       });
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
+      collab.ready(editor);
       props.register(path, handle);
     }, () => {
       // Moved or renamed meanwhile: the reloaded tree mounts the scene under its new path.
@@ -140,6 +149,7 @@
       // Saving after the file was moved away would recreate it under its old name.
       if (pending !== null) void props.project.fs.exists(path).then((exists) => (exists ? save() : undefined));
       props.register(path, null);
+      collab.destroy();
       editor?.destroy();
     };
   });
@@ -199,6 +209,12 @@
     {/if}
     <button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>
   </header>
+  {#if collab.holder}
+    <div class="presence" role="status">
+      {t("presence.editing", { user: collab.holder.user })}
+      <button onclick={() => collab.force()}>{t("presence.editAnyway")}</button>
+    </div>
+  {/if}
   {#if conflict}
     <div class="conflict" role="alert">
       {t("editor.changedOnDisk")}
@@ -262,6 +278,14 @@
   }
   header::after {
     order: 2;
+  }
+  .presence {
+    background: var(--bg-panel);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
   }
   .conflict {
     background: var(--bg-panel);

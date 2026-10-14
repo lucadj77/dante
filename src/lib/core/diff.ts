@@ -3,11 +3,11 @@ export type DiffPart = { type: "same" | "added" | "removed"; text: string };
 /**
  * Word-level difference between two texts, for comparing a scene with a snapshot.
  * Whitespace stays attached to the word before it, so joining the parts of one side
- * gives back that side's text.
+ * gives back that side's text. `tokens` splits a text into the units compared.
  */
-export function diffWords(before: string, after: string): DiffPart[] {
-  const a = before.match(/\S+\s*|\s+/g) ?? [];
-  const b = after.match(/\S+\s*|\s+/g) ?? [];
+export function diffWords(before: string, after: string, tokens: RegExp = /\S+\s*|\s+/g): DiffPart[] {
+  const a = before.match(tokens) ?? [];
+  const b = after.match(tokens) ?? [];
   // Common prefix and suffix first: most edits touch a small part of a scene.
   let start = 0;
   while (start < a.length && start < b.length && a[start] === b[start]) start++;
