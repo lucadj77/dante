@@ -10,6 +10,7 @@
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
   import { provideNavigator } from "./navigation";
+  import { layout, toggle } from "./layout.svelte";
   import type { NoteIndex } from "$lib/core/notes";
   import { noteType } from "$lib/core/notes";
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
@@ -30,6 +31,8 @@
     { id: "export", icon: "⇪" },
   ];
   let section = $state<Section>("manuscript");
+  /** Sections with panels on the sides, which can be hidden. */
+  const panels = $derived(section !== "export" && section !== "settings" && section !== "views");
   /** What each section shows, so coming back to it finds the same note. */
   let opened = $state<Partial<Record<Section, string | null>>>({});
   /** Root of the "files" section. */
@@ -186,35 +189,58 @@
 
 <div class="workspace" class:fullscreen>
   {#if !fullscreen}
-    <nav aria-label="Sections">
-      {#each sections as s (s.id)}
+    <nav aria-label="Sections" class:wide={layout.wideNav}>
+      {#snippet item(id: string, icon: string, label: string, pressed: boolean | undefined, onclick: () => void)}
         <button
           class="section"
-          aria-pressed={section === s.id}
-          title={t(`section.${s.id}` as MessageKey)}
-          onclick={() => go(s.id)}
+          aria-pressed={pressed}
+          aria-label={label}
+          data-tip={layout.wideNav ? undefined : label}
+          data-tip-side="right"
+          data-section={id}
+          {onclick}
         >
-          <span aria-hidden="true">{s.icon}</span>
+          <span class="icon" aria-hidden="true">{icon}</span>
+          {#if layout.wideNav}<span class="label">{label}</span>{/if}
         </button>
+      {/snippet}
+      {#each sections as s (s.id)}
+        {@render item(s.id, s.icon, t(`section.${s.id}` as MessageKey), section === s.id, () => go(s.id))}
       {/each}
       <div class="spacer"></div>
-      <button
-        class="section"
-        aria-pressed={section === "settings"}
-        title={t("section.settings")}
-        onclick={() => go("settings")}><span aria-hidden="true">⚙</span></button
-      >
-      <button class="section" title={t("app.close")} onclick={onClose}><span aria-hidden="true">⏏</span></button>
+      {@render item("settings", "⚙", t("section.settings"), section === "settings", () => go("settings"))}
+      {@render item("close", "⏏", t("app.close"), undefined, onClose)}
+      {@render item("names", layout.wideNav ? "«" : "»", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
     </nav>
   {/if}
   <div class="content" class:with-back={!fullscreen}>
     {#if !fullscreen}
       <div class="back-bar">
+        {#if panels}
+          <button
+            class="panel-toggle"
+            aria-pressed={!layout.left}
+            aria-label={t(layout.left ? "nav.hideLeft" : "nav.showLeft")}
+            data-tip={t(layout.left ? "nav.hideLeft" : "nav.showLeft")}
+            onclick={() => toggle("left")}>◧</button
+          >
+        {/if}
         {#if section !== "manuscript" || byLink}
           <button onclick={back}>‹ {t("nav.back")}</button>
         {/if}
         <h1 class="section-name">{section === "files" ? filesRoot || project.settings.title : t(`section.${section}`)}</h1>
         {#if project.settings.title}<span class="project-name">{project.settings.title}</span>{/if}
+        {#if panels}
+          <button
+            class="panel-toggle"
+            class:alone={!project.settings.title}
+            aria-pressed={!layout.right}
+            aria-label={t(layout.right ? "nav.hideRight" : "nav.showRight")}
+            data-tip={t(layout.right ? "nav.hideRight" : "nav.showRight")}
+            data-tip-side="end"
+            onclick={() => toggle("right")}>◨</button
+          >
+        {/if}
       </div>
     {/if}
     {#if section === "manuscript"}
@@ -272,7 +298,7 @@
 <style>
   .workspace {
     display: grid;
-    grid-template-columns: 52px 1fr;
+    grid-template-columns: auto 1fr;
     height: 100vh;
   }
   .workspace.fullscreen {
@@ -286,12 +312,33 @@
     background: var(--bg-panel);
     border-right: 1px solid var(--border);
   }
+  nav.wide {
+    width: 180px;
+  }
   .section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     width: 40px;
     height: 40px;
     border: 1px solid transparent;
-    font-size: 18px;
     padding: 0;
+  }
+  nav.wide .section {
+    width: 100%;
+    padding-right: 10px;
+  }
+  .section .icon {
+    width: 38px;
+    flex: none;
+    font-size: 18px;
+    text-align: center;
+  }
+  .section .label {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .spacer {
     flex: 1;
@@ -328,6 +375,17 @@
     background: none;
     padding: 4px 8px;
     color: var(--accent);
+  }
+  .back-bar .panel-toggle {
+    padding: 2px 6px;
+    font-size: 16px;
+    color: var(--text-muted);
+  }
+  .back-bar .panel-toggle[aria-pressed="true"] {
+    color: var(--accent);
+  }
+  .panel-toggle.alone {
+    margin-left: auto;
   }
   .later {
     padding: 48px;

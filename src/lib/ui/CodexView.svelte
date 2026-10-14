@@ -11,6 +11,7 @@
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import { columns, layout } from "./layout.svelte";
 
   interface Props {
     project: Project;
@@ -198,7 +199,8 @@
   }
 </script>
 
-<div class="codex">
+<div class="codex" style:grid-template-columns={columns(220, 280)}>
+  {#if layout.left}
   <aside class="types" aria-label={t("section.codex")}>
     <ul>
       {#each Object.entries(types) as [id, type] (id)}
@@ -241,6 +243,7 @@
     </form>
     <p class="hint">{t("codex.typesHint")}</p>
   </aside>
+  {/if}
 
   <main class="center">
     {#if error}
@@ -349,6 +352,7 @@
     {/if}
   </main>
 
+  {#if layout.right}
   <SidePanel project={p.project} path={current} version={p.rev * 10000 + saves} diskRev={p.diskRev}>
     {#snippet properties()}
       {#if current}
@@ -358,12 +362,12 @@
       {/if}
     {/snippet}
   </SidePanel>
+  {/if}
 </div>
 
 <style>
   .codex {
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr) 280px;
     height: 100%;
     min-height: 0;
   }

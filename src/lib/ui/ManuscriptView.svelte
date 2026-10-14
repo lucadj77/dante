@@ -10,6 +10,7 @@
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import { columns, layout } from "./layout.svelte";
   import { markOnly } from "./folding.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
@@ -344,8 +345,8 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="manuscript" class:fullscreen>
-  {#if !fullscreen}
+<div class="manuscript" class:fullscreen style:grid-template-columns={columns(fullscreen ? 0 : 260, fullscreen ? 0 : 280)}>
+  {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
         <button onclick={newScene}>{t("tree.newScene")}</button>
@@ -503,7 +504,7 @@
     </div>
   </main>
 
-  {#if !fullscreen}
+  {#if !fullscreen && layout.right}
     <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev}>
       {#snippet properties()}
     <PropertiesPanel
@@ -531,11 +532,7 @@
 <style>
   .manuscript {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr) 280px;
     height: 100%;
-  }
-  .manuscript.fullscreen {
-    grid-template-columns: 1fr;
   }
   .tree {
     border-right: 1px solid var(--border);

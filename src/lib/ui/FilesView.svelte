@@ -10,6 +10,7 @@
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import { columns, layout } from "./layout.svelte";
   import { markOnly } from "./folding.svelte";
 
   interface Props {
@@ -131,7 +132,8 @@
   }
 </script>
 
-<div class="files">
+<div class="files" style:grid-template-columns={columns(260, 280)}>
+  {#if layout.left}
   <aside class="tree" aria-label={p.title}>
     <div class="tree-actions">
       <button onclick={() => newNote()}>{t("files.newNote")}</button>
@@ -163,6 +165,7 @@
       {foldScope}
     />
   </aside>
+  {/if}
 
   {#if menu}
     {@const m = menu}
@@ -200,6 +203,7 @@
     {/if}
   </main>
 
+  {#if layout.right}
   <SidePanel project={p.project} path={current} version={p.rev * 10000 + saves} diskRev={p.diskRev}>
     {#snippet properties()}
       {#if current}
@@ -209,12 +213,12 @@
       {/if}
     {/snippet}
   </SidePanel>
+  {/if}
 </div>
 
 <style>
   .files {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr) 280px;
     height: 100%;
     min-height: 0;
   }

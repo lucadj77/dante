@@ -144,3 +144,36 @@ select {
 .cm-tooltip-autocomplete > ul > li { padding: 3px 10px !important; }
 .cm-tooltip-autocomplete > ul > li[aria-selected] { background: var(--bg-active) !important; color: var(--text) !important; }
 .cm-completionDetail { color: var(--text-muted); margin-left: 8px; font-style: normal !important; }
+
+/* Tooltips that show at once, unlike the system's; the label goes in data-tip. */
+[data-tip] {
+  position: relative;
+}
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 4px);
+  left: 0;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+[data-tip][data-tip-side="right"]:hover::after,
+[data-tip][data-tip-side="right"]:focus-visible::after {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+[data-tip][data-tip-side="end"]:hover::after,
+[data-tip][data-tip-side="end"]:focus-visible::after {
+  left: auto;
+  right: 0;
+}
