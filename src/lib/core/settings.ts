@@ -160,7 +160,7 @@ const LABELS: Record<string, { part: string; chapter: string; scene: string }> =
 /** Folder names of a new project, in the language of the novel. */
 const FOLDERS: Record<string, NovelSettings["folders"]> = {
   en: { codex: "Codex", research: "Research", laboratory: "Laboratory", manuscript: "Manuscript", views: "Views", templates: "Templates" },
-  it: { codex: "Codex", research: "Ricerca", laboratory: "Laboratorio", manuscript: "Manoscritto", views: "Viste", templates: "Modelli" },
+  it: { codex: "Bibbia", research: "Ricerca", laboratory: "Laboratorio", manuscript: "Manoscritto", views: "Viste", templates: "Modelli" },
   es: { codex: "Códex", research: "Investigación", laboratory: "Laboratorio", manuscript: "Manuscrito", views: "Vistas", templates: "Plantillas" },
   fr: { codex: "Codex", research: "Recherche", laboratory: "Laboratoire", manuscript: "Manuscrit", views: "Vues", templates: "Modèles" },
 };

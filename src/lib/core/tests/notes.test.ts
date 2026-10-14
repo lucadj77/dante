@@ -18,6 +18,13 @@ function sample() {
 }
 
 describe("note types", () => {
+  it("an Italian project keeps its Codex folder, though new ones get a Bibbia", async () => {
+    const p = await Project.open(new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\n", "Codex/Marta.md": "" }));
+    expect(p.settings.folders.codex).toBe("Codex");
+    const fresh = await Project.open(new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\n" }));
+    expect(fresh.settings.folders.codex).toBe("Bibbia");
+  });
+
   it("comes from the type property or from the Codex folder", async () => {
     const p = await Project.open(sample());
     const index = await p.index();
