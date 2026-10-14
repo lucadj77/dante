@@ -1,8 +1,9 @@
 <script lang="ts">
   import { open } from "@tauri-apps/plugin-dialog";
   import { Project } from "$lib/core/project";
+  import { SETTINGS_FILE } from "$lib/core/settings";
   import { sampleProject } from "$lib/sample";
-  import { t } from "$lib/state.svelte";
+  import { app, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
@@ -13,7 +14,13 @@
     error = "";
     try {
       const folder = await open({ directory: true, multiple: false });
-      if (typeof folder === "string") onOpen(await Project.open(new TauriFs(folder)));
+      if (typeof folder !== "string") return;
+      const project = await Project.open(new TauriFs(folder), app.settings.language);
+      // A new project records its language and folder names, so they no longer follow the interface.
+      if (!(await project.fs.exists(SETTINGS_FILE))) {
+        await project.saveSettings({ ...project.settings, title: project.settings.title || (folder.split(/[\\/]/).filter(Boolean).pop() ?? "") });
+      }
+      onOpen(project);
     } catch (e) {
       error = t("error.generic", { message: String(e) });
     }

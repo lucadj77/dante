@@ -132,10 +132,8 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     return separator === "pageBreak";
   };
 
-  const heading = (level: number, number: string, text: string, oneLine: string, newPage: boolean, part = false) => {
-    const children = opts.headingLayout === "twoLines" && number && text
-      ? [...plain(number), new TextRun({ text, break: 1 })]
-      : plain(opts.headingLayout === "twoLines" ? number || text : oneLine);
+  const heading = (level: number, text: string, newPage: boolean, part = false) => {
+    const children = plain(text);
     // Openings on a new page start lower down.
     if (newPage) body.push(new Paragraph({ style: part ? "PartOpening" : "Opening", pageBreakBefore: started, children: [] }));
     body.push(new Paragraph({ heading: HEADINGS[level], children }));
@@ -161,12 +159,12 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
 
   const entry = (e: BookEntry) => {
     if (e.kind === "part") {
-      heading(partLevel, e.number, e.title, e.heading, separate(opts.partBreak), true);
+      heading(partLevel, e.heading, separate(opts.partBreak), true);
       started = true;
       return;
     }
     if (e.heading) {
-      heading(chapterLevel, e.number, e.title, e.heading, separate(opts.chapterBreak));
+      heading(chapterLevel, e.heading, separate(opts.chapterBreak));
       started = true;
     }
     e.scenes.forEach((scene, i) => {
@@ -174,13 +172,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         if (separate(i > 0 ? opts.sceneBreak : opts.chapterBreak)) body.push(new Paragraph({ style: "SceneBreak", pageBreakBefore: true, children: [] }));
       }
       started = true;
-      const sceneHeading = [scene.number, scene.title].filter(Boolean).join(". ");
-      if (sceneHeading) {
-        const children = opts.headingLayout === "twoLines" && scene.number && scene.title
-          ? [...plain(scene.number), new TextRun({ text: scene.title, break: 1 })]
-          : plain(sceneHeading);
-        body.push(new Paragraph({ heading: HEADINGS[sceneLevel], children }));
-      }
+      if (scene.heading) body.push(new Paragraph({ heading: HEADINGS[sceneLevel], children: plain(scene.heading) }));
       blocks(scene.blocks, sceneLevel);
     });
   };

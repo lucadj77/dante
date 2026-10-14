@@ -2,21 +2,22 @@ import { parseDocument } from "yaml";
 
 export const SETTINGS_FILE = "dante.yaml";
 
-export type NumberStyle = "arabic" | "roman" | "words" | "none";
+export type NumberStyle = "arabic" | "roman" | "words" | "ordinal" | "none";
 
+/** How the headings of a level (parts, chapters, scenes) are written. */
 export interface LevelSettings {
+  numbering: NumberStyle;
+  /** Shows the label before the number, as in "Chapter 3". */
+  showLabel: boolean;
   /** Word shown before the number, such as "Chapter". */
   label: string;
-  numbering: NumberStyle;
-  /** Heading template with {label}, {number} and {title}. */
-  pattern: string;
+  showTitle: boolean;
+  /** Text between number and title, such as ": " or ". "; "\n" puts the title on its own line. */
+  separator: string;
 }
 
 /** How a new part, chapter or scene is set apart from what comes before it. */
 export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
-
-/** What a scene shows above its text in the exported book. */
-export type SceneHeading = "none" | "title" | "number" | "numberAndTitle";
 
 export interface TypographySettings {
   /** Straight quotes become «guillemets» or “curly quotes”, or stay as they are. */
@@ -27,7 +28,16 @@ export interface TypographySettings {
   ellipsis: boolean;
   /** Removes double spaces and spaces before punctuation. */
   spaces: boolean;
-  /** Quotes, apostrophes and ellipses are also corrected while typing. */
+  /**
+   * Dashes that set off an aside: "parola – inciso – parola" (en dash with spaces),
+   * "parola — inciso — parola" (em dash with spaces), "word—aside—word" (em dash, closed).
+   */
+  dashes: "keep" | "enSpaced" | "emSpaced" | "emClosed";
+  /** Number ranges such as 1990-2000: hyphen, or en dash as in 1990–2000. */
+  ranges: "keep" | "enDash";
+  /** A dash at the start of a paragraph opens a dialogue line and becomes "— ". */
+  dialogueDash: boolean;
+  /** Quotes, apostrophes, ellipses and dashes are also corrected while typing. */
   whileTyping: boolean;
 }
 
@@ -60,9 +70,8 @@ export interface DocxSettings {
   chapterBreak: Separator;
   sceneBreak: Separator;
   /** Number above the title on two lines, or the whole heading on one line. */
-  headingLayout: "oneLine" | "twoLines";
-  sceneHeadings: SceneHeading;
-  sceneNumbering: NumberStyle;
+  /** Headings of scenes in the exported book; none by default. */
+  scene: LevelSettings;
   /** Scene numbers start again in each chapter. */
   sceneNumbersRestart: boolean;
   /** No scene heading in a chapter with a single scene. */
@@ -100,12 +109,27 @@ export interface NovelSettings {
   };
 }
 
-const LABELS: Record<string, { part: string; chapter: string }> = {
-  en: { part: "Part", chapter: "Chapter" },
-  it: { part: "Parte", chapter: "Capitolo" },
-  es: { part: "Parte", chapter: "Capítulo" },
-  fr: { part: "Partie", chapter: "Chapitre" },
+const LABELS: Record<string, { part: string; chapter: string; scene: string }> = {
+  en: { part: "Part", chapter: "Chapter", scene: "Scene" },
+  it: { part: "Parte", chapter: "Capitolo", scene: "Scena" },
+  es: { part: "Parte", chapter: "Capítulo", scene: "Escena" },
+  fr: { part: "Partie", chapter: "Chapitre", scene: "Scène" },
 };
+
+/** Folder names of a new project, in the language of the novel. */
+const FOLDERS: Record<string, NovelSettings["folders"]> = {
+  en: { codex: "Codex", research: "Research", laboratory: "Laboratory", manuscript: "Manuscript", views: "Views", templates: "Templates" },
+  it: { codex: "Codex", research: "Ricerca", laboratory: "Laboratorio", manuscript: "Manoscritto", views: "Viste", templates: "Modelli" },
+  es: { codex: "Códex", research: "Investigación", laboratory: "Laboratorio", manuscript: "Manuscrito", views: "Vistas", templates: "Plantillas" },
+  fr: { codex: "Codex", research: "Recherche", laboratory: "Laboratoire", manuscript: "Manuscrit", views: "Vues", templates: "Modèles" },
+};
+
+export function defaultFolders(language: string): NovelSettings["folders"] {
+  return { ...(FOLDERS[language.slice(0, 2)] ?? FOLDERS.en) };
+}
+
+/** Folder names in English, the app's base language, for projects that already use them. */
+export const ENGLISH_FOLDERS = FOLDERS.en;
 
 export function defaultSettings(language = "en"): NovelSettings {
   const labels = LABELS[language.slice(0, 2)] ?? LABELS.en;
@@ -114,21 +138,16 @@ export function defaultSettings(language = "en"): NovelSettings {
     subtitle: "",
     author: "",
     language,
-    folders: {
-      codex: "Codex",
-      research: "Research",
-      laboratory: "Laboratory",
-      manuscript: "Manuscript",
-      views: "Views",
-      templates: "Templates",
-    },
+    folders: defaultFolders(language),
     structure: {
       parts: false,
-      part: { label: labels.part, numbering: "roman", pattern: "{label} {number}: {title}" },
+      part: { numbering: "roman", showLabel: true, label: labels.part, showTitle: true, separator: ": " },
       chapter: {
-        label: labels.chapter,
         numbering: "arabic",
-        pattern: "{label} {number}: {title}",
+        showLabel: true,
+        label: labels.chapter,
+        showTitle: true,
+        separator: ": ",
         restartEachPart: false,
       },
     },
@@ -145,9 +164,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         partBreak: "pageBreak",
         chapterBreak: "pageBreak",
         sceneBreak: "characters",
-        headingLayout: "oneLine",
-        sceneHeadings: "none",
-        sceneNumbering: "arabic",
+        scene: { numbering: "none", showLabel: false, label: labels.scene, showTitle: false, separator: ". " },
         sceneNumbersRestart: true,
         omitSingleSceneHeading: true,
       },
@@ -156,6 +173,9 @@ export function defaultSettings(language = "en"): NovelSettings {
         apostrophes: true,
         ellipsis: true,
         spaces: true,
+        dashes: language.startsWith("it") ? "enSpaced" : language.startsWith("en") ? "emClosed" : "emSpaced",
+        ranges: "enDash",
+        dialogueDash: false,
         whileTyping: true,
       },
       paratext: {
@@ -192,6 +212,19 @@ export function parseSettings(text: string): NovelSettings {
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  // Files written before the heading choices existed had a template such as "{label} {number}: {title}".
+  const structure = isObject(raw) && isObject(raw.structure) ? raw.structure : {};
+  for (const kind of ["part", "chapter"] as const) {
+    const level = structure[kind];
+    if (!isObject(level) || typeof level.pattern !== "string" || level.showTitle !== undefined) continue;
+    const pattern = level.pattern;
+    const target = settings.structure[kind];
+    target.showLabel = pattern.includes("{label}");
+    target.showTitle = pattern.includes("{title}");
+    const between = /\{number\}([^{}]*)\{title\}/.exec(pattern);
+    if (between) target.separator = between[1];
+    if (!pattern.includes("{number}")) target.numbering = "none";
+  }
   return settings;
 }
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { formatHeading, formatNumber } from "$lib/core/numbering";
   import type { Project } from "$lib/core/project";
-  import type { NovelSettings, NumberStyle } from "$lib/core/settings";
+  import type { NovelSettings } from "$lib/core/settings";
+  import HeadingLevel from "./HeadingLevel.svelte";
   import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
   import { app, saveAppSettings, t } from "$lib/state.svelte";
@@ -16,7 +16,6 @@
   let error = $state("");
 
   const levels = $derived<("part" | "chapter")[]>(novel.structure.parts ? ["part", "chapter"] : ["chapter"]);
-  const styles: NumberStyle[] = ["arabic", "roman", "words", "none"];
   const fonts = [
     { name: "Georgia", value: "Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" },
     { name: "Palatino", value: "'Palatino Linotype', Palatino, 'Book Antiqua', serif" },
@@ -24,11 +23,6 @@
     { name: "Sans serif", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
     { name: "Monospace", value: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace" },
   ];
-
-  function preview(kind: "part" | "chapter", n: number, title: string) {
-    const level = novel.structure[kind];
-    return formatHeading(level.pattern, { label: level.label, number: formatNumber(n, level.numbering, novel.language), title });
-  }
 
   let cleanBefore = $state(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
   let cleaned = $state("");
@@ -75,24 +69,12 @@
     {#each levels as kind (kind)}
       <fieldset>
         <legend>{t(`kind.${kind}`)}</legend>
-        <label>{t("settings.label")} <input bind:value={novel.structure[kind].label} /></label>
-        <label
-          >{t("settings.numbering")}
-          <select bind:value={novel.structure[kind].numbering}>
-            {#each styles as style (style)}
-              <option value={style}>{t(`numbering.${style}`)}</option>
-            {/each}
-          </select>
-        </label>
-        <label
-          >{t("settings.pattern")}
-          <input bind:value={novel.structure[kind].pattern} />
-          <small>{t("settings.patternHint")}</small>
-        </label>
-        <p class="preview">
-          {t("settings.preview")}: <strong>{preview(kind, 1, kind === "part" ? "Return" : "Arrival")}</strong> ·
-          <strong>{preview(kind, 4, "")}</strong>
-        </p>
+        <HeadingLevel
+          bind:level={novel.structure[kind]}
+          language={novel.language}
+          sample={kind === "part" ? t("sample.partTitle") : t("sample.chapterTitle")}
+          feminine={kind === "part"}
+        />
       </fieldset>
     {/each}
     {#if novel.structure.parts}
@@ -198,15 +180,6 @@
   }
   small {
     font-size: 12px;
-  }
-  .preview {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin: 0 0 12px;
-  }
-  .preview strong {
-    color: var(--text);
-    font-weight: 500;
   }
   .actions {
     display: flex;

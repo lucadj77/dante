@@ -57,7 +57,7 @@ describe("book", () => {
 
   it("uses published titles, scene headings and typography", async () => {
     const fs = new MemoryFs({
-      "dante.yaml": "title: L'eredità\nauthor: Ada Rossi\nlanguage: it\nexport:\n  docx:\n    sceneHeadings: numberAndTitle\n    omitSingleSceneHeading: true\n",
+      "dante.yaml": "title: L'eredità\nauthor: Ada Rossi\nlanguage: it\nstructure:\n  chapter:\n    separator: \"\\n\"\nexport:\n  docx:\n    scene:\n      numbering: arabic\n      showTitle: true\n    omitSingleSceneHeading: true\n",
       "Manuscript/010 Ritorno/010 Ritorno.md": "---\npublished_title: Il ritorno a casa\n---\n",
       "Manuscript/010 Ritorno/010 Arrivo.md": "---\npublished_title: Il treno\n---\n\"Sei tu...\" disse l'uomo.",
       "Manuscript/010 Ritorno/020 Casa.md": "La casa.",
@@ -66,10 +66,10 @@ describe("book", () => {
     const book = await buildBook(await Project.open(fs));
     expect(book.title).toBe("L’eredità");
     const [first, second] = book.entries;
-    expect([first.heading, first.number, first.title]).toEqual(["Capitolo 1: Il ritorno a casa", "Capitolo 1", "Il ritorno a casa"]);
-    expect(first.scenes.map((s) => [s.number, s.title])).toEqual([["1", "Il treno"], ["2", "Casa"]]);
+    expect(first.heading).toBe("Capitolo 1\nIl ritorno a casa");
+    expect(first.scenes.map((s) => s.heading)).toEqual(["1. Il treno", "2. Casa"]);
     // A chapter with one scene shows no scene heading.
-    expect(second.scenes.map((s) => [s.number, s.title])).toEqual([["", ""]]);
+    expect(second.scenes.map((s) => s.heading)).toEqual([""]);
     expect(first.scenes[0].blocks).toEqual([{ type: "paragraph", runs: [{ text: "«Sei tu…» disse l’uomo." }] }]);
     expect(book.characters).toBe("«Sei tu…» disse l’uomo.".length + "La casa.".length + "Una busta.".length);
   });
@@ -82,7 +82,7 @@ describe("book", () => {
     const project = await Project.open(fs);
     const book = await buildBook(project);
     for (const profile of ["manuscript", "typeset"] as const) {
-      const opts = { ...project.settings.export.docx, profile, headingLayout: "twoLines" as const };
+      const opts = { ...project.settings.export.docx, profile };
       const xml = await documentXml(await docxBytes(bookToDocx(book, opts, { words: "words" })));
       expect(xml).toContain('w:pStyle w:val="FirstParagraph"');
       expect(xml).toContain('w:pStyle w:val="Normal"');

@@ -26,7 +26,8 @@
   let over = $state<DropPosition | null>(null);
   let collapsed = $state(false);
   const isScene = $derived(p.node.kind === "scene");
-  const label = $derived(p.headings.get(p.node.path) ?? p.node.title);
+  // Headings on two lines fit the tree on one.
+  const label = $derived((p.headings.get(p.node.path) ?? p.node.title).replace(/\n/g, " · "));
 
   function startRename() {
     draft = p.node.title;

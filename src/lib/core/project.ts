@@ -11,7 +11,15 @@ import {
 } from "./manuscript";
 import { assignOrders, formatName, sanitizeTitle } from "./naming";
 import { basename, dirname, isMarkdown, join, rebase } from "./path";
-import { defaultSettings, parseSettings, serializeSettings, SETTINGS_FILE, type NovelSettings } from "./settings";
+import {
+  defaultFolders,
+  defaultSettings,
+  ENGLISH_FOLDERS,
+  parseSettings,
+  serializeSettings,
+  SETTINGS_FILE,
+  type NovelSettings,
+} from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
 import { rewriteLinks } from "./wikilinks";
 
@@ -31,10 +39,17 @@ export class Project {
   /** Scenes already copied to a snapshot in this session. */
   private snapshotted = new Set<string>();
 
-  constructor(public fs: ProjectFs) {}
+  /**
+   * @param language Language of a project that has no settings file yet, usually the
+   * interface language: it names the folders and the chapter labels.
+   */
+  constructor(
+    public fs: ProjectFs,
+    public language = "en",
+  ) {}
 
-  static async open(fs: ProjectFs): Promise<Project> {
-    const project = new Project(fs);
+  static async open(fs: ProjectFs, language = "en"): Promise<Project> {
+    const project = new Project(fs, language);
     await project.reload();
     return project;
   }
@@ -42,7 +57,15 @@ export class Project {
   async reload(): Promise<void> {
     this.settings = (await this.fs.exists(SETTINGS_FILE))
       ? parseSettings(await this.fs.readText(SETTINGS_FILE))
-      : defaultSettings();
+      : defaultSettings(this.language);
+    // A project that already has the English folders keeps them, whatever its language.
+    const localized = defaultFolders(this.settings.language);
+    for (const key of Object.keys(localized) as (keyof NovelSettings["folders"])[]) {
+      const name = this.settings.folders[key];
+      if (name === localized[key] && name !== ENGLISH_FOLDERS[key] && !(await this.fs.exists(name)) && (await this.fs.exists(ENGLISH_FOLDERS[key]))) {
+        this.settings.folders[key] = ENGLISH_FOLDERS[key];
+      }
+    }
     this.manuscript = await loadManuscript(this.fs, this.settings);
     this.files = await this.scan("");
   }

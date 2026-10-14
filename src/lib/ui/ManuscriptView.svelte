@@ -430,6 +430,9 @@
     margin: 48px 0 8px;
     font-size: 1.6em;
   }
+  .heading {
+    white-space: pre-line;
+  }
   .heading button {
     border: none;
     background: none;

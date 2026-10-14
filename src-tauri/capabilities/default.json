@@ -10,6 +10,17 @@
     "core:window:allow-set-fullscreen",
     "opener:default",
     "dialog:default",
-    "fs:allow-write-file"
+    "fs:allow-write-file",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "**/*.docx"
+        },
+        {
+          "path": "/**/*.docx"
+        }
+      ]
+    }
   ]
 }

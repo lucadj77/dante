@@ -1,4 +1,4 @@
-import type { NumberStyle } from "./settings";
+import type { LevelSettings, NumberStyle } from "./settings";
 
 const ROMAN: [number, string][] = [
   [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"],
@@ -50,11 +50,44 @@ function italianWords(n: number): string {
   return (tail.startsWith("o") ? head.slice(0, -1) : head) + tail;
 }
 
+const EN_ORDINALS: Record<string, string> = {
+  one: "first", two: "second", three: "third", five: "fifth", eight: "eighth", nine: "ninth", twelve: "twelfth",
+};
+
+function englishOrdinal(n: number): string {
+  const words = englishWords(n);
+  const last = words.split(/[ -]/).pop()!;
+  const ordinal = EN_ORDINALS[last] ?? (last.endsWith("y") ? last.slice(0, -1) + "ieth" : last + "th");
+  return words.slice(0, words.length - last.length) + ordinal;
+}
+
+const IT_ORDINALS = ["", "primo", "secondo", "terzo", "quarto", "quinto", "sesto", "settimo", "ottavo", "nono", "decimo"];
+
+function italianOrdinal(n: number, feminine: boolean): string {
+  let word: string;
+  if (n <= 10) {
+    word = IT_ORDINALS[n];
+  } else {
+    const cardinal = italianWords(n);
+    // "ventitreesimo", "trentaseiesimo": the cardinal loses its last vowel, except "tré" and "sei".
+    if (cardinal.endsWith("tré")) word = cardinal.slice(0, -1) + "eesimo";
+    else if (cardinal.endsWith("sei")) word = cardinal + "esimo";
+    else word = cardinal.slice(0, -1) + "esimo";
+  }
+  return feminine ? word.slice(0, -1) + "a" : word;
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function formatNumber(n: number, style: NumberStyle, language = "en"): string {
+/**
+ * A number in the given style. Words are lowercase, except in English where they are
+ * capitalized as in "Chapter One"; headings capitalize their first letter themselves.
+ * `feminine` gives "prima" instead of "primo", as in "Parte prima".
+ */
+export function formatNumber(n: number, style: NumberStyle, language = "en", feminine = false): string {
+  const english = !language.startsWith("it");
   switch (style) {
     case "none":
       return "";
@@ -62,10 +95,31 @@ export function formatNumber(n: number, style: NumberStyle, language = "en"): st
       return toRoman(n);
     case "words":
       if (n < 1 || n > 999) return String(n);
-      return capitalize(language.startsWith("it") ? italianWords(n) : englishWords(n));
+      return english ? capitalize(englishWords(n)) : italianWords(n);
+    case "ordinal":
+      if (n < 1 || n > 999) return String(n);
+      return english ? capitalize(englishOrdinal(n)) : italianOrdinal(n, feminine);
     default:
       return String(n);
   }
+}
+
+export interface LevelHeading {
+  /** The whole heading; a line break separates number and title when chosen. */
+  text: string;
+  /** Label and number, such as "Chapter 3"; empty when not numbered. */
+  number: string;
+  /** Empty when the level shows no title. */
+  title: string;
+}
+
+/** Builds a heading from a level's choices: number style, label, title and separator. */
+export function levelHeading(level: LevelSettings, n: number, title: string, language = "en", feminine = false): LevelHeading {
+  const digits = formatNumber(n, level.numbering, language, feminine);
+  const number = digits === "" ? "" : capitalize(level.showLabel && level.label.trim() ? `${level.label.trim()} ${digits}` : digits);
+  const shownTitle = level.showTitle ? title : "";
+  const text = number && shownTitle ? number + level.separator + shownTitle : number || shownTitle;
+  return { text: capitalize(text), number, title: shownTitle };
 }
 
 /**

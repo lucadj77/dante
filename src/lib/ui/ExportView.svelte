@@ -5,6 +5,7 @@
   import type { DocxSettings, ParatextSettings, TypographySettings } from "$lib/core/settings";
   import { t } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
+  import HeadingLevel from "./HeadingLevel.svelte";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
 
@@ -12,6 +13,9 @@
   let options = $state<DocxSettings>(structuredClone($state.snapshot(project.settings.export.docx)));
   // svelte-ignore state_referenced_locally
   let typography = $state<TypographySettings>(structuredClone($state.snapshot(project.settings.export.typography)));
+  // Part and chapter headings are novel settings, shown here too because the export uses them.
+  // svelte-ignore state_referenced_locally
+  let structure = $state(structuredClone($state.snapshot(project.settings.structure)));
   // svelte-ignore state_referenced_locally
   let paratext = $state<ParatextSettings>(structuredClone($state.snapshot(project.settings.export.paratext)));
 
@@ -40,14 +44,15 @@
     return `${base}.docx`;
   }
 
-  async function save(bytes: Uint8Array): Promise<boolean> {
+  /** Where the file went: a path in the desktop app, "" for a browser download, null if cancelled. */
+  async function save(bytes: Uint8Array): Promise<string | null> {
     if (inTauri()) {
       const { save: saveDialog } = await import("@tauri-apps/plugin-dialog");
       const { writeFile } = await import("@tauri-apps/plugin-fs");
       const path = await saveDialog({ defaultPath: fileName(), filters: [{ name: "Word", extensions: ["docx"] }] });
-      if (!path) return false;
+      if (!path) return null;
       await writeFile(path, bytes);
-      return true;
+      return path;
     }
     const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
     const link = document.createElement("a");
@@ -55,12 +60,35 @@
     link.download = fileName();
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    return true;
+    return "";
+  }
+
+  let savedPath = $state<string | null>(null);
+
+  async function openFile() {
+    if (!savedPath) return;
+    try {
+      const { openPath } = await import("@tauri-apps/plugin-opener");
+      await openPath(savedPath);
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  async function openFolder() {
+    if (!savedPath) return;
+    try {
+      const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
+      await revealItemInDir(savedPath);
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
   }
 
   async function run() {
     error = "";
     message = "";
+    savedPath = null;
     busy = true;
     try {
       // The chosen options become the project's defaults for the next export.
@@ -68,12 +96,17 @@
       settings.export.docx = $state.snapshot(options);
       settings.export.typography = $state.snapshot(typography);
       settings.export.paratext = $state.snapshot(paratext);
+      settings.structure = $state.snapshot(structure);
       await project.saveSettings(settings);
       await onSaved();
       const book = await buildBook(project, { revisions });
       const bytes = await docxBytes(bookToDocx(book, project.settings.export.docx, { words: t("export.words") }));
       const pages = (book.characters / 1800).toLocaleString(undefined, { maximumFractionDigits: 1 });
-      if (await save(bytes)) message = t("export.done", { words: book.words.toLocaleString(), pages });
+      const where = await save(bytes);
+      if (where !== null) {
+        savedPath = where || null;
+        message = t("export.done", { words: book.words.toLocaleString(), pages });
+      }
     } catch (e) {
       error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -132,36 +165,26 @@
       {/each}
     </div>
     <label>{t("export.separator")} <input bind:value={options.sceneSeparator} /></label>
-    <label
-      >{t("export.headingLayout")}
-      <select bind:value={options.headingLayout}>
-        <option value="oneLine">{t("export.layoutOneLine")}</option>
-        <option value="twoLines">{t("export.layoutTwoLines")}</option>
-      </select>
-    </label>
-    <div class="row">
-      <label
-        >{t("export.sceneHeadings")}
-        <select bind:value={options.sceneHeadings}>
-          <option value="none">{t("export.sceneNone")}</option>
-          <option value="title">{t("export.sceneTitle")}</option>
-          <option value="number">{t("export.sceneNumber")}</option>
-          <option value="numberAndTitle">{t("export.sceneNumberTitle")}</option>
-        </select>
-      </label>
-      <label
-        >{t("export.sceneNumbering")}
-        <select bind:value={options.sceneNumbering} disabled={options.sceneHeadings === "none" || options.sceneHeadings === "title"}>
-          <option value="arabic">1, 2, 3</option>
-          <option value="roman">I, II, III</option>
-          <option value="words">{t("numbering.words")}</option>
-        </select>
-      </label>
-    </div>
-    {#if options.sceneHeadings !== "none"}
-      <label class="check"><input type="checkbox" bind:checked={options.sceneNumbersRestart} /> {t("export.sceneRestart")}</label>
-      <label class="check"><input type="checkbox" bind:checked={options.omitSingleSceneHeading} /> {t("export.sceneOmitSingle")}</label>
+    {#if project.settings.structure.parts}
+      <fieldset>
+        <legend>{t("kind.part")}</legend>
+        <HeadingLevel bind:level={structure.part} language={project.settings.language} sample={t("sample.partTitle")} feminine />
+      </fieldset>
     {/if}
+    <fieldset>
+      <legend>{t("kind.chapter")}</legend>
+      <HeadingLevel bind:level={structure.chapter} language={project.settings.language} sample={t("sample.chapterTitle")} />
+    </fieldset>
+    <fieldset>
+      <legend>{t("kind.scene")}</legend>
+      <HeadingLevel bind:level={options.scene} language={project.settings.language} sample={t("sample.sceneTitle")} />
+      {#if options.scene.numbering !== "none"}
+        <label class="check"><input type="checkbox" bind:checked={options.sceneNumbersRestart} /> {t("export.sceneRestart")}</label>
+      {/if}
+      {#if options.scene.numbering !== "none" || options.scene.showTitle}
+        <label class="check"><input type="checkbox" bind:checked={options.omitSingleSceneHeading} /> {t("export.sceneOmitSingle")}</label>
+      {/if}
+    </fieldset>
     <p class="hint">{t("export.publishedTitleHint")}</p>
 
     <h4>{t("export.typography")}</h4>
@@ -174,6 +197,23 @@
         <option value="curly">{t("export.quotesCurly")}</option>
       </select>
     </label>
+    <label
+      >{t("export.dashes")}
+      <select bind:value={typography.dashes}>
+        <option value="keep">{t("export.dashesKeep")}</option>
+        <option value="enSpaced">{t("export.dashesEnSpaced")}</option>
+        <option value="emSpaced">{t("export.dashesEmSpaced")}</option>
+        <option value="emClosed">{t("export.dashesEmClosed")}</option>
+      </select>
+    </label>
+    <label
+      >{t("export.ranges")}
+      <select bind:value={typography.ranges}>
+        <option value="keep">{t("export.rangesKeep")}</option>
+        <option value="enDash">{t("export.rangesEnDash")}</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" bind:checked={typography.dialogueDash} /> {t("export.dialogueDash")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.apostrophes} /> {t("export.apostrophes")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.ellipsis} /> {t("export.ellipsis")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.spaces} /> {t("export.spaces")}</label>
@@ -196,10 +236,22 @@
       </select>
     </label>
     <div class="actions">
-      <button class="primary" type="submit" disabled={busy}>{t("export.run")}</button>
-      {#if message}<span>{message}</span>{/if}
-      {#if error}<span class="error">{error}</span>{/if}
+      <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run")}</button>
+      {#if error}<span class="error" role="alert">{error}</span>{/if}
     </div>
+    {#if message}
+      <div class="success" role="status">
+        <strong>{t("export.success")}</strong>
+        <span>{message}</span>
+        {#if savedPath}
+          <span class="path">{savedPath}</span>
+          <div class="buttons">
+            <button type="button" onclick={openFile}>{t("export.openFile")}</button>
+            <button type="button" onclick={openFolder}>{t("export.openFolder")}</button>
+          </div>
+        {/if}
+      </div>
+    {/if}
     <p class="muted">{t("export.later")}</p>
   </form>
 </div>
@@ -220,6 +272,21 @@
   h3 {
     font-size: 15px;
     margin: 0 0 12px;
+  }
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px 12px;
+    margin: 0 0 12px;
+    display: grid;
+    gap: 8px;
+  }
+  legend {
+    font-size: 13px;
+    padding: 0 4px;
+  }
+  fieldset label.check {
+    margin: 0;
   }
   h4 {
     font-size: 13px;
@@ -267,6 +334,26 @@
     align-items: center;
     gap: 12px;
     margin-top: 20px;
+  }
+  .success {
+    display: grid;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: var(--bg-panel);
+    font-size: 14px;
+  }
+  .success .path {
+    color: var(--text-muted);
+    font-size: 12px;
+    word-break: break-all;
+  }
+  .buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
   }
   .muted {
     color: var(--text-muted);

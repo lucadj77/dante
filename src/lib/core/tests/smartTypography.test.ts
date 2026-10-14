@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { smartReplacement } from "$lib/editor/smartTypography";
 import type { TypographySettings } from "../settings";
 
-const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, whileTyping: true };
+const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "enSpaced", ranges: "enDash", dialogueDash: true, whileTyping: true };
 
 describe("typing", () => {
   it("opens and closes quotes from the context", () => {
@@ -23,5 +23,18 @@ describe("typing", () => {
     expect(smartReplacement("[[L", "'", it_)).toBeNull();
     expect(smartReplacement("`a", '"', it_)).toBeNull();
     expect(smartReplacement("l", "'", { ...it_, apostrophes: false })).toBeNull();
+  });
+});
+
+describe("typing dashes", () => {
+  it("turns a spaced hyphen into the chosen aside dash", () => {
+    expect(smartReplacement("Lui -", " ", it_)).toEqual({ back: 2, insert: " – " });
+    expect(smartReplacement("He -", " ", { ...it_, dashes: "emClosed" })).toEqual({ back: 2, insert: "—" });
+    expect(smartReplacement("socio-", " ", it_)).toBeNull();
+  });
+
+  it("opens dialogue only when chosen", () => {
+    expect(smartReplacement("-", " ", it_)).toEqual({ back: 1, insert: "— " });
+    expect(smartReplacement("-", " ", { ...it_, dialogueDash: false })).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import type { ProjectFs } from "./fs";
 import { readProperties } from "./frontmatter";
 import { parseName } from "./naming";
-import { formatHeading, formatNumber } from "./numbering";
+import { levelHeading, type LevelHeading } from "./numbering";
 import { basename, isMarkdown, join, stripExt } from "./path";
 import type { NovelSettings } from "./settings";
 
@@ -121,13 +121,7 @@ export function enclosing(root: ManuscriptNode, path: string, kinds: NodeKind[])
   return node;
 }
 
-export interface HeadingInfo {
-  /** The whole heading on one line, such as "Chapter 3: The letter". */
-  text: string;
-  /** Label and number without the title, such as "Chapter 3"; empty when not numbered. */
-  number: string;
-  title: string;
-}
+export type HeadingInfo = LevelHeading;
 
 /**
  * Heading of each part and chapter. Prologues and epilogues are not numbered and show
@@ -143,12 +137,8 @@ export function headingInfo(
   let part = 0;
   let chapter = 0;
   const numbered = (node: ManuscriptNode, level: NovelSettings["structure"]["part"], n: number) => {
-    const values = { label: level.label, number: formatNumber(n, level.numbering, settings.language), title: titleOf(node) };
-    out.set(node.path, {
-      text: formatHeading(level.pattern, values),
-      number: level.numbering === "none" ? "" : formatHeading(level.pattern, { ...values, title: "" }),
-      title: level.pattern.includes("{title}") ? values.title : "",
-    });
+    // "Parte prima": parts are feminine in Italian.
+    out.set(node.path, levelHeading(level, n, titleOf(node), settings.language, level === settings.structure.part));
   };
   const visit = (node: ManuscriptNode) => {
     for (const child of node.children) {

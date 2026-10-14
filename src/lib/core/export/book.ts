@@ -3,7 +3,7 @@ import { GFM } from "@lezer/markdown";
 import type { SyntaxNode } from "@lezer/common";
 import { readProperties, splitNote } from "../frontmatter";
 import { headingInfo, type ContainerKind, type ManuscriptNode } from "../manuscript";
-import { formatNumber } from "../numbering";
+import { levelHeading } from "../numbering";
 import type { Project } from "../project";
 import type { ParatextSettings } from "../settings";
 import { applyTypography } from "../typography";
@@ -28,20 +28,15 @@ export type Block =
   | { type: "break" };
 
 export interface BookScene {
-  /** Scene number in the chosen style; empty when scene headings show no number. */
-  number: string;
-  /** Title shown above the scene; empty when scene headings show no title. */
-  title: string;
+  /** Heading above the scene, possibly on two lines; empty when scenes have none. */
+  heading: string;
   blocks: Block[];
 }
 
 export interface BookEntry {
   kind: ContainerKind | "loose";
-  /** The whole heading on one line. */
+  /** The whole heading; a line break separates number and title when chosen. */
   heading: string;
-  /** Label and number, such as "Chapter 3", for headings on two lines. */
-  number: string;
-  title: string;
   scenes: BookScene[];
 }
 
@@ -214,27 +209,18 @@ export async function buildBook(
     words += countWords(blocks);
     characters += countCharacters(blocks);
     sceneCount++;
-    const showNumber = docx.sceneHeadings === "number" || docx.sceneHeadings === "numberAndTitle";
-    const showTitle = docx.sceneHeadings === "title" || docx.sceneHeadings === "numberAndTitle";
-    return {
-      number: showNumber ? formatNumber(sceneCount, docx.sceneNumbering, settings.language) : "",
-      title: showTitle ? titleOf(node) : "",
-      blocks,
-    };
+    const heading = levelHeading(docx.scene, sceneCount, titleOf(node), settings.language);
+    return { heading: heading.text, blocks };
   };
 
   const entryFor = (node: ManuscriptNode, kind: BookEntry["kind"]): BookEntry => {
-    const info = heads.get(node.path);
-    return { kind, heading: info?.text ?? titleOf(node), number: info?.number ?? "", title: info?.title ?? titleOf(node), scenes: [] };
+    return { kind, heading: heads.get(node.path)?.text ?? titleOf(node), scenes: [] };
   };
 
   const readScenes = async (entry: BookEntry, scenes: ManuscriptNode[]) => {
     if (docx.sceneNumbersRestart) sceneCount = 0;
     for (const scene of scenes) entry.scenes.push(await readScene(scene));
-    if (docx.omitSingleSceneHeading && entry.scenes.length === 1) {
-      entry.scenes[0].number = "";
-      entry.scenes[0].title = "";
-    }
+    if (docx.omitSingleSceneHeading && entry.scenes.length === 1) entry.scenes[0].heading = "";
   };
 
   const visit = async (node: ManuscriptNode) => {
@@ -243,7 +229,7 @@ export async function buildBook(
     const flushLoose = async () => {
       if (!loose.length) return;
       const entry: BookEntry = node.kind === "manuscript" || node.kind === "part"
-        ? { kind: "loose", heading: "", number: "", title: "", scenes: [] }
+        ? { kind: "loose", heading: "", scenes: [] }
         : entryFor(node, node.kind as ContainerKind);
       entries.push(entry);
       await readScenes(entry, loose);
@@ -270,7 +256,7 @@ export async function buildBook(
   };
 
   if (root.kind === "scene") {
-    const entry: BookEntry = { kind: "loose", heading: "", number: "", title: "", scenes: [] };
+    const entry: BookEntry = { kind: "loose", heading: "", scenes: [] };
     entries.push(entry);
     await readScenes(entry, [root]);
   } else {
