@@ -9,6 +9,7 @@
   import SettingsView from "./SettingsView.svelte";
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
+  import QuickSearch from "./QuickSearch.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
   import type { NoteIndex } from "$lib/core/notes";
@@ -138,9 +139,22 @@
     }),
   });
 
+  /** The search opened from the section bar, over the section. */
+  let searching = $state(false);
+
   /** Cmd/Ctrl with + or - changes the size of the text, with 0 restores it. */
   function onKey(e: KeyboardEvent) {
+    if (searching && e.key === "Escape") {
+      searching = false;
+      return;
+    }
     if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    // Cmd/Ctrl+Shift+F opens the search, as in Obsidian.
+    if (e.shiftKey && e.key.toLowerCase() === "f") {
+      e.preventDefault();
+      searching = !searching;
+      return;
+    }
     const step = e.key === "+" || e.key === "=" ? 1 : e.key === "-" || e.key === "_" ? -1 : e.key === "0" ? 0 : null;
     if (step === null) return;
     e.preventDefault();
@@ -200,18 +214,33 @@
           data-section={id}
           {onclick}
         >
-          <span class="icon" aria-hidden="true">{icon}</span>
+          <span class="icon" aria-hidden="true">
+            {#if id === "search"}
+              <!-- No font draws a magnifier the size of the other icons. -->
+              <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <circle cx="8.5" cy="8.5" r="5.5" /><path d="M12.6 12.6 17 17" />
+              </svg>
+            {:else}{icon}{/if}
+          </span>
           {#if layout.wideNav}<span class="label">{label}</span>{/if}
         </button>
       {/snippet}
+      {@render item("search", "", t("side.search"), searching, () => (searching = !searching))}
+      <hr />
       {#each sections as s (s.id)}
-        {@render item(s.id, s.icon, t(`section.${s.id}` as MessageKey), section === s.id, () => go(s.id))}
+        {@render item(s.id, s.icon, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); })}
       {/each}
       <div class="spacer"></div>
       {@render item("settings", "⚙", t("section.settings"), section === "settings", () => go("settings"))}
       {@render item("close", "⏏", t("app.close"), undefined, onClose)}
       {@render item("names", layout.wideNav ? "«" : "»", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
     </nav>
+  {/if}
+  {#if searching && !fullscreen}
+    <div class="search-backdrop" role="presentation" onmousedown={() => (searching = false)}></div>
+    <div class="search-drawer" class:wide={layout.wideNav} role="dialog" aria-label={t("side.search")}>
+      <QuickSearch {project} version={rev} {diskRev} onOpened={() => (searching = false)} />
+    </div>
   {/if}
   <div class="content" class:with-back={!fullscreen}>
     {#if !fullscreen}
@@ -315,6 +344,33 @@
   nav.wide {
     width: 180px;
   }
+  nav hr {
+    width: 100%;
+    margin: 2px 0;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+  .search-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+  }
+  .search-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 53px;
+    z-index: 31;
+    width: min(460px, calc(100vw - 80px));
+    overflow: auto;
+    padding: 12px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
+  }
+  .search-drawer.wide {
+    left: 180px;
+  }
   .section {
     display: flex;
     align-items: center;
@@ -333,6 +389,10 @@
     flex: none;
     font-size: 18px;
     text-align: center;
+  }
+  .section .icon svg {
+    display: block;
+    margin: 0 auto;
   }
   .section .label {
     font-size: 14px;

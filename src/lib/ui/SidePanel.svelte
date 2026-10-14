@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  type Tab = "properties" | "links" | "search";
+  type Tab = "properties" | "links";
   // The chosen tab stays the same across sections and notes.
   let remembered = $state<{ tab: Tab }>({ tab: "properties" });
 </script>
@@ -9,7 +9,6 @@
   import type { Project } from "$lib/core/project";
   import { t } from "$lib/state.svelte";
   import LinksPanel from "./LinksPanel.svelte";
-  import QuickSearch from "./QuickSearch.svelte";
 
   interface Props {
     project: Project;
@@ -22,7 +21,7 @@
   }
   let p: Props = $props();
 
-  const tabs: Tab[] = ["properties", "links", "search"];
+  const tabs: Tab[] = ["properties", "links"];
 </script>
 
 <aside class="side">
@@ -34,10 +33,8 @@
   <div class="body">
     {#if remembered.tab === "properties"}
       {@render p.properties()}
-    {:else if remembered.tab === "links"}
-      <LinksPanel project={p.project} path={p.path} version={p.version} />
     {:else}
-      <QuickSearch project={p.project} version={p.version} diskRev={p.diskRev} />
+      <LinksPanel project={p.project} path={p.path} version={p.version} />
     {/if}
   </div>
 </aside>

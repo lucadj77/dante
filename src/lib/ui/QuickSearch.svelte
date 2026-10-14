@@ -11,6 +11,8 @@
     project: Project;
     version: number;
     diskRev: number;
+    /** After a result is opened where it belongs. */
+    onOpened?: () => void;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -49,7 +51,7 @@
   {#if preview}
     <div class="preview-bar">
       <button onclick={() => (preview = null)}>‹ {t("search.results")}</button>
-      <button onclick={() => nav?.open(preview!)}>{t("search.open")}</button>
+      <button onclick={() => { nav?.open(preview!); p.onOpened?.(); }}>{t("search.open")}</button>
     </div>
     <div class="preview">
       {#key preview}

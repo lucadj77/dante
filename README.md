@@ -66,9 +66,11 @@ My novel/
 - Wikilinks with aliases: a click follows a link (Cmd/Ctrl+click on the line being edited),
   `[[` suggests notes and their aliases, links to missing notes are drawn fainter. Renaming or
   moving anything fixes the links to it.
-- A right panel with three tabs in every section: properties, links (backlinks with the lines
-  that hold them, outgoing links) and a quick search over names, aliases and text that opens
-  results beside the text.
+- A right panel with two tabs in every section: properties and links (backlinks with the lines
+  that hold them, outgoing links). Both side panels can be hidden from the top bar.
+- Search from the section bar (Cmd/Ctrl+Shift+F) over names, aliases and text, with a preview of
+  each result beside the text.
+- The section bar names its icons at once on hover, or beside them when widened.
 
 ## Development
 
