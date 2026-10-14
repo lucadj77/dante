@@ -3,7 +3,7 @@ import { buildBook, cleanSource, markdownToBlocks } from "../export/book";
 import { bookToDocx, docxBytes } from "../export/docx";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
-import { defaultSettings } from "../settings";
+import { defaultSettings, parseSettings } from "../settings";
 
 describe("markdown to blocks", () => {
   it("keeps emphasis and drops markup", () => {
@@ -90,6 +90,18 @@ describe("book", () => {
       expect(xml).toContain("To M.");
       expect(xml).toContain("Acknowledgements");
     }
+  });
+
+  it("uses the chosen page size whatever the profile", async () => {
+    const fs = new MemoryFs({ "Manuscript/010 Return/010 Arrival.md": "The train." });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    const docx = project.settings.export.docx;
+    const a5 = await documentXml(await docxBytes(bookToDocx(book, { ...docx, profile: "manuscript", pageSize: "a5" }, { words: "words" })));
+    expect(a5).toMatch(/w:pgSz w:w="8391" w:h="11906"/);
+    const custom = { ...docx, profile: "typeset" as const, pageSize: "custom" as const, pageWidth: 17, pageHeight: 24 };
+    expect(await documentXml(await docxBytes(bookToDocx(book, custom, { words: "words" })))).toMatch(/w:pgSz w:w="9638" w:h="13606"/);
+    expect(parseSettings("export:\n  docx:\n    profile: typeset\n").export.docx.pageSize).toBe("a5");
   });
 });
 

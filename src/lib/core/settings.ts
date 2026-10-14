@@ -49,9 +49,33 @@ export interface ParatextSettings {
   colophon: string;
 }
 
+/** Page sizes offered on export, width and height in centimetres. */
+export const PAGE_SIZES = {
+  a4: [21, 29.7],
+  letter: [21.59, 27.94],
+  a5: [14.8, 21],
+  "15x21": [15, 21],
+  "14x21": [14, 21],
+  "13x20": [13, 20],
+  "12x19": [12, 19],
+  "17x24": [17, 24],
+  // Paperback trim sizes common with English-language printers, in inches.
+  "6x9in": [15.24, 22.86],
+  "5.5x8.5in": [13.97, 21.59],
+  "5x8in": [12.7, 20.32],
+  bformat: [12.9, 19.8],
+} as const satisfies Record<string, readonly [number, number]>;
+
+export type PageSize = keyof typeof PAGE_SIZES | "custom";
+
 export interface DocxSettings {
   /** Standard manuscript for agents and publishers, or a typeset, readable book. */
   profile: "manuscript" | "typeset";
+  /** Chosen apart from the profile; "custom" uses pageWidth and pageHeight. */
+  pageSize: PageSize;
+  /** Centimetres, for a custom page size. */
+  pageWidth: number;
+  pageHeight: number;
   font: string;
   /** Points. */
   fontSize: number;
@@ -152,6 +176,9 @@ export function defaultSettings(language = "en"): NovelSettings {
     export: {
       docx: {
         profile: "manuscript",
+        pageSize: "a4",
+        pageWidth: 21,
+        pageHeight: 29.7,
         font: "Times New Roman",
         fontSize: 12,
         lineSpacing: 2,
@@ -208,6 +235,8 @@ export function parseSettings(text: string): NovelSettings {
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  // Before the page size could be chosen, a typeset book was always A5.
+  if (docx.pageSize === undefined && docx.profile === "typeset") settings.export.docx.pageSize = "a5";
   // Files written before the heading choices existed had a template such as "{label} {number}: {title}".
   const structure = isObject(raw) && isObject(raw.structure) ? raw.structure : {};
   for (const kind of ["part", "chapter"] as const) {

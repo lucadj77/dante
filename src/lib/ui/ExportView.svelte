@@ -2,8 +2,8 @@
   import { buildBook } from "$lib/core/export/book";
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
   import type { Project } from "$lib/core/project";
-  import type { DocxSettings, ParatextSettings, TypographySettings } from "$lib/core/settings";
-  import { t } from "$lib/state.svelte";
+  import { PAGE_SIZES, type DocxSettings, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import { app, t } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
   import HeadingLevel from "./HeadingLevel.svelte";
 
@@ -23,6 +23,17 @@
     manuscript: { font: "Times New Roman", fontSize: 12, lineSpacing: 2, indent: 1.27, sceneSeparator: "#" },
     typeset: { font: "Garamond", fontSize: 11, lineSpacing: 1.15, indent: 0.6, sceneSeparator: "* * *" },
   };
+
+  const NAMES: Partial<Record<keyof typeof PAGE_SIZES, string>> = { a4: "A4", a5: "A5", letter: "Letter", bformat: "B-format" };
+
+  /** "A5 (14,8 × 21 cm)", or inches for the sizes printers give in inches. */
+  function pageLabel(size: keyof typeof PAGE_SIZES): string {
+    const [w, h] = PAGE_SIZES[size];
+    const n = (x: number) => x.toLocaleString(app.settings.language);
+    const inches = size.endsWith("in") || size === "letter";
+    const dims = inches ? `${n(+(w / 2.54).toFixed(2))} × ${n(+(h / 2.54).toFixed(2))} in` : `${n(w)} × ${n(h)} cm`;
+    return NAMES[size] ? `${NAMES[size]} (${dims})` : dims;
+  }
 
   /** Each layout comes with its usual font, size and spacing, which can then be changed. */
   function setProfile(profile: DocxSettings["profile"]) {
@@ -133,6 +144,21 @@
     </label>
 
     <h4>{t("export.page")}</h4>
+    <div class="row">
+      <label
+        >{t("export.pageSize")}
+        <select bind:value={options.pageSize}>
+          {#each Object.keys(PAGE_SIZES) as size (size)}
+            <option value={size}>{pageLabel(size as keyof typeof PAGE_SIZES)}</option>
+          {/each}
+          <option value="custom">{t("export.pageCustom")}</option>
+        </select>
+      </label>
+      {#if options.pageSize === "custom"}
+        <label>{t("export.pageWidth")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageWidth} /></label>
+        <label>{t("export.pageHeight")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageHeight} /></label>
+      {/if}
+    </div>
     <label>{t("export.font")} <input bind:value={options.font} /></label>
     <div class="row">
       <label>{t("export.fontSize")} <input type="number" min="8" max="20" bind:value={options.fontSize} /></label>

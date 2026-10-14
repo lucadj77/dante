@@ -15,7 +15,7 @@ import {
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
-import type { DocxSettings, Separator } from "../settings";
+import { PAGE_SIZES, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, Run } from "./book";
 
 // Every paragraph uses a named Word style and carries no direct formatting, so that
@@ -230,10 +230,15 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     }
   }
 
-  const page = typeset
-    // A5, the size of a paperback page, with book margins.
-    ? { size: { width: 8391, height: 11906 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134, header: 567, footer: 567 } }
-    : { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } };
+  const [width, height] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4;
+  const twips = (cm: number) => Math.round((cm / 2.54) * 1440);
+  // Book-sized pages have narrower margins than office paper, where the manuscript keeps an inch.
+  const small = Math.min(width, height) < 18;
+  const margin = twips(small ? 2 : 2.54);
+  const page = {
+    size: { width: twips(width), height: twips(height) },
+    margin: { top: margin, bottom: margin, left: margin, right: margin, header: twips(small ? 1 : 1.25), footer: twips(small ? 1 : 1.25) },
+  };
 
   const surname = book.author.trim().split(/\s+/).pop() ?? "";
   const header = !opts.header
