@@ -209,7 +209,6 @@
           </select>
         </label>
       </div>
-      <label class="check"><input type="checkbox" bind:checked={typography.dialogueComma} /> {t("export.dialogueComma")}</label>
     {/if}
     <label
       >{t("export.dashes")}

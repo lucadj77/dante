@@ -29,8 +29,6 @@ export interface TypographySettings {
   quotes: "keep" | "guillemets" | "curly" | "dash";
   /** Dash used for dialogue when quotes is "dash": em dash (—) or en dash (–). */
   dialogueDash: "em" | "en";
-  /** Keeps a comma before the dash that closes a line: — Vieni, — disse. Otherwise — Vieni — disse. */
-  dialogueComma: boolean;
   /** l'amico becomes l’amico. */
   apostrophes: boolean;
   /** ... becomes …, and E' becomes È. */
@@ -183,7 +181,6 @@ export function defaultSettings(language = "en"): NovelSettings {
         dashes: language.startsWith("it") ? "enSpaced" : language.startsWith("en") ? "emClosed" : "emSpaced",
         ranges: "enDash",
         dialogueDash: "em",
-        dialogueComma: true,
         whileTyping: true,
       },
       paratext: {

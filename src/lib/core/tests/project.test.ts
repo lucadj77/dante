@@ -144,3 +144,18 @@ describe("new project", () => {
     expect(await fs.readText("dante.yaml")).toContain("title: Il faro");
   });
 });
+
+describe("unnumbered chapters", () => {
+  it("shows only the title and does not count them", async () => {
+    const fs = new MemoryFs({
+      "Manuscript/000 Prologo/000 Prologo.md": "---\nkind: prologue\n---\n",
+      "Manuscript/000 Prologo/010 A.md": "",
+      "Manuscript/010 Uno/010 B.md": "",
+      "Manuscript/020 Interludio/020 Interludio.md": "---\nnumbered: false\n---\n",
+      "Manuscript/020 Interludio/010 C.md": "",
+      "Manuscript/030 Due/010 D.md": "",
+    });
+    const project = await Project.open(fs);
+    expect([...headings(project.manuscript, project.settings).values()]).toEqual(["Prologo", "Chapter 1: Uno", "Interludio", "Chapter 2: Due"]);
+  });
+});

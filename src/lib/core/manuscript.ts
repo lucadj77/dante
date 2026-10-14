@@ -10,6 +10,9 @@ export type NodeKind = ContainerKind | "scene" | "manuscript";
 
 export const CONTAINER_KINDS: ContainerKind[] = ["part", "chapter", "prologue", "epilogue"];
 
+/** Folder note property: `numbered: false` leaves a chapter or part without a number. */
+export const NUMBERED = "numbered";
+
 export interface ManuscriptNode {
   kind: NodeKind;
   /** Folder for containers, file for scenes. Also the node's identity. */
@@ -20,6 +23,8 @@ export interface ManuscriptNode {
   title: string;
   /** The folder note holding a container's properties, when it exists. */
   notePath: string | null;
+  /** A chapter or part with `numbered: false` in its folder note: no number, and not counted. */
+  unnumbered?: boolean;
   children: ManuscriptNode[];
 }
 
@@ -75,9 +80,12 @@ async function loadContainer(fs: ProjectFs, dir: string, depth: number, settings
   const notePath = folderNotePath(dir);
   let kind: ContainerKind = settings.structure.parts && depth === 1 ? "part" : "chapter";
   let hasNote = false;
+  let unnumbered = false;
   if (await fs.exists(notePath)) {
     hasNote = true;
-    const declared = readProperties(await fs.readText(notePath)).kind;
+    const properties = readProperties(await fs.readText(notePath));
+    unnumbered = properties[NUMBERED] === false;
+    const declared = properties.kind;
     if (typeof declared === "string" && (CONTAINER_KINDS as string[]).includes(declared)) {
       kind = declared as ContainerKind;
     }
@@ -90,6 +98,7 @@ async function loadContainer(fs: ProjectFs, dir: string, depth: number, settings
     order,
     title,
     notePath: hasNote ? notePath : null,
+    unnumbered,
     children: await loadChildren(fs, dir, depth, settings),
   };
 }
@@ -142,7 +151,10 @@ export function headingInfo(
   };
   const visit = (node: ManuscriptNode) => {
     for (const child of node.children) {
-      if (child.kind === "part") {
+      if ((child.kind === "part" || child.kind === "chapter") && child.unnumbered) {
+        // Shown like a prologue: the title alone, and the count goes on without it.
+        out.set(child.path, { text: titleOf(child), number: "", title: titleOf(child) });
+      } else if (child.kind === "part") {
         part++;
         if (settings.structure.chapter.restartEachPart) chapter = 0;
         numbered(child, settings.structure.part, part);

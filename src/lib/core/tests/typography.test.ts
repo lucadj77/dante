@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyTypography } from "../typography";
 import type { TypographySettings } from "../settings";
 
-const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "keep", ranges: "keep", dialogueDash: "em", dialogueComma: true, whileTyping: true };
+const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "keep", ranges: "keep", dialogueDash: "em", whileTyping: true };
 
 describe("typography", () => {
   it("applies Italian conventions", () => {
@@ -66,12 +66,11 @@ describe("dialogue with dashes", () => {
     expect(applyTypography("«Vieni.»", rules)).toBe("— Vieni.");
     expect(applyTypography("«Vieni» disse lui.", rules)).toBe("— Vieni — disse lui.");
     expect(applyTypography("«Vieni,» disse lui, «è tardi.»", rules)).toBe("— Vieni, — disse lui, — è tardi.");
-    expect(applyTypography('"Vieni", disse.', rules)).toBe("— Vieni, — disse.");
+    expect(applyTypography('"Vieni", disse.', rules)).toBe("— Vieni —, disse.");
     expect(applyTypography("Si voltò. «Vieni.»", rules)).toBe("Si voltò. — Vieni.");
   });
 
-  it("can drop the comma, use an en dash, and keeps curly quotes as quotations", () => {
-    expect(applyTypography("«Vieni,» disse.", { ...rules, dialogueComma: false })).toBe("— Vieni — disse.");
+  it("uses an en dash on request and keeps curly quotes as quotations", () => {
     expect(applyTypography("«Vieni» disse.", { ...rules, dialogueDash: "en" })).toBe("– Vieni – disse.");
     expect(applyTypography("«Ha detto “domani”» rispose.", rules)).toBe("— Ha detto “domani” — rispose.");
   });

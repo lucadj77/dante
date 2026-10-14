@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode } from "$lib/core/manuscript";
+  import { findNode, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import type { MessageKey } from "$lib/i18n";
@@ -45,8 +45,10 @@
     }, () => (properties = {}));
   });
 
-  // `kind` lives in folder notes and is managed by the app.
-  const entries = $derived(Object.entries(properties).filter(([key]) => !(node?.kind !== "scene" && key === "kind")));
+  // `kind` and `numbered` live in folder notes and are set with the controls above the list.
+  const entries = $derived(Object.entries(properties).filter(([key]) => !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))));
+  const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
+  const kinds = $derived<ContainerKind[]>(p.project.settings.structure.parts ? ["part", "chapter", "prologue", "epilogue"] : ["chapter", "prologue", "epilogue"]);
 
   /** Lists are edited as comma-separated text. */
   function display(value: unknown): string {
@@ -117,6 +119,23 @@
           />
         {/key}
       </label>
+      {#if isContainer && node}
+        <label class="title-field">
+          <span>{t("panel.kind")}</span>
+          <select value={node.kind} onchange={(e) => update({ kind: (e.currentTarget as HTMLSelectElement).value })}>
+            {#each kinds as kind (kind)}
+              <option value={kind}>{t(`kind.${kind}` as MessageKey)}</option>
+            {/each}
+          </select>
+        </label>
+        {#if node.kind === "chapter" || node.kind === "part"}
+          <label class="check">
+            <input type="checkbox" checked={!!node.unnumbered} onchange={(e) => update({ [NUMBERED]: (e.currentTarget as HTMLInputElement).checked ? false : undefined })} />
+            {t("panel.unnumbered")}
+          </label>
+        {/if}
+        <p class="muted">{t("panel.kindHint")}</p>
+      {/if}
       {#if entries.length === 0}
         <p class="muted">{t("panel.noProperties")}</p>
       {/if}
@@ -186,6 +205,13 @@
 </aside>
 
 <style>
+  label.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
   .title-field {
     display: flex;
     flex-direction: column;

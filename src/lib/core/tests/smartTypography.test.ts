@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { smartReplacement } from "$lib/editor/smartTypography";
 import type { TypographySettings } from "../settings";
 
-const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "enSpaced", ranges: "enDash", dialogueDash: "em", dialogueComma: true, whileTyping: true };
+const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "enSpaced", ranges: "enDash", dialogueDash: "em", whileTyping: true };
 
 describe("typing", () => {
   it("opens and closes quotes from the context", () => {

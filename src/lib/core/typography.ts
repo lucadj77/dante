@@ -32,7 +32,7 @@ const ASIDE: Record<Exclude<TypographySettings["dashes"], "keep">, string> = {
  * with a dash. Dashes are left as DIALOGUE_MARK for the caller to set. Em dashes already
  * in the text count as dialogue dashes, so text typed with dashes keeps them.
  */
-function dialogueWithDashes(text: string, keepComma: boolean): string {
+function dialogueWithDashes(text: string): string {
   // Em dashes already typed are dialogue too; asides take hyphens or en dashes.
   let out = text.replace(DIALOGUE, `$1${DIALOGUE_MARK} `).replaceAll("—", DIALOGUE_MARK);
   let result = "";
@@ -51,13 +51,7 @@ function dialogueWithDashes(text: string, keepComma: boolean): string {
       result = result.trimEnd();
       // At the end of the paragraph, or before closing punctuation only, the line stays open.
       if (/^[\s.,;:!?…]*$/.test(rest)) continue;
-      // A comma after the quote goes before the dash: «Vieni», disse → — Vieni, — disse.
-      const moved = /^[,;:]/.exec(rest);
-      if (moved) {
-        result += moved[0];
-        i++;
-      }
-      if (!keepComma) result = result.replace(/,$/, "");
+      // Punctuation stays where the author put it: only the quotation mark becomes a dash.
       result += ` ${DIALOGUE_MARK}`;
       if (!/^\s/.test(out.slice(i + 1))) result += " ";
     } else {
@@ -92,7 +86,7 @@ function paragraph(text: string, rules: TypographySettings): string {
   if (rules.apostrophes) out = out.replace(STRAIGHT_APOSTROPHE, "’");
   if (rules.ellipsis) out = out.replace(THREE_DOTS, "…").replace(ACCENTED_CAPITAL, "È");
   if (rules.quotes === "dash") {
-    out = dialogueWithDashes(out, rules.dialogueComma);
+    out = dialogueWithDashes(out);
   } else if (rules.quotes !== "keep") {
     const [open, close] = rules.quotes === "guillemets" ? ["«", "»"] : ["“", "”"];
     let opening = true;
