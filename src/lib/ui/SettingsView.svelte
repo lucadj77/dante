@@ -135,7 +135,7 @@
 
 <style>
   .settings {
-    height: 100vh;
+    height: 100%;
     overflow: auto;
     padding: 24px 32px 64px;
   }

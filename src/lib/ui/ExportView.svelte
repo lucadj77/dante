@@ -210,22 +210,6 @@
         </label>
       </div>
     {/if}
-    <label
-      >{t("export.dashes")}
-      <select bind:value={typography.dashes}>
-        <option value="keep">{t("export.dashesKeep")}</option>
-        <option value="enSpaced">{t("export.dashesEnSpaced")}</option>
-        <option value="emSpaced">{t("export.dashesEmSpaced")}</option>
-        <option value="emClosed">{t("export.dashesEmClosed")}</option>
-      </select>
-    </label>
-    <label
-      >{t("export.ranges")}
-      <select bind:value={typography.ranges}>
-        <option value="keep">{t("export.rangesKeep")}</option>
-        <option value="enDash">{t("export.rangesEnDash")}</option>
-      </select>
-    </label>
     <label class="check"><input type="checkbox" bind:checked={typography.apostrophes} /> {t("export.apostrophes")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.ellipsis} /> {t("export.ellipsis")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.spaces} /> {t("export.spaces")}</label>
@@ -270,7 +254,7 @@
 
 <style>
   .export {
-    height: 100vh;
+    height: 100%;
     overflow: auto;
     padding: 24px 32px 64px;
   }

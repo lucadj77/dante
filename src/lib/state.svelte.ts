@@ -47,6 +47,15 @@ export function saveAppSettings(settings: AppSettings) {
   }
 }
 
+const FONT_MIN = 12;
+const FONT_MAX = 32;
+
+/** Makes the text larger or smaller by `step` points, or back to the default with 0. */
+export function zoom(step: number) {
+  const size = step === 0 ? defaults().fontSize : Math.min(FONT_MAX, Math.max(FONT_MIN, app.settings.fontSize + step));
+  if (size !== app.settings.fontSize) saveAppSettings({ ...app.settings, fontSize: size });
+}
+
 export function t(key: MessageKey, values?: Record<string, string | number>): string {
   return translate(app.settings.language, key, values);
 }

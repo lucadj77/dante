@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Project } from "$lib/core/project";
-  import { t } from "$lib/state.svelte";
+  import { t, zoom } from "$lib/state.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import type { MessageKey } from "$lib/i18n";
   import ManuscriptView from "./ManuscriptView.svelte";
@@ -20,6 +20,28 @@
     { id: "export", icon: "⇪" },
   ];
   let section = $state<Section>("manuscript");
+  /** Sections visited before the current one, for the Back button. */
+  let previous = $state<Section[]>([]);
+
+  function go(next: Section) {
+    if (next === section) return;
+    previous = [...previous, section];
+    section = next;
+  }
+
+  function back() {
+    section = previous.at(-1) ?? "manuscript";
+    previous = previous.slice(0, -1);
+  }
+
+  /** Cmd/Ctrl with + or - changes the size of the text, with 0 restores it. */
+  function onKey(e: KeyboardEvent) {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const step = e.key === "+" || e.key === "=" ? 1 : e.key === "-" || e.key === "_" ? -1 : e.key === "0" ? 0 : null;
+    if (step === null) return;
+    e.preventDefault();
+    zoom(step);
+  }
   let fullscreen = $state(false);
   /** Bumped whenever files change on disk, so open scenes can reload. */
   let diskRev = $state(0);
@@ -59,6 +81,8 @@
   });
 </script>
 
+<svelte:window onkeydown={onKey} />
+
 <div class="workspace" class:fullscreen>
   {#if !fullscreen}
     <nav aria-label="Sections">
@@ -67,7 +91,7 @@
           class="section"
           aria-pressed={section === s.id}
           title={t(`section.${s.id}` as MessageKey)}
-          onclick={() => (section = s.id)}
+          onclick={() => go(s.id)}
         >
           <span aria-hidden="true">{s.icon}</span>
         </button>
@@ -77,12 +101,17 @@
         class="section"
         aria-pressed={section === "settings"}
         title={t("section.settings")}
-        onclick={() => (section = "settings")}><span aria-hidden="true">⚙</span></button
+        onclick={() => go("settings")}><span aria-hidden="true">⚙</span></button
       >
       <button class="section" title={t("app.close")} onclick={onClose}><span aria-hidden="true">⏏</span></button>
     </nav>
   {/if}
-  <div class="content">
+  <div class="content" class:with-back={section !== "manuscript"}>
+    {#if section !== "manuscript"}
+      <div class="back-bar">
+        <button onclick={back}>‹ {t("nav.back")}</button>
+      </div>
+    {/if}
     {#if section === "manuscript"}
       <ManuscriptView {project} {rev} {diskRev} onReload={reload} onDiskChange={() => diskRev++} bind:fullscreen />
     {:else if section === "export"}
@@ -128,6 +157,20 @@
   .content {
     min-width: 0;
     min-height: 0;
+  }
+  .content.with-back {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .back-bar {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .back-bar button {
+    border: none;
+    background: none;
+    padding: 4px 8px;
+    color: var(--accent);
   }
   .later {
     padding: 48px;

@@ -3,7 +3,7 @@
   import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
-  import { t } from "$lib/state.svelte";
+  import { t, zoom } from "$lib/state.svelte";
   import { app } from "$lib/state.svelte";
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
@@ -132,12 +132,12 @@
 
   function splitScene(path: string, before: string, after: string) {
     editors.get(path)?.cancel();
-    void run(() => project.splitScene(path, before, after, t("untitled")), "start");
+    void run(() => project.splitScene(path, before, after, t("untitledScene")), "start");
   }
 
   function splitChapter(path: string, before: string, after: string) {
     editors.get(path)?.cancel();
-    void run(() => project.splitChapter(path, before, after, t("untitled"), t("untitled")), "start");
+    void run(() => project.splitChapter(path, before, after, t("untitled"), t("untitledScene")), "start");
   }
 
   function leave(path: string, direction: "up" | "down"): boolean {
@@ -152,7 +152,7 @@
     const parent = parentOf(tree, path);
     if (!parent) return;
     const index = parent.children.findIndex((c) => c.path === path);
-    void run(() => project.createScene(parent.path, index + 1, t("untitled")), "start");
+    void run(() => project.createScene(parent.path, index + 1, t("untitledScene")), "start");
   }
 
   /** New scene in the selected chapter, or right after the selected scene. */
@@ -160,7 +160,7 @@
     const node = selected ? findNode(selected) : null;
     if (node && node.kind === "scene") return addAfter(node.path);
     const holder = node && node.kind !== "part" ? node : (node?.children.find((c) => c.kind !== "scene") ?? node ?? tree);
-    void run(() => project.createScene(holder.path, holder.children.length, t("untitled")), "start");
+    void run(() => project.createScene(holder.path, holder.children.length, t("untitledScene")), "start");
   }
 
   function newContainer(kind: "chapter" | "part") {
@@ -173,7 +173,7 @@
     const index = topAnchor ? holder.children.findIndex((c) => c.path === topAnchor.path) + 1 : holder.children.length;
     void run(async () => {
       const created = await project.createContainer(holder.path, index, t("untitled"), kind === "part" ? "part" : undefined);
-      return project.createScene(created, 0, t("untitled"));
+      return project.createScene(created, 0, t("untitledScene"));
     }, "start");
   }
 
@@ -289,6 +289,10 @@
         <button aria-pressed={focusMode} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
         <button aria-pressed={fullscreen} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
         <button aria-pressed={raw} title={t("editor.rawHint")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
+      </div>
+      <div class="group" role="group">
+        <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
+        <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
       </div>
     </div>
     {#if error}
@@ -422,13 +426,16 @@
   }
   .column {
     margin: 0 auto;
+    /* Follows the text size, so zooming scales headings and line length too. */
+    font-family: var(--editor-font);
+    font-size: var(--editor-size);
   }
   .heading {
     font-family: var(--editor-font);
     font-weight: 400;
     text-align: center;
     margin: 48px 0 8px;
-    font-size: 1.6em;
+    font-size: 1.3em;
   }
   .heading {
     white-space: pre-line;
@@ -447,7 +454,7 @@
     width: 100%;
   }
   .heading.part {
-    font-size: 2em;
+    font-size: 1.7em;
     margin-top: 72px;
   }
   .empty {

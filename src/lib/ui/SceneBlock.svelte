@@ -116,6 +116,7 @@
         onSplitChapter: (before, after) => props.onSplitChapter(path, before, after),
         onLeave: (direction) => props.onLeave(path, direction),
         onFocus: () => props.onFocus(path),
+        formatLabels: { bold: t("format.bold"), italic: t("format.italic"), strike: t("format.strike") },
       });
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
       props.register(path, handle);

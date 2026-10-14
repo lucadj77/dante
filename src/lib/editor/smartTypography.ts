@@ -34,12 +34,6 @@ export function smartReplacement(before: string, typed: string, rules: Typograph
     const dash = before.trimStart();
     return { back: dash.length, insert: "— " };
   }
-  if (typed === " " && rules.dashes !== "keep" && /[^\s\-–—] --?$/.test(before)) {
-    const dash = before.endsWith("--") ? 2 : 1;
-    const insert = rules.dashes === "enSpaced" ? " – " : rules.dashes === "emSpaced" ? " — " : "—";
-    // The space before the dash belongs to the replacement too.
-    return { back: dash + 1, insert };
-  }
   if (typed === "." && rules.ellipsis && before.endsWith("..") && !before.endsWith("...")) return { back: 2, insert: "…" };
   return null;
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyTypography } from "../typography";
 import type { TypographySettings } from "../settings";
 
-const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "keep", ranges: "keep", dialogueDash: "em", whileTyping: true };
+const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dialogueDash: "em", whileTyping: true };
 
 describe("typography", () => {
   it("applies Italian conventions", () => {
@@ -28,39 +28,20 @@ describe("typography", () => {
   });
 });
 
-describe("dashes", () => {
-  const rules: TypographySettings = { ...all, quotes: "keep", dashes: "enSpaced", ranges: "enDash" };
-  const dialogue: TypographySettings = { ...rules, quotes: "dash" };
+describe("dialogue dashes", () => {
+  const dialogue: TypographySettings = { ...all, quotes: "dash" };
 
-  it("sets asides in the chosen style", () => {
-    const text = "Lui - disse - era stanco. Lei -- forse -- no. Poi—niente.";
-    expect(applyTypography(text, rules)).toBe("Lui – disse – era stanco. Lei – forse – no. Poi – niente.");
-    expect(applyTypography(text, { ...rules, dashes: "emSpaced" })).toBe("Lui — disse — era stanco. Lei — forse — no. Poi — niente.");
-    expect(applyTypography(text, { ...rules, dashes: "emClosed" })).toBe("Lui—disse—era stanco. Lei—forse—no. Poi—niente.");
-  });
-
-  it("keeps hyphens in compounds and turns ranges into en dashes", () => {
-    expect(applyTypography("Il dibattito socio-economico, anni 1990-2000, pp. 12 - 18.", rules)).toBe(
-      "Il dibattito socio-economico, anni 1990–2000, pp. 12–18.",
-    );
-    expect(applyTypography("1990-2000", { ...rules, ranges: "keep" })).toBe("1990-2000");
-  });
-
-  it("opens dialogue lines with an em dash and leaves rules alone", () => {
-    expect(applyTypography("- Vieni - disse - subito.", dialogue)).toBe("— Vieni – disse – subito.");
+  it("opens dialogue lines with an em dash and leaves other dashes as typed", () => {
+    expect(applyTypography("- Vieni - disse - subito.", dialogue)).toBe("— Vieni - disse - subito.");
     expect(applyTypography("-- Sì.", dialogue)).toBe("— Sì.");
     expect(applyTypography("---", dialogue)).toBe("---");
-    expect(applyTypography("- Vieni.", { ...rules, quotes: "keep" })).toBe("- Vieni.");
-  });
-
-  it("handles a dash before punctuation or at the end", () => {
-    expect(applyTypography("Lui - disse -, poi uscì.", rules)).toBe("Lui – disse –, poi uscì.");
-    expect(applyTypography("E poi -", rules)).toBe("E poi –");
+    expect(applyTypography("Anni 1990-2000, socio-economico.", dialogue)).toBe("Anni 1990-2000, socio-economico.");
+    expect(applyTypography("- Vieni.", { ...dialogue, quotes: "keep" })).toBe("- Vieni.");
   });
 });
 
 describe("dialogue with dashes", () => {
-  const rules: TypographySettings = { ...all, quotes: "dash", dashes: "enSpaced", ranges: "enDash" };
+  const rules: TypographySettings = { ...all, quotes: "dash" };
 
   it("opens each line with a dash and closes it only before narration", () => {
     expect(applyTypography("«Vieni.»", rules)).toBe("— Vieni.");
@@ -75,7 +56,8 @@ describe("dialogue with dashes", () => {
     expect(applyTypography("«Ha detto “domani”» rispose.", rules)).toBe("— Ha detto “domani” — rispose.");
   });
 
-  it("keeps dialogue dashes apart from aside dashes", () => {
-    expect(applyTypography("— Vieni — disse - piano - lui.", rules)).toBe("— Vieni – disse – piano – lui.".replace("Vieni –", "Vieni —"));
+  it("keeps dialogue dashes typed by the author", () => {
+    expect(applyTypography("— Vieni — disse - piano - lui.", rules)).toBe("— Vieni — disse - piano - lui.");
+    expect(applyTypography("— Vieni — disse.", { ...rules, dialogueDash: "en" })).toBe("– Vieni – disse.");
   });
 });

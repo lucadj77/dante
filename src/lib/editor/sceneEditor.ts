@@ -2,6 +2,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import { formatting, type FormattingLabels } from "./formatting";
 import { focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
 import { smartTypography } from "./smartTypography";
@@ -23,6 +24,8 @@ export interface SceneEditorOptions {
   /** Arrow keys past the first or last line move to the neighbouring scene. */
   onLeave?: (direction: "up" | "down") => boolean;
   onFocus?: () => void;
+  /** Names of the formatting buttons shown over a selection. */
+  formatLabels: FormattingLabels;
 }
 
 export interface SceneEditor {
@@ -73,6 +76,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     }),
     EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
     modes.of([]),
+    formatting(options.formatLabels),
   ];
   if (options.preview) extensions.push(livePreview);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));

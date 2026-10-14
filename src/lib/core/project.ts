@@ -159,9 +159,12 @@ export class Project {
     if (parentPath === path || parentPath.startsWith(path + "/")) throw new Error("Cannot move an item into itself");
     const siblings = parent.children.filter((c) => c.path !== path);
     const clamped = Math.max(0, Math.min(index, siblings.length));
-    const sequence = [...siblings.slice(0, clamped), node, ...siblings.slice(clamped)];
+    // In its new place the item may need another title, so it is not taken for a folder note.
+    const clash = parent.kind !== "manuscript" && parent.title.toLowerCase() === node.title.toLowerCase();
+    const moved = clash ? { ...node, title: this.uniqueTitle(parent, node.title, path) } : node;
+    const sequence = [...siblings.slice(0, clamped), moved, ...siblings.slice(clamped)];
     // The moved item gets a new number; its siblings keep theirs where they can.
-    const orders = assignOrders(sequence.map((n) => (n === node ? null : n.order)));
+    const orders = assignOrders(sequence.map((n) => (n === moved ? null : n.order)));
     const moves = this.orderMovesFrom(parentPath, sequence, orders);
     await this.apply(moves);
     return this.movedPath(moves, path);
@@ -258,8 +261,16 @@ export class Project {
     return path + ext;
   }
 
+  /**
+   * A title not used by the item's siblings nor by its container: a child named like its
+   * folder would be read as the folder note. A renamed container also avoids its
+   * children's titles.
+   */
   private uniqueTitle(parent: ManuscriptNode, title: string, except?: string): string {
     const taken = new Set(parent.children.filter((c) => c.path !== except).map((c) => c.title.toLowerCase()));
+    if (parent.kind !== "manuscript") taken.add(parent.title.toLowerCase());
+    const self = except ? findNode(this.manuscript, except) : null;
+    for (const child of self?.children ?? []) taken.add(child.title.toLowerCase());
     if (!taken.has(title.toLowerCase())) return title;
     let n = 2;
     while (taken.has(`${title} ${n}`.toLowerCase())) n++;

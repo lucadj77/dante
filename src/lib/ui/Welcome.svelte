@@ -85,7 +85,7 @@
       const { project } = await Project.create(
         fs,
         { title: title.trim(), author: author.trim(), language },
-        { chapter: t("untitled"), scene: t("untitled") },
+        { chapter: t("untitled"), scene: t("untitledScene") },
       );
       // The author's name is offered again next time.
       if (author.trim() && !app.settings.userName) saveAppSettings({ ...app.settings, userName: author.trim() });

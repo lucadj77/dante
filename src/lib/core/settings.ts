@@ -35,14 +35,7 @@ export interface TypographySettings {
   ellipsis: boolean;
   /** Removes double spaces and spaces before punctuation. */
   spaces: boolean;
-  /**
-   * Dashes that set off an aside: "parola – inciso – parola" (en dash with spaces),
-   * "parola — inciso — parola" (em dash with spaces), "word—aside—word" (em dash, closed).
-   */
-  dashes: "keep" | "enSpaced" | "emSpaced" | "emClosed";
-  /** Number ranges such as 1990-2000: hyphen, or en dash as in 1990–2000. */
-  ranges: "keep" | "enDash";
-  /** Quotes, apostrophes, ellipses and dashes are also corrected while typing. */
+  /** Quotes, apostrophes, ellipses and dialogue dashes are also corrected while typing. */
   whileTyping: boolean;
 }
 
@@ -178,8 +171,6 @@ export function defaultSettings(language = "en"): NovelSettings {
         apostrophes: true,
         ellipsis: true,
         spaces: true,
-        dashes: language.startsWith("it") ? "enSpaced" : language.startsWith("en") ? "emClosed" : "emSpaced",
-        ranges: "enDash",
         dialogueDash: "em",
         whileTyping: true,
       },

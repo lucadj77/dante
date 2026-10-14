@@ -30,7 +30,7 @@
     if (!custom) level.separator = value;
   }
 
-  const previews = $derived([1, 4].map((n) => levelHeading(level, n, n === 1 ? sample : "", language, feminine).text));
+  const preview = $derived(levelHeading(level, 1, sample, language, feminine).text);
 </script>
 
 <div class="level">
@@ -63,12 +63,10 @@
       {#if choice === "custom"}<input aria-label={t("heading.sepCustom")} bind:value={level.separator} />{/if}
     </div>
   {/if}
-  <p class="preview">
-    {t("settings.preview")}:
-    {#each previews as text, i (i)}
-      <strong>{text || "—"}</strong>{#if i === 0}<span class="dot">&nbsp;·&nbsp;</span>{/if}
-    {/each}
-  </p>
+  <div class="preview">
+    <span>{t("settings.preview")}</span>
+    <strong>{preview || "—"}</strong>
+  </div>
 </div>
 
 <style>
@@ -99,13 +97,20 @@
     font-size: 14px;
   }
   .preview {
-    margin: 0;
+    display: grid;
+    gap: 4px;
     font-size: 13px;
     color: var(--text-muted);
   }
   .preview strong {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     color: var(--text);
+    font-family: var(--font-text, serif);
+    font-size: 16px;
     font-weight: 500;
+    text-align: center;
     white-space: pre-line;
   }
 </style>

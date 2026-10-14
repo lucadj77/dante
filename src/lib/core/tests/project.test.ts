@@ -93,7 +93,7 @@ describe("project", () => {
     const fs = sample();
     const p = await Project.open(fs);
     const first = await p.splitChapter("Manuscript/010 Return/010 Arrival.md", "The train.", "Later.", "Untitled", "Untitled");
-    expect(first).toBe("Manuscript/015 Untitled/010 Untitled.md");
+    expect(first).toBe("Manuscript/015 Untitled/010 Untitled 2.md");
     expect(paths(p)).toEqual([
       "manuscript:Manuscript",
       "prologue:Manuscript/000 Prologue",
@@ -101,7 +101,7 @@ describe("project", () => {
       "chapter:Manuscript/010 Return",
       "scene:Manuscript/010 Return/010 Arrival.md",
       "chapter:Manuscript/015 Untitled",
-      "scene:Manuscript/015 Untitled/010 Untitled.md",
+      "scene:Manuscript/015 Untitled/010 Untitled 2.md",
       "scene:Manuscript/015 Untitled/020 House.md",
       "chapter:Manuscript/020 Letter",
       "scene:Manuscript/020 Letter/010 Envelope.md",
@@ -139,7 +139,9 @@ describe("new project", () => {
     const { project, scene } = await Project.create(fs, { title: "Il faro", author: "Luca", language: "it" }, { chapter: "Senza titolo", scene: "Senza titolo" });
     expect(project.settings.title).toBe("Il faro");
     expect(project.settings.structure.chapter.label).toBe("Capitolo");
-    expect(scene).toBe("Manoscritto/010 Senza titolo/010 Senza titolo.md");
+    expect(scene).toBe("Manoscritto/010 Senza titolo/010 Senza titolo 2.md");
+    // The scene is not taken for the chapter's folder note.
+    expect(project.manuscript.children[0].children.map((c) => c.path)).toEqual([scene]);
     expect(await fs.exists("Ricerca")).toBe(true);
     expect(await fs.readText("dante.yaml")).toContain("title: Il faro");
   });
