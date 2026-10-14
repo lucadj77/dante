@@ -119,3 +119,16 @@ describe("lists, tasks and highlights", () => {
     expect(text).toEqual(["• uno", "• due", "1. primo", "2. secondo", "☐ da fare", "☑ fatto", "Un punto chiave."]);
   });
 });
+
+describe("scenes outside chapters", () => {
+  it("continue the chapter before them instead of starting a new one", async () => {
+    const fs = new MemoryFs({
+      "Manuscript/005 Opening.md": "Before any chapter.",
+      "Manuscript/010 Start/010 Empty.md": "",
+      "Manuscript/020 Loose.md": "The text.",
+      "Manuscript/030 Next/010 Train.md": "Train.",
+    });
+    const book = await buildBook(await Project.open(fs));
+    expect(book.entries.map((e) => [e.kind, e.scenes.length])).toEqual([["loose", 1], ["chapter", 2], ["chapter", 1]]);
+  });
+});

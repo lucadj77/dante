@@ -261,6 +261,7 @@
           <TreeItem
             {node}
             depth={0}
+            loose={node.kind === "scene"}
             {selected}
             headings={headingMap}
             {dragging}

@@ -236,8 +236,16 @@ export async function buildBook(
   const visit = async (node: ManuscriptNode) => {
     // Scenes outside any chapter still need a place in the book.
     let loose: ManuscriptNode[] = [];
+    // The chapter just read at this level, if nothing but scenes came after it.
+    let previous: BookEntry | null = null;
     const flushLoose = async () => {
       if (!loose.length) return;
+      // Scenes left after a chapter, outside it, read as its continuation: no new chapter.
+      if (previous) {
+        for (const scene of loose) previous.scenes.push(await readScene(scene));
+        loose = [];
+        return;
+      }
       const entry: BookEntry = node.kind === "manuscript" || node.kind === "part"
         ? { kind: "loose", heading: "", scenes: [] }
         : entryFor(node, node.kind as ContainerKind);
@@ -251,6 +259,7 @@ export async function buildBook(
         continue;
       }
       await flushLoose();
+      previous = null;
       if (child.kind === "part") {
         entries.push(entryFor(child, "part"));
         await visit(child);
@@ -260,6 +269,7 @@ export async function buildBook(
         await readScenes(entry, child.children.filter((c) => c.kind === "scene"));
         // Folders nested deeper than a chapter are read in order too.
         for (const sub of child.children.filter((c) => c.kind !== "scene")) await visit({ ...child, children: [sub] });
+        if (node.kind === "manuscript" || node.kind === "part") previous = entry;
       }
     }
     await flushLoose();

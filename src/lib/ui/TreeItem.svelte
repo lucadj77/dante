@@ -18,6 +18,8 @@
     onRename: (path: string, title: string) => void;
     onDragStart: (path: string) => void;
     onDrop: (target: string, position: DropPosition) => void;
+    /** A scene outside any chapter, which the export does not put in one. */
+    loose?: boolean;
   }
   let p: Props = $props();
 
@@ -113,12 +115,15 @@
       />
     {:else}
       <span class="label">{label}</span>
+      {#if p.loose}
+        <span class="loose" title={t("tree.looseHint")}>{t("tree.loose")}</span>
+      {/if}
     {/if}
   </div>
   {#if !isScene && !collapsed && p.node.children.length > 0}
     <ul role="group">
       {#each p.node.children as child (child.path)}
-        <TreeItem {...p} node={child} depth={p.depth + 1} />
+        <TreeItem {...p} node={child} depth={p.depth + 1} loose={child.kind === "scene" && p.node.kind === "part"} />
       {/each}
     </ul>
   {/if}
@@ -127,6 +132,15 @@
 <style>
   li {
     list-style: none;
+  }
+  .loose {
+    flex: none;
+    margin-left: auto;
+    padding: 0 5px;
+    border-radius: 3px;
+    background: rgba(214, 150, 40, 0.18);
+    color: var(--text-muted);
+    font-size: 11px;
   }
   ul {
     margin: 0;

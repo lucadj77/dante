@@ -39,6 +39,8 @@ export const en = {
   "tree.newPart": "New part",
   "tree.rename": "Rename",
   "tree.renameHint": "Click to rename (in the tree: double click or F2)",
+  "tree.loose": "outside chapters",
+  "tree.looseHint": "This scene is not inside any chapter. Drag it onto a chapter to put it there; otherwise the export adds it after the previous chapter.",
   "panel.title": "Title",
   "tree.empty": "The manuscript is empty.",
   "untitled": "Untitled",

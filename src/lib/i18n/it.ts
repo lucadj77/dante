@@ -39,6 +39,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "tree.newPart": "Nuova parte",
   "tree.rename": "Rinomina",
   "tree.renameHint": "Clicca per rinominare (nell'albero: doppio clic o F2)",
+  "tree.loose": "fuori dai capitoli",
+  "tree.looseHint": "Questa scena non è dentro nessun capitolo. Trascinala su un capitolo per metterla lì; altrimenti l’esportazione la aggiunge in coda al capitolo precedente.",
   "panel.title": "Titolo",
   "tree.empty": "Il manoscritto è vuoto.",
   "untitled": "Senza titolo",
