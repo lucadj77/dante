@@ -101,6 +101,8 @@
         parent: host,
         text,
         preview: !props.raw,
+        // The raw view shows properties too, where quotes are YAML syntax.
+        typography: props.raw ? undefined : props.project.settings.export.typography,
         placeholder: "…",
         onChange(next) {
           props.onText(path, next);

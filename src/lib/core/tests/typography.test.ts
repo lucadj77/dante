@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyTypography } from "../typography";
 import type { TypographySettings } from "../settings";
 
-const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true };
+const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, whileTyping: true };
 
 describe("typography", () => {
   it("applies Italian conventions", () => {

@@ -152,6 +152,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "export.apostrophes": "Apostrofo tipografico (l’amico)",
   "export.ellipsis": "Puntini di sospensione (…) ed È al posto di E'",
   "export.spaces": "Togli doppi spazi e spazi prima della punteggiatura",
+  "export.whileTyping": "Correggi virgolette, apostrofi e puntini anche mentre scrivi (Ctrl+Z annulla la correzione)",
   "export.paratext": "Paratesto",
   "export.paratextHint": "I testi vuoti non compaiono. Dedica ed esergo vanno prima del romanzo; nota dell'autore, ringraziamenti e colophon dopo.",
   "export.dedication": "Dedica",

@@ -27,6 +27,8 @@ export interface TypographySettings {
   ellipsis: boolean;
   /** Removes double spaces and spaces before punctuation. */
   spaces: boolean;
+  /** Quotes, apostrophes and ellipses are also corrected while typing. */
+  whileTyping: boolean;
 }
 
 /** Texts around the novel. Empty ones are left out. */
@@ -154,6 +156,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         apostrophes: true,
         ellipsis: true,
         spaces: true,
+        whileTyping: true,
       },
       paratext: {
         dedication: "",

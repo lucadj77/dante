@@ -4,6 +4,8 @@ import { Compartment, EditorState, Prec, type Extension } from "@codemirror/stat
 import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
 import { focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
+import { smartTypography } from "./smartTypography";
+import type { TypographySettings } from "$lib/core/settings";
 
 export interface SceneEditorOptions {
   parent: HTMLElement;
@@ -11,6 +13,8 @@ export interface SceneEditorOptions {
   /** Hides Markdown markers away from the cursor. Off for the raw Markdown view. */
   preview: boolean;
   placeholder?: string;
+  /** Conventions applied while typing; none when absent. */
+  typography?: TypographySettings;
   onChange: (text: string) => void;
   /** Ctrl/Cmd+Enter: split the scene at the cursor. */
   onSplitScene?: (before: string, after: string) => void;
@@ -71,6 +75,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     modes.of([]),
   ];
   if (options.preview) extensions.push(livePreview);
+  if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
   if (options.placeholder) extensions.push(placeholderExt(options.placeholder));
 
   const view = new EditorView({

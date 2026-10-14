@@ -152,6 +152,7 @@ export const en = {
   "export.apostrophes": "Typographic apostrophe (l’amico)",
   "export.ellipsis": "Ellipsis character (…) and È for E'",
   "export.spaces": "Remove double spaces and spaces before punctuation",
+  "export.whileTyping": "Also correct quotes, apostrophes and ellipses while typing (Ctrl+Z undoes a correction)",
   "export.paratext": "Front and back matter",
   "export.paratextHint": "Empty texts are left out. Dedication and epigraph come before the novel; author's note, acknowledgements and colophon after it.",
   "export.dedication": "Dedication",
