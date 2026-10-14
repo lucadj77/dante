@@ -20,8 +20,17 @@ export interface LevelSettings {
 export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
 
 export interface TypographySettings {
-  /** Straight quotes become «guillemets» or “curly quotes”, or stay as they are. */
-  quotes: "keep" | "guillemets" | "curly";
+  /**
+   * How dialogue is marked: «guillemets», “curly quotes”, or a dash opening each line of
+   * dialogue as some Italian publishers do (— Vieni — disse). Straight quotes become the
+   * chosen marks; with "dash", guillemets and straight quotes become dashes, while
+   * “curly quotes” stay as quotation marks inside dialogue.
+   */
+  quotes: "keep" | "guillemets" | "curly" | "dash";
+  /** Dash used for dialogue when quotes is "dash": em dash (—) or en dash (–). */
+  dialogueDash: "em" | "en";
+  /** Keeps a comma before the dash that closes a line: — Vieni, — disse. Otherwise — Vieni — disse. */
+  dialogueComma: boolean;
   /** l'amico becomes l’amico. */
   apostrophes: boolean;
   /** ... becomes …, and E' becomes È. */
@@ -35,8 +44,6 @@ export interface TypographySettings {
   dashes: "keep" | "enSpaced" | "emSpaced" | "emClosed";
   /** Number ranges such as 1990-2000: hyphen, or en dash as in 1990–2000. */
   ranges: "keep" | "enDash";
-  /** A dash at the start of a paragraph opens a dialogue line and becomes "— ". */
-  dialogueDash: boolean;
   /** Quotes, apostrophes, ellipses and dashes are also corrected while typing. */
   whileTyping: boolean;
 }
@@ -175,7 +182,8 @@ export function defaultSettings(language = "en"): NovelSettings {
         spaces: true,
         dashes: language.startsWith("it") ? "enSpaced" : language.startsWith("en") ? "emClosed" : "emSpaced",
         ranges: "enDash",
-        dialogueDash: false,
+        dialogueDash: "em",
+        dialogueComma: true,
         whileTyping: true,
       },
       paratext: {

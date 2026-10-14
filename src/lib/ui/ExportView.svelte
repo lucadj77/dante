@@ -195,8 +195,22 @@
         <option value="keep">{t("export.quotesKeep")}</option>
         <option value="guillemets">{t("export.quotesGuillemets")}</option>
         <option value="curly">{t("export.quotesCurly")}</option>
+        <option value="dash">{t("export.quotesDash")}</option>
       </select>
     </label>
+    {#if typography.quotes === "dash"}
+      <p class="hint">{t("export.quotesDashHint")}</p>
+      <div class="row">
+        <label
+          >{t("export.dialogueDash")}
+          <select bind:value={typography.dialogueDash}>
+            <option value="em">{t("export.dialogueEm")}</option>
+            <option value="en">{t("export.dialogueEn")}</option>
+          </select>
+        </label>
+      </div>
+      <label class="check"><input type="checkbox" bind:checked={typography.dialogueComma} /> {t("export.dialogueComma")}</label>
+    {/if}
     <label
       >{t("export.dashes")}
       <select bind:value={typography.dashes}>
@@ -213,7 +227,6 @@
         <option value="enDash">{t("export.rangesEnDash")}</option>
       </select>
     </label>
-    <label class="check"><input type="checkbox" bind:checked={typography.dialogueDash} /> {t("export.dialogueDash")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.apostrophes} /> {t("export.apostrophes")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.ellipsis} /> {t("export.ellipsis")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.spaces} /> {t("export.spaces")}</label>

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { smartReplacement } from "$lib/editor/smartTypography";
 import type { TypographySettings } from "../settings";
 
-const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "enSpaced", ranges: "enDash", dialogueDash: true, whileTyping: true };
+const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dashes: "enSpaced", ranges: "enDash", dialogueDash: "em", dialogueComma: true, whileTyping: true };
 
 describe("typing", () => {
   it("opens and closes quotes from the context", () => {
@@ -34,7 +34,9 @@ describe("typing dashes", () => {
   });
 
   it("opens dialogue only when chosen", () => {
-    expect(smartReplacement("-", " ", it_)).toEqual({ back: 1, insert: "— " });
-    expect(smartReplacement("-", " ", { ...it_, dialogueDash: false })).toBeNull();
+    expect(smartReplacement("-", " ", { ...it_, quotes: "dash" })).toEqual({ back: 1, insert: "— " });
+    expect(smartReplacement("-", " ", it_)).toBeNull();
+    expect(smartReplacement("", '"', { ...it_, quotes: "dash" })).toEqual({ back: 0, insert: "— " });
+    expect(smartReplacement("— Vieni", '"', { ...it_, quotes: "dash" })).toEqual({ back: 0, insert: " —" });
   });
 });

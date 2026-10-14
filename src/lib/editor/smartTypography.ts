@@ -20,12 +20,17 @@ export function smartReplacement(before: string, typed: string, rules: Typograph
   const prev = before.slice(-1);
   if (typed === "'" && rules.ellipsis && /(?:^|[\s«“"(—–-])E$/.test(before)) return { back: 1, insert: "È" };
   if (typed === "'" && rules.apostrophes && /[\p{L}\p{N}]/u.test(prev)) return { back: 0, insert: "’" };
+  if (typed === '"' && rules.quotes === "dash") {
+    // Dialogue opens with "— " and closes with " —"; the export drops a dash left at the end.
+    const opening = before === "" || /[\s(]/.test(prev);
+    return opening ? { back: 0, insert: "— " } : { back: 0, insert: " —" };
+  }
   if (typed === '"' && rules.quotes !== "keep") {
     const [open, close] = rules.quotes === "guillemets" ? ["«", "»"] : ["“", "”"];
     const opening = before === "" || /[\s([{—–\-]/.test(prev);
     return { back: 0, insert: opening ? open : close };
   }
-  if (typed === " " && rules.dialogueDash && /^[ \t]*--?$/.test(before)) {
+  if (typed === " " && rules.quotes === "dash" && /^[ \t]*--?$/.test(before)) {
     const dash = before.trimStart();
     return { back: dash.length, insert: "— " };
   }
