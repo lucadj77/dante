@@ -7,6 +7,7 @@
   import { t } from "$lib/state.svelte";
   import type { MessageKey } from "$lib/i18n";
   import TreeItem from "./TreeItem.svelte";
+  import { mark, marked } from "./folding.svelte";
 
   interface Props {
     node: ManuscriptNode;
@@ -26,13 +27,15 @@
     onMoveBy: (path: string, delta: number) => void;
     /** The item whose name the menu asked to edit. */
     renaming: string | null;
+    /** Where the tree keeps which chapters and parts are folded. */
+    foldScope: string;
   }
   let p: Props = $props();
 
   let editing = $state(false);
   let draft = $state("");
   let over = $state<DropPosition | null>(null);
-  let collapsed = $state(false);
+  const collapsed = $derived(marked(p.foldScope).has(p.node.path));
   const isScene = $derived(p.node.kind === "scene");
   // Headings on two lines fit the tree on one.
   const label = $derived((p.headings.get(p.node.path) ?? p.node.title).replace(/\n/g, " · "));
@@ -86,6 +89,10 @@
     }}
     onkeydown={(e) => {
       if (e.key === "Enter") p.onSelect(p.node.path);
+      if (!isScene && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        mark(p.foldScope, [p.node.path], e.key === "ArrowLeft");
+      }
       if (e.key === "F2") startRename();
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
@@ -119,7 +126,7 @@
         aria-label={collapsed ? "+" : "−"}
         onclick={(e) => {
           e.stopPropagation();
-          collapsed = !collapsed;
+          mark(p.foldScope, [p.node.path], !collapsed);
         }}>{collapsed ? "▸" : "▾"}</button
       >
     {/if}

@@ -37,6 +37,7 @@
   import { tick } from "svelte";
   import { t } from "$lib/state.svelte";
   import { fileIcon } from "./FileViewer.svelte";
+  import { mark, marked } from "./folding.svelte";
 
   interface Props {
     nodes: FileNode[];
@@ -54,10 +55,12 @@
     onStartRename: (path: string) => void;
     onCancelRename: () => void;
     onDelete: (path: string) => void;
+    /** Where the tree keeps which folders are open. */
+    foldScope: string;
   }
   let p: Props = $props();
 
-  let expanded = $state<Set<string>>(new Set());
+  const expanded = $derived(marked(p.foldScope));
   let dragging = $state<string | null>(null);
   let over = $state<string | null>(null);
   let draft = $state("");
@@ -66,17 +69,13 @@
   $effect(() => {
     const selected = p.selected;
     if (!selected) return;
-    const next = new Set(expanded);
+    const open: string[] = [];
     let dir = selected.slice(0, Math.max(0, selected.lastIndexOf("/")));
-    let changed = false;
     while (dir.length > p.root.length) {
-      if (!next.has(dir)) {
-        next.add(dir);
-        changed = true;
-      }
+      if (!expanded.has(dir)) open.push(dir);
       dir = dir.slice(0, Math.max(0, dir.lastIndexOf("/")));
     }
-    if (changed) expanded = next;
+    if (open.length) mark(p.foldScope, open, true);
   });
 
   $effect(() => {
@@ -98,10 +97,7 @@
   }
 
   function toggle(path: string) {
-    const next = new Set(expanded);
-    if (next.has(path)) next.delete(path);
-    else next.add(path);
-    expanded = next;
+    mark(p.foldScope, [path], !expanded.has(path));
   }
 
   function label(node: FileNode): string {
@@ -130,6 +126,9 @@
     } else if ((event.key === "Delete" || event.key === "Backspace") && (event.metaKey || event.key === "Delete")) {
       event.preventDefault();
       p.onDelete(node.path);
+    } else if (node.dir && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      mark(p.foldScope, [node.path], event.key === "ArrowRight");
     } else if (event.key === "F2") {
       p.onStartRename(node.path);
     }

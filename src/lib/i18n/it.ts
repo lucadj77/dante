@@ -285,4 +285,6 @@ export const it: Partial<Record<MessageKey, string>> = {
   "codex.newName": "Nome",
   "codex.create": "Crea",
   "panel.listHint": "Più valori, separati da virgole",
+  "tree.foldAll": "Comprimi tutto",
+  "tree.unfoldAll": "Espandi tutto",
 };

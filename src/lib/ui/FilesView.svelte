@@ -10,6 +10,7 @@
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import { markOnly } from "./folding.svelte";
 
   interface Props {
     project: Project;
@@ -41,6 +42,8 @@
   });
   const types = $derived(p.project.settings.types);
   const canImport = $derived(p.project.fs instanceof TauriFs);
+  const foldScope = $derived(`${p.project.fs instanceof TauriFs ? p.project.fs.root : "sample"}|${p.root}`);
+  const folders = $derived(p.project.folders.filter((f) => isWithin(f, p.root) && f !== p.root));
 
   /** A note with a type shows the type's icon in the tree. */
   function icon(path: string): string | null {
@@ -136,6 +139,10 @@
       {#if canImport}
         <button onclick={() => importFiles()}>{t("files.import")}</button>
       {/if}
+      <span class="fold">
+        <button title={t("tree.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, [])}>⊟</button>
+        <button title={t("tree.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, folders)}>⊞</button>
+      </span>
     </div>
     {#if nodes.length === 0}
       <p class="empty">{t("files.empty")}</p>
@@ -153,6 +160,7 @@
       onStartRename={(path) => (renaming = path)}
       onCancelRename={() => (renaming = null)}
       onDelete={remove}
+      {foldScope}
     />
   </aside>
 
@@ -223,6 +231,15 @@
     flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 8px;
+  }
+  .fold {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+  .tree-actions .fold button {
+    padding: 0 6px;
+    font-size: 14px;
   }
   .tree-actions button {
     font-size: 12px;

@@ -10,6 +10,8 @@
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import { markOnly } from "./folding.svelte";
+  import { TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
 
@@ -57,6 +59,12 @@
   $effect(() => {
     if (selected) onShow(selected);
   });
+
+  const foldScope = $derived(`${project.fs instanceof TauriFs ? project.fs.root : "sample"}|manuscript`);
+
+  function containers(node: ManuscriptNode): string[] {
+    return node.children.filter((c) => c.kind !== "scene").flatMap((c) => [c.path, ...containers(c)]);
+  }
 
   /** Bumped a moment after typing stops, so the links panel catches up with saved text. */
   let edits = $state(0);
@@ -345,6 +353,10 @@
         {#if project.settings.structure.parts}
           <button onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
         {/if}
+        <span class="fold">
+          <button title={t("tree.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}>⊟</button>
+          <button title={t("tree.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}>⊞</button>
+        </span>
       </div>
       {#if tree.children.length === 0}
         <p class="empty">{t("tree.empty")}</p>
@@ -369,6 +381,7 @@
             onDelete={remove}
             onMoveBy={moveBy}
             {renaming}
+            {foldScope}
           />
         {/each}
       </ul>
@@ -535,6 +548,15 @@
     flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 8px;
+  }
+  .fold {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+  .tree-actions .fold button {
+    padding: 0 6px;
+    font-size: 14px;
   }
   .tree-actions button {
     font-size: 12px;

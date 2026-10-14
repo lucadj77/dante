@@ -285,6 +285,8 @@ export const en = {
   "codex.newName": "Name",
   "codex.create": "Create",
   "panel.listHint": "Several values, separated by commas",
+  "tree.foldAll": "Fold all",
+  "tree.unfoldAll": "Unfold all",
 } as const;
 
 export type MessageKey = keyof typeof en;
