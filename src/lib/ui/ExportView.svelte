@@ -3,7 +3,7 @@
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
   import type { Project } from "$lib/core/project";
   import { PAGE_SIZES, type DocxSettings, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
-  import { app, t } from "$lib/state.svelte";
+  import { app, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
   import HeadingLevel from "./HeadingLevel.svelte";
 
@@ -39,7 +39,50 @@
   function setProfile(profile: DocxSettings["profile"]) {
     options = { ...options, ...PRESETS[profile], profile };
   }
-  let revisions = $state<"accept" | "reject">("accept");
+  // svelte-ignore state_referenced_locally
+  let revisions = $state<"accept" | "reject">(project.settings.export.revisions);
+
+  /** The choices on this page, as the project stores them. */
+  function chosen() {
+    const settings = $state.snapshot(project.settings);
+    settings.export.docx = $state.snapshot(options);
+    settings.export.typography = $state.snapshot(typography);
+    settings.export.paratext = $state.snapshot(paratext);
+    settings.export.revisions = revisions;
+    settings.structure = $state.snapshot(structure);
+    return settings;
+  }
+
+  // Every change is kept in the project right away, so the next export starts from it
+  // even if this one never happens.
+  let lastSaved = JSON.stringify(chosen());
+  let saving: Promise<void> = Promise.resolve();
+  function persist(): Promise<void> {
+    const settings = chosen();
+    const json = JSON.stringify(settings);
+    if (json === lastSaved) return saving;
+    lastSaved = json;
+    rememberExportPreferences({
+      structure: settings.structure,
+      docx: settings.export.docx,
+      typography: settings.export.typography,
+      revisions: settings.export.revisions,
+    });
+    saving = saving.then(async () => {
+      await project.saveSettings(settings);
+      await onSaved();
+    });
+    return saving;
+  }
+  $effect(() => {
+    JSON.stringify([options, typography, paratext, structure, revisions]);
+    const timer = setTimeout(() => void persist().catch((e) => (error = t("error.generic", { message: String(e) }))), 500);
+    return () => clearTimeout(timer);
+  });
+
+  // The folder of the last export, on this computer, for the save dialog.
+  // svelte-ignore state_referenced_locally
+  const LAST_PATH_KEY = `dante.last-export:${"root" in project.fs ? (project.fs as { root: string }).root : ""}`;
   let message = $state("");
   let error = $state("");
   let busy = $state(false);
@@ -60,8 +103,20 @@
     if (inTauri()) {
       const { save: saveDialog } = await import("@tauri-apps/plugin-dialog");
       const { writeFile } = await import("@tauri-apps/plugin-fs");
-      const path = await saveDialog({ defaultPath: fileName(), filters: [{ name: "Word", extensions: ["docx"] }] });
+      let last: string | null = null;
+      try {
+        last = localStorage.getItem(LAST_PATH_KEY);
+      } catch {
+        // No storage: the dialog opens in its default folder.
+      }
+      const defaultPath = last ? last.replace(/[^/\\]+$/, fileName()) : fileName();
+      const path = await saveDialog({ defaultPath, filters: [{ name: "Word", extensions: ["docx"] }] });
       if (!path) return null;
+      try {
+        localStorage.setItem(LAST_PATH_KEY, path);
+      } catch {
+        // Not remembered; nothing else depends on it.
+      }
       await writeFile(path, bytes);
       return path;
     }
@@ -102,14 +157,7 @@
     savedPath = null;
     busy = true;
     try {
-      // The chosen options become the project's defaults for the next export.
-      const settings = $state.snapshot(project.settings);
-      settings.export.docx = $state.snapshot(options);
-      settings.export.typography = $state.snapshot(typography);
-      settings.export.paratext = $state.snapshot(paratext);
-      settings.structure = $state.snapshot(structure);
-      await project.saveSettings(settings);
-      await onSaved();
+      await persist();
       const book = await buildBook(project, { revisions });
       const bytes = await docxBytes(bookToDocx(book, project.settings.export.docx, { words: t("export.words") }));
       const pages = (book.characters / 1800).toLocaleString(undefined, { maximumFractionDigits: 1 });

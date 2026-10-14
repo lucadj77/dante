@@ -128,6 +128,8 @@ export interface NovelSettings {
     /** Applied to the exported text only; the files keep what was typed. */
     typography: TypographySettings;
     paratext: ParatextSettings;
+    /** Revisions in CriticMarkup are accepted or rejected in the exported text. */
+    revisions: "accept" | "reject";
   };
 }
 
@@ -209,6 +211,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         acknowledgements: "",
         colophon: "",
       },
+      revisions: "accept",
     },
   };
 }

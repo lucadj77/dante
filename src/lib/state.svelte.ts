@@ -63,6 +63,27 @@ export function t(key: MessageKey, values?: Record<string, string | number>): st
   return translate(app.settings.language, key, values);
 }
 
+const EXPORT_KEY = "dante.last-export-settings";
+type ExportPreferences = Parameters<typeof import("./core/project").Project.create>[3];
+
+/** The headings and export choices used last, as the starting point of new projects. */
+export function rememberExportPreferences(preferences: NonNullable<ExportPreferences>) {
+  try {
+    localStorage.setItem(EXPORT_KEY, JSON.stringify(preferences));
+  } catch {
+    // Not remembered: new projects start from the defaults.
+  }
+}
+
+export function exportPreferences(): ExportPreferences {
+  try {
+    const stored = localStorage.getItem(EXPORT_KEY);
+    return stored ? JSON.parse(stored) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface RecentProject {
   path: string;
   title: string;

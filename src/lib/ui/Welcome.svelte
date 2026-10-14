@@ -4,7 +4,7 @@
   import { Project } from "$lib/core/project";
   import { SETTINGS_FILE } from "$lib/core/settings";
   import { sampleProject } from "$lib/sample";
-  import { app, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
+  import { app, exportPreferences, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
@@ -86,6 +86,7 @@
         fs,
         { title: title.trim(), author: author.trim(), language },
         { chapter: t("untitled"), scene: t("untitledScene") },
+        exportPreferences(),
       );
       // The author's name is offered again next time.
       if (author.trim() && !app.settings.userName) saveAppSettings({ ...app.settings, userName: author.trim() });

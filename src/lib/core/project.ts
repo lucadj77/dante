@@ -56,9 +56,31 @@ export class Project {
     fs: ProjectFs,
     details: { title: string; author: string; language: string },
     names: { chapter: string; scene: string },
+    /** Headings and export choices to start from, such as those used last on this computer. */
+    preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
   ): Promise<{ project: Project; scene: string }> {
     await fs.mkdir("");
     const settings = { ...defaultSettings(details.language), title: details.title, author: details.author };
+    if (preferences) {
+      // Through the parser, so stored choices from an older version are completed and checked.
+      const merged = parseSettings(
+        serializeSettings({ ...settings, structure: preferences.structure, export: { ...settings.export, docx: preferences.docx, typography: preferences.typography, revisions: preferences.revisions } }),
+      );
+      // Labels follow the new novel's language, and parts are a choice for each novel.
+      const { structure, export: exp } = settings;
+      settings.structure = {
+        ...merged.structure,
+        parts: structure.parts,
+        part: { ...merged.structure.part, label: structure.part.label },
+        chapter: { ...merged.structure.chapter, label: structure.chapter.label },
+      };
+      settings.export = {
+        ...exp,
+        docx: { ...merged.export.docx, scene: { ...merged.export.docx.scene, label: exp.docx.scene.label } },
+        typography: merged.export.typography,
+        revisions: merged.export.revisions,
+      };
+    }
     await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
     for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
     const project = await Project.open(fs, details.language);

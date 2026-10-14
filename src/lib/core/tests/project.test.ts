@@ -147,6 +147,25 @@ describe("new project", () => {
   });
 });
 
+describe("new project with earlier choices", () => {
+  it("starts from them, keeping its own language's labels", async () => {
+    const earlier = await Project.create(new MemoryFs({}), { title: "A", author: "L", language: "en" }, { chapter: "C", scene: "S" });
+    const prefs = {
+      structure: { ...earlier.project.settings.structure, chapter: { ...earlier.project.settings.structure.chapter, numbering: "ordinal" as const } },
+      docx: { ...earlier.project.settings.export.docx, pageSize: "15x21" as const, font: "Garamond" },
+      typography: { ...earlier.project.settings.export.typography, quotes: "dash" as const },
+      revisions: "reject" as const,
+    };
+    const { project } = await Project.create(new MemoryFs({}), { title: "B", author: "L", language: "it" }, { chapter: "C", scene: "S" }, prefs);
+    expect(project.settings.export.docx.pageSize).toBe("15x21");
+    expect(project.settings.export.docx.font).toBe("Garamond");
+    expect(project.settings.export.typography.quotes).toBe("dash");
+    expect(project.settings.export.revisions).toBe("reject");
+    expect(project.settings.structure.chapter.numbering).toBe("ordinal");
+    expect(project.settings.structure.chapter.label).toBe("Capitolo");
+  });
+});
+
 describe("unnumbered chapters", () => {
   it("shows only the title and does not count them", async () => {
     const fs = new MemoryFs({
