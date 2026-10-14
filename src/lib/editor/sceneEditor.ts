@@ -1,3 +1,4 @@
+import { completionStatus } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
@@ -5,6 +6,7 @@ import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/v
 import { formatting, type FormattingLabels } from "./formatting";
 import { focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
+import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
 import type { TypographySettings } from "$lib/core/settings";
 
@@ -26,6 +28,8 @@ export interface SceneEditorOptions {
   onFocus?: () => void;
   /** Names of the formatting buttons shown over a selection. */
   formatLabels: FormattingLabels;
+  /** Following and suggesting wikilinks; without it, links are plain text. */
+  links?: LinkHandler;
 }
 
 export interface SceneEditor {
@@ -46,6 +50,8 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   };
   const leave = (direction: "up" | "down") => (view: EditorView) => {
     if (!options.onLeave) return false;
+    // The arrows choose among the suggestions while they show.
+    if (completionStatus(view.state) === "active") return false;
     const { head, empty } = view.state.selection.main;
     if (!empty) return false;
     const line = view.state.doc.lineAt(head).number;
@@ -77,6 +83,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
     modes.of([]),
     formatting(options.formatLabels),
+    wikilinks(options.links),
   ];
   if (options.preview) extensions.push(livePreview);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));

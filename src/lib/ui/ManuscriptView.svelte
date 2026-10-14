@@ -9,6 +9,11 @@
   import { app } from "$lib/state.svelte";
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
+  import SidePanel from "./SidePanel.svelte";
+  import { columns, layout, width } from "./layout.svelte";
+  import Resizer from "./Resizer.svelte";
+  import { markOnly } from "./folding.svelte";
+  import { TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
 
@@ -20,8 +25,12 @@
     onReload: () => Promise<void>;
     /** Tells open scenes to reload from disk. */
     onDiskChange: () => void;
+    /** A scene or container to show, such as one a wikilink pointed to. */
+    reveal: string | null;
+    /** Called with the selected item, so the workspace can come back to it. */
+    onShow: (path: string) => void;
   }
-  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange }: Props = $props();
+  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow }: Props = $props();
 
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
@@ -37,6 +46,35 @@
   let pendingFocus: { path: string; at: "start" | "end" } | null = null;
 
   const editors = new Map<string, SceneHandle>();
+
+  // Shows what the workspace asks for, once each time it asks.
+  let revealed: string | null = null;
+  $effect(() => {
+    const target = reveal;
+    if (!target || target === revealed) return;
+    revealed = target;
+    if (findIn(tree, target)) {
+      selected = target;
+      active = target;
+    }
+  });
+  $effect(() => {
+    if (selected) onShow(selected);
+  });
+
+  const foldScope = $derived(`${project.fs instanceof TauriFs ? project.fs.root : "sample"}|manuscript`);
+
+  function containers(node: ManuscriptNode): string[] {
+    return node.children.filter((c) => c.kind !== "scene").flatMap((c) => [c.path, ...containers(c)]);
+  }
+
+  /** Bumped a moment after typing stops, so the links panel catches up with saved text. */
+  let edits = $state(0);
+  let editsTimer: ReturnType<typeof setTimeout> | undefined;
+  function edited() {
+    clearTimeout(editsTimer);
+    editsTimer = setTimeout(() => edits++, 1500);
+  }
 
   // `rev` and `localRev` change when the project reloads; the tree object is new then.
   const tree = $derived.by(() => {
@@ -308,15 +346,21 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="manuscript" class:fullscreen>
-  {#if !fullscreen}
+<div class="manuscript" class:fullscreen style:grid-template-columns={columns("manuscript", fullscreen ? 0 : 260, fullscreen ? 0 : 280)}>
+  {#if !fullscreen && layout.left}<Resizer section="manuscript" side="left" usual={260} other={layout.right ? width("manuscript", "right", 280) : 0} />{/if}
+  {#if !fullscreen && layout.right}<Resizer section="manuscript" side="right" usual={280} other={layout.left ? width("manuscript", "left", 260) : 0} />{/if}
+  {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
-        <button onclick={newScene}>{t("tree.newScene")}</button>
-        <button onclick={() => newContainer("chapter")}>{t("tree.newChapter")}</button>
+        <button title={t("tip.newScene")} onclick={newScene}>{t("tree.newScene")}</button>
+        <button title={t("tip.newChapter")} onclick={() => newContainer("chapter")}>{t("tree.newChapter")}</button>
         {#if project.settings.structure.parts}
-          <button onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
+          <button title={t("tip.newPart")} onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
         {/if}
+        <span class="fold">
+          <button title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}>⊟</button>
+          <button title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}>⊞</button>
+        </span>
       </div>
       {#if tree.children.length === 0}
         <p class="empty">{t("tree.empty")}</p>
@@ -341,6 +385,7 @@
             onDelete={remove}
             onMoveBy={moveBy}
             {renaming}
+            {foldScope}
           />
         {/each}
       </ul>
@@ -365,18 +410,18 @@
       <div class="group" role="group">
         {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
           {#if l !== "part" || project.settings.structure.parts}
-            <button aria-pressed={level === l} onclick={() => (level = l)}>{t(`level.${l}`)}</button>
+            <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}>{t(`level.${l}`)}</button>
           {/if}
         {/each}
       </div>
       <div class="group" role="group">
-        <button aria-pressed={typewriter} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
-        <button aria-pressed={focusMode} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
-        <button aria-pressed={fullscreen} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
-        <button aria-pressed={raw} title={t("editor.rawHint")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
+        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
+        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
+        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
+        <button aria-pressed={raw} title={t("tip.raw")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
         <button
           aria-pressed={app.settings.formatBar}
-          title={t("format.bar")}
+          title={t("tip.formatBar")}
           aria-label={t("format.bar")}
           onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}><b>B</b><i>I</i></button
         >
@@ -449,7 +494,10 @@
               onSplitChapter={splitChapter}
               onLeave={leave}
               onFocus={(path) => (active = path)}
-              onText={(path, text) => (texts[path] = raw ? splitNote(text).body : text)}
+              onText={(path, text) => {
+                texts[path] = raw ? splitNote(text).body : text;
+                edited();
+              }}
               onAddAfter={addAfter}
               onRename={rename}
             />
@@ -459,7 +507,9 @@
     </div>
   </main>
 
-  {#if !fullscreen}
+  {#if !fullscreen && layout.right}
+    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev}>
+      {#snippet properties()}
     <PropertiesPanel
       {project}
       path={active ?? selected}
@@ -477,17 +527,16 @@
       onRestored={onDiskChange}
       onRename={rename}
     />
+      {/snippet}
+    </SidePanel>
   {/if}
 </div>
 
 <style>
   .manuscript {
+    position: relative;
     display: grid;
-    grid-template-columns: 260px 1fr 280px;
-    height: 100vh;
-  }
-  .manuscript.fullscreen {
-    grid-template-columns: 1fr;
+    height: 100%;
   }
   .tree {
     border-right: 1px solid var(--border);
@@ -500,6 +549,15 @@
     flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 8px;
+  }
+  .fold {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+  .tree-actions .fold button {
+    padding: 0 6px;
+    font-size: 14px;
   }
   .tree-actions button {
     font-size: 12px;

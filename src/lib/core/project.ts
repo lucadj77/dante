@@ -10,14 +10,16 @@ import {
   type ManuscriptNode,
 } from "./manuscript";
 import { assignOrders, formatName, sanitizeTitle } from "./naming";
-import { basename, dirname, isMarkdown, join, rebase } from "./path";
+import { NoteIndex } from "./notes";
+import { basename, dirname, extname, isMarkdown, isWithin, join, rebase, stripExt } from "./path";
 import {
   defaultFolders,
   defaultSettings,
-  ENGLISH_FOLDERS,
+  knownFolders,
   parseSettings,
   serializeSettings,
   SETTINGS_FILE,
+  type NoteType,
   type NovelSettings,
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
@@ -37,8 +39,11 @@ export class Project {
   manuscript!: ManuscriptNode;
   /** Every file in the project, for link resolution. */
   files: string[] = [];
+  /** Folders in the project, for the file trees of the sections. */
+  folders: string[] = [];
   /** Scenes already copied to a snapshot in this session. */
   private snapshotted = new Set<string>();
+  private indexing: Promise<NoteIndex> | null = null;
 
   /**
    * @param language Language of a project that has no settings file yet, usually the
@@ -100,28 +105,43 @@ export class Project {
     this.settings = (await this.fs.exists(SETTINGS_FILE))
       ? parseSettings(await this.fs.readText(SETTINGS_FILE))
       : defaultSettings(this.language);
-    // A project that already has the English folders keeps them, whatever its language.
+    // A project that already has the English folders, or older names, keeps them.
     const localized = defaultFolders(this.settings.language);
     for (const key of Object.keys(localized) as (keyof NovelSettings["folders"])[]) {
       const name = this.settings.folders[key];
-      if (name === localized[key] && name !== ENGLISH_FOLDERS[key] && !(await this.fs.exists(name)) && (await this.fs.exists(ENGLISH_FOLDERS[key]))) {
-        this.settings.folders[key] = ENGLISH_FOLDERS[key];
+      if (name !== localized[key] || (await this.fs.exists(name))) continue;
+      for (const other of knownFolders(key)) {
+        if (other !== name && (await this.fs.exists(other))) {
+          this.settings.folders[key] = other;
+          break;
+        }
       }
     }
     this.manuscript = await loadManuscript(this.fs, this.settings);
-    this.files = await this.scan("");
+    const folders: string[] = [];
+    this.files = await this.scan("", folders);
+    this.folders = folders;
+    this.indexing = null;
   }
 
-  private async scan(dir: string): Promise<string[]> {
+  private async scan(dir: string, folders: string[]): Promise<string[]> {
     const out: string[] = [];
     for (const entry of await this.fs.list(dir)) {
       if (entry.isDir) {
-        if (!SKIPPED.has(entry.name)) out.push(...(await this.scan(entry.path)));
-      } else {
+        if (SKIPPED.has(entry.name)) continue;
+        folders.push(entry.path);
+        out.push(...(await this.scan(entry.path, folders)));
+      } else if (!entry.name.includes(".dante-tmp") && !entry.name.startsWith(".dante-move-") && entry.name !== ".DS_Store") {
         out.push(entry.path);
       }
     }
     return out;
+  }
+
+  /** What every note says and links to; read on first use after each reload. */
+  index(): Promise<NoteIndex> {
+    this.indexing ??= NoteIndex.build(this.fs, this.files, this.settings.folders.manuscript);
+    return this.indexing;
   }
 
   async saveSettings(settings: NovelSettings): Promise<void> {
@@ -151,7 +171,132 @@ export class Project {
 
   async writeBody(path: string, body: string): Promise<void> {
     const text = (await this.fs.exists(path)) ? await this.fs.readText(path) : "";
-    await this.fs.writeText(path, replaceBody(text, body));
+    await this.writeNote(path, replaceBody(text, body));
+  }
+
+  /** Writes a whole note, keeping the link index current. */
+  async writeNote(path: string, text: string): Promise<void> {
+    await this.fs.writeText(path, text);
+    if (this.indexing) (await this.indexing).set(path, text);
+  }
+
+  // Notes and files outside the manuscript: Codex, Research, Laboratory and the rest.
+
+  /** A file name in `dir` not taken yet: "Name.md", then "Name 2.md" and so on. */
+  private async freeName(dir: string, name: string): Promise<string> {
+    const ext = extname(name);
+    const stem = ext ? name.slice(0, -ext.length) : name;
+    let candidate = join(dir, name);
+    for (let n = 2; await this.fs.exists(candidate); n++) candidate = join(dir, `${stem} ${n}${ext}`);
+    return candidate;
+  }
+
+  /** Creates a note in `dir` and returns its path. */
+  async createNote(dir: string, title: string, text = ""): Promise<string> {
+    const name = (sanitizeTitle(title) || "Untitled") + ".md";
+    const path = await this.freeName(dir, name);
+    await this.fs.writeText(path, text);
+    await this.reload();
+    return path;
+  }
+
+  async createFolder(dir: string, name: string): Promise<string> {
+    const path = await this.freeName(dir, sanitizeTitle(name) || "Untitled");
+    await this.fs.mkdir(path);
+    await this.reload();
+    return path;
+  }
+
+  /**
+   * A new note of a type, in the type's Codex folder, from the type's template when
+   * there is one: `<Templates>/<type name>.md`, where {{title}} and {{date}} are filled in.
+   */
+  async createTyped(typeId: string, title: string): Promise<string> {
+    const type = this.settings.types[typeId];
+    if (!type) throw new Error(`Unknown type: ${typeId}`);
+    const dir = join(this.settings.folders.codex, type.folder);
+    const template = this.templatePath(typeId);
+    let text: string;
+    if (await this.fs.exists(template)) {
+      const clean = sanitizeTitle(title) || "Untitled";
+      const date = new Date().toISOString().slice(0, 10);
+      text = (await this.fs.readText(template)).replace(/\{\{\s*title\s*\}\}/g, clean).replace(/\{\{\s*date\s*\}\}/g, date);
+    } else {
+      text = this.typeSkeleton(typeId);
+    }
+    // The type is written down, so the note keeps it wherever it is moved.
+    if (readProperties(text).type === undefined) text = writeProperties(text, { type: typeId });
+    return this.createNote(dir, title, text);
+  }
+
+  /** Adds, changes or (with null) removes a note type. Notes keep what they say. */
+  async setType(id: string, type: NoteType | null): Promise<void> {
+    const settings = structuredClone(this.settings);
+    if (type) settings.types[id] = type;
+    else delete settings.types[id];
+    await this.saveSettings(settings);
+  }
+
+  /** An id for a new type, from its name: "Ship" becomes "ship", "Navi spaziali" "navi-spaziali". */
+  typeId(name: string): string {
+    const base = name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "type";
+    let id = base;
+    for (let n = 2; id in this.settings.types; n++) id = `${base}-${n}`;
+    return id;
+  }
+
+  templatePath(typeId: string): string {
+    return join(this.settings.folders.templates, `${this.settings.types[typeId]?.name ?? typeId}.md`);
+  }
+
+  /** The starting text of a type without a template: its type and suggested properties. */
+  private typeSkeleton(typeId: string): string {
+    const properties: Properties = { type: typeId };
+    for (const key of this.settings.types[typeId]?.properties ?? []) properties[key] = key === "aliases" ? [] : "";
+    return writeProperties("", properties) + "\n";
+  }
+
+  /** Opens the type's template, creating it from the suggested properties if needed. */
+  async ensureTemplate(typeId: string): Promise<string> {
+    const path = this.templatePath(typeId);
+    if (!(await this.fs.exists(path))) {
+      await this.fs.writeText(path, this.typeSkeleton(typeId));
+      await this.reload();
+    }
+    return path;
+  }
+
+  /** Renames a note, file or folder in place, keeping its extension, and fixes links. */
+  async renamePath(path: string, name: string): Promise<string> {
+    const ext = this.files.includes(path) ? extname(path) : "";
+    const clean = sanitizeTitle(ext && name.toLowerCase().endsWith(ext.toLowerCase()) ? stripExt(name) : name);
+    if (clean === "") return path;
+    const to = join(dirname(path), clean + ext);
+    if (to === path) return path;
+    if (to.toLowerCase() !== path.toLowerCase() && (await this.fs.exists(to))) throw new Error(`Already exists: ${clean + ext}`);
+    await this.apply([{ from: path, to }]);
+    return to;
+  }
+
+  /**
+   * Renames one of the project's own folders, such as an old Codex folder to the name the
+   * project's language gives it, fixing links and recording the new name in the settings.
+   */
+  async renameSectionFolder(key: keyof NovelSettings["folders"], name: string): Promise<string> {
+    const from = this.settings.folders[key];
+    if (!(await this.fs.exists(from))) throw new Error(`Missing folder: ${from}`);
+    const to = await this.renamePath(from, name);
+    await this.saveSettings({ ...this.settings, folders: { ...this.settings.folders, [key]: to } });
+    return to;
+  }
+
+  /** Moves a note, file or folder into `dir`, and fixes links. */
+  async movePath(path: string, dir: string): Promise<string> {
+    if (isWithin(dir, path)) throw new Error("Cannot move an item into itself");
+    if (dirname(path) === dir) return path;
+    const to = await this.freeName(dir, basename(path));
+    await this.apply([{ from: path, to }]);
+    return to;
   }
 
   /** Properties of a scene, or of a container through its folder note. */
@@ -206,16 +351,11 @@ export class Project {
   }
 
   /**
-   * Moves a scene, chapter or part to the project's .trash folder, where Obsidian keeps
-   * deleted notes too, so it can be recovered. Returns where it went.
+   * Moves a scene, chapter, part, note, file or folder to the project's .trash folder,
+   * where Obsidian keeps deleted notes too, so it can be recovered. Returns where it went.
    */
   async trash(path: string): Promise<string> {
-    const node = this.node(path);
-    const name = basename(path);
-    let target = join(TRASH, name);
-    for (let n = 2; await this.fs.exists(target); n++) {
-      target = join(TRASH, node.kind === "scene" ? name.replace(/\.md$/, ` ${n}.md`) : `${name} ${n}`);
-    }
+    const target = await this.freeName(TRASH, basename(path));
     await this.fs.mkdir(TRASH);
     await this.fs.rename(path, target);
     await this.reload();

@@ -131,3 +131,17 @@ select {
 .cm-format-gap { width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
 .cm-line.cm-dimmed { opacity: 0.35; transition: opacity 0.15s; }
 .raw .cm-content { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.85em; }
+.md-wikilink { cursor: pointer; }
+.md-wikilink.md-unresolved { opacity: 0.6; text-decoration: underline dotted; }
+.cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  font-family: var(--ui-font);
+  font-size: 13px;
+}
+.cm-tooltip-autocomplete > ul > li { padding: 3px 10px !important; }
+.cm-tooltip-autocomplete > ul > li[aria-selected] { background: var(--bg-active) !important; color: var(--text) !important; }
+.cm-completionDetail { color: var(--text-muted); margin-left: 8px; font-style: normal !important; }
+

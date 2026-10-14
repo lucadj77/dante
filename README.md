@@ -12,7 +12,7 @@ This repository is at **phase 1: the manuscript**.
 ```text
 My novel/
 ├── dante.yaml                  novel settings
-├── Codex/  Research/  Laboratory/  Views/  Templates/
+├── Story Bible/  Research/  Laboratory/  Views/  Templates/
 └── Manuscript/
     ├── 000 Prologue/
     │   ├── 000 Prologue.md     folder note: kind: prologue
@@ -30,6 +30,11 @@ My novel/
 - A folder's properties live in a note with the folder's own name (`kind`, and anything else).
 - Scene properties are YAML frontmatter, as in Obsidian.
 - Displayed chapter and part headings ("Chapter 3: The letter") are computed from `dante.yaml`.
+- Any note can have a type (character, place, plotline…) through its `type` property; a note
+  without one takes the type of the Story Bible folder it is in (`Story Bible/Characters/`). Types are
+  defined in `dante.yaml` under `types`, each with a name, a Story Bible folder, an icon and
+  suggested properties. `Templates/<type name>.md` is the starting text of a new note of that
+  type; `{{title}}` and `{{date}}` are filled in.
 
 ## What works in phase 1
 
@@ -50,6 +55,22 @@ My novel/
   chapters on a new page a third of the way down, scene separators). Comments are removed and
   pending revisions accepted or rejected.
 - Interface in English and Italian.
+
+## What phase 2 adds
+
+- Story Bible (Bibbia in Italian, Codex in earlier versions): notes grouped by type, shown as cards with their properties; new notes from the
+  type's template or suggested properties; types added and edited from the app.
+- Research and Laboratory: a file tree (new notes and folders, rename, drag to move, delete to
+  `.trash/`, add files from the computer). Notes open in the editor; images, PDF and HTML
+  (without its scripts) open in the app; anything else opens with the system's app.
+- Wikilinks with aliases: a click follows a link (Cmd/Ctrl+click on the line being edited),
+  `[[` suggests notes and their aliases, links to missing notes are drawn fainter. Renaming or
+  moving anything fixes the links to it.
+- A right panel with two tabs in every section: properties and links (backlinks with the lines
+  that hold them, outgoing links). Both side panels can be hidden from the top bar.
+- Search from the section bar (Cmd/Ctrl+Shift+F) over names, aliases and text, with a preview of
+  each result beside the text.
+- The section bar names its icons at once on hover, or beside them when widened.
 
 ## Development
 

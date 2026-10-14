@@ -26,6 +26,17 @@ export class TauriFs implements ProjectFs {
   remove(path: string) {
     return invoke<void>("remove_path", { root: this.root, path });
   }
+  async readBytes(path: string) {
+    return new Uint8Array(await invoke<ArrayBuffer>("read_bytes", { root: this.root, path }));
+  }
+  /** Opens the file with the application the system uses for its kind. */
+  openWithSystem(path: string) {
+    return invoke<void>("open_with_system", { root: this.root, path });
+  }
+  /** Copies files from the computer into `dir`; returns their project paths. */
+  importFiles(dir: string, sources: string[]) {
+    return invoke<string[]>("import_files", { root: this.root, dir, sources });
+  }
 }
 
 export function inTauri(): boolean {

@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
+  import { findNode, folderNotePath, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
+  import PropertyInput from "./PropertyInput.svelte";
+  import { displayValue, isList, parseValue } from "./propertyText";
 
   interface Props {
     project: Project;
@@ -50,20 +52,13 @@
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
   const kinds = $derived<ContainerKind[]>(p.project.settings.structure.parts ? ["part", "chapter", "prologue", "epilogue"] : ["chapter", "prologue", "epilogue"]);
 
-  /** Lists are edited as comma-separated text. */
-  function display(value: unknown): string {
-    if (Array.isArray(value)) return value.map(String).join(", ");
-    if (value === null || value === undefined) return "";
-    if (typeof value === "object") return JSON.stringify(value);
-    return String(value);
+  /** The file that holds the properties: the scene, or a container's folder note. */
+  function propertiesPath(path: string): string {
+    return node && node.kind !== "scene" ? folderNotePath(path) : path;
   }
 
-  function parse(text: string, previous: unknown): unknown {
-    if (Array.isArray(previous)) return text.split(",").map((s) => s.trim()).filter(Boolean);
-    if (typeof previous === "number" && text.trim() !== "" && !Number.isNaN(Number(text))) return Number(text);
-    if (typeof previous === "boolean") return text.trim() === "true";
-    return text;
-  }
+  const display = displayValue;
+  const parse = parseValue;
 
   async function update(changes: Properties) {
     if (!node) return;
@@ -77,7 +72,7 @@
   }
 
   function commit(key: string, text: string) {
-    const value = parse(text, properties[key]);
+    const value = parse(text, properties[key], key);
     if (display(value) !== display(properties[key])) void update({ [key]: value });
   }
 
@@ -85,7 +80,7 @@
     const key = newName.trim();
     if (!key || key in properties) return;
     newName = "";
-    void update({ [key]: "" });
+    void update({ [key]: isList(key, undefined) ? [] : "" });
   }
 
   function sum(texts: string[]) {
@@ -99,7 +94,7 @@
   const format = (n: number) => n.toLocaleString();
 </script>
 
-<aside class="panel">
+<div class="panel">
   <section>
     <h3>{t("panel.properties")}</h3>
     {#if node && node.kind !== "manuscript"}
@@ -144,10 +139,12 @@
           <div class="prop">
             <dt>{key}</dt>
             <dd>
-              <input
+              <PropertyInput
                 value={display(value)}
-                aria-label={key}
-                onchange={(e) => commit(key, (e.currentTarget as HTMLInputElement).value)}
+                label={key}
+                from={propertiesPath(node.path)}
+                placeholder={isList(key, value) ? t("panel.listHint") : ""}
+                onCommit={(text) => commit(key, text)}
               />
               <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => update({ [key]: undefined })}>×</button>
             </dd>
@@ -202,7 +199,7 @@
       </tbody>
     </table>
   </section>
-</aside>
+</div>
 
 <style>
   label.check {
@@ -222,12 +219,6 @@
   }
   .title-field input {
     font-size: 14px;
-  }
-  .panel {
-    border-left: 1px solid var(--border);
-    background: var(--bg-panel);
-    overflow: auto;
-    padding: 12px;
   }
   .panel > :global(section + section) {
     margin-top: 24px;
@@ -260,11 +251,8 @@
   dd {
     margin: 0;
     display: flex;
+    align-items: flex-start;
     gap: 4px;
-  }
-  dd input {
-    flex: 1;
-    min-width: 0;
   }
   .remove {
     border: none;

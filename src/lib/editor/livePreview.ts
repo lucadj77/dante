@@ -1,5 +1,6 @@
 import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
+import { linkHandler } from "./links";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 // Markers hidden when the cursor is elsewhere, as in Obsidian's live preview.
@@ -20,6 +21,7 @@ const marks: Record<string, Decoration> = {
   InlineCode: Decoration.mark({ class: "md-code" }),
 };
 const wikiLink = Decoration.mark({ class: "md-wikilink" });
+const wikiMissing = Decoration.mark({ class: "md-wikilink md-unresolved" });
 const wikiHidden = Decoration.replace({});
 const WIKILINK = /\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
 // ==highlight==, but not CriticMarkup's {==highlight==}.
@@ -75,6 +77,7 @@ function build(view: EditorView, focused: boolean): DecorationSet {
   const { state } = view;
   const active = focused ? activeLines(state) : new Set<number>();
   const found: { from: number; to: number; deco: Decoration }[] = [];
+  const links = state.facet(linkHandler);
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -123,14 +126,16 @@ function build(view: EditorView, focused: boolean): DecorationSet {
       const start = from + m.index!;
       const end = start + m[0].length;
       const lineActive = active.has(state.doc.lineAt(start).number);
+      // A link to a note that does not exist is drawn fainter, as in Obsidian.
+      const deco = links && !links.resolves(m[1].split("#")[0].trim()) ? wikiMissing : wikiLink;
       if (lineActive) {
-        found.push({ from: start, to: end, deco: wikiLink });
+        found.push({ from: start, to: end, deco });
       } else {
         // Show only the alias (or the target) of [[target|alias]].
         const shown = m[3] ?? m[1];
         const shownStart = m[3] ? end - 2 - m[3].length : start + 2;
         found.push({ from: start, to: shownStart, deco: wikiHidden });
-        found.push({ from: shownStart, to: shownStart + shown.length, deco: wikiLink });
+        found.push({ from: shownStart, to: shownStart + shown.length, deco });
         found.push({ from: shownStart + shown.length, to: end, deco: wikiHidden });
       }
     }
