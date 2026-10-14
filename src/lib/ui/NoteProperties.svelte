@@ -3,7 +3,7 @@
   import { noteTitle, noteType } from "$lib/core/notes";
   import type { Project } from "$lib/core/project";
   import { t } from "$lib/state.svelte";
-  import { displayValue, parseValue } from "./propertyText";
+  import { displayValue, isList, parseValue } from "./propertyText";
 
   interface Props {
     project: Project;
@@ -48,14 +48,14 @@
   }
 
   function commit(key: string, text: string) {
-    const value = parseValue(text, properties[key]);
+    const value = parseValue(text, properties[key], key);
     if (displayValue(value) !== displayValue(properties[key])) void update({ [key]: value });
   }
 
   function add(key = newName.trim()) {
     if (!key || key in properties) return;
     newName = "";
-    void update({ [key]: key === "aliases" ? [] : "" });
+    void update({ [key]: isList(key, undefined) ? [] : "" });
   }
 </script>
 
@@ -103,7 +103,13 @@
         <div class="prop">
           <dt>{key}</dt>
           <dd>
-            <input value={displayValue(value)} aria-label={key} onchange={(e) => commit(key, (e.currentTarget as HTMLInputElement).value)} />
+            <input
+              value={displayValue(value)}
+              aria-label={key}
+              placeholder={isList(key, value) ? t("panel.listHint") : ""}
+              title={isList(key, value) ? t("panel.listHint") : undefined}
+              onchange={(e) => commit(key, (e.currentTarget as HTMLInputElement).value)}
+            />
             <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => update({ [key]: undefined })}>×</button>
           </dd>
         </div>

@@ -1,6 +1,6 @@
-import { autocompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
+import { acceptCompletion, autocompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { Facet, Prec, type Extension } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 
 export interface LinkSuggestion {
   /** What goes between [[ and ]]: the shortest name that reaches the note. */
@@ -98,5 +98,7 @@ export function wikilinks(handler: LinkHandler | undefined): Extension {
     linkHandler.of(handler),
     Prec.high(clicks),
     autocompletion({ override: [complete], icons: false, activateOnTyping: true }),
+    // Tab takes the highlighted suggestion too, as Enter does.
+    Prec.highest(keymap.of([{ key: "Tab", run: acceptCompletion }])),
   ];
 }

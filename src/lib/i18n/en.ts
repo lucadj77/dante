@@ -284,6 +284,7 @@ export const en = {
   "search.open": "Open",
   "codex.newName": "Name",
   "codex.create": "Create",
+  "panel.listHint": "Several values, separated by commas",
 } as const;
 
 export type MessageKey = keyof typeof en;

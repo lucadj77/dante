@@ -6,7 +6,7 @@
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
-  import { displayValue, parseValue } from "./propertyText";
+  import { displayValue, isList, parseValue } from "./propertyText";
 
   interface Props {
     project: Project;
@@ -66,7 +66,7 @@
   }
 
   function commit(key: string, text: string) {
-    const value = parse(text, properties[key]);
+    const value = parse(text, properties[key], key);
     if (display(value) !== display(properties[key])) void update({ [key]: value });
   }
 
@@ -74,7 +74,7 @@
     const key = newName.trim();
     if (!key || key in properties) return;
     newName = "";
-    void update({ [key]: "" });
+    void update({ [key]: isList(key, undefined) ? [] : "" });
   }
 
   function sum(texts: string[]) {

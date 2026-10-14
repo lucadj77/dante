@@ -284,4 +284,5 @@ export const it: Partial<Record<MessageKey, string>> = {
   "search.open": "Apri",
   "codex.newName": "Nome",
   "codex.create": "Crea",
+  "panel.listHint": "Più valori, separati da virgole",
 };
