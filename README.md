@@ -12,7 +12,7 @@ This repository is at **phase 1: the manuscript**.
 ```text
 My novel/
 ├── dante.yaml                  novel settings
-├── Codex/  Research/  Laboratory/  Views/  Templates/
+├── Story Bible/  Research/  Laboratory/  Views/  Templates/
 └── Manuscript/
     ├── 000 Prologue/
     │   ├── 000 Prologue.md     folder note: kind: prologue
@@ -31,8 +31,8 @@ My novel/
 - Scene properties are YAML frontmatter, as in Obsidian.
 - Displayed chapter and part headings ("Chapter 3: The letter") are computed from `dante.yaml`.
 - Any note can have a type (character, place, plotline…) through its `type` property; a note
-  without one takes the type of the Codex folder it is in (`Codex/Characters/`). Types are
-  defined in `dante.yaml` under `types`, each with a name, a Codex folder, an icon and
+  without one takes the type of the Story Bible folder it is in (`Story Bible/Characters/`). Types are
+  defined in `dante.yaml` under `types`, each with a name, a Story Bible folder, an icon and
   suggested properties. `Templates/<type name>.md` is the starting text of a new note of that
   type; `{{title}}` and `{{date}}` are filled in.
 
@@ -58,7 +58,7 @@ My novel/
 
 ## What phase 2 adds
 
-- Codex: notes grouped by type, shown as cards with their properties; new notes from the
+- Story Bible (Bibbia in Italian, Codex in earlier versions): notes grouped by type, shown as cards with their properties; new notes from the
   type's template or suggested properties; types added and edited from the app.
 - Research and Laboratory: a file tree (new notes and folders, rename, drag to move, delete to
   `.trash/`, add files from the computer). Notes open in the editor; images, PDF and HTML

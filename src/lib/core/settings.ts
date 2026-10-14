@@ -159,10 +159,10 @@ const LABELS: Record<string, { part: string; chapter: string; scene: string }> =
 
 /** Folder names of a new project, in the language of the novel. */
 const FOLDERS: Record<string, NovelSettings["folders"]> = {
-  en: { codex: "Codex", research: "Research", laboratory: "Laboratory", manuscript: "Manuscript", views: "Views", templates: "Templates" },
+  en: { codex: "Story Bible", research: "Research", laboratory: "Laboratory", manuscript: "Manuscript", views: "Views", templates: "Templates" },
   it: { codex: "Bibbia", research: "Ricerca", laboratory: "Laboratorio", manuscript: "Manoscritto", views: "Viste", templates: "Modelli" },
-  es: { codex: "Códex", research: "Investigación", laboratory: "Laboratorio", manuscript: "Manuscrito", views: "Vistas", templates: "Plantillas" },
-  fr: { codex: "Codex", research: "Recherche", laboratory: "Laboratoire", manuscript: "Manuscrit", views: "Vues", templates: "Modèles" },
+  es: { codex: "Biblia", research: "Investigación", laboratory: "Laboratorio", manuscript: "Manuscrito", views: "Vistas", templates: "Plantillas" },
+  fr: { codex: "Bible", research: "Recherche", laboratory: "Laboratoire", manuscript: "Manuscrit", views: "Vues", templates: "Modèles" },
 };
 
 type TypeNames = Record<"character" | "place" | "object" | "event" | "group" | "plotline", [string, string, string[]]>;
@@ -241,8 +241,13 @@ export function defaultFolders(language: string): NovelSettings["folders"] {
   return { ...(FOLDERS[language.slice(0, 2)] ?? FOLDERS.en) };
 }
 
-/** Folder names in English, the app's base language, for projects that already use them. */
-export const ENGLISH_FOLDERS = FOLDERS.en;
+/**
+ * Folder names a project may already use instead of its language's: the English ones, the
+ * app's base language, and the names of earlier versions.
+ */
+export function knownFolders(key: keyof NovelSettings["folders"]): string[] {
+  return key === "codex" ? [FOLDERS.en.codex, "Codex", "Códex"] : [FOLDERS.en[key]];
+}
 
 export function defaultSettings(language = "en"): NovelSettings {
   const labels = LABELS[language.slice(0, 2)] ?? LABELS.en;

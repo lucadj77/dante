@@ -15,7 +15,7 @@ import { basename, dirname, extname, isMarkdown, isWithin, join, rebase, stripEx
 import {
   defaultFolders,
   defaultSettings,
-  ENGLISH_FOLDERS,
+  knownFolders,
   parseSettings,
   serializeSettings,
   SETTINGS_FILE,
@@ -105,12 +105,16 @@ export class Project {
     this.settings = (await this.fs.exists(SETTINGS_FILE))
       ? parseSettings(await this.fs.readText(SETTINGS_FILE))
       : defaultSettings(this.language);
-    // A project that already has the English folders keeps them, whatever its language.
+    // A project that already has the English folders, or older names, keeps them.
     const localized = defaultFolders(this.settings.language);
     for (const key of Object.keys(localized) as (keyof NovelSettings["folders"])[]) {
       const name = this.settings.folders[key];
-      if (name === localized[key] && name !== ENGLISH_FOLDERS[key] && !(await this.fs.exists(name)) && (await this.fs.exists(ENGLISH_FOLDERS[key]))) {
-        this.settings.folders[key] = ENGLISH_FOLDERS[key];
+      if (name !== localized[key] || (await this.fs.exists(name))) continue;
+      for (const other of knownFolders(key)) {
+        if (other !== name && (await this.fs.exists(other))) {
+          this.settings.folders[key] = other;
+          break;
+        }
       }
     }
     this.manuscript = await loadManuscript(this.fs, this.settings);
@@ -271,6 +275,18 @@ export class Project {
     if (to === path) return path;
     if (to.toLowerCase() !== path.toLowerCase() && (await this.fs.exists(to))) throw new Error(`Already exists: ${clean + ext}`);
     await this.apply([{ from: path, to }]);
+    return to;
+  }
+
+  /**
+   * Renames one of the project's own folders, such as an old Codex folder to the name the
+   * project's language gives it, fixing links and recording the new name in the settings.
+   */
+  async renameSectionFolder(key: keyof NovelSettings["folders"], name: string): Promise<string> {
+    const from = this.settings.folders[key];
+    if (!(await this.fs.exists(from))) throw new Error(`Missing folder: ${from}`);
+    const to = await this.renamePath(from, name);
+    await this.saveSettings({ ...this.settings, folders: { ...this.settings.folders, [key]: to } });
     return to;
   }
 

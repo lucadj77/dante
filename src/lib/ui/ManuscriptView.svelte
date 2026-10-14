@@ -10,7 +10,8 @@
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SidePanel from "./SidePanel.svelte";
-  import { columns, layout } from "./layout.svelte";
+  import { columns, layout, width } from "./layout.svelte";
+  import Resizer from "./Resizer.svelte";
   import { markOnly } from "./folding.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
@@ -345,7 +346,9 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="manuscript" class:fullscreen style:grid-template-columns={columns(fullscreen ? 0 : 260, fullscreen ? 0 : 280)}>
+<div class="manuscript" class:fullscreen style:grid-template-columns={columns("manuscript", fullscreen ? 0 : 260, fullscreen ? 0 : 280)}>
+  {#if !fullscreen && layout.left}<Resizer section="manuscript" side="left" usual={260} other={layout.right ? width("manuscript", "right", 280) : 0} />{/if}
+  {#if !fullscreen && layout.right}<Resizer section="manuscript" side="right" usual={280} other={layout.left ? width("manuscript", "left", 260) : 0} />{/if}
   {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
@@ -531,6 +534,7 @@
 
 <style>
   .manuscript {
+    position: relative;
     display: grid;
     height: 100%;
   }

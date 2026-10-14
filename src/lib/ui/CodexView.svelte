@@ -3,7 +3,8 @@
   import { fold, noteTitle, noteType } from "$lib/core/notes";
   import { isWithin, rebase } from "$lib/core/path";
   import type { Project } from "$lib/core/project";
-  import type { NoteType } from "$lib/core/settings";
+  import { defaultFolders, type NoteType } from "$lib/core/settings";
+  import { TauriFs } from "$lib/tauriFs";
   import { t } from "$lib/state.svelte";
   import { confirmDelete } from "./dialogs";
   import { displayValue } from "./propertyText";
@@ -11,7 +12,8 @@
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
   import SidePanel from "./SidePanel.svelte";
-  import { columns, layout } from "./layout.svelte";
+  import { columns, layout, width } from "./layout.svelte";
+  import Resizer from "./Resizer.svelte";
 
   interface Props {
     project: Project;
@@ -36,6 +38,45 @@
   let renaming = $state(false);
   let titleDraft = $state("");
   let editor = $state<NoteEditor | null>(null);
+
+  /** The folder's name in the novel's language, when the project still has an older one. */
+  const folderName = $derived.by(() => {
+    void p.rev;
+    const wanted = defaultFolders(p.project.settings.language).codex;
+    const current = p.project.settings.folders.codex;
+    return current !== wanted && !p.project.folders.includes(wanted) && p.project.folders.includes(current) ? wanted : null;
+  });
+  const keepKey = $derived(`dante.keep-folder|${p.project.fs instanceof TauriFs ? p.project.fs.root : "sample"}`);
+  let kept = $state(false);
+  $effect(() => {
+    try {
+      kept = localStorage.getItem(keepKey) === p.project.settings.folders.codex;
+    } catch {
+      kept = false;
+    }
+  });
+
+  async function renameFolder(name: string) {
+    error = "";
+    try {
+      await editor?.flush();
+      const from = p.project.settings.folders.codex;
+      const to = await p.project.renameSectionFolder("codex", name);
+      await p.onReload();
+      if (p.open && isWithin(p.open, from)) p.onShow(rebase(p.open, from, to));
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  function keepFolder() {
+    kept = true;
+    try {
+      localStorage.setItem(keepKey, p.project.settings.folders.codex);
+    } catch {
+      // Asked again next time.
+    }
+  }
 
   const types = $derived.by(() => {
     void p.rev;
@@ -199,7 +240,9 @@
   }
 </script>
 
-<div class="codex" style:grid-template-columns={columns(220, 280)}>
+<div class="codex" style:grid-template-columns={columns("codex", 220, 280)}>
+  {#if layout.left}<Resizer section="codex" side="left" usual={220} other={layout.right ? width("codex", "right", 280) : 0} />{/if}
+  {#if layout.right}<Resizer section="codex" side="right" usual={280} other={layout.left ? width("codex", "left", 220) : 0} />{/if}
   {#if layout.left}
   <aside class="types" aria-label={t("section.codex")}>
     <ul>
@@ -246,6 +289,13 @@
   {/if}
 
   <main class="center">
+    {#if folderName && !kept}
+      <div class="folder-note">
+        <span>{t("codex.oldFolder", { folder: p.project.settings.folders.codex, name: folderName })}</span>
+        <button onclick={() => renameFolder(folderName!)}>{t("codex.renameFolder", { name: folderName })}</button>
+        <button onclick={keepFolder}>{t("codex.keepFolder")}</button>
+      </div>
+    {/if}
     {#if error}
       <p class="error" role="alert">{error}</p>
     {/if}
@@ -367,9 +417,28 @@
 
 <style>
   .codex {
+    position: relative;
     display: grid;
     height: 100%;
     min-height: 0;
+  }
+  .folder-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+    font-size: 13px;
+  }
+  .folder-note span {
+    flex: 1;
+    min-width: 200px;
+    color: var(--text-muted);
+  }
+  .folder-note button {
+    font-size: 12px;
   }
   .types {
     border-right: 1px solid var(--border);

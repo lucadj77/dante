@@ -18,6 +18,19 @@ function sample() {
 }
 
 describe("note types", () => {
+  it("renames an old Codex folder to the language's name, links and settings too", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  codex: Codex\n",
+      "Codex/Personaggi/Marta.md": "",
+      "Ricerca/Note.md": "See [[Codex/Personaggi/Marta]] and [[Marta]].",
+    });
+    const p = await Project.open(fs);
+    expect(await p.renameSectionFolder("codex", "Bibbia")).toBe("Bibbia");
+    expect(p.settings.folders.codex).toBe("Bibbia");
+    expect(fs.files.get("Ricerca/Note.md")).toBe("See [[Marta]] and [[Marta]].");
+    expect(fs.files.get("dante.yaml")).toContain("codex: Bibbia");
+  });
+
   it("an Italian project keeps its Codex folder, though new ones get a Bibbia", async () => {
     const p = await Project.open(new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\n", "Codex/Marta.md": "" }));
     expect(p.settings.folders.codex).toBe("Codex");

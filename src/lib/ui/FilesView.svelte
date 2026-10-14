@@ -10,7 +10,8 @@
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
   import SidePanel from "./SidePanel.svelte";
-  import { columns, layout } from "./layout.svelte";
+  import { columns, layout, width } from "./layout.svelte";
+  import Resizer from "./Resizer.svelte";
   import { markOnly } from "./folding.svelte";
 
   interface Props {
@@ -44,6 +45,8 @@
   const types = $derived(p.project.settings.types);
   const canImport = $derived(p.project.fs instanceof TauriFs);
   const foldScope = $derived(`${p.project.fs instanceof TauriFs ? p.project.fs.root : "sample"}|${p.root}`);
+  /** Research and Laboratory keep their own panel widths. */
+  const widthKey = $derived(`files|${p.root}`);
   const folders = $derived(p.project.folders.filter((f) => isWithin(f, p.root) && f !== p.root));
 
   /** A note with a type shows the type's icon in the tree. */
@@ -132,7 +135,9 @@
   }
 </script>
 
-<div class="files" style:grid-template-columns={columns(260, 280)}>
+<div class="files" style:grid-template-columns={columns(widthKey, 260, 280)}>
+  {#if layout.left}<Resizer section={widthKey} side="left" usual={260} other={layout.right ? width(widthKey, "right", 280) : 0} />{/if}
+  {#if layout.right}<Resizer section={widthKey} side="right" usual={280} other={layout.left ? width(widthKey, "left", 260) : 0} />{/if}
   {#if layout.left}
   <aside class="tree" aria-label={p.title}>
     <div class="tree-actions">
@@ -218,6 +223,7 @@
 
 <style>
   .files {
+    position: relative;
     display: grid;
     height: 100%;
     min-height: 0;

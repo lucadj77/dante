@@ -4,12 +4,12 @@ import { MemoryFs } from "./core/fs";
 export function sampleProject(): MemoryFs {
   return new MemoryFs({
     "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\n",
-    "Codex/Characters/Marta Rinaldi.md":
+    "Story Bible/Characters/Marta Rinaldi.md":
       "---\ntype: character\nrole: protagonist\nage: 42\naliases: [Marta]\n---\nMarta returns home after twenty years. She grew up in [[Rinaldi House]] with her mother, [[Elena Rinaldi|Elena]].\n",
-    "Codex/Characters/Elena Rinaldi.md":
+    "Story Bible/Characters/Elena Rinaldi.md":
       "---\ntype: character\nrole: mother\naliases: [Elena]\n---\nDied in the winter before the story begins. Her letter sets everything in motion.\n",
-    "Codex/Places/Rinaldi House.md": "---\ntype: place\nregion: Liguria\n---\nA stone house above the harbour. See [[Harbours of Liguria]].\n",
-    "Codex/Plotlines/The inheritance.md": "---\ntype: plotline\nstatus: open\n---\nWho gets the house, and why Elena wrote the letter.\n",
+    "Story Bible/Places/Rinaldi House.md": "---\ntype: place\nregion: Liguria\n---\nA stone house above the harbour. See [[Harbours of Liguria]].\n",
+    "Story Bible/Plotlines/The inheritance.md": "---\ntype: plotline\nstatus: open\n---\nWho gets the house, and why Elena wrote the letter.\n",
     "Templates/Character.md": "---\nrole:\nage:\naliases: []\n---\n## Who {{title}} is\n\n## What {{title}} wants\n",
     "Manuscript/000 Prologue/000 Prologue.md": "---\nkind: prologue\n---\n",
     "Manuscript/000 Prologue/010 The call.md":
