@@ -29,6 +29,8 @@ export const en = {
   "tree.newChapter": "New chapter",
   "tree.newPart": "New part",
   "tree.rename": "Rename",
+  "tree.renameHint": "Click to rename (in the tree: double click or F2)",
+  "panel.title": "Title",
   "tree.empty": "The manuscript is empty.",
   "untitled": "Untitled",
   "editor.raw": "Markdown",

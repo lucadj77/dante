@@ -18,6 +18,7 @@
     onChanged: () => Promise<void>;
     beforeRead: (path: string) => Promise<void>;
     onRestored: () => void;
+    onRename: (path: string, title: string) => void;
   }
   let p: Props = $props();
 
@@ -100,7 +101,22 @@
   <section>
     <h3>{t("panel.properties")}</h3>
     {#if node && node.kind !== "manuscript"}
-      <p class="what">{t(`kind.${node.kind}` as MessageKey)} · {node.title}</p>
+      <p class="what">{t(`kind.${node.kind}` as MessageKey)}</p>
+      <label class="title-field">
+        <span>{t("panel.title")}</span>
+        {#key node.path}
+          <input
+            value={node.title}
+            onchange={(e) => {
+              const value = (e.currentTarget as HTMLInputElement).value;
+              if (value.trim() && value !== node.title) p.onRename(node.path, value);
+            }}
+            onkeydown={(e) => {
+              if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+            }}
+          />
+        {/key}
+      </label>
       {#if entries.length === 0}
         <p class="muted">{t("panel.noProperties")}</p>
       {/if}
@@ -170,6 +186,17 @@
 </aside>
 
 <style>
+  .title-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .title-field input {
+    font-size: 14px;
+  }
   .panel {
     border-left: 1px solid var(--border);
     background: var(--bg-panel);

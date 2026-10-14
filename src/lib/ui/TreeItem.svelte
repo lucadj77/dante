@@ -34,6 +34,7 @@
   }
 
   function commit() {
+    if (!editing) return;
     editing = false;
     if (draft.trim() && draft !== p.node.title) p.onRename(p.node.path, draft);
   }
@@ -59,10 +60,10 @@
     class:drop-after={over === "after"}
     class:drop-inside={over === "inside"}
     style="padding-left: {8 + p.depth * 14}px"
-    draggable={!editing}
+    draggable={editing ? undefined : "true"}
     role="button"
     tabindex="0"
-    title={t(`kind.${p.node.kind}` as MessageKey)}
+    title={`${t(`kind.${p.node.kind}` as MessageKey)} · ${t("tree.renameHint")}`}
     onclick={() => p.onSelect(p.node.path)}
     ondblclick={startRename}
     onkeydown={(e) => {
@@ -102,7 +103,9 @@
         use:focusOnMount
         onblur={commit}
         onclick={(e) => e.stopPropagation()}
+        ondblclick={(e) => e.stopPropagation()}
         onkeydown={(e) => {
+          e.stopPropagation();
           if (e.key === "Enter") commit();
           if (e.key === "Escape") editing = false;
         }}

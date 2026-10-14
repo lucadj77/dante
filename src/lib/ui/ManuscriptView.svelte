@@ -5,6 +5,7 @@
   import type { Project } from "$lib/core/project";
   import { t } from "$lib/state.svelte";
   import { app } from "$lib/state.svelte";
+  import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
@@ -176,6 +177,36 @@
     }, "start");
   }
 
+  /** Renames without moving the selection: paths inside a renamed chapter follow it. */
+  async function rename(path: string, title: string) {
+    let renamed = path;
+    const before = { selected, active };
+    await run(async () => {
+      renamed = await project.rename(path, title);
+    });
+    if (before.selected) selected = rebase(before.selected, path, renamed);
+    if (before.active) active = rebase(before.active, path, renamed);
+  }
+
+  let renamingHeading = $state<string | null>(null);
+  let headingDraft = $state("");
+
+  function startHeading(path: string) {
+    headingDraft = findNode(path)?.title ?? "";
+    renamingHeading = path;
+  }
+
+  function commitHeading(path: string) {
+    if (renamingHeading !== path) return;
+    renamingHeading = null;
+    if (headingDraft.trim()) void rename(path, headingDraft);
+  }
+
+  function focusOnMount(el: HTMLInputElement) {
+    el.focus();
+    el.select();
+  }
+
   function drop(target: string, position: DropPosition) {
     const source = dragging;
     dragging = null;
@@ -235,7 +266,7 @@
               selected = path;
               active = path;
             }}
-            onRename={(path, title) => run(() => project.rename(path, title))}
+            onRename={rename}
             onDragStart={(path) => (dragging = path)}
             onDrop={drop}
           />
@@ -270,7 +301,22 @@
         {/if}
         {#each items as item (item.type === "scene" ? `${item.node.path}|${raw}` : `h|${item.path}`)}
           {#if item.type === "heading"}
-            <h2 class="heading {item.kind}">{item.text}</h2>
+            <h2 class="heading {item.kind}">
+              {#if renamingHeading === item.path}
+                <input
+                  bind:value={headingDraft}
+                  use:focusOnMount
+                  aria-label={t("tree.rename")}
+                  onblur={() => commitHeading(item.path)}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter") commitHeading(item.path);
+                    if (e.key === "Escape") renamingHeading = null;
+                  }}
+                />
+              {:else}
+                <button title={t("tree.renameHint")} onclick={() => startHeading(item.path)}>{item.text}</button>
+              {/if}
+            </h2>
           {:else}
             <SceneBlock
               {project}
@@ -286,6 +332,7 @@
               onFocus={(path) => (active = path)}
               onText={(path, text) => (texts[path] = raw ? splitNote(text).body : text)}
               onAddAfter={addAfter}
+              onRename={rename}
             />
           {/if}
         {/each}
@@ -309,6 +356,7 @@
         await editors.get(path)?.flush();
       }}
       onRestored={onDiskChange}
+      onRename={rename}
     />
   {/if}
 </div>
@@ -381,6 +429,19 @@
     text-align: center;
     margin: 48px 0 8px;
     font-size: 1.6em;
+  }
+  .heading button {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: text;
+  }
+  .heading input {
+    font: inherit;
+    text-align: center;
+    width: 100%;
   }
   .heading.part {
     font-size: 2em;

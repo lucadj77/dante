@@ -29,6 +29,7 @@
     onFocus: (path: string) => void;
     onText: (path: string, text: string) => void;
     onAddAfter: (path: string) => void;
+    onRename: (path: string, title: string) => void;
   }
   let props: Props = $props();
   // Each block is keyed by its path in the list, so the path never changes.
@@ -43,6 +44,24 @@
   let applyingRemote = false;
   let snapshotting: Promise<void> | null = null;
   let conflict = $state(false);
+  let renaming = $state(false);
+  let draft = $state("");
+
+  function startRename() {
+    draft = props.node.title;
+    renaming = true;
+  }
+
+  function commitRename() {
+    if (!renaming) return;
+    renaming = false;
+    if (draft.trim() && draft !== props.node.title) props.onRename(path, draft);
+  }
+
+  function focusOnMount(el: HTMLInputElement) {
+    el.focus();
+    el.select();
+  }
   // svelte-ignore state_referenced_locally
   let seenDiskRev = props.diskRev;
 
@@ -98,6 +117,8 @@
       });
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
       props.register(path, handle);
+    }, () => {
+      // Moved or renamed meanwhile: the reloaded tree mounts the scene under its new path.
     });
     return () => {
       destroyed = true;
@@ -108,8 +129,10 @@
     };
   });
 
+  // The props are read before the editor exists too, so the effect follows them.
   $effect(() => {
-    editor?.setModes({ typewriter: props.typewriter, focus: props.focusMode });
+    const modes = { typewriter: props.typewriter, focus: props.focusMode };
+    editor?.setModes(modes);
   });
 
   // Files changed on disk: take the new text unless there are unsaved edits.
@@ -143,7 +166,22 @@
 
 <section class="scene" class:raw={props.raw}>
   <header>
-    <span class="title">{props.node.title}</span>
+    {#if renaming}
+      <input
+        class="title"
+        bind:value={draft}
+        use:focusOnMount
+        aria-label={t("tree.rename")}
+        onblur={commitRename}
+        onkeydown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") commitRename();
+          if (e.key === "Escape") renaming = false;
+        }}
+      />
+    {:else}
+      <button class="title" title={t("tree.renameHint")} onclick={startRename}>{props.node.title}</button>
+    {/if}
     <button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>
   </header>
   {#if conflict}
@@ -189,6 +227,23 @@
   }
   .title {
     order: 1;
+    border: none;
+    background: none;
+    padding: 0 4px;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: text;
+  }
+  input.title {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 13px;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    min-width: 16ch;
   }
   header::after {
     order: 2;
