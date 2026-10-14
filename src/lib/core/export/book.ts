@@ -1,9 +1,12 @@
 import { parser as baseParser } from "@lezer/markdown";
 import { GFM } from "@lezer/markdown";
 import type { SyntaxNode } from "@lezer/common";
-import { splitNote } from "../frontmatter";
-import { headings, type ContainerKind, type ManuscriptNode } from "../manuscript";
+import { readProperties, splitNote } from "../frontmatter";
+import { headingInfo, type ContainerKind, type ManuscriptNode } from "../manuscript";
+import { formatNumber } from "../numbering";
 import type { Project } from "../project";
+import type { ParatextSettings } from "../settings";
+import { applyTypography } from "../typography";
 
 // The manuscript as a format-neutral document, built once and rendered by each
 // exporter (DOCX now; EPUB and PDF later).
@@ -24,20 +27,38 @@ export type Block =
   | { type: "quote"; runs: Run[] }
   | { type: "break" };
 
+export interface BookScene {
+  /** Scene number in the chosen style; empty when scene headings show no number. */
+  number: string;
+  /** Title shown above the scene; empty when scene headings show no title. */
+  title: string;
+  blocks: Block[];
+}
+
 export interface BookEntry {
   kind: ContainerKind | "loose";
+  /** The whole heading on one line. */
   heading: string;
-  /** Each scene is a list of blocks; scenes are separated when rendered. */
-  scenes: Block[][];
+  /** Label and number, such as "Chapter 3", for headings on two lines. */
+  number: string;
+  title: string;
+  scenes: BookScene[];
 }
 
 export interface Book {
   title: string;
+  subtitle: string;
   author: string;
   language: string;
+  paratext: ParatextSettings;
   entries: BookEntry[];
   words: number;
+  /** Characters including spaces, for counts in standard pages. */
+  characters: number;
 }
+
+/** Property holding the title to print when it differs from the working title. */
+export const PUBLISHED_TITLE = "published_title";
 
 const parser = baseParser.configure(GFM);
 
@@ -150,55 +171,121 @@ function countWords(blocks: Block[]): number {
   return n;
 }
 
+function countCharacters(blocks: Block[]): number {
+  let n = 0;
+  for (const b of blocks) {
+    if (b.type !== "break") for (const r of b.runs) n += [...r.text].length;
+  }
+  return n;
+}
+
 export async function buildBook(
   project: Project,
   options: { revisions?: "accept" | "reject"; root?: ManuscriptNode } = {},
 ): Promise<Book> {
   const { settings } = project;
+  const docx = settings.export.docx;
+  const typography = settings.export.typography;
+  const typeset = (text: string) => applyTypography(text, typography);
   const root = options.root ?? project.manuscript;
-  const heads = headings(project.manuscript, settings);
+
+  // Published titles replace working titles; they live in scene notes and folder notes.
+  const published = new Map<string, string>();
+  const collect = async (node: ManuscriptNode) => {
+    const file = node.kind === "scene" ? node.path : node.notePath;
+    if (file) {
+      const value = readProperties(await project.fs.readText(file))[PUBLISHED_TITLE];
+      if (typeof value === "string" && value.trim()) published.set(node.path, value.trim());
+    }
+    for (const child of node.children) await collect(child);
+  };
+  await collect(project.manuscript);
+  const titleOf = (node: ManuscriptNode) => typeset(published.get(node.path) ?? node.title);
+  const heads = headingInfo(project.manuscript, settings, titleOf);
+
   const entries: BookEntry[] = [];
   let words = 0;
+  let characters = 0;
+  let sceneCount = 0;
 
-  const readScene = async (node: ManuscriptNode) => {
+  const readScene = async (node: ManuscriptNode): Promise<BookScene> => {
     const body = splitNote(await project.fs.readText(node.path)).body;
-    const blocks = markdownToBlocks(cleanSource(body, options.revisions));
+    const blocks = markdownToBlocks(typeset(cleanSource(body, options.revisions)));
     words += countWords(blocks);
-    return blocks;
+    characters += countCharacters(blocks);
+    sceneCount++;
+    const showNumber = docx.sceneHeadings === "number" || docx.sceneHeadings === "numberAndTitle";
+    const showTitle = docx.sceneHeadings === "title" || docx.sceneHeadings === "numberAndTitle";
+    return {
+      number: showNumber ? formatNumber(sceneCount, docx.sceneNumbering, settings.language) : "",
+      title: showTitle ? titleOf(node) : "",
+      blocks,
+    };
   };
 
-  const visit = async (node: ManuscriptNode) => {
-    let current: BookEntry | null = null;
-    for (const child of node.children) {
-      if (child.kind === "scene") {
-        if (!current) {
-          // Scenes outside any chapter still need a place in the book.
-          current = node.kind === "manuscript" || node.kind === "scene"
-            ? { kind: "loose", heading: "", scenes: [] }
-            : { kind: node.kind as ContainerKind, heading: heads.get(node.path) ?? node.title, scenes: [] };
-          entries.push(current);
-        }
-        current.scenes.push(await readScene(child));
-      } else {
-        current = null;
-        if (child.kind === "part") entries.push({ kind: "part", heading: heads.get(child.path) ?? child.title, scenes: [] });
-        if (child.kind === "part") {
-          await visit(child);
-        } else {
-          const entry: BookEntry = { kind: child.kind as ContainerKind, heading: heads.get(child.path) ?? child.title, scenes: [] };
-          entries.push(entry);
-          for (const scene of child.children.filter((c) => c.kind === "scene")) entry.scenes.push(await readScene(scene));
-          // Folders nested deeper than a chapter are read in order too.
-          for (const sub of child.children.filter((c) => c.kind !== "scene")) await visit({ ...child, children: [sub] });
-        }
-      }
+  const entryFor = (node: ManuscriptNode, kind: BookEntry["kind"]): BookEntry => {
+    const info = heads.get(node.path);
+    return { kind, heading: info?.text ?? titleOf(node), number: info?.number ?? "", title: info?.title ?? titleOf(node), scenes: [] };
+  };
+
+  const readScenes = async (entry: BookEntry, scenes: ManuscriptNode[]) => {
+    if (docx.sceneNumbersRestart) sceneCount = 0;
+    for (const scene of scenes) entry.scenes.push(await readScene(scene));
+    if (docx.omitSingleSceneHeading && entry.scenes.length === 1) {
+      entry.scenes[0].number = "";
+      entry.scenes[0].title = "";
     }
   };
 
+  const visit = async (node: ManuscriptNode) => {
+    // Scenes outside any chapter still need a place in the book.
+    let loose: ManuscriptNode[] = [];
+    const flushLoose = async () => {
+      if (!loose.length) return;
+      const entry: BookEntry = node.kind === "manuscript" || node.kind === "part"
+        ? { kind: "loose", heading: "", number: "", title: "", scenes: [] }
+        : entryFor(node, node.kind as ContainerKind);
+      entries.push(entry);
+      await readScenes(entry, loose);
+      loose = [];
+    };
+    for (const child of node.children) {
+      if (child.kind === "scene") {
+        loose.push(child);
+        continue;
+      }
+      await flushLoose();
+      if (child.kind === "part") {
+        entries.push(entryFor(child, "part"));
+        await visit(child);
+      } else {
+        const entry = entryFor(child, child.kind as ContainerKind);
+        entries.push(entry);
+        await readScenes(entry, child.children.filter((c) => c.kind === "scene"));
+        // Folders nested deeper than a chapter are read in order too.
+        for (const sub of child.children.filter((c) => c.kind !== "scene")) await visit({ ...child, children: [sub] });
+      }
+    }
+    await flushLoose();
+  };
+
   if (root.kind === "scene") {
-    entries.push({ kind: "loose", heading: "", scenes: [await readScene(root)] });
+    const entry: BookEntry = { kind: "loose", heading: "", number: "", title: "", scenes: [] };
+    entries.push(entry);
+    await readScenes(entry, [root]);
   } else {
     await visit(root);
   }
-  return { title: settings.title, author: settings.author, language: settings.language, entries, words };
+  const paratext = { ...settings.export.paratext };
+  for (const key of Object.keys(paratext) as (keyof ParatextSettings)[]) paratext[key] = typeset(paratext[key]);
+  return {
+    title: typeset(settings.title),
+    subtitle: typeset(settings.subtitle),
+    author: settings.author,
+    language: settings.language,
+    paratext,
+    entries,
+    words,
+    characters,
+  };
 }

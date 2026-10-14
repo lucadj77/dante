@@ -54,4 +54,48 @@ describe("book", () => {
     // A DOCX file is a zip archive.
     expect([...bytes.slice(0, 2)]).toEqual([0x50, 0x4b]);
   });
+
+  it("uses published titles, scene headings and typography", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: L'eredità\nauthor: Ada Rossi\nlanguage: it\nexport:\n  docx:\n    sceneHeadings: numberAndTitle\n    omitSingleSceneHeading: true\n",
+      "Manuscript/010 Ritorno/010 Ritorno.md": "---\npublished_title: Il ritorno a casa\n---\n",
+      "Manuscript/010 Ritorno/010 Arrivo.md": "---\npublished_title: Il treno\n---\n\"Sei tu...\" disse l'uomo.",
+      "Manuscript/010 Ritorno/020 Casa.md": "La casa.",
+      "Manuscript/020 Lettera/010 Busta.md": "Una busta.",
+    });
+    const book = await buildBook(await Project.open(fs));
+    expect(book.title).toBe("L’eredità");
+    const [first, second] = book.entries;
+    expect([first.heading, first.number, first.title]).toEqual(["Capitolo 1: Il ritorno a casa", "Capitolo 1", "Il ritorno a casa"]);
+    expect(first.scenes.map((s) => [s.number, s.title])).toEqual([["1", "Il treno"], ["2", "Casa"]]);
+    // A chapter with one scene shows no scene heading.
+    expect(second.scenes.map((s) => [s.number, s.title])).toEqual([["", ""]]);
+    expect(first.scenes[0].blocks).toEqual([{ type: "paragraph", runs: [{ text: "«Sei tu…» disse l’uomo." }] }]);
+    expect(book.characters).toBe("«Sei tu…» disse l’uomo.".length + "La casa.".length + "Una busta.".length);
+  });
+
+  it("renders both profiles with Word styles", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nauthor: Ada Rossi\nexport:\n  paratext:\n    dedication: To M.\n    acknowledgements: Thanks.\n",
+      "Manuscript/010 Return/010 Arrival.md": "The train.\n\nThe station.",
+    });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    for (const profile of ["manuscript", "typeset"] as const) {
+      const opts = { ...project.settings.export.docx, profile, headingLayout: "twoLines" as const };
+      const xml = await documentXml(await docxBytes(bookToDocx(book, opts, { words: "words" })));
+      expect(xml).toContain('w:pStyle w:val="FirstParagraph"');
+      expect(xml).toContain('w:pStyle w:val="Normal"');
+      expect(xml).toContain('w:pStyle w:val="Heading1"');
+      expect(xml).toContain("To M.");
+      expect(xml).toContain("Acknowledgements");
+    }
+  });
 });
+
+/** The main XML part of a DOCX file. */
+async function documentXml(bytes: Uint8Array): Promise<string> {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(bytes);
+  return zip.file("word/document.xml")!.async("string");
+}

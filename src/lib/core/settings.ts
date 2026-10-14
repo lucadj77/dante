@@ -12,7 +12,36 @@ export interface LevelSettings {
   pattern: string;
 }
 
+/** How a new part, chapter or scene is set apart from what comes before it. */
+export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
+
+/** What a scene shows above its text in the exported book. */
+export type SceneHeading = "none" | "title" | "number" | "numberAndTitle";
+
+export interface TypographySettings {
+  /** Straight quotes become «guillemets» or “curly quotes”, or stay as they are. */
+  quotes: "keep" | "guillemets" | "curly";
+  /** l'amico becomes l’amico. */
+  apostrophes: boolean;
+  /** ... becomes …, and E' becomes È. */
+  ellipsis: boolean;
+  /** Removes double spaces and spaces before punctuation. */
+  spaces: boolean;
+}
+
+/** Texts around the novel. Empty ones are left out. */
+export interface ParatextSettings {
+  dedication: string;
+  epigraph: string;
+  epigraphSource: string;
+  authorNote: string;
+  acknowledgements: string;
+  colophon: string;
+}
+
 export interface DocxSettings {
+  /** Standard manuscript for agents and publishers, or a typeset, readable book. */
+  profile: "manuscript" | "typeset";
   font: string;
   /** Points. */
   fontSize: number;
@@ -20,17 +49,27 @@ export interface DocxSettings {
   lineSpacing: number;
   /** First-line indent of paragraphs, in centimetres. */
   indent: number;
-  /** Line between scenes, such as "* * *" or "#". */
+  /** Characters between scenes, such as "* * *" or "#", when sceneBreak is "characters". */
   sceneSeparator: string;
   titlePage: boolean;
-  /** Page header with author, title and page number. */
+  /** Page header: author, title and page number, or the title in a typeset book. */
   header: boolean;
-  /** Each chapter starts on a new page. */
-  chapterNewPage: boolean;
+  partBreak: Separator;
+  chapterBreak: Separator;
+  sceneBreak: Separator;
+  /** Number above the title on two lines, or the whole heading on one line. */
+  headingLayout: "oneLine" | "twoLines";
+  sceneHeadings: SceneHeading;
+  sceneNumbering: NumberStyle;
+  /** Scene numbers start again in each chapter. */
+  sceneNumbersRestart: boolean;
+  /** No scene heading in a chapter with a single scene. */
+  omitSingleSceneHeading: boolean;
 }
 
 export interface NovelSettings {
   title: string;
+  subtitle: string;
   author: string;
   /** Language of the novel (not of the interface), as a BCP 47 code. */
   language: string;
@@ -52,8 +91,10 @@ export interface NovelSettings {
     };
   };
   export: {
-    /** Standard manuscript format, for publishers and agents. */
     docx: DocxSettings;
+    /** Applied to the exported text only; the files keep what was typed. */
+    typography: TypographySettings;
+    paratext: ParatextSettings;
   };
 }
 
@@ -68,6 +109,7 @@ export function defaultSettings(language = "en"): NovelSettings {
   const labels = LABELS[language.slice(0, 2)] ?? LABELS.en;
   return {
     title: "",
+    subtitle: "",
     author: "",
     language,
     folders: {
@@ -90,6 +132,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     },
     export: {
       docx: {
+        profile: "manuscript",
         font: "Times New Roman",
         fontSize: 12,
         lineSpacing: 2,
@@ -97,7 +140,28 @@ export function defaultSettings(language = "en"): NovelSettings {
         sceneSeparator: "#",
         titlePage: true,
         header: true,
-        chapterNewPage: true,
+        partBreak: "pageBreak",
+        chapterBreak: "pageBreak",
+        sceneBreak: "characters",
+        headingLayout: "oneLine",
+        sceneHeadings: "none",
+        sceneNumbering: "arabic",
+        sceneNumbersRestart: true,
+        omitSingleSceneHeading: true,
+      },
+      typography: {
+        quotes: language.startsWith("it") || language.startsWith("fr") || language.startsWith("es") ? "guillemets" : "curly",
+        apostrophes: true,
+        ellipsis: true,
+        spaces: true,
+      },
+      paratext: {
+        dedication: "",
+        epigraph: "",
+        epigraphSource: "",
+        authorNote: "",
+        acknowledgements: "",
+        colophon: "",
       },
     },
   };
@@ -121,7 +185,11 @@ export function parseSettings(text: string): NovelSettings {
   const doc = parseDocument(text);
   const raw = doc.errors.length === 0 ? doc.toJS() : {};
   const language = isObject(raw) && typeof raw.language === "string" ? raw.language : "en";
-  return merge(defaultSettings(language), raw);
+  const settings = merge(defaultSettings(language), raw);
+  // Files written before chapterBreak existed said only whether chapters start a new page.
+  const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
+  if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  return settings;
 }
 
 /** Writes settings back into the existing YAML text, keeping comments and unknown keys. */

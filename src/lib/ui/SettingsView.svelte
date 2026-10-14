@@ -66,6 +66,7 @@
   >
     <h2>{t("settings.novel")}</h2>
     <label>{t("settings.title")} <input bind:value={novel.title} /></label>
+    <label>{t("settings.subtitle")} <input bind:value={novel.subtitle} /></label>
     <label>{t("settings.author")} <input bind:value={novel.author} /></label>
     <label>{t("settings.language")} <input bind:value={novel.language} size="6" /></label>
 

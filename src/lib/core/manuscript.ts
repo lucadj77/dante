@@ -121,39 +121,55 @@ export function enclosing(root: ManuscriptNode, path: string, kinds: NodeKind[])
   return node;
 }
 
+export interface HeadingInfo {
+  /** The whole heading on one line, such as "Chapter 3: The letter". */
+  text: string;
+  /** Label and number without the title, such as "Chapter 3"; empty when not numbered. */
+  number: string;
+  title: string;
+}
+
 /**
- * Displayed heading of each part and chapter, such as "Chapter 3: The letter".
- * Prologues and epilogues are not numbered and show only their title.
+ * Heading of each part and chapter. Prologues and epilogues are not numbered and show
+ * only their title. `titleOf` can replace a working title, as the export does with
+ * published titles.
  */
-export function headings(root: ManuscriptNode, settings: NovelSettings): Map<string, string> {
-  const out = new Map<string, string>();
+export function headingInfo(
+  root: ManuscriptNode,
+  settings: NovelSettings,
+  titleOf: (node: ManuscriptNode) => string = (node) => node.title,
+): Map<string, HeadingInfo> {
+  const out = new Map<string, HeadingInfo>();
   let part = 0;
   let chapter = 0;
+  const numbered = (node: ManuscriptNode, level: NovelSettings["structure"]["part"], n: number) => {
+    const values = { label: level.label, number: formatNumber(n, level.numbering, settings.language), title: titleOf(node) };
+    out.set(node.path, {
+      text: formatHeading(level.pattern, values),
+      number: level.numbering === "none" ? "" : formatHeading(level.pattern, { ...values, title: "" }),
+      title: level.pattern.includes("{title}") ? values.title : "",
+    });
+  };
   const visit = (node: ManuscriptNode) => {
     for (const child of node.children) {
       if (child.kind === "part") {
         part++;
         if (settings.structure.chapter.restartEachPart) chapter = 0;
-        const level = settings.structure.part;
-        out.set(child.path, formatHeading(level.pattern, {
-          label: level.label,
-          number: formatNumber(part, level.numbering, settings.language),
-          title: child.title,
-        }));
+        numbered(child, settings.structure.part, part);
       } else if (child.kind === "chapter") {
         chapter++;
-        const level = settings.structure.chapter;
-        out.set(child.path, formatHeading(level.pattern, {
-          label: level.label,
-          number: formatNumber(chapter, level.numbering, settings.language),
-          title: child.title,
-        }));
+        numbered(child, settings.structure.chapter, chapter);
       } else if (child.kind === "prologue" || child.kind === "epilogue") {
-        out.set(child.path, child.title);
+        out.set(child.path, { text: titleOf(child), number: "", title: titleOf(child) });
       }
       visit(child);
     }
   };
   visit(root);
   return out;
+}
+
+/** Displayed heading of each part and chapter, such as "Chapter 3: The letter". */
+export function headings(root: ManuscriptNode, settings: NovelSettings): Map<string, string> {
+  return new Map([...headingInfo(root, settings)].map(([path, info]) => [path, info.text]));
 }
