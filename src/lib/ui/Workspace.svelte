@@ -207,10 +207,14 @@
       <button class="section" title={t("app.close")} onclick={onClose}><span aria-hidden="true">⏏</span></button>
     </nav>
   {/if}
-  <div class="content" class:with-back={section !== "manuscript" || byLink}>
-    {#if section !== "manuscript" || byLink}
+  <div class="content" class:with-back={!fullscreen}>
+    {#if !fullscreen}
       <div class="back-bar">
-        <button onclick={back}>‹ {t("nav.back")}</button>
+        {#if section !== "manuscript" || byLink}
+          <button onclick={back}>‹ {t("nav.back")}</button>
+        {/if}
+        <h1 class="section-name">{section === "files" ? filesRoot || project.settings.title : t(`section.${section}`)}</h1>
+        {#if project.settings.title}<span class="project-name">{project.settings.title}</span>{/if}
       </div>
     {/if}
     {#if section === "manuscript"}
@@ -301,8 +305,23 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
   .back-bar {
-    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 4px 12px;
     border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .section-name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .project-name {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 13px;
   }
   .back-bar button {
     border: none;
