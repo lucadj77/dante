@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
+  import { findNode, folderNotePath, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
+  import PropertyInput from "./PropertyInput.svelte";
   import { displayValue, isList, parseValue } from "./propertyText";
 
   interface Props {
@@ -50,6 +51,11 @@
   const entries = $derived(Object.entries(properties).filter(([key]) => !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))));
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
   const kinds = $derived<ContainerKind[]>(p.project.settings.structure.parts ? ["part", "chapter", "prologue", "epilogue"] : ["chapter", "prologue", "epilogue"]);
+
+  /** The file that holds the properties: the scene, or a container's folder note. */
+  function propertiesPath(path: string): string {
+    return node && node.kind !== "scene" ? folderNotePath(path) : path;
+  }
 
   const display = displayValue;
   const parse = parseValue;
@@ -133,10 +139,12 @@
           <div class="prop">
             <dt>{key}</dt>
             <dd>
-              <input
+              <PropertyInput
                 value={display(value)}
-                aria-label={key}
-                onchange={(e) => commit(key, (e.currentTarget as HTMLInputElement).value)}
+                label={key}
+                from={propertiesPath(node.path)}
+                placeholder={isList(key, value) ? t("panel.listHint") : ""}
+                onCommit={(text) => commit(key, text)}
               />
               <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => update({ [key]: undefined })}>×</button>
             </dd>
@@ -243,11 +251,8 @@
   dd {
     margin: 0;
     display: flex;
+    align-items: flex-start;
     gap: 4px;
-  }
-  dd input {
-    flex: 1;
-    min-width: 0;
   }
   .remove {
     border: none;

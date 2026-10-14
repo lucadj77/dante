@@ -4,6 +4,7 @@
   import type { Project } from "$lib/core/project";
   import { t } from "$lib/state.svelte";
   import { displayValue, isList, parseValue } from "./propertyText";
+  import PropertyInput from "./PropertyInput.svelte";
 
   interface Props {
     project: Project;
@@ -103,12 +104,12 @@
         <div class="prop">
           <dt>{key}</dt>
           <dd>
-            <input
+            <PropertyInput
               value={displayValue(value)}
-              aria-label={key}
+              label={key}
+              from={p.path}
               placeholder={isList(key, value) ? t("panel.listHint") : ""}
-              title={isList(key, value) ? t("panel.listHint") : undefined}
-              onchange={(e) => commit(key, (e.currentTarget as HTMLInputElement).value)}
+              onCommit={(text) => commit(key, text)}
             />
             <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => update({ [key]: undefined })}>×</button>
           </dd>
@@ -173,11 +174,8 @@
   dd {
     margin: 0;
     display: flex;
+    align-items: flex-start;
     gap: 4px;
-  }
-  dd input {
-    flex: 1;
-    min-width: 0;
   }
   .remove {
     border: none;
