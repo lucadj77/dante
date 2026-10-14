@@ -7,10 +7,20 @@
   import ManuscriptView from "./ManuscriptView.svelte";
   import ExportView from "./ExportView.svelte";
   import SettingsView from "./SettingsView.svelte";
+  import CodexView from "./CodexView.svelte";
+  import FilesView from "./FilesView.svelte";
+  import { provideNavigator } from "./navigation";
+  import type { NoteIndex } from "$lib/core/notes";
+  import { noteType } from "$lib/core/notes";
+  import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
+  import { linkTarget, resolveLink } from "$lib/core/wikilinks";
+  import type { LinkSuggestion } from "$lib/editor/links";
+  import { folderNotePath } from "$lib/core/manuscript";
 
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
-  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "export" | "settings";
+  /** "files" shows any other folder, such as Templates, when a link leads there. */
+  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "export" | "settings" | "files";
   const sections: { id: Section; icon: string }[] = [
     { id: "manuscript", icon: "¶" },
     { id: "codex", icon: "◆" },
@@ -20,19 +30,110 @@
     { id: "export", icon: "⇪" },
   ];
   let section = $state<Section>("manuscript");
-  /** Sections visited before the current one, for the Back button. */
-  let previous = $state<Section[]>([]);
+  /** What each section shows, so coming back to it finds the same note. */
+  let opened = $state<Partial<Record<Section, string | null>>>({});
+  /** Root of the "files" section. */
+  let filesRoot = $state("");
+  interface Place {
+    section: Section;
+    path: string | null;
+    filesRoot: string;
+  }
+  /** Places visited before the current one, for the Back button. */
+  let previous = $state<Place[]>([]);
+  const here = (): Place => ({ section, path: opened[section] ?? null, filesRoot });
+
+  /** The manuscript shows the Back button only when a link led there. */
+  let byLink = $state(false);
 
   function go(next: Section) {
     if (next === section) return;
-    previous = [...previous, section];
+    previous = [...previous, here()];
     section = next;
+    byLink = false;
   }
 
   function back() {
-    section = previous.at(-1) ?? "manuscript";
+    const place = previous.at(-1);
     previous = previous.slice(0, -1);
+    if (!place) {
+      section = "manuscript";
+      return;
+    }
+    filesRoot = place.filesRoot;
+    opened[place.section] = place.path;
+    section = place.section;
+    byLink = false;
   }
+
+  /** The section a project path belongs to. */
+  function sectionOf(path: string): { section: Section; root?: string } {
+    const f = project.settings.folders;
+    if (isWithin(path, f.manuscript)) return { section: "manuscript" };
+    if (isWithin(path, f.codex)) return { section: "codex" };
+    if (isWithin(path, f.research)) return { section: "research" };
+    if (isWithin(path, f.laboratory)) return { section: "laboratory" };
+    const note = index?.notes.get(path);
+    if (note && noteType(path, note.properties, project.settings) !== null && !isWithin(path, f.templates)) return { section: "codex" };
+    return { section: "files", root: path.includes("/") ? path.slice(0, path.indexOf("/")) : "" };
+  }
+
+  /** Opens a note or file where it belongs, remembering where we were. */
+  function open(path: string) {
+    const target = sectionOf(path);
+    // A chapter's folder note stands for the chapter.
+    let shown = path;
+    if (target.section === "manuscript" && isMarkdown(path) && folderNotePath(dirname(path)) === path) shown = dirname(path);
+    if (target.section === section && opened[section] === shown && (target.root ?? filesRoot) === filesRoot) return;
+    previous = [...previous, here()];
+    if (target.root !== undefined) filesRoot = target.root;
+    opened[target.section] = shown;
+    section = target.section;
+    byLink = true;
+  }
+
+  /** Kept for link suggestions and for telling typed notes apart; refreshed after reloads. */
+  let index: NoteIndex | null = null;
+  $effect(() => {
+    void rev;
+    void project.index().then((i) => (index = i));
+  });
+
+  const suggestionCache = new Map<string, LinkSuggestion[]>();
+  let suggestionRev = -1;
+
+  function suggestions(from: string): LinkSuggestion[] {
+    if (suggestionRev !== rev) {
+      suggestionCache.clear();
+      suggestionRev = rev;
+    }
+    const cached = suggestionCache.get(from);
+    if (cached) return cached;
+    const files = project.files;
+    const out: LinkSuggestion[] = [];
+    for (const path of files) {
+      if (path === from || path.startsWith(project.settings.folders.templates + "/")) continue;
+      const target = linkTarget(path, from, files);
+      const type = index?.notes.get(path) ? noteType(path, index.notes.get(path)!.properties, project.settings) : null;
+      const detail = type && project.settings.types[type] ? `${project.settings.types[type].icon} ${project.settings.types[type].name}` : dirname(path) || basename(path);
+      out.push({ target, detail });
+      for (const alias of index?.notes.get(path)?.aliases ?? []) out.push({ target, alias });
+    }
+    suggestionCache.set(from, out);
+    return out;
+  }
+
+  provideNavigator({
+    open,
+    links: (from) => ({
+      open(target) {
+        const path = resolveLink(target, from, project.files);
+        if (path) open(path);
+      },
+      resolves: (target) => resolveLink(target, from, project.files) !== null,
+      suggestions: () => suggestions(from),
+    }),
+  });
 
   /** Cmd/Ctrl with + or - changes the size of the text, with 0 restores it. */
   function onKey(e: KeyboardEvent) {
@@ -106,14 +207,51 @@
       <button class="section" title={t("app.close")} onclick={onClose}><span aria-hidden="true">⏏</span></button>
     </nav>
   {/if}
-  <div class="content" class:with-back={section !== "manuscript"}>
-    {#if section !== "manuscript"}
+  <div class="content" class:with-back={section !== "manuscript" || byLink}>
+    {#if section !== "manuscript" || byLink}
       <div class="back-bar">
         <button onclick={back}>‹ {t("nav.back")}</button>
       </div>
     {/if}
     {#if section === "manuscript"}
-      <ManuscriptView {project} {rev} {diskRev} onReload={reload} onDiskChange={() => diskRev++} bind:fullscreen />
+      <ManuscriptView
+        {project}
+        {rev}
+        {diskRev}
+        onReload={reload}
+        onDiskChange={() => diskRev++}
+        bind:fullscreen
+        reveal={opened.manuscript ?? null}
+        onShow={(path) => (opened.manuscript = path)}
+      />
+    {:else if section === "codex"}
+      <CodexView {project} {rev} {diskRev} open={opened.codex ?? null} onShow={(path) => (opened.codex = path)} onReload={reload} />
+    {:else if section === "research" || section === "laboratory"}
+      {#key section}
+        <FilesView
+          {project}
+          {rev}
+          {diskRev}
+          root={project.settings.folders[section]}
+          title={t(`section.${section}`)}
+          open={opened[section] ?? null}
+          onShow={(path) => (opened[section] = path)}
+          onReload={reload}
+        />
+      {/key}
+    {:else if section === "files"}
+      {#key filesRoot}
+        <FilesView
+          {project}
+          {rev}
+          {diskRev}
+          root={filesRoot}
+          title={filesRoot || project.settings.title}
+          open={opened.files ?? null}
+          onShow={(path) => (opened.files = path)}
+          onReload={reload}
+        />
+      {/key}
     {:else if section === "export"}
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}

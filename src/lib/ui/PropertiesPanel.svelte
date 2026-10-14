@@ -6,6 +6,7 @@
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
+  import { displayValue, parseValue } from "./propertyText";
 
   interface Props {
     project: Project;
@@ -50,20 +51,8 @@
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
   const kinds = $derived<ContainerKind[]>(p.project.settings.structure.parts ? ["part", "chapter", "prologue", "epilogue"] : ["chapter", "prologue", "epilogue"]);
 
-  /** Lists are edited as comma-separated text. */
-  function display(value: unknown): string {
-    if (Array.isArray(value)) return value.map(String).join(", ");
-    if (value === null || value === undefined) return "";
-    if (typeof value === "object") return JSON.stringify(value);
-    return String(value);
-  }
-
-  function parse(text: string, previous: unknown): unknown {
-    if (Array.isArray(previous)) return text.split(",").map((s) => s.trim()).filter(Boolean);
-    if (typeof previous === "number" && text.trim() !== "" && !Number.isNaN(Number(text))) return Number(text);
-    if (typeof previous === "boolean") return text.trim() === "true";
-    return text;
-  }
+  const display = displayValue;
+  const parse = parseValue;
 
   async function update(changes: Properties) {
     if (!node) return;
@@ -99,7 +88,7 @@
   const format = (n: number) => n.toLocaleString();
 </script>
 
-<aside class="panel">
+<div class="panel">
   <section>
     <h3>{t("panel.properties")}</h3>
     {#if node && node.kind !== "manuscript"}
@@ -202,7 +191,7 @@
       </tbody>
     </table>
   </section>
-</aside>
+</div>
 
 <style>
   label.check {
@@ -222,12 +211,6 @@
   }
   .title-field input {
     font-size: 14px;
-  }
-  .panel {
-    border-left: 1px solid var(--border);
-    background: var(--bg-panel);
-    overflow: auto;
-    padding: 12px;
   }
   .panel > :global(section + section) {
     margin-top: 24px;

@@ -100,6 +100,18 @@ export interface DocxSettings {
   omitSingleSceneHeading: boolean;
 }
 
+/** A kind of note, such as a character or a place, defined in dante.yaml. */
+export interface NoteType {
+  /** Name shown in the app, such as "Character". */
+  name: string;
+  /** Subfolder of the Codex where new notes of this type go; notes there have this type. */
+  folder: string;
+  /** A character or emoji shown next to the notes. */
+  icon: string;
+  /** Properties a new note of this type starts with. */
+  properties: string[];
+}
+
 export interface NovelSettings {
   title: string;
   subtitle: string;
@@ -114,6 +126,11 @@ export interface NovelSettings {
     views: string;
     templates: string;
   };
+  /**
+   * Note types by id. The id is what a note's `type` property holds; a note without one
+   * takes the type of the Codex folder it is in.
+   */
+  types: Record<string, NoteType>;
   structure: {
     /** When true, the first level of folders in the manuscript are parts. */
     parts: boolean;
@@ -148,6 +165,78 @@ const FOLDERS: Record<string, NovelSettings["folders"]> = {
   fr: { codex: "Codex", research: "Recherche", laboratory: "Laboratoire", manuscript: "Manuscrit", views: "Vues", templates: "Modèles" },
 };
 
+type TypeNames = Record<"character" | "place" | "object" | "event" | "group" | "plotline", [string, string, string[]]>;
+
+/** Default types, with name, folder and suggested properties in the novel's language. */
+const TYPES: Record<string, TypeNames> = {
+  en: {
+    character: ["Character", "Characters", ["role", "age", "appearance", "aliases"]],
+    place: ["Place", "Places", ["region", "aliases"]],
+    object: ["Object", "Objects", ["owner"]],
+    event: ["Event", "Events", ["date", "place"]],
+    group: ["Group", "Groups", ["members"]],
+    plotline: ["Plotline", "Plotlines", ["status"]],
+  },
+  it: {
+    character: ["Personaggio", "Personaggi", ["ruolo", "età", "aspetto", "aliases"]],
+    place: ["Luogo", "Luoghi", ["regione", "aliases"]],
+    object: ["Oggetto", "Oggetti", ["proprietario"]],
+    event: ["Evento", "Eventi", ["data", "luogo"]],
+    group: ["Gruppo", "Gruppi", ["membri"]],
+    plotline: ["Plotline", "Plotline", ["stato"]],
+  },
+  es: {
+    character: ["Personaje", "Personajes", ["papel", "edad", "aspecto", "aliases"]],
+    place: ["Lugar", "Lugares", ["región", "aliases"]],
+    object: ["Objeto", "Objetos", ["dueño"]],
+    event: ["Evento", "Eventos", ["fecha", "lugar"]],
+    group: ["Grupo", "Grupos", ["miembros"]],
+    plotline: ["Trama", "Tramas", ["estado"]],
+  },
+  fr: {
+    character: ["Personnage", "Personnages", ["rôle", "âge", "apparence", "aliases"]],
+    place: ["Lieu", "Lieux", ["région", "aliases"]],
+    object: ["Objet", "Objets", ["propriétaire"]],
+    event: ["Événement", "Événements", ["date", "lieu"]],
+    group: ["Groupe", "Groupes", ["membres"]],
+    plotline: ["Intrigue", "Intrigues", ["statut"]],
+  },
+};
+const ICONS: Record<keyof TypeNames, string> = {
+  character: "👤",
+  place: "📍",
+  object: "🗝",
+  event: "📅",
+  group: "👥",
+  plotline: "🧵",
+};
+
+export function defaultTypes(language: string): Record<string, NoteType> {
+  const names = TYPES[language.slice(0, 2)] ?? TYPES.en;
+  const types: Record<string, NoteType> = {};
+  for (const [id, [name, folder, properties]] of Object.entries(names)) {
+    types[id] = { name, folder, icon: ICONS[id as keyof TypeNames], properties: [...properties] };
+  }
+  return types;
+}
+
+/** Types as written in dante.yaml, each completed and checked; the defaults when missing. */
+function parseTypes(value: unknown, language: string): Record<string, NoteType> {
+  if (!isObject(value)) return defaultTypes(language);
+  const types: Record<string, NoteType> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!isObject(raw)) continue;
+    const name = typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : id;
+    types[id] = {
+      name,
+      folder: typeof raw.folder === "string" && raw.folder.trim() ? raw.folder.trim() : name,
+      icon: typeof raw.icon === "string" ? raw.icon : "",
+      properties: Array.isArray(raw.properties) ? raw.properties.filter((p): p is string => typeof p === "string") : [],
+    };
+  }
+  return types;
+}
+
 export function defaultFolders(language: string): NovelSettings["folders"] {
   return { ...(FOLDERS[language.slice(0, 2)] ?? FOLDERS.en) };
 }
@@ -163,6 +252,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     author: "",
     language,
     folders: defaultFolders(language),
+    types: defaultTypes(language),
     structure: {
       parts: false,
       part: { numbering: "roman", showLabel: true, label: labels.part, showTitle: true, separator: ": " },
@@ -235,6 +325,8 @@ export function parseSettings(text: string): NovelSettings {
   const raw = doc.errors.length === 0 ? doc.toJS() : {};
   const language = isObject(raw) && typeof raw.language === "string" ? raw.language : "en";
   const settings = merge(defaultSettings(language), raw);
+  // Types are a free list: the user's replace the defaults instead of being merged into them.
+  settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
@@ -261,6 +353,11 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
   let doc = parseDocument(previous);
   if (doc.errors.length > 0 || !isObject(doc.toJS() ?? {})) doc = parseDocument("");
   const write = (path: string[], value: unknown) => {
+    // Types are written whole, so a removed type disappears from the file too.
+    if (path.length === 1 && path[0] === "types") {
+      doc.setIn(path, doc.createNode(value));
+      return;
+    }
     if (isObject(value)) {
       for (const [k, v] of Object.entries(value)) write([...path, k], v);
     } else {

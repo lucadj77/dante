@@ -17,6 +17,9 @@ pub fn run() {
             files::create_dir,
             files::path_exists,
             files::remove_path,
+            files::read_bytes,
+            files::open_with_system,
+            files::import_files,
             files::watch_project,
         ])
         .run(tauri::generate_context!())

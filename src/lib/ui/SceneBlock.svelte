@@ -20,6 +20,7 @@
   import { t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels } from "./formatLabels";
+  import { navigator } from "./navigation";
 
   interface Props {
     project: Project;
@@ -42,6 +43,7 @@
   // svelte-ignore state_referenced_locally
   const path = props.node.path;
 
+  const links = navigator()?.links(path);
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
   let lastSaved = "";
@@ -126,6 +128,7 @@
         onLeave: (direction) => props.onLeave(path, direction),
         onFocus: () => props.onFocus(path),
         formatLabels: formatLabels(),
+        links,
       });
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
       props.register(path, handle);

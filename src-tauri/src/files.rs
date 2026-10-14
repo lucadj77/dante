@@ -111,6 +111,54 @@ pub fn remove_path(root: String, path: String) -> Result<(), String> {
     }
 }
 
+/// Reads a file of any kind, for the viewers of images, PDF and HTML. The bytes travel
+/// as they are, without a JSON encoding.
+#[tauri::command]
+pub fn read_bytes(root: String, path: String) -> Result<tauri::ipc::Response, String> {
+    Ok(tauri::ipc::Response::new(fs::read(resolve(&root, &path)?).map_err(err)?))
+}
+
+/// Opens a project file with the application the system uses for its kind.
+#[tauri::command]
+pub fn open_with_system(root: String, path: String) -> Result<(), String> {
+    let target = resolve(&root, &path)?;
+    tauri_plugin_opener::open_path(target, None::<&str>).map_err(|e| e.to_string())
+}
+
+/// A name in `dir` not taken yet: "name.ext", then "name 2.ext" and so on.
+fn free_name(dir: &Path, name: &str) -> PathBuf {
+    let candidate = dir.join(name);
+    if !candidate.exists() {
+        return candidate;
+    }
+    let (stem, ext) = match name.rfind('.') {
+        Some(i) if i > 0 => (&name[..i], &name[i..]),
+        _ => (name, ""),
+    };
+    (2..).map(|n| dir.join(format!("{stem} {n}{ext}"))).find(|p| !p.exists()).unwrap()
+}
+
+/// Copies files chosen on the computer into a project folder, keeping their names
+/// unless taken. Returns their paths in the project.
+#[tauri::command]
+pub fn import_files(root: String, dir: String, sources: Vec<String>) -> Result<Vec<String>, String> {
+    let target_dir = resolve(&root, &dir)?;
+    fs::create_dir_all(&target_dir).map_err(err)?;
+    let base = PathBuf::from(&root);
+    let mut imported = Vec::new();
+    for source in sources {
+        let source = PathBuf::from(source);
+        if !source.is_file() {
+            continue;
+        }
+        let name = source.file_name().ok_or("Invalid file")?.to_string_lossy().into_owned();
+        let target = free_name(&target_dir, &name);
+        fs::copy(&source, &target).map_err(err)?;
+        imported.extend(relative(&base, &target));
+    }
+    Ok(imported)
+}
+
 /// Watches the project folder and emits "project-changed" with the relative paths
 /// that changed. Watching a new project replaces the previous watcher.
 #[tauri::command]
@@ -152,6 +200,21 @@ mod tests {
         let names: Vec<String> = list_dir(root.clone(), "Manuscript".into()).unwrap().into_iter().map(|e| e.name).collect();
         assert_eq!(names, vec!["020 A.md".to_string()]);
         assert!(rename_path(root.clone(), "Manuscript".into(), "Manuscript".into()).is_err());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn imports_files_under_free_names() {
+        let dir = std::env::temp_dir().join(format!("dante-import-{}", std::process::id()));
+        let root = dir.join("project").to_string_lossy().into_owned();
+        fs::create_dir_all(&dir).unwrap();
+        let source = dir.join("map.pdf");
+        fs::write(&source, b"%PDF").unwrap();
+        let src = source.to_string_lossy().into_owned();
+        let first = import_files(root.clone(), "Research".into(), vec![src.clone()]).unwrap();
+        let second = import_files(root.clone(), "Research".into(), vec![src]).unwrap();
+        assert_eq!(first, vec!["Research/map.pdf".to_string()]);
+        assert_eq!(second, vec!["Research/map 2.pdf".to_string()]);
         fs::remove_dir_all(dir).unwrap();
     }
 }

@@ -20,6 +20,8 @@ export interface ProjectFs {
   mkdir(path: string): Promise<void>;
   exists(path: string): Promise<boolean>;
   remove(path: string): Promise<void>;
+  /** Reads a file of any kind, such as an image or a PDF. */
+  readBytes(path: string): Promise<Uint8Array>;
 }
 
 /** In-memory filesystem used by tests and by the demo project. */
@@ -62,6 +64,10 @@ export class MemoryFs implements ProjectFs {
 
   async writeText(path: string, content: string): Promise<void> {
     this.addFile(path, content);
+  }
+
+  async readBytes(path: string): Promise<Uint8Array> {
+    return new TextEncoder().encode(await this.readText(path));
   }
 
   async rename(from: string, to: string): Promise<void> {

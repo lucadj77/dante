@@ -9,6 +9,7 @@
   import { app } from "$lib/state.svelte";
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
+  import SidePanel from "./SidePanel.svelte";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
 
@@ -20,8 +21,12 @@
     onReload: () => Promise<void>;
     /** Tells open scenes to reload from disk. */
     onDiskChange: () => void;
+    /** A scene or container to show, such as one a wikilink pointed to. */
+    reveal: string | null;
+    /** Called with the selected item, so the workspace can come back to it. */
+    onShow: (path: string) => void;
   }
-  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange }: Props = $props();
+  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow }: Props = $props();
 
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
@@ -37,6 +42,29 @@
   let pendingFocus: { path: string; at: "start" | "end" } | null = null;
 
   const editors = new Map<string, SceneHandle>();
+
+  // Shows what the workspace asks for, once each time it asks.
+  let revealed: string | null = null;
+  $effect(() => {
+    const target = reveal;
+    if (!target || target === revealed) return;
+    revealed = target;
+    if (findIn(tree, target)) {
+      selected = target;
+      active = target;
+    }
+  });
+  $effect(() => {
+    if (selected) onShow(selected);
+  });
+
+  /** Bumped a moment after typing stops, so the links panel catches up with saved text. */
+  let edits = $state(0);
+  let editsTimer: ReturnType<typeof setTimeout> | undefined;
+  function edited() {
+    clearTimeout(editsTimer);
+    editsTimer = setTimeout(() => edits++, 1500);
+  }
 
   // `rev` and `localRev` change when the project reloads; the tree object is new then.
   const tree = $derived.by(() => {
@@ -449,7 +477,10 @@
               onSplitChapter={splitChapter}
               onLeave={leave}
               onFocus={(path) => (active = path)}
-              onText={(path, text) => (texts[path] = raw ? splitNote(text).body : text)}
+              onText={(path, text) => {
+                texts[path] = raw ? splitNote(text).body : text;
+                edited();
+              }}
               onAddAfter={addAfter}
               onRename={rename}
             />
@@ -460,6 +491,8 @@
   </main>
 
   {#if !fullscreen}
+    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev}>
+      {#snippet properties()}
     <PropertiesPanel
       {project}
       path={active ?? selected}
@@ -477,14 +510,16 @@
       onRestored={onDiskChange}
       onRename={rename}
     />
+      {/snippet}
+    </SidePanel>
   {/if}
 </div>
 
 <style>
   .manuscript {
     display: grid;
-    grid-template-columns: 260px 1fr 280px;
-    height: 100vh;
+    grid-template-columns: 260px minmax(0, 1fr) 280px;
+    height: 100%;
   }
   .manuscript.fullscreen {
     grid-template-columns: 1fr;
