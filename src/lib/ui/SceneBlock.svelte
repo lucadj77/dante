@@ -1,10 +1,14 @@
 <script lang="ts" module>
+  import type { Action } from "$lib/editor/formatting";
+
   export interface SceneHandle {
     /** Writes pending changes now. */
     flush(): Promise<void>;
     /** Drops pending changes, for operations that rewrite the scene themselves. */
     cancel(): void;
     focus(at: "start" | "end"): void;
+    /** Applies a formatting action to the selection. */
+    format(action: Action): void;
   }
 </script>
 
@@ -14,6 +18,8 @@
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { t } from "$lib/state.svelte";
+  import { applyFormat } from "$lib/editor/formatting";
+  import { formatLabels } from "./formatLabels";
 
   interface Props {
     project: Project;
@@ -89,6 +95,9 @@
     focus(at) {
       editor?.focus(at);
     },
+    format(action) {
+      if (editor) applyFormat(editor.view, action);
+    },
   };
 
   onMount(() => {
@@ -116,7 +125,7 @@
         onSplitChapter: (before, after) => props.onSplitChapter(path, before, after),
         onLeave: (direction) => props.onLeave(path, direction),
         onFocus: () => props.onFocus(path),
-        formatLabels: { bold: t("format.bold"), italic: t("format.italic"), strike: t("format.strike") },
+        formatLabels: formatLabels(),
       });
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
       props.register(path, handle);

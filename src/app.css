@@ -111,5 +111,23 @@ select {
 .md-strike { text-decoration: line-through; }
 .md-code { font-family: ui-monospace, monospace; font-size: 0.9em; background: var(--bg-panel); border-radius: 3px; }
 .md-wikilink { color: var(--wikilink); }
+.md-highlight { background: rgba(245, 214, 70, 0.45); border-radius: 2px; }
+.md-bullet { display: inline-block; width: 0.7em; }
+.md-task { margin: 0 4px 0 0; vertical-align: -1px; cursor: pointer; }
+.cm-format-bar button,
+.format-row button {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.cm-format-bar button:hover,
+.format-row button:hover { background: var(--bg-hover); }
+.cm-format-gap { width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
 .cm-line.cm-dimmed { opacity: 0.35; transition: opacity 0.15s; }
 .raw .cm-content { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.85em; }

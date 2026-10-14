@@ -1,9 +1,11 @@
 import { EditorSelection, Prec, StateField, type EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap, showTooltip, type Tooltip } from "@codemirror/view";
 
-export type Format = "bold" | "italic" | "strike";
+export type Format = "bold" | "italic" | "strike" | "highlight";
+export type LineFormat = "quote" | "bullet" | "ordered" | "task";
+export type Action = Format | LineFormat | "heading" | "code" | "link" | "wikilink" | "separator";
 
-const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~" };
+const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
 /** Length of the run of `char` ending at `pos` (going left) or starting at it (going right). */
 function run(state: EditorState, pos: number, char: string, left: boolean): number {
@@ -32,8 +34,7 @@ function wrapped(state: EditorState, from: number, to: number, marker: string): 
 }
 
 /** Adds the marker around each selection, or removes it when it is already there. */
-export function toggleFormat(state: EditorState, format: Format): TransactionSpec {
-  const marker = MARKERS[format];
+export function toggleWrap(state: EditorState, marker: string): TransactionSpec {
   const m = marker.length;
   return state.changeByRange((range) => {
     const { from, to } = range;
@@ -64,26 +65,203 @@ export function toggleFormat(state: EditorState, format: Format): TransactionSpe
   });
 }
 
-function command(format: Format) {
-  return (view: EditorView) => {
-    view.dispatch(view.state.update(toggleFormat(view.state, format), { userEvent: "input.format" }));
-    return true;
+export function toggleFormat(state: EditorState, format: Format): TransactionSpec {
+  return toggleWrap(state, MARKERS[format]);
+}
+
+// What may open a line: a heading, a quote, or a list item with its checkbox.
+const HEADING = /^#{1,6} /;
+const QUOTE = /^> ?/;
+const TASK = /^[-*+] \[[ xX]\] /;
+const BULLET = /^[-*+] (?!\[[ xX]\] )/;
+const ORDERED = /^\d+[.)] /;
+const LINE_PATTERNS: Record<LineFormat, RegExp> = { quote: QUOTE, bullet: BULLET, ordered: ORDERED, task: TASK };
+const ANY_PREFIX = /^(?:#{1,6} |> ?|[-*+] \[[ xX]\] |[-*+] |\d+[.)] )/;
+
+/** Line numbers covered by the selection, each once. */
+function selectedLines(state: EditorState): number[] {
+  const lines = new Set<number>();
+  for (const r of state.selection.ranges) {
+    for (let n = state.doc.lineAt(r.from).number; n <= state.doc.lineAt(r.to).number; n++) lines.add(n);
+  }
+  return [...lines].sort((a, b) => a - b);
+}
+
+/** Replaces the opening of each selected line, keeping the selection on the same text. */
+function setPrefixes(state: EditorState, prefix: (line: number, index: number, current: string) => string): TransactionSpec {
+  const changes = selectedLines(state).map((n, i) => {
+    const line = state.doc.line(n);
+    const current = ANY_PREFIX.exec(line.text)?.[0] ?? "";
+    return { from: line.from, to: line.from + current.length, insert: prefix(n, i, current) };
+  });
+  const set = state.changes(changes);
+  return { changes: set, selection: state.selection.map(set, 1) };
+}
+
+/** Makes the selected lines a quote or a list, or plain lines again if they already are. */
+export function toggleLines(state: EditorState, format: LineFormat): TransactionSpec {
+  const pattern = LINE_PATTERNS[format];
+  const all = selectedLines(state).every((n) => pattern.test(state.doc.line(n).text));
+  const prefixes: Record<LineFormat, (i: number) => string> = {
+    quote: () => "> ",
+    bullet: () => "- ",
+    ordered: (i) => `${i + 1}. `,
+    task: () => "- [ ] ",
+  };
+  return setPrefixes(state, (_, i) => (all ? "" : prefixes[format](i)));
+}
+
+/** Plain line, then heading 1, 2 and 3, then plain again. */
+export function cycleHeading(state: EditorState): TransactionSpec {
+  const first = state.doc.lineAt(state.selection.main.from).text;
+  const level = (HEADING.exec(first)?.[0].length ?? 1) - 1;
+  const next = level >= 3 ? 0 : level + 1;
+  return setPrefixes(state, () => (next ? "#".repeat(next) + " " : ""));
+}
+
+/** Inline code within a line; a fenced block around several lines. */
+export function toggleCode(state: EditorState): TransactionSpec {
+  const { from, to } = state.selection.main;
+  const a = state.doc.lineAt(from);
+  const b = state.doc.lineAt(to);
+  if (a.number === b.number && !(from === a.from && to === a.to && from !== to)) return toggleWrap(state, "`");
+  const before = a.number > 1 ? state.doc.line(a.number - 1) : null;
+  const after = b.number < state.doc.lines ? state.doc.line(b.number + 1) : null;
+  if (before?.text.startsWith("```") && after?.text.startsWith("```")) {
+    const changes = state.changes([
+      { from: before.from, to: a.from },
+      { from: b.to, to: after.to },
+    ]);
+    return { changes, selection: state.selection.map(changes, 1) };
+  }
+  const changes = state.changes([
+    { from: a.from, insert: "```\n" },
+    { from: b.to, insert: "\n```" },
+  ]);
+  // The selection stays on the code, inside the fences.
+  return { changes, selection: EditorSelection.range(from + 4, to + 4) };
+}
+
+/** [text](address), with the cursor where the address goes. */
+export function insertLink(state: EditorState): TransactionSpec {
+  return state.changeByRange(({ from, to }) => ({
+    changes: [
+      { from, insert: "[" },
+      { from: to, insert: "]()" },
+    ],
+    range: EditorSelection.cursor(to + 3),
+  }));
+}
+
+/** [[selection]], or [[ ]] with the cursor inside. */
+export function insertWikilink(state: EditorState): TransactionSpec {
+  return state.changeByRange(({ from, to }) => ({
+    changes: [
+      { from, insert: "[[" },
+      { from: to, insert: "]]" },
+    ],
+    range: from === to ? EditorSelection.cursor(from + 2) : EditorSelection.range(from + 2, to + 2),
+  }));
+}
+
+/** A scene separator on its own paragraph after the current line. */
+export function insertSeparator(state: EditorState): TransactionSpec {
+  const line = state.doc.lineAt(state.selection.main.to);
+  const insert = (line.text.trim() ? "\n\n" : "") + "* * *\n\n";
+  return {
+    changes: { from: line.to, insert },
+    selection: EditorSelection.cursor(line.to + insert.length),
   };
 }
 
-export interface FormattingLabels {
-  bold: string;
-  italic: string;
-  strike: string;
+function transaction(state: EditorState, action: Action): TransactionSpec {
+  switch (action) {
+    case "bold":
+    case "italic":
+    case "strike":
+    case "highlight":
+      return toggleFormat(state, action);
+    case "quote":
+    case "bullet":
+    case "ordered":
+    case "task":
+      return toggleLines(state, action);
+    case "heading":
+      return cycleHeading(state);
+    case "code":
+      return toggleCode(state);
+    case "link":
+      return insertLink(state);
+    case "wikilink":
+      return insertWikilink(state);
+    case "separator":
+      return insertSeparator(state);
+  }
 }
 
-const BUTTONS: { format: Format; text: string; style: string }[] = [
-  { format: "bold", text: "B", style: "font-weight: 700" },
-  { format: "italic", text: "I", style: "font-style: italic" },
-  { format: "strike", text: "S", style: "text-decoration: line-through" },
+/** Applies a formatting action to the editor's selection. */
+export function applyFormat(view: EditorView, action: Action): boolean {
+  view.dispatch(view.state.update(transaction(view.state, action), { userEvent: "input.format", scrollIntoView: true }));
+  return true;
+}
+
+/** Buttons in the order they are shown; null separates groups. */
+export const ACTIONS: (Action | null)[] = [
+  "bold", "italic", "strike", "highlight", null,
+  "heading", "quote", "bullet", "ordered", "task", null,
+  "code", "link", "wikilink", "separator",
 ];
 
-/** A small bar above the selection with the formatting buttons. */
+/** What each button shows, as text, with an inline style where the glyph is the style itself. */
+export const ICONS: Record<Action, { text: string; style?: string }> = {
+  bold: { text: "B", style: "font-weight: 700" },
+  italic: { text: "I", style: "font-style: italic; font-family: Georgia, serif" },
+  strike: { text: "S", style: "text-decoration: line-through" },
+  highlight: { text: "H", style: "background: #f5e27a; color: #222; padding: 0 3px; border-radius: 2px" },
+  heading: { text: "T", style: "font-weight: 700; font-family: Georgia, serif" },
+  quote: { text: "❝" },
+  bullet: { text: "•≡" },
+  ordered: { text: "1≡" },
+  task: { text: "☑" },
+  code: { text: "</>", style: "font-family: ui-monospace, monospace; font-size: 12px" },
+  link: { text: "🔗︎" },
+  wikilink: { text: "[[ ]]", style: "font-size: 12px" },
+  separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
+};
+
+export type FormattingLabels = Record<Action, string>;
+
+/** Inline actions offered in the bar over a selection; the fixed bar has them all. */
+const SELECTION_ACTIONS: (Action | null)[] = ["bold", "italic", "strike", "highlight", null, "code", "link", "wikilink"];
+
+/** Fills `dom` with buttons that apply actions to the editor `view()` returns. */
+export function fillBar(dom: HTMLElement, actions: (Action | null)[], labels: FormattingLabels, view: () => EditorView | null) {
+  for (const action of actions) {
+    if (action === null) {
+      const gap = document.createElement("span");
+      gap.className = "cm-format-gap";
+      dom.append(gap);
+      continue;
+    }
+    const button = document.createElement("button");
+    button.type = "button";
+    const icon = document.createElement("span");
+    icon.textContent = ICONS[action].text;
+    if (ICONS[action].style) icon.setAttribute("style", ICONS[action].style!);
+    button.append(icon);
+    button.title = labels[action];
+    button.setAttribute("aria-label", labels[action]);
+    // Keeps the selection in the editor while clicking.
+    button.addEventListener("mousedown", (e) => e.preventDefault());
+    button.addEventListener("click", () => {
+      const v = view();
+      if (v) applyFormat(v, action);
+    });
+    dom.append(button);
+  }
+}
+
+/** A small bar above the selection with the inline formatting buttons. */
 function selectionBar(labels: FormattingLabels) {
   const tooltip = (state: EditorState): Tooltip | null => {
     const range = state.selection.main;
@@ -99,18 +277,7 @@ function selectionBar(labels: FormattingLabels) {
         // Inline, so the app's colours win over the editor's default tooltip theme.
         dom.style.cssText =
           "background: var(--bg-panel); border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.15); color: var(--text)";
-        for (const b of BUTTONS) {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.textContent = b.text;
-          button.setAttribute("style", b.style);
-          button.title = labels[b.format];
-          button.setAttribute("aria-label", labels[b.format]);
-          // Keeps the selection in the editor while clicking.
-          button.addEventListener("mousedown", (e) => e.preventDefault());
-          button.addEventListener("click", () => command(b.format)(view));
-          dom.append(button);
-        }
+        fillBar(dom, SELECTION_ACTIONS, labels, () => view);
         return { dom };
       },
     };
@@ -122,35 +289,35 @@ function selectionBar(labels: FormattingLabels) {
   });
 }
 
-/** Cmd/Ctrl+B bold, Cmd/Ctrl+I italic, Cmd/Ctrl+Shift+X strikethrough, and the selection bar. */
+const run_ = (action: Action) => (view: EditorView) => applyFormat(view, action);
+
+/** Keyboard shortcuts, the bar over a selection, and its look. */
 export function formatting(labels: FormattingLabels): Extension {
   return [
-    Prec.high(keymap.of([
-      { key: "Mod-b", run: command("bold") },
-      { key: "Mod-i", run: command("italic") },
-      { key: "Mod-Shift-x", run: command("strike") },
-    ])),
+    Prec.high(
+      keymap.of([
+        { key: "Mod-b", run: run_("bold") },
+        { key: "Mod-i", run: run_("italic") },
+        { key: "Mod-Shift-x", run: run_("strike") },
+        { key: "Mod-Shift-h", run: run_("highlight") },
+        { key: "Mod-e", run: run_("code") },
+        { key: "Mod-k", run: run_("link") },
+        { key: "Mod-Shift-7", run: run_("ordered") },
+        { key: "Mod-Shift-8", run: run_("bullet") },
+        { key: "Mod-Shift-9", run: run_("task") },
+        { key: "Mod-Shift-.", run: run_("quote") },
+      ]),
+    ),
     selectionBar(labels),
     EditorView.baseTheme({
       ".cm-format-bar": {
         display: "flex",
+        alignItems: "center",
         gap: "2px",
         padding: "3px",
         borderRadius: "6px",
         fontFamily: "var(--ui-font)",
       },
-      ".cm-format-bar button": {
-        minWidth: "28px",
-        height: "26px",
-        padding: "0 6px",
-        border: "none",
-        borderRadius: "4px",
-        background: "transparent",
-        color: "inherit",
-        fontSize: "14px",
-        cursor: "pointer",
-      },
-      ".cm-format-bar button:hover": { background: "var(--bg-hover)" },
       // Only while writing in this editor.
       "&:not(.cm-focused) .cm-format-bar": { display: "none" },
     }),

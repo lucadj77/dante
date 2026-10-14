@@ -8,6 +8,8 @@ export interface AppSettings {
   /** Maximum line length in the editor, in characters. */
   lineWidth: number;
   userName: string;
+  /** The formatting bar under the manuscript toolbar. */
+  formatBar: boolean;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -21,6 +23,7 @@ function defaults(): AppSettings {
     fontSize: 18,
     lineWidth: 68,
     userName: "",
+    formatBar: true,
   };
 }
 

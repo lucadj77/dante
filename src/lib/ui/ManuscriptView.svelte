@@ -3,7 +3,9 @@
   import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
-  import { t, zoom } from "$lib/state.svelte";
+  import { saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import { ACTIONS, ICONS } from "$lib/editor/formatting";
+  import { formatLabels } from "./formatLabels";
   import { app } from "$lib/state.svelte";
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
@@ -289,12 +291,42 @@
         <button aria-pressed={focusMode} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
         <button aria-pressed={fullscreen} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
         <button aria-pressed={raw} title={t("editor.rawHint")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
+        <button
+          aria-pressed={app.settings.formatBar}
+          title={t("format.bar")}
+          aria-label={t("format.bar")}
+          onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}><b>B</b><i>I</i></button
+        >
       </div>
-      <div class="group" role="group">
-        <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
-        <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
-      </div>
+      {#if !app.settings.formatBar}
+        <div class="group" role="group">
+          <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
+          <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
+        </div>
+      {/if}
     </div>
+    {#if app.settings.formatBar}
+      {@const labels = formatLabels()}
+      <div class="format-row" role="toolbar" aria-label={t("format.bar")}>
+        {#each ACTIONS as action, i (i)}
+          {#if action === null}
+            <span class="cm-format-gap"></span>
+          {:else}
+            <button
+              title={labels[action]}
+              aria-label={labels[action]}
+              disabled={!active}
+              onmousedown={(e) => e.preventDefault()}
+              onclick={() => active && editors.get(active)?.format(action)}><span style={ICONS[action].style}>{ICONS[action].text}</span></button
+            >
+          {/if}
+        {/each}
+        <span class="zoom">
+          <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
+          <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
+        </span>
+      </div>
+    {/if}
     {#if error}
       <p class="error" role="alert">{error}</p>
     {/if}
@@ -400,6 +432,21 @@
     min-width: 0;
     min-height: 0;
     background: var(--editor-bg);
+  }
+  .format-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .format-row .zoom {
+    margin-left: auto;
+  }
+  .format-row button:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
   .toolbar {
     display: flex;

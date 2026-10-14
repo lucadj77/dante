@@ -69,6 +69,8 @@ export function cleanSource(markdown: string, revisions: "accept" | "reject" = "
     .replace(/\{--([\s\S]*?)--\}/g, accept ? "" : "$1")
     .replace(/\{~~([\s\S]*?)~>([\s\S]*?)~~\}/g, accept ? "$2" : "$1")
     .replace(/\{==([\s\S]*?)==\}/g, "$1")
+    // Highlighting is a note to self: the text stays, the marks go.
+    .replace(/==(?=\S)([^=\n]+?)==/g, "$1")
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/!\[\[[^\]]*\]\]/g, "")
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
@@ -81,7 +83,7 @@ const STYLE: Record<string, keyof Run> = {
   Strikethrough: "strike",
   InlineCode: "code",
 };
-const MARKS = new Set(["EmphasisMark", "StrikethroughMark", "CodeMark", "LinkMark", "URL", "LinkTitle", "LinkLabel", "QuoteMark", "HeaderMark"]);
+const MARKS = new Set(["EmphasisMark", "StrikethroughMark", "CodeMark", "LinkMark", "URL", "LinkTitle", "LinkLabel", "QuoteMark", "HeaderMark", "TaskMarker"]);
 
 function inlineRuns(source: string, node: SyntaxNode, from: number, to: number, style: Partial<Run> = {}): Run[] {
   const runs: Run[] = [];
@@ -132,11 +134,16 @@ export function markdownToBlocks(markdown: string): Block[] {
   const source = markdown;
   const tree = parser.parse(source);
   const blocks: Block[] = [];
-  const visit = (node: SyntaxNode, inQuote: boolean) => {
+  const visit = (node: SyntaxNode, inQuote: boolean, marker = "") => {
     for (let child = node.firstChild; child; child = child.nextSibling) {
       const name = child.name;
-      if (name === "Paragraph") {
+      if (name === "Paragraph" || name === "Task") {
         const runs = inlineRuns(source, child, child.from, child.to);
+        // A list item keeps its bullet or number, a task its box.
+        let lead = marker;
+        if (name === "Task") lead = /x/i.test(source.slice(child.from, child.from + 3)) ? "☑ " : "☐ ";
+        if (lead && runs.length) runs.unshift({ text: lead });
+        marker = "";
         if (runs.length) blocks.push(inQuote ? { type: "quote", runs } : { type: "paragraph", runs });
       } else if (/^(ATX|Setext)Heading(\d)$/.test(name)) {
         const level = Number(name.slice(-1));
@@ -145,8 +152,11 @@ export function markdownToBlocks(markdown: string): Block[] {
         visit(child, true);
       } else if (name === "HorizontalRule") {
         blocks.push({ type: "break" });
-      } else if (name === "BulletList" || name === "OrderedList" || name === "ListItem") {
+      } else if (name === "BulletList" || name === "OrderedList") {
         visit(child, inQuote);
+      } else if (name === "ListItem") {
+        const mark = child.firstChild?.name === "ListMark" ? source.slice(child.firstChild.from, child.firstChild.to) : "";
+        visit(child, inQuote, /\d/.test(mark) ? `${mark} ` : "• ");
       } else if (name === "FencedCode" || name === "CodeBlock") {
         const text = source.slice(child.from, child.to).replace(/^```.*\n?|```$/gm, "");
         blocks.push({ type: "paragraph", runs: [{ text, code: true }] });

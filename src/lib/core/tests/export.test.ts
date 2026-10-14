@@ -111,3 +111,11 @@ async function documentXml(bytes: Uint8Array): Promise<string> {
   const zip = await JSZip.loadAsync(bytes);
   return zip.file("word/document.xml")!.async("string");
 }
+
+describe("lists, tasks and highlights", () => {
+  it("keeps bullets, numbers and boxes, and drops highlight marks", () => {
+    const blocks = markdownToBlocks(cleanSource("- uno\n- due\n\n1. primo\n2. secondo\n\n- [ ] da fare\n- [x] fatto\n\nUn ==punto== chiave."));
+    const text = blocks.map((b) => (b.type === "break" ? "---" : b.runs.map((r) => r.text).join("")));
+    expect(text).toEqual(["• uno", "• due", "1. primo", "2. secondo", "☐ da fare", "☑ fatto", "Un punto chiave."]);
+  });
+});
