@@ -64,13 +64,32 @@ export function wordsByDay(logs: WritingLog[]): Map<string, number> {
 }
 
 /** Days in a row, up to today (or yesterday, while today is still open), with at least `goal` words. */
-export function streak(byDay: Map<string, number>, goal: number, today = new Date()): number {
+/** Whether a day is one of the writing days (1 Monday … 7 Sunday); no days means every day. */
+export function isWritingDay(date: Date, days: number[]): boolean {
+  return days.length === 0 || days.includes(((date.getDay() + 6) % 7) + 1);
+}
+
+/**
+ * Writing days in a row with the daily goal reached, ending today or, while today's goal is
+ * not reached yet, yesterday. Rest days neither break the run nor count in it, unless
+ * something was written on them.
+ */
+export function streak(byDay: Map<string, number>, goal: number, today = new Date(), days: number[] = []): number {
   const day = new Date(today);
-  const reached = (d: Date) => (byDay.get(dayKey(d)) ?? 0) >= Math.max(1, goal);
+  const words = (d: Date) => byDay.get(dayKey(d)) ?? 0;
+  const reached = (d: Date) => words(d) >= Math.max(1, goal);
   if (!reached(day)) day.setDate(day.getDate() - 1);
   let n = 0;
-  while (reached(day)) {
-    n++;
+  // A year of rest days at most, so a log with nothing in it ends the loop.
+  for (let rest = 0; rest < 366; ) {
+    if (reached(day)) {
+      n++;
+      rest = 0;
+    } else if (!isWritingDay(day, days) && words(day) === 0) {
+      rest++;
+    } else {
+      break;
+    }
     day.setDate(day.getDate() - 1);
   }
   return n;

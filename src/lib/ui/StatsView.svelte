@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Project } from "$lib/core/project";
-  import { dayKey, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
-  import { frequentWords, goalProgress, manuscriptStats, mentions, PAGE_CHARACTERS, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
+  import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
+  import { frequentWords, goalProgress, manuscriptStats, mentions, pageCount, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
   import { app, t } from "$lib/state.svelte";
   import { navigator } from "./navigation";
@@ -45,11 +45,11 @@
 
   // Goals, kept in dante.yaml for everyone working on the novel.
   // svelte-ignore state_referenced_locally
-  let goals = $state({ ...p.project.settings.goals });
+  let goals = $state({ ...p.project.settings.goals, days: [...p.project.settings.goals.days] });
   async function saveGoals() {
     error = "";
     try {
-      const clean = { words: Math.max(0, Math.round(Number(goals.words) || 0)), deadline: goals.deadline || "", daily: Math.max(0, Math.round(Number(goals.daily) || 0)) };
+      const clean = { words: Math.max(0, Math.round(Number(goals.words) || 0)), deadline: goals.deadline || "", daily: Math.max(0, Math.round(Number(goals.daily) || 0)), days: [...goals.days].sort() };
       await p.project.saveSettings({ ...p.project.settings, goals: clean });
       await p.onSaved();
     } catch (e) {
@@ -57,12 +57,27 @@
     }
   }
 
-  const progress = $derived(stats ? goalProgress(stats.words, p.project.settings.goals.words, p.project.settings.goals.deadline) : null);
+  /** Monday to Sunday, 1 to 7, with their short names in the interface language. */
+  const weekdays = $derived(
+    [1, 2, 3, 4, 5, 6, 7].map((d) => ({ day: d, name: new Date(2024, 0, d).toLocaleDateString(app.settings.language, { weekday: "short" }) })),
+  );
+  function toggleDay(day: number) {
+    goals.days = goals.days.includes(day) ? goals.days.filter((d) => d !== day) : [...goals.days, day];
+    void saveGoals();
+  }
+
+  // The project's settings are not reactive: read them again whenever the numbers are.
+  const goalsSet = $derived.by(() => {
+    void stats;
+    return p.project.settings.goals;
+  });
+  const progress = $derived(stats ? goalProgress(stats.words, goalsSet.words, goalsSet.deadline, new Date(), goalsSet.days) : null);
+  const restDay = $derived(!isWritingDay(new Date(), goalsSet.days));
   const byDay = $derived(wordsByDay(logs));
   const user = $derived(app.settings.userName.trim());
   const mine = $derived(wordsByDay(logs.filter((l) => l.user === user)));
   const today = dayKey(new Date());
-  const days = $derived(streak(mine, p.project.settings.goals.daily));
+  const days = $derived(streak(mine, goalsSet.daily, new Date(), goalsSet.days));
 
   /** The last 30 days, oldest first, with everyone's net words. */
   const recent = $derived.by(() => {
@@ -115,7 +130,7 @@
     <section class="tiles" aria-label={t("statsView.totals")}>
       {#each [
         { label: t("stats.words"), value: n(stats.words) },
-        { label: t("statsView.pages"), value: n(stats.characters / PAGE_CHARACTERS, 1), hint: t("statsView.pagesHint") },
+        { label: t("statsView.pages"), value: n(pageCount(stats, p.project.settings.pages), 1), hint: t(p.project.settings.pages.unit === "words" ? "statsView.pagesWords" : "statsView.pagesCharacters", { size: n(p.project.settings.pages.size) }) },
         { label: t("stats.characters"), value: n(stats.characters) },
         { label: t("statsView.chapters"), value: n(stats.chapters.length) },
         { label: t("statsView.scenes"), value: n(stats.scenes.length) },
@@ -140,6 +155,12 @@
         <label>{t("statsView.goalWords")} <input type="number" min="0" step="1000" bind:value={goals.words} onchange={saveGoals} /></label>
         <label>{t("statsView.deadline")} <input type="date" bind:value={goals.deadline} onchange={saveGoals} /></label>
         <label>{t("statsView.daily")} <input type="number" min="0" step="50" bind:value={goals.daily} onchange={saveGoals} /></label>
+        <fieldset class="weekdays">
+          <legend>{t("statsView.writingDays")}</legend>
+          {#each weekdays as w (w.day)}
+            <label class="day"><input type="checkbox" checked={goals.days.includes(w.day)} onchange={() => toggleDay(w.day)} /> {w.name}</label>
+          {/each}
+        </fieldset>
       </form>
       {#if progress && p.project.settings.goals.words > 0}
         <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress.share * 100)} aria-label={t("statsView.goalWords")}>
@@ -150,7 +171,7 @@
           {#if progress.remaining === 0}
             {t("statsView.reached")}
           {:else if progress.daysLeft !== null && progress.daysLeft > 0 && progress.perDay !== null}
-            {t("statsView.perDay", { words: n(progress.perDay), days: n(progress.daysLeft) })}
+            {t("statsView.perDay", { words: n(progress.perDay), days: n(progress.writingDaysLeft ?? progress.daysLeft) })}
           {:else if progress.daysLeft !== null}
             {t("statsView.late", { words: n(progress.remaining) })}
           {/if}
@@ -160,7 +181,8 @@
         {#if !user}
           {t("statsView.noName")}
         {:else}
-          {t("statsView.today", { words: n(mine.get(today) ?? 0) })}{#if p.project.settings.goals.daily > 0}{" "}{t("statsView.ofDaily", { goal: n(p.project.settings.goals.daily) })}{/if}.
+          {t("statsView.today", { words: n(mine.get(today) ?? 0) })}{#if goalsSet.daily > 0 && !restDay}{" "}{t("statsView.ofDaily", { goal: n(goalsSet.daily) })}{/if}.
+          {#if restDay}{t("statsView.restDay")}{/if}
           {#if days > 0}{t(days === 1 ? "statsView.streakOne" : "statsView.streak", { days })}{/if}
         {/if}
       </p>
@@ -329,6 +351,28 @@
   }
   .goals input {
     width: 160px;
+  }
+  .weekdays {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+  .weekdays legend {
+    padding: 0;
+    margin-bottom: 4px;
+  }
+  .goals .day {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .goals .day input {
+    width: auto;
+    margin: 0;
   }
   .bar {
     height: 10px;

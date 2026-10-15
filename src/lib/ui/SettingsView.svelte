@@ -41,7 +41,9 @@
     error = "";
     try {
       saveAppSettings($state.snapshot(appSettings));
-      await project.saveSettings($state.snapshot(novel));
+      const settings = $state.snapshot(novel);
+      settings.pages.size = Math.max(1, Math.round(Number(settings.pages.size) || 0)) || (settings.pages.unit === "words" ? 250 : 1800);
+      await project.saveSettings(settings);
       await onSaved();
       saved = true;
       setTimeout(() => (saved = false), 2000);
@@ -82,6 +84,27 @@
         ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
       >
     {/if}
+
+    <h3>{t("settings.pages")}</h3>
+    <label
+      >{t("settings.pageUnit")}
+      <select
+        bind:value={novel.pages.unit}
+        onchange={() => {
+          // Switching unit keeps a custom size, but not the other unit's usual one.
+          if (novel.pages.unit === "words" && novel.pages.size === 1800) novel.pages.size = 250;
+          if (novel.pages.unit === "characters" && novel.pages.size === 250) novel.pages.size = 1800;
+        }}
+      >
+        <option value="characters">{t("settings.pageCharacters")}</option>
+        <option value="words">{t("settings.pageWords")}</option>
+      </select>
+    </label>
+    <label
+      >{t(novel.pages.unit === "words" ? "settings.pageSizeWords" : "settings.pageSizeCharacters")}
+      <input type="number" min="1" step="1" bind:value={novel.pages.size} />
+      <small>{t("settings.pagesHint")}</small>
+    </label>
 
     <h2>{t("settings.app")}</h2>
     <label

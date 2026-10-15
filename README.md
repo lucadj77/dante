@@ -143,12 +143,15 @@ end: until              # timeline only: optional end
 - EPUB 3 (checked with EPUBCheck): one file per part, chapter and page of front and back matter,
   a table of contents with chapters inside their parts; readers choose font and size. The book
   keeps the same identifier across exports (`export.epubId` in `dante.yaml`).
-- Statistics section: words, standard pages of 1,800 characters, chapters, scenes, reading time;
+- Statistics section: words, pages (1,800 characters with spaces by default, or a number of
+  words: `pages: {unit, size}` in `dante.yaml`, set in the settings), chapters, scenes, reading time;
   words by chapter; how often the scenes name each note of the Story Bible (name or alias, as
   written); the most used words without the commonest ones (English, Italian, Spanish, French).
-- Goals in `dante.yaml` (`goals: {words, deadline, daily}`): progress, words a day needed to
-  finish on time, today's words and days in a row with the daily goal reached; today's words
-  also appear in the manuscript's side panel.
+- Goals in `dante.yaml` (`goals: {words, deadline, daily, days}`): progress, words a day needed
+  to finish on time, today's words and days in a row with the daily goal reached; today's words
+  also appear in the manuscript's side panel. `days` lists the writing days of the week, 1
+  (Monday) to 7 (Sunday): the words needed are spread over those days only, and rest days do
+  not break a run.
 - Writing log: each person's words added and removed and minutes spent writing, by day, in
   `.dante/sessions/<name>.json` (one file per person, so a shared folder never has two writers);
   the chart shows the last 30 days for everyone, the table each person.

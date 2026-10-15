@@ -2,14 +2,17 @@ import { cleanSource } from "./export/book";
 import { headings, type ManuscriptNode } from "./manuscript";
 import { noteTitle, noteType, type NoteIndex } from "./notes";
 import { isWithin } from "./path";
+import { isWritingDay } from "./sessions";
 import type { NovelSettings } from "./settings";
 import { plainText, textStats } from "./stats";
 
 // Numbers about the manuscript for the Statistics section: length, chapters, the notes
 // of the Story Bible mentioned in the scenes, the most used words, and goals.
 
-/** Characters in a standard page ("cartella editoriale"). */
-export const PAGE_CHARACTERS = 1800;
+/** Pages of the text, by the page size in the settings (characters with spaces, or words). */
+export function pageCount(text: { words: number; characters: number }, pages: NovelSettings["pages"]): number {
+  return (pages.unit === "words" ? text.words : text.characters) / Math.max(1, pages.size);
+}
 
 export interface SceneStats {
   path: string;
@@ -147,23 +150,29 @@ export interface GoalProgress {
   remaining: number;
   /** Whole days left until the deadline, today included; null without a deadline. */
   daysLeft: number | null;
-  /** Words a day needed to finish on time; null without a deadline or once finished. */
+  /** Writing days among them (all of them when no days are chosen). */
+  writingDaysLeft: number | null;
+  /** Words a writing day needed to finish on time; null without a deadline or once finished. */
   perDay: number | null;
 }
 
-export function goalProgress(words: number, goal: number, deadline: string, today = new Date()): GoalProgress {
+export function goalProgress(words: number, goal: number, deadline: string, today = new Date(), days: number[] = []): GoalProgress {
   const remaining = Math.max(0, goal - words);
   let daysLeft: number | null = null;
+  let writingDaysLeft: number | null = null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(deadline);
   if (m) {
     const end = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
     const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     daysLeft = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+    writingDaysLeft = 0;
+    for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) if (isWritingDay(day, days)) writingDaysLeft++;
   }
   return {
     share: goal > 0 ? Math.min(1, words / goal) : 0,
     remaining,
     daysLeft,
-    perDay: daysLeft !== null && remaining > 0 ? Math.ceil(remaining / Math.max(1, daysLeft)) : null,
+    writingDaysLeft,
+    perDay: writingDaysLeft !== null && remaining > 0 ? Math.ceil(remaining / Math.max(1, writingDaysLeft)) : null,
   };
 }

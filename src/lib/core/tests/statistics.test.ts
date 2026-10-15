@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
-import { dayKey, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { frequentWords, goalProgress, manuscriptStats, mentions } from "../statistics";
+import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
+import { frequentWords, goalProgress, manuscriptStats, mentions, pageCount } from "../statistics";
+import { parseSettings } from "../settings";
 
 function sample() {
   return new MemoryFs({
@@ -51,8 +52,24 @@ describe("statistics", () => {
 
   it("tells how much is left before a deadline", () => {
     const today = new Date(2026, 9, 15);
-    expect(goalProgress(40000, 80000, "2026-10-24", today)).toEqual({ share: 0.5, remaining: 40000, daysLeft: 10, perDay: 4000 });
-    expect(goalProgress(90000, 80000, "", today)).toEqual({ share: 1, remaining: 0, daysLeft: null, perDay: null });
+    expect(goalProgress(40000, 80000, "2026-10-24", today)).toEqual({ share: 0.5, remaining: 40000, daysLeft: 10, writingDaysLeft: 10, perDay: 4000 });
+    expect(goalProgress(90000, 80000, "", today)).toEqual({ share: 1, remaining: 0, daysLeft: null, writingDaysLeft: null, perDay: null });
+    // Monday to Friday: from Thursday 15 to Saturday 24 there are seven writing days.
+    expect(goalProgress(40000, 80000, "2026-10-24", today, [1, 2, 3, 4, 5])).toMatchObject({ daysLeft: 10, writingDaysLeft: 7, perDay: 5715 });
+  });
+
+  it("counts pages by characters or words", () => {
+    const text = { words: 1000, characters: 5400 };
+    expect(pageCount(text, { unit: "characters", size: 1800 })).toBe(3);
+    expect(pageCount(text, { unit: "words", size: 250 })).toBe(4);
+  });
+
+  it("reads page size and writing days from the settings", () => {
+    const s = parseSettings("goals:\n  days: [5, 1, 9, 1]\npages:\n  unit: words\n  size: 0\n");
+    expect(s.goals.days).toEqual([1, 5]);
+    expect(s.pages).toEqual({ unit: "words", size: 250 });
+    expect(parseSettings("title: x\n").goals.days).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(parseSettings("title: x\n").pages).toEqual({ unit: "characters", size: 1800 });
   });
 });
 
@@ -84,5 +101,15 @@ describe("writing sessions", () => {
     // Today has nothing yet: the streak up to yesterday still counts.
     expect(streak(byDay, 500, new Date(2026, 9, 15))).toBe(2);
     expect(streak(byDay, 600, new Date(2026, 9, 15))).toBe(0);
+  });
+
+  it("skips rest days in a streak", () => {
+    const day = { added: 600, removed: 0, minutes: 30 };
+    const byDay = wordsByDay([{ user: "a", days: { "2026-10-09": day, "2026-10-12": day, "2026-10-13": day, "2026-10-14": day } }]);
+    // Saturday 10 and Sunday 11 are rest days from Monday to Friday; Thursday 8 ends the run.
+    expect(streak(byDay, 500, new Date(2026, 9, 15), [1, 2, 3, 4, 5])).toBe(4);
+    expect(streak(byDay, 500, new Date(2026, 9, 15))).toBe(3);
+    expect(isWritingDay(new Date(2026, 9, 18), [1, 2, 3, 4, 5])).toBe(false);
+    expect(isWritingDay(new Date(2026, 9, 18), [])).toBe(true);
   });
 });

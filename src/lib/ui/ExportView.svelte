@@ -1,5 +1,6 @@
 <script lang="ts">
   import { buildBook } from "$lib/core/export/book";
+  import { pageCount } from "$lib/core/statistics";
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
   import { bookToEpub } from "$lib/core/export/epub";
   import { bookToTypst } from "$lib/core/export/typst";
@@ -185,7 +186,7 @@
       const book = await buildBook(project, { revisions });
       const layout = project.settings.export.docx;
       const labels = { words: t("export.words") };
-      const pages = (book.characters / 1800).toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const pages = pageCount(book, project.settings.pages).toLocaleString(undefined, { maximumFractionDigits: 1 });
       let where: string | null;
       if (format === "docx") {
         where = await save(await docxBytes(bookToDocx(book, layout, labels)));

@@ -68,6 +68,8 @@ export const PAGE_SIZES = {
 
 export type PageSize = keyof typeof PAGE_SIZES | "custom";
 
+export type PageUnit = "characters" | "words";
+
 export type ExportFormat = "docx" | "pdf" | "epub";
 
 export interface DocxSettings {
@@ -150,6 +152,14 @@ export interface NovelSettings {
     deadline: string;
     /** Words to write each day. */
     daily: number;
+    /** Days of the week given to writing, 1 (Monday) to 7 (Sunday); the others are rest days. */
+    days: number[];
+  };
+  /** What makes a page in the statistics and the export summary. */
+  pages: {
+    /** Characters (spaces included) or words. */
+    unit: PageUnit;
+    size: number;
   };
   export: {
     /** The format chosen last on the export page. */
@@ -286,7 +296,8 @@ export function defaultSettings(language = "en"): NovelSettings {
         restartEachPart: false,
       },
     },
-    goals: { words: 0, deadline: "", daily: 0 },
+    goals: { words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
+    pages: { unit: "characters", size: 1800 },
     export: {
       format: "docx",
       epubId: "",
@@ -355,6 +366,12 @@ export function parseSettings(text: string): NovelSettings {
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
   if (!["docx", "pdf", "epub"].includes(settings.export.format)) settings.export.format = "docx";
+  const days: unknown = settings.goals.days;
+  settings.goals.days = Array.isArray(days)
+    ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort()
+    : [1, 2, 3, 4, 5, 6, 7];
+  if (settings.pages.unit !== "words") settings.pages.unit = "characters";
+  if (!(settings.pages.size > 0)) settings.pages.size = settings.pages.unit === "words" ? 250 : 1800;
   // Before the page size could be chosen, a typeset book was always A5.
   if (docx.pageSize === undefined && docx.profile === "typeset") settings.export.docx.pageSize = "a5";
   // Files written before the heading choices existed had a template such as "{label} {number}: {title}".
