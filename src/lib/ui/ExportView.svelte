@@ -5,7 +5,8 @@
   import { bookToEpub } from "$lib/core/export/epub";
   import { bookToTypst } from "$lib/core/export/typst";
   import type { Project } from "$lib/core/project";
-  import { PAGE_SIZES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import { defaultQuotes, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import type { MessageKey } from "$lib/i18n";
   import { app, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import HeadingLevel from "./HeadingLevel.svelte";
@@ -327,14 +328,13 @@
     <label
       >{t("export.quotes")}
       <select bind:value={typography.quotes}>
-        <option value="keep">{t("export.quotesKeep")}</option>
-        <option value="guillemets">{t("export.quotesGuillemets")}</option>
-        <option value="curly">{t("export.quotesCurly")}</option>
-        <option value="dash">{t("export.quotesDash")}</option>
+        {#each QUOTE_STYLES as style (style)}
+          <option value={style}>{t(`export.quotes.${style}` as MessageKey)}{style === defaultQuotes(project.settings.language) ? ` · ${t("export.quotesUsual")}` : ""}</option>
+        {/each}
       </select>
     </label>
-    {#if typography.quotes === "dash"}
-      <p class="hint">{t("export.quotesDashHint")}</p>
+    {#if typography.quotes === "dash" || typography.quotes === "dashAttached"}
+      <p class="hint">{t(typography.quotes === "dash" ? "export.quotesDashHint" : "export.quotesDashAttachedHint")}</p>
       <div class="row">
         <label
           >{t("export.dialogueDash")}

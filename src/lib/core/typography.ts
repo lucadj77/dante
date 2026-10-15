@@ -1,9 +1,24 @@
-import type { TypographySettings } from "./settings";
+import type { QuoteStyle, TypographySettings } from "./settings";
 
 // Typographic conventions applied when exporting. The files keep what was typed.
 
 const STRAIGHT_APOSTROPHE = /(?<=[\p{L}\p{N}])'(?=\p{L})/gu;
 const STRAIGHT_QUOTES = /["“”]/g;
+/** Opening and closing marks of each style that uses quotation marks. */
+export const QUOTE_MARKS: Partial<Record<QuoteStyle, [string, string]>> = {
+  guillemets: ["«", "»"],
+  guillemetsSpaced: ["«\u202F", "\u202F»"],
+  guillemetsReversed: ["»", "«"],
+  curly: ["“", "”"],
+  curlySingle: ["‘", "’"],
+  low: ["„", "“"],
+  lowPolish: ["„", "”"],
+  swedish: ["”", "”"],
+};
+export const isDashStyle = (style: QuoteStyle) => style === "dash" || style === "dashAttached";
+// French spacing: a narrow no-break space before ; ! ? and inside guillemets, a no-break space before :.
+const FRENCH_TIGHT = /[ \t\u00A0\u202F]*([;!?])/g;
+const FRENCH_COLON = /(?<=\S)[ \t\u00A0\u202F]*:(?=\s|$)/g;
 const THREE_DOTS = /(?<!\.)\.\.\.(?!\.)/g;
 const ACCENTED_CAPITAL = /\bE'(?=\s|$)/gm;
 const DOUBLE_SPACE = /(?<=\S) {2,}(?=\S)/g;
@@ -20,10 +35,12 @@ const DIALOGUE_MARK = "\u0001";
  * A line that ends its paragraph is not closed; one followed by narration is closed
  * with a dash. Dashes are left as DIALOGUE_MARK for the caller to set. Em dashes already
  * in the text count as dialogue dashes, so text typed with dashes keeps them.
+ * `attached` follows the Spanish way: the dash touches the words it introduces or closes,
+ * —Ven —dijo él— es tarde.
  */
-function dialogueWithDashes(text: string): string {
+function dialogueWithDashes(text: string, attached = false): string {
   // Em dashes already typed are dialogue too.
-  let out = text.replace(DIALOGUE, `$1${DIALOGUE_MARK} `).replaceAll("—", DIALOGUE_MARK);
+  const out = text.replace(DIALOGUE, attached ? `$1${DIALOGUE_MARK}` : `$1${DIALOGUE_MARK} `).replaceAll("—", DIALOGUE_MARK);
   let result = "";
   let open = false;
   for (let i = 0; i < out.length; i++) {
@@ -32,7 +49,10 @@ function dialogueWithDashes(text: string): string {
     const closes = c === "»" || (c === '"' && open);
     if (opens) {
       open = true;
-      result += `${DIALOGUE_MARK} `;
+      const atStart = /(^|\n)[ \t]*$/.test(result);
+      // Spanish: the dash that resumes dialogue closes the narration, touching its last word.
+      if (attached && !atStart) result = result.trimEnd() + `${DIALOGUE_MARK} `;
+      else result += attached ? DIALOGUE_MARK : `${DIALOGUE_MARK} `;
       while (out[i + 1] === " ") i++;
     } else if (closes) {
       open = false;
@@ -42,7 +62,8 @@ function dialogueWithDashes(text: string): string {
       if (/^[\s.,;:!?…]*$/.test(rest)) continue;
       // Punctuation stays where the author put it: only the quotation mark becomes a dash.
       result += ` ${DIALOGUE_MARK}`;
-      if (!/^\s/.test(out.slice(i + 1))) result += " ";
+      if (attached) while (out[i + 1] === " ") i++;
+      else if (!/^\s/.test(out.slice(i + 1))) result += " ";
     } else {
       result += c;
     }
@@ -56,12 +77,14 @@ function paragraph(text: string, rules: TypographySettings): string {
   let out = text;
   if (rules.apostrophes) out = out.replace(STRAIGHT_APOSTROPHE, "’");
   if (rules.ellipsis) out = out.replace(THREE_DOTS, "…").replace(ACCENTED_CAPITAL, "È");
-  if (rules.quotes === "dash") {
-    out = dialogueWithDashes(out);
+  if (isDashStyle(rules.quotes)) {
+    out = dialogueWithDashes(out, rules.quotes === "dashAttached");
   } else if (rules.quotes !== "keep") {
-    const [open, close] = rules.quotes === "guillemets" ? ["«", "»"] : ["“", "”"];
+    const [open, close] = QUOTE_MARKS[rules.quotes] ?? ["“", "”"];
+    // Guillemets typed in another style become the chosen marks too.
+    if (rules.quotes !== "guillemets") out = out.replace(/«[ \t\u00A0\u202F]*|[ \t\u00A0\u202F]*»/g, (m) => (m.includes("«") ? open : close));
     let opening = true;
-    out = out.replace(STRAIGHT_QUOTES, () => {
+    out = out.replace(rules.quotes === "guillemetsReversed" || rules.quotes === "guillemets" ? STRAIGHT_QUOTES : /"/g, () => {
       const mark = opening ? open : close;
       opening = !opening;
       return mark;
@@ -73,6 +96,13 @@ function paragraph(text: string, rules: TypographySettings): string {
       .replace(DOUBLE_SPACE, " ")
       .replace(SPACE_BEFORE_PUNCTUATION, "")
       .replace(SPACE_INSIDE_GUILLEMETS, (m) => m.trim());
+  }
+  if (rules.quotes === "guillemetsSpaced") {
+    out = out
+      .replace(/«[ \t\u00A0\u202F]*/g, "«\u202F")
+      .replace(/[ \t\u00A0\u202F]*»/g, "\u202F»")
+      .replace(FRENCH_TIGHT, "\u202F$1")
+      .replace(FRENCH_COLON, "\u00A0:");
   }
   return out;
 }

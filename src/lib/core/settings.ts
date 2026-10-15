@@ -20,15 +20,59 @@ export interface LevelSettings {
 /** How a new part, chapter or scene is set apart from what comes before it. */
 export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
 
+/**
+ * How dialogue is marked, by the conventions of different countries:
+ * - guillemets «Vieni» (Italy, Switzerland, Russia), guillemetsSpaced « Viens » (France),
+ *   guillemetsReversed »Komm« (German books, Denmark);
+ * - curly “Come” (United States), curlySingle ‘Come’ (United Kingdom), low „Komm“
+ *   (Germany, Austria, Czechia), lowPolish „Chodź” (Poland, Hungary, Romania),
+ *   swedish ”Kom” (Sweden, Finland);
+ * - dash: — Vieni — disse (Italy), dashAttached: —Ven —dijo él— (Spain, Latin America,
+ *   Portugal, Brazil).
+ * Straight quotes become the chosen marks; with a dash, guillemets and straight quotes
+ * become dashes, while curly quotes stay as quotation marks inside dialogue.
+ */
+export const QUOTE_STYLES = [
+  "keep",
+  "guillemets",
+  "guillemetsSpaced",
+  "guillemetsReversed",
+  "curly",
+  "curlySingle",
+  "low",
+  "lowPolish",
+  "swedish",
+  "dash",
+  "dashAttached",
+] as const;
+export type QuoteStyle = (typeof QUOTE_STYLES)[number];
+
+/** The usual way of marking dialogue in a language's books. */
+export function defaultQuotes(language: string): QuoteStyle {
+  const byLanguage: Record<string, QuoteStyle> = {
+    it: "guillemets",
+    fr: "guillemetsSpaced",
+    es: "dashAttached",
+    pt: "dashAttached",
+    de: "low",
+    cs: "low",
+    sk: "low",
+    pl: "lowPolish",
+    hu: "lowPolish",
+    ro: "lowPolish",
+    sv: "swedish",
+    fi: "swedish",
+    da: "guillemetsReversed",
+    ru: "guillemets",
+    uk: "guillemets",
+  };
+  if (language.toLowerCase() === "en-gb") return "curlySingle";
+  return byLanguage[language.slice(0, 2).toLowerCase()] ?? "curly";
+}
+
 export interface TypographySettings {
-  /**
-   * How dialogue is marked: «guillemets», “curly quotes”, or a dash opening each line of
-   * dialogue as some Italian publishers do (— Vieni — disse). Straight quotes become the
-   * chosen marks; with "dash", guillemets and straight quotes become dashes, while
-   * “curly quotes” stay as quotation marks inside dialogue.
-   */
-  quotes: "keep" | "guillemets" | "curly" | "dash";
-  /** Dash used for dialogue when quotes is "dash": em dash (—) or en dash (–). */
+  quotes: QuoteStyle;
+  /** Dash used for dialogue with a dash style: em dash (—) or en dash (–). */
   dialogueDash: "em" | "en";
   /** l'amico becomes l’amico. */
   apostrophes: boolean;
@@ -343,7 +387,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         omitSingleSceneHeading: true,
       },
       typography: {
-        quotes: language.startsWith("it") || language.startsWith("fr") || language.startsWith("es") ? "guillemets" : "curly",
+        quotes: defaultQuotes(language),
         apostrophes: true,
         ellipsis: true,
         spaces: true,
@@ -389,6 +433,7 @@ export function parseSettings(text: string): NovelSettings {
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
   if (!["docx", "pdf", "epub"].includes(settings.export.format)) settings.export.format = "docx";
+  if (!(QUOTE_STYLES as readonly string[]).includes(settings.export.typography.quotes)) settings.export.typography.quotes = defaultQuotes(language);
   const days: unknown = settings.goals.days;
   settings.goals.days = Array.isArray(days)
     ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort()

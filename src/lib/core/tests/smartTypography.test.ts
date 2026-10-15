@@ -39,3 +39,19 @@ describe("typing dashes", () => {
     expect(smartReplacement("— Vieni", '"', { ...it_, quotes: "dash" })).toEqual({ back: 0, insert: " —" });
   });
 });
+
+describe("typing dialogue of other countries", () => {
+  it("opens and closes with each country's marks", () => {
+    expect(smartReplacement("Er sagte ", '"', { ...it_, quotes: "low" })).toEqual({ back: 0, insert: "„" });
+    expect(smartReplacement("„Komm", '"', { ...it_, quotes: "low" })).toEqual({ back: 0, insert: "“" });
+    expect(smartReplacement("", '"', { ...it_, quotes: "guillemetsSpaced" })).toEqual({ back: 0, insert: "« " });
+  });
+
+  it("places the Spanish dash from the context", () => {
+    const es = { ...it_, quotes: "dashAttached" as const };
+    expect(smartReplacement("", '"', es)).toEqual({ back: 0, insert: "—" });
+    expect(smartReplacement("—Ven", '"', es)).toEqual({ back: 0, insert: " —" });
+    expect(smartReplacement("—Ven —dijo él", '"', es)).toEqual({ back: 0, insert: "—" });
+    expect(smartReplacement("-", " ", es)).toEqual({ back: 1, insert: "—" });
+  });
+});

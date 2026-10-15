@@ -190,6 +190,15 @@ properties:
 - Every scene, chapter and part has a synopsis field in the panel (`synopsis` property). Views
   show it under each item's name unless their file says `synopsis: false` (⚙ Settings → Synopsis).
 
+## Dialogue conventions
+
+The export's typography (and typing, when "correct while typing" is on) can mark dialogue in
+the way of different countries: «Italy», « France », »German books«, “United States”,
+‘United Kingdom’, „Germany“, „Poland”, ”Sweden”, the Italian dash (— Vieni — disse) and the
+Spanish raya (—Ven —dijo él—). New projects start with the usual one for the novel's
+language. French spacing adds narrow no-break spaces inside guillemets and before ; ! ?, and a
+no-break space before the colon.
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
