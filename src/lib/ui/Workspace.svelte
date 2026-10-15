@@ -10,6 +10,8 @@
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
   import ViewsView from "./ViewsView.svelte";
+  import StatsView from "./StatsView.svelte";
+  import { startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
   import { provideNavigator } from "./navigation";
@@ -26,18 +28,19 @@
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
-  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "export" | "settings" | "files";
+  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "stats" | "export" | "settings" | "files";
   const sections: { id: Section; icon: string }[] = [
     { id: "manuscript", icon: "¶" },
     { id: "codex", icon: "◆" },
     { id: "research", icon: "❖" },
     { id: "laboratory", icon: "⚗" },
     { id: "views", icon: "▦" },
+    { id: "stats", icon: "Σ" },
     { id: "export", icon: "⇪" },
   ];
   let section = $state<Section>("manuscript");
   /** Sections with panels on the sides, which can be hidden. */
-  const panels = $derived(section !== "export" && section !== "settings" && section !== "views");
+  const panels = $derived(section !== "export" && section !== "settings" && section !== "views" && section !== "stats");
   /** What each section shows, so coming back to it finds the same note. */
   let opened = $state<Partial<Record<Section, string | null>>>({});
   /** Root of the "files" section. */
@@ -177,6 +180,7 @@
   }
 
   onMount(() => startPresence(project));
+  onMount(() => startSessions(project));
 
   /** Copies made by a sync service, shown above the sections until settled. */
   const conflicts = $derived.by(() => {
@@ -345,6 +349,8 @@
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
       <SettingsView {project} onSaved={reload} />
+    {:else if section === "stats"}
+      <StatsView {project} {rev} {diskRev} onSaved={reload} />
     {:else if section === "views"}
       <ViewsView {project} {rev} {diskRev} open={opened.views ?? null} onShow={(path) => (opened.views = path)} onReload={reload} />
     {/if}

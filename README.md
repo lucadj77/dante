@@ -132,6 +132,27 @@ end: until              # timeline only: optional end
 - A project without views offers two starting ones: scenes by status on a board, and a table of
   scenes.
 
+## What phase 5 adds
+
+- Export to PDF and EPUB besides DOCX, chosen at the top of the Export page. PDF uses the
+  same layout choices as DOCX (standard manuscript or typeset book, page size, font, spacing,
+  separators, headings, front and back matter) and is typeset by [Typst](https://typst.app),
+  built into the desktop app: nothing to install. Fonts are the system's plus Libertinus Serif
+  and New Computer Modern, used when the chosen font is missing. In the browser the PDF cannot
+  be made and the Typst source is downloaded instead.
+- EPUB 3 (checked with EPUBCheck): one file per part, chapter and page of front and back matter,
+  a table of contents with chapters inside their parts; readers choose font and size. The book
+  keeps the same identifier across exports (`export.epubId` in `dante.yaml`).
+- Statistics section: words, standard pages of 1,800 characters, chapters, scenes, reading time;
+  words by chapter; how often the scenes name each note of the Story Bible (name or alias, as
+  written); the most used words without the commonest ones (English, Italian, Spanish, French).
+- Goals in `dante.yaml` (`goals: {words, deadline, daily}`): progress, words a day needed to
+  finish on time, today's words and days in a row with the daily goal reached; today's words
+  also appear in the manuscript's side panel.
+- Writing log: each person's words added and removed and minutes spent writing, by day, in
+  `.dante/sessions/<name>.json` (one file per person, so a shared folder never has two writers);
+  the chart shows the last 30 days for everyone, the table each person.
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).

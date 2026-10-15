@@ -1,12 +1,22 @@
 import { MemoryFs } from "./core/fs";
+import { dayKey } from "./core/sessions";
 
 /** A small novel to try the app without a folder, for example in a browser. */
 export function sampleProject(): MemoryFs {
   const now = new Date().toISOString();
+  // Anna's writing over the last two weeks, for the statistics.
+  const days: Record<string, { added: number; removed: number; minutes: number }> = {};
+  for (let i = 13; i >= 1; i--) {
+    if (i % 4 === 0) continue;
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days[dayKey(d)] = { added: 300 + ((i * 137) % 500), removed: (i * 53) % 120, minutes: 25 + ((i * 17) % 60) };
+  }
   return new MemoryFs({
     // Anna, on another computer, is writing the envelope scene (for the next three minutes).
     ".dante/presence/anna.json": JSON.stringify({ user: "Anna", path: "Manuscript/010 Homecoming/020 Letter/010 Envelope.md", since: now, updated: now }),
-    "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\n",
+    ".dante/sessions/anna.json": JSON.stringify({ user: "Anna", days }),
+    "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\ngoals:\n  words: 80000\n  deadline: 2027-06-30\n  daily: 500\n",
     "Story Bible/Characters/Marta Rinaldi.md":
       "---\ntype: character\nrole: protagonist\nage: 42\naliases: [Marta]\n---\nMarta returns home after twenty years. She grew up in [[Rinaldi House]] with her mother, [[Elena Rinaldi|Elena]].\n",
     "Story Bible/Characters/Elena Rinaldi.md":

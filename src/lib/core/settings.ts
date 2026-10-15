@@ -68,6 +68,8 @@ export const PAGE_SIZES = {
 
 export type PageSize = keyof typeof PAGE_SIZES | "custom";
 
+export type ExportFormat = "docx" | "pdf" | "epub";
+
 export interface DocxSettings {
   /** Standard manuscript for agents and publishers, or a typeset, readable book. */
   profile: "manuscript" | "typeset";
@@ -140,7 +142,21 @@ export interface NovelSettings {
       restartEachPart: boolean;
     };
   };
+  /** Writing goals, shared by everyone working on the novel; 0 or "" means none. */
+  goals: {
+    /** Length of the finished novel, in words. */
+    words: number;
+    /** Date to finish by, as YYYY-MM-DD. */
+    deadline: string;
+    /** Words to write each day. */
+    daily: number;
+  };
   export: {
+    /** The format chosen last on the export page. */
+    format: ExportFormat;
+    /** Identifies the ebook across exports, so readers see a new version and not a new book. */
+    epubId: string;
+    /** Layout of DOCX and PDF; EPUB takes the structure and headings from it. */
     docx: DocxSettings;
     /** Applied to the exported text only; the files keep what was typed. */
     typography: TypographySettings;
@@ -270,7 +286,10 @@ export function defaultSettings(language = "en"): NovelSettings {
         restartEachPart: false,
       },
     },
+    goals: { words: 0, deadline: "", daily: 0 },
     export: {
+      format: "docx",
+      epubId: "",
       docx: {
         profile: "manuscript",
         pageSize: "a4",
@@ -335,6 +354,7 @@ export function parseSettings(text: string): NovelSettings {
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  if (!["docx", "pdf", "epub"].includes(settings.export.format)) settings.export.format = "docx";
   // Before the page size could be chosen, a typeset book was always A5.
   if (docx.pageSize === undefined && docx.profile === "typeset") settings.export.docx.pageSize = "a5";
   // Files written before the heading choices existed had a template such as "{label} {number}: {title}".

@@ -3,6 +3,7 @@
   import { findNode, folderNotePath, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
+  import { writing } from "./sessions.svelte";
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
@@ -198,10 +199,20 @@
         </tr>
       </tbody>
     </table>
+    <p class="today">
+      {p.project.settings.goals.daily > 0
+        ? t("panel.todayGoal", { words: format(writing.today), goal: format(p.project.settings.goals.daily) })
+        : t("panel.today", { words: format(writing.today) })}
+    </p>
   </section>
 </div>
 
 <style>
+  .today {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+  }
   label.check {
     display: flex;
     align-items: center;

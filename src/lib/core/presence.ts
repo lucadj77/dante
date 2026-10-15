@@ -20,9 +20,12 @@ export interface Presence {
 }
 
 /** A file name for the user: letters and digits, the rest becomes "-". */
+export function slug(user: string): string {
+  return user.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "user";
+}
+
 export function presenceFile(user: string): string {
-  const slug = user.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return join(PRESENCE_DIR, `${slug || "user"}.json`);
+  return join(PRESENCE_DIR, `${slug(user)}.json`);
 }
 
 export async function writePresence(fs: ProjectFs, presence: Presence): Promise<void> {

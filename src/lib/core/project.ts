@@ -23,6 +23,7 @@ import {
   type NovelSettings,
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
+import { textStats } from "./stats";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
@@ -180,9 +181,15 @@ export class Project {
     await this.writeNote(path, replaceBody(text, body));
   }
 
+  /** Called after a scene is written, with its words before and after, for the writing log. */
+  onSceneWritten: ((path: string, before: number, after: number) => void) | null = null;
+
   /** Writes a whole note, keeping the link index current. */
   async writeNote(path: string, text: string): Promise<void> {
+    const scene = this.onSceneWritten && isMarkdown(path) && isWithin(path, this.settings.folders.manuscript);
+    const before = scene && (await this.fs.exists(path)) ? textStats(splitNote(await this.fs.readText(path)).body).words : 0;
     await this.fs.writeText(path, text);
+    if (scene) this.onSceneWritten?.(path, before, textStats(splitNote(text).body).words);
     if (this.indexing) (await this.indexing).set(path, text);
   }
 

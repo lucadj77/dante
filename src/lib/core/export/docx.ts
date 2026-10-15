@@ -28,7 +28,7 @@ const HEADINGS = [
 ];
 
 /** Headings of the paratext, in the language of the novel. */
-const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgements: string }> = {
+export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgements: string }> = {
   en: { authorNote: "Author’s note", acknowledgements: "Acknowledgements" },
   it: { authorNote: "Nota dell’autore", acknowledgements: "Ringraziamenti" },
   es: { authorNote: "Nota del autor", acknowledgements: "Agradecimientos" },
@@ -48,7 +48,7 @@ function plain(text: string, options: Partial<IRunOptions> = {}): TextRun[] {
 }
 
 /** Rounds to the nearest hundred, as is customary for manuscript word counts. */
-function approxWords(n: number): string {
+export function approxWords(n: number): string {
   return (Math.round(n / 100) * 100 || n).toLocaleString("en-US");
 }
 

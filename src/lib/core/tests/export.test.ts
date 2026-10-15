@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildBook, cleanSource, markdownToBlocks } from "../export/book";
 import { bookToDocx, docxBytes } from "../export/docx";
+import { bookToEpub } from "../export/epub";
+import { bookToTypst, str } from "../export/typst";
+import { crc32 } from "../export/zip";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings, parseSettings } from "../settings";
@@ -130,5 +133,41 @@ describe("scenes outside chapters", () => {
     });
     const book = await buildBook(await Project.open(fs));
     expect(book.entries.map((e) => [e.kind, e.scenes.length])).toEqual([["loose", 1], ["chapter", 2], ["chapter", 1]]);
+  });
+});
+
+describe("PDF and EPUB", () => {
+  const sample = () =>
+    new MemoryFs({
+      "dante.yaml": "title: Test \"quoted\"\nauthor: Ada Rossi\nlanguage: it\nstructure:\n  parts: true\n",
+      "Manuscript/010 One/010 One.md": "---\nkind: part\n---\n",
+      "Manuscript/010 One/010 Start/010 A.md": "Uno *due* #tre = \\ $4 // <b>.",
+      "Manuscript/010 One/010 Start/020 B.md": "Quattro.",
+      "Manuscript/900 Epilogue/900 Epilogue.md": "---\nkind: epilogue\n---\n",
+      "Manuscript/900 Epilogue/010 End.md": "Fine.",
+    });
+
+  it("writes the text as Typst strings, never as markup", async () => {
+    const book = await buildBook(await Project.open(sample()));
+    const source = bookToTypst(book, defaultSettings("it").export.docx, { words: "parole" });
+    expect(source).toContain('#"Uno "#emph("due")#" #tre = \\\\ $4 // <b>."');
+    expect(source).toContain('#set document(title: "Test «quoted»", author: "Ada Rossi")');
+    expect(str('a"b\\c\nd')).toBe('"a\\"b\\\\c\\nd"');
+    expect(source).toContain('#heading(level: 1)[#"Parte I: One"]');
+    expect(source).toContain('lang: "it"');
+  });
+
+  it("makes an EPUB with the mimetype first and a nested table of contents", async () => {
+    const book = await buildBook(await Project.open(sample()));
+    const bytes = bookToEpub(book, defaultSettings("it").export.docx, "id", new Date(2026, 9, 15));
+    const text = new TextDecoder().decode(bytes);
+    // The mimetype is stored first and uncompressed, right after its 30-byte header.
+    expect(text.slice(30, 58)).toBe("mimetypeapplication/epub+zip");
+    expect(text).toMatch(/<li><a href="text\d+\.xhtml">Parte I: One<\/a><ol>\s*<li><a href="text\d+\.xhtml">Capitolo 1: Start<\/a><\/li>\s*<\/ol><\/li>\s*<li><a href="text\d+\.xhtml">Epilogue<\/a><\/li>/);
+    expect(text).toContain("Uno <em>due</em> #tre = \\ $4 // &lt;b&gt;.");
+  });
+
+  it("computes the CRC-32 of zip entries", () => {
+    expect(crc32(new TextEncoder().encode("123456789")).toString(16)).toBe("cbf43926");
   });
 });

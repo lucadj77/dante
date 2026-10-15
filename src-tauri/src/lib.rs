@@ -1,4 +1,5 @@
 mod files;
+mod pdf;
 
 use std::sync::Mutex;
 
@@ -21,6 +22,7 @@ pub fn run() {
             files::open_with_system,
             files::import_files,
             files::watch_project,
+            pdf::compile_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
