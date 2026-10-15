@@ -96,7 +96,8 @@ select {
   font-family: var(--editor-font);
   font-size: var(--editor-size);
   line-height: 1.7;
-  caret-color: var(--text);
+  /* CodeMirror's own theme sets a black caret with a stronger selector; the app's theme wins. */
+  caret-color: var(--text) !important;
 }
 .cm-scroller {
   overflow: visible;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fold } from "$lib/core/notes";
-  import { findLinks } from "$lib/core/wikilinks";
+  import { findLinks, readableLinks } from "$lib/core/wikilinks";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { navigator } from "./navigation";
 
@@ -11,6 +11,10 @@
     /** The note the property belongs to, for resolving and suggesting links. */
     from: string;
     placeholder?: string;
+    /** The value is one link: suggestions come while typing, without "[[". */
+    link?: boolean;
+    /** Only notes of this type are suggested. */
+    noteType?: string;
     onCommit: (text: string) => void;
   }
   let p: Props = $props();
@@ -20,10 +24,22 @@
   let text = $state("");
   let open = $state<{ start: number; options: LinkSuggestion[] } | null>(null);
   let active = $state(0);
+  /** The text last handed to onCommit, so a blur right after choosing does not send it again. */
+  let sent: string | null = null;
+
+  // A link field shows the linked note's name and stores "[[Name]]".
+  const showText = (value: string) => (p.link ? readableLinks(value) : value);
+  function stored(input: string): string {
+    const value = input.trim();
+    if (!p.link || !value || value.includes("[[")) return input;
+    if (value === readableLinks(p.value)) return p.value;
+    return `[[${value}]]`;
+  }
 
   // The field follows the stored value whenever it changes outside.
   $effect(() => {
-    text = p.value;
+    text = showText(p.value);
+    sent = null;
   });
 
   const handler = $derived(nav?.links(p.from) ?? null);
@@ -35,13 +51,13 @@
     if (!handler) return;
     const cursor = input.selectionStart ?? text.length;
     const before = text.slice(0, cursor);
-    const m = /\[\[([^\[\]|]*)$/.exec(before);
+    const m = p.link ? /^(?:\[\[)?([^\[\]|]*)$/.exec(before) : /\[\[([^\[\]|]*)$/.exec(before);
     if (!m) {
       open = null;
       return;
     }
     const query = fold(m[1]);
-    const all = handler.suggestions();
+    const all = handler.suggestions().filter((s) => !p.noteType || s.type === p.noteType);
     const label = (s: LinkSuggestion) => fold(s.alias ?? s.target);
     const options = [
       ...all.filter((s) => label(s).startsWith(query)),
@@ -53,6 +69,14 @@
 
   function choose(s: LinkSuggestion) {
     if (!open) return;
+    if (p.link) {
+      const value = `[[${s.alias ? `${s.target}|${s.alias}` : s.target}]]`;
+      text = showText(value);
+      open = null;
+      sent = value;
+      if (value !== p.value) p.onCommit(value);
+      return;
+    }
     const cursor = input.selectionStart ?? text.length;
     const insert = (s.alias ? `${s.target}|${s.alias}` : s.target) + "]]";
     const rest = text.slice(cursor).replace(/^[^\[\],]*\]\]/, "");
@@ -88,7 +112,11 @@
 
   function commit() {
     open = null;
-    if (text !== p.value) p.onCommit(text);
+    const value = stored(text);
+    if (value !== p.value && value !== sent) {
+      sent = value;
+      p.onCommit(value);
+    }
   }
 </script>
 
@@ -100,6 +128,9 @@
     placeholder={p.placeholder}
     title={p.placeholder || undefined}
     oninput={suggest}
+    onfocus={() => {
+      if (p.link) suggest();
+    }}
     onkeydown={key}
     onblur={() => setTimeout(commit, 120)}
   />

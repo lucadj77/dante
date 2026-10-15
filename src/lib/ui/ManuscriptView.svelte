@@ -4,6 +4,7 @@
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
   import { saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import Icon from "./Icon.svelte";
   import { ACTIONS, ICONS } from "$lib/editor/formatting";
   import { formatLabels } from "./formatLabels";
   import { app } from "$lib/state.svelte";
@@ -56,8 +57,24 @@
     if (findIn(tree, target)) {
       selected = target;
       active = target;
+      void bringIntoView(target);
     }
   });
+
+  /**
+   * Scrolls the text to an item picked in the tree and marks its scene, so the tree and the
+   * text show the same place when a whole chapter, part or novel is on screen. The focus stays
+   * in the tree, which the arrow keys keep moving through.
+   */
+  async function bringIntoView(path: string) {
+    await tick();
+    const node = findNode(path);
+    const scene = node?.kind === "scene" ? node : node ? scenesOf(node)[0] : null;
+    if (!scene) return;
+    const el = document.querySelector(`[data-scene="${CSS.escape(scene.path)}"]`);
+    el?.scrollIntoView({ block: "start", behavior: "smooth" });
+    active = scene.path;
+  }
   $effect(() => {
     if (selected) onShow(selected);
   });
@@ -134,6 +151,8 @@
     visit(root);
     return out;
   });
+  /** Whether more than one scene is on screen, so the one being written is marked. */
+  const manyScenes = $derived(items.filter((i) => i.type === "scene").length > 1);
   const shownScenes = $derived(items.filter((i) => i.type === "scene").map((i) => (i as { node: ManuscriptNode }).node.path));
 
   async function run(operation: () => Promise<string | void>, focus?: "start" | "end") {
@@ -205,24 +224,49 @@
 
   function newContainer(kind: "chapter" | "part") {
     const node = selected ? findNode(selected) : null;
-    // A chapter goes after the selected one, inside the same part; a part at the top level.
-    const anchor = node ? (kind === "part" ? enclosing(tree, node.path, ["part", "prologue", "epilogue", "chapter"]) : enclosing(tree, node.path, ["chapter", "prologue", "epilogue"])) : null;
-    let holder = anchor ? parentOf(tree, anchor.path)! : tree;
-    if (kind === "part") holder = tree;
-    const topAnchor = anchor && kind === "part" ? (holder.children.find((c) => findIn(c, anchor.path)) ?? null) : anchor;
-    const index = topAnchor ? holder.children.findIndex((c) => c.path === topAnchor.path) + 1 : holder.children.length;
+    let holder: ManuscriptNode = tree;
+    let index = tree.children.length;
+    if (kind === "part") {
+      // A part goes after the top-level item holding the selection.
+      const top = node ? tree.children.findIndex((c) => findIn(c, node.path)) : -1;
+      if (top >= 0) index = top + 1;
+    } else if (node) {
+      // A chapter goes after the selected one, in the same part; with a part (or a scene loose
+      // in it) selected, at the end of that part.
+      const chapter = enclosing(tree, node.path, ["chapter", "prologue", "epilogue"]);
+      const part = enclosing(tree, node.path, ["part"]);
+      if (chapter) {
+        holder = parentOf(tree, chapter.path)!;
+        index = holder.children.findIndex((c) => c.path === chapter.path) + 1;
+      } else if (part) {
+        holder = part;
+        index = part.children.length;
+      }
+    }
     void run(async () => {
-      const created = await project.createContainer(holder.path, index, t("untitled"), kind === "part" ? "part" : undefined);
+      if (kind === "part") {
+        // A new part starts with a chapter, so its first scene is not loose in it.
+        const part = await project.createContainer(holder.path, index, t("untitled"), "part");
+        const chapter = await project.createContainer(part, 0, t("untitled"));
+        return project.createScene(chapter, 0, t("untitledScene"));
+      }
+      const created = await project.createContainer(holder.path, index, t("untitled"));
       return project.createScene(created, 0, t("untitledScene"));
     }, "start");
   }
 
-  /** Renames without moving the selection: paths inside a renamed chapter follow it. */
-  async function rename(path: string, title: string) {
+  /**
+   * Renames without moving the selection: paths inside a renamed chapter follow it.
+   * `file` renames the file even when the item has a title of its own.
+   */
+  async function rename(path: string, title: string, file = false) {
     let renamed = path;
     const before = { selected, active };
+    // A scene or chapter with its own title keeps its file name: the title changes.
+    const node = findNode(path);
     await run(async () => {
-      renamed = await project.rename(path, title);
+      if (!file && node && node.title !== node.fileTitle) await project.retitle(path, title);
+      else renamed = await project.rename(path, title);
     });
     if (before.selected) selected = rebase(before.selected, path, renamed);
     if (before.active) active = rebase(before.active, path, renamed);
@@ -329,6 +373,12 @@
       .then(() => (renaming = null));
   }
 
+  /** The other view reads the files again, so what was just typed is written first. */
+  async function toggleRaw() {
+    await Promise.all([...editors.values()].map((e) => e.flush()));
+    raw = !raw;
+  }
+
   async function toggleFullscreen() {
     fullscreen = !fullscreen;
     try {
@@ -352,15 +402,23 @@
   {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
-        <button title={t("tip.newScene")} onclick={newScene}>{t("tree.newScene")}</button>
-        <button title={t("tip.newChapter")} onclick={() => newContainer("chapter")}>{t("tree.newChapter")}</button>
-        {#if project.settings.structure.parts}
-          <button title={t("tip.newPart")} onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
-        {/if}
-        <span class="fold">
-          <button title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}>⊟</button>
-          <button title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}>⊞</button>
-        </span>
+        <div class="tree-group" role="group" aria-labelledby="tree-add">
+          <span class="caption" id="tree-add">{t("tree.add")}</span>
+          <div class="add">
+            <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
+            <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
+            {#if project.settings.structure.parts}
+              <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
+            {/if}
+          </div>
+        </div>
+        <div class="tree-group" role="group" aria-labelledby="tree-fold">
+          <span class="caption" id="tree-fold">{t("tree.outline")}</span>
+          <div class="fold">
+            <button title={t("tip.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /><span>{t("tree.foldAll")}</span></button>
+            <button title={t("tip.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /><span>{t("tree.unfoldAll")}</span></button>
+          </div>
+        </div>
       </div>
       {#if tree.children.length === 0}
         <p class="empty">{t("tree.empty")}</p>
@@ -377,6 +435,7 @@
             onSelect={(path) => {
               selected = path;
               active = path;
+              void bringIntoView(path);
             }}
             onRename={rename}
             onDragStart={(path) => (dragging = path)}
@@ -407,31 +466,50 @@
 
   <main class="center">
     <div class="toolbar" role="toolbar">
-      <div class="group" role="group">
-        {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
-          {#if l !== "part" || project.settings.structure.parts}
-            <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}>{t(`level.${l}`)}</button>
-          {/if}
-        {/each}
-      </div>
-      <div class="group" role="group">
-        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
-        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
-        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
-        <button aria-pressed={raw} title={t("tip.raw")} onclick={() => (raw = !raw)}>{t("editor.raw")}</button>
-        <button
-          aria-pressed={app.settings.formatBar}
-          title={t("tip.formatBar")}
-          aria-label={t("format.bar")}
-          onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}><b>B</b><i>I</i></button
-        >
-      </div>
-      {#if !app.settings.formatBar}
-        <div class="group" role="group">
-          <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
-          <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
+      <div class="group" role="group" aria-label={t("toolbar.show")}>
+        <span class="caption">{t("toolbar.show")}</span>
+        <div class="buttons">
+        <div class="segmented">
+          {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
+            {#if l !== "part" || project.settings.structure.parts}
+              <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}><Icon name={l} /><span class="label">{t(`level.${l}`)}</span></button>
+            {/if}
+          {/each}
         </div>
-      {/if}
+        </div>
+      </div>
+      <div class="group" role="group" aria-label={t("toolbar.writing")}>
+        <span class="caption">{t("toolbar.writing")}</span>
+        <div class="buttons">
+        <button aria-pressed={app.settings.formatBar} title={t("tip.formatBar")} onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}
+          ><Icon name="format" /><span class="label">{t("format.bar")}</span></button
+        >
+        <button aria-pressed={raw} title={t("tip.raw")} onclick={toggleRaw}><Icon name="raw" /><span class="label">{t("editor.raw")}</span></button>
+        <button
+          aria-pressed={app.settings.revisions}
+          class:tracking={app.settings.revisions}
+          title={app.settings.userName.trim() ? t("tip.revisions") : t("tip.revisionsNoName")}
+          disabled={!app.settings.userName.trim()}
+          onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}><Icon name="revisions" /><span class="label">{t("mode.revisions")}</span></button
+        >
+        </div>
+      </div>
+      <div class="group" role="group" aria-label={t("toolbar.modes")}>
+        <span class="caption">{t("toolbar.modes")}</span>
+        <div class="buttons">
+        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
+        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
+        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
+        </div>
+      </div>
+      <div class="group" role="group" aria-label={t("toolbar.size")}>
+        <span class="caption">{t("toolbar.size")}</span>
+        <div class="buttons">
+        <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
+        <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
+        <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
+        </div>
+      </div>
     </div>
     {#if app.settings.formatBar}
       {@const labels = formatLabels()}
@@ -449,10 +527,6 @@
             >
           {/if}
         {/each}
-        <span class="zoom">
-          <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
-          <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
-        </span>
       </div>
     {/if}
     {#if error}
@@ -493,7 +567,12 @@
               onSplitScene={splitScene}
               onSplitChapter={splitChapter}
               onLeave={leave}
-              onFocus={(path) => (active = path)}
+              current={manyScenes && active === item.node.path}
+              onFocus={(path) => {
+                // The tree follows the cursor: the scene being written is the one selected.
+                active = path;
+                selected = path;
+              }}
               onText={(path, text) => {
                 texts[path] = raw ? splitNote(text).body : text;
                 edited();
@@ -508,7 +587,7 @@
   </main>
 
   {#if !fullscreen && layout.right}
-    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev}>
+    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
       {project}
@@ -545,23 +624,53 @@
     padding: 8px;
   }
   .tree-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 8px;
+    display: grid;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
   }
-  .fold {
+  .tree-group {
+    display: grid;
+    gap: 4px;
+  }
+  .caption {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .tree-actions .add {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 4px;
+  }
+  .tree-actions .add button {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 2px;
-    margin-left: auto;
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+  .tree-actions .fold {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
   }
   .tree-actions .fold button {
-    padding: 0 6px;
-    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 4px;
+    font-size: 11px;
   }
-  .tree-actions button {
-    font-size: 12px;
-    padding: 2px 8px;
+  .icon-only {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 5px;
   }
   .tree ul {
     margin: 0;
@@ -616,27 +725,73 @@
     padding: 4px 12px;
     border-bottom: 1px solid var(--border);
   }
-  .format-row .zoom {
-    margin-left: auto;
-  }
   .format-row button:disabled {
     opacity: 0.4;
     cursor: default;
   }
   .toolbar {
     display: flex;
-    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px 12px;
+    align-items: center;
+    gap: 6px 0;
+    padding: 6px 12px;
     border-bottom: 1px solid var(--border);
+    container-type: inline-size;
   }
+  /* Each group of buttons under its name, set apart from the next by a line. */
   .group {
+    display: grid;
+    gap: 3px;
+    padding: 0 12px;
+    border-left: 1px solid var(--border);
+  }
+  .group .buttons {
     display: flex;
+    align-items: center;
     gap: 4px;
   }
+  .group:first-child {
+    padding-left: 0;
+    border-left: none;
+  }
+  .group:last-child {
+    margin-left: auto;
+  }
   .group button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: 12px;
+  }
+  .segmented {
+    display: flex;
+  }
+  .segmented button {
+    border-radius: 0;
+  }
+  .segmented button + button {
+    margin-left: -1px;
+  }
+  .segmented button:first-child {
+    border-radius: 6px 0 0 6px;
+  }
+  .segmented button:last-child {
+    border-radius: 0 6px 6px 0;
+  }
+  .group button.size {
+    min-width: 32px;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .group button.tracking {
+    color: var(--critic-add, #1a7f37);
+    border-color: currentColor;
+  }
+  /* A narrow window keeps the icons; the names stay in the tooltips. */
+  @container (max-width: 640px) {
+    .label {
+      display: none;
+    }
   }
   .page {
     flex: 1;

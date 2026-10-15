@@ -2,9 +2,12 @@
   import type { Properties } from "$lib/core/frontmatter";
   import { noteTitle, noteType } from "$lib/core/notes";
   import type { Project } from "$lib/core/project";
+  import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import { displayValue, isList, parseValue } from "./propertyText";
-  import PropertyInput from "./PropertyInput.svelte";
+  import PropertyField from "./PropertyField.svelte";
+  import { emptyValue, KIND_ICONS, propertyDef, withDef, type PropertyDef } from "$lib/core/properties";
+  import PropertyDefEditor from "./PropertyDefEditor.svelte";
 
   interface Props {
     project: Project;
@@ -48,15 +51,28 @@
     }
   }
 
-  function commit(key: string, text: string) {
-    const value = parseValue(text, properties[key], key);
-    if (displayValue(value) !== displayValue(properties[key])) void update({ [key]: value });
+  /** The property whose definition is being edited. */
+  let defining = $state<string | null>(null);
+
+  async function define(key: string, def: PropertyDef | null) {
+    error = "";
+    try {
+      await p.project.saveSettings({ ...p.project.settings, properties: withDef(p.project.settings.properties, key, def) });
+      await p.onChanged();
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  function change(key: string, value: unknown) {
+    if (JSON.stringify(value) !== JSON.stringify(properties[key])) void update({ [key]: value });
   }
 
   function add(key = newName.trim()) {
     if (!key || key in properties) return;
     newName = "";
-    void update({ [key]: isList(key, undefined) ? [] : "" });
+    const def = propertyDef(p.project.settings.properties, key);
+    void update({ [key]: def ? emptyValue(def) : isList(key, undefined) ? [] : "" });
   }
 </script>
 
@@ -101,18 +117,30 @@
     {/if}
     <dl>
       {#each entries as [key, value] (key)}
+        {@const def = propertyDef(p.project.settings.properties, key)}
         <div class="prop">
-          <dt>{key}</dt>
+          <dt>
+            <button
+              class="kind"
+              aria-expanded={defining === key}
+              data-tip={t("property.defineTip", { kind: def ? t(`property.kind.${def.kind}` as MessageKey) : t("property.free") })}
+              onclick={() => (defining = defining === key ? null : key)}>{KIND_ICONS[def?.kind ?? ""]}</button
+            >
+            {key}
+          </dt>
           <dd>
-            <PropertyInput
-              value={displayValue(value)}
-              label={key}
+            <PropertyField
+              name={key}
+              {value}
+              {def}
               from={p.path}
-              placeholder={isList(key, value) ? t("panel.listHint") : ""}
-              onCommit={(text) => commit(key, text)}
+              onChange={(v) => change(key, v)}
             />
             <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => update({ [key]: undefined })}>×</button>
           </dd>
+          {#if defining === key}
+            <PropertyDefEditor name={key} {def} types={p.project.settings.types} onSave={(d) => define(key, d)} />
+          {/if}
         </div>
       {/each}
     </dl>
@@ -170,6 +198,23 @@
     font-size: 12px;
     color: var(--text-muted);
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .kind {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    font-size: 11px;
+    line-height: 18px;
+    color: var(--text-muted);
+  }
+  .kind:hover,
+  .kind[aria-expanded="true"] {
+    background: var(--bg-active);
+    color: var(--text);
   }
   dd {
     margin: 0;

@@ -6,6 +6,8 @@
   import { app, t } from "$lib/state.svelte";
   import { formatLabels } from "./formatLabels";
   import { navigator } from "./navigation";
+  import { collaboration } from "./collaboration.svelte";
+  import { criticHandlerFor } from "./editors.svelte";
 
   interface Props {
     project: Project;
@@ -25,6 +27,9 @@
   // svelte-ignore state_referenced_locally
   const path = props.path;
   const links = navigator()?.links(path);
+  // The small editor in the side panel is a preview, not where the note is edited.
+  // svelte-ignore state_referenced_locally
+  const collab = props.compact ? null : collaboration(path);
 
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
@@ -64,6 +69,7 @@
         typography: props.project.settings.export.typography,
         placeholder: "…",
         onChange(next) {
+          collab?.changed();
           if (applyingRemote) return;
           pending = next;
           clearTimeout(timer);
@@ -71,7 +77,10 @@
         },
         formatLabels: formatLabels(),
         links,
+        critic: collab ? criticHandlerFor(path) : undefined,
+        onFocus: () => collab?.focused(),
       });
+      collab?.ready(editor);
       ready = true;
     }, () => {
       // Moved or deleted meanwhile: the parent shows something else.
@@ -80,6 +89,7 @@
       destroyed = true;
       // Saving after the file was moved away would recreate it under its old name.
       if (pending !== null) void props.project.fs.exists(path).then((exists) => (exists ? save() : undefined));
+      collab?.destroy();
       editor?.destroy();
     };
   });
@@ -132,6 +142,12 @@
       {/each}
     </div>
   {/if}
+  {#if collab?.holder}
+    <div class="presence" role="status">
+      {t("presence.editingNote", { user: collab.holder.user })}
+      <button onclick={() => collab?.force()}>{t("presence.editAnyway")}</button>
+    </div>
+  {/if}
   {#if conflict}
     <div class="conflict" role="alert">
       {t("editor.changedOnDisk")}
@@ -179,6 +195,14 @@
   }
   .compact .column {
     font-size: calc(var(--editor-size) * 0.85);
+  }
+  .presence {
+    margin: 8px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
   }
   .conflict {
     margin: 8px 12px;

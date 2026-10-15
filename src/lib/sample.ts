@@ -1,9 +1,22 @@
 import { MemoryFs } from "./core/fs";
+import { dayKey } from "./core/sessions";
 
 /** A small novel to try the app without a folder, for example in a browser. */
 export function sampleProject(): MemoryFs {
+  const now = new Date().toISOString();
+  // Anna's writing over the last two weeks, for the statistics.
+  const days: Record<string, { added: number; removed: number; minutes: number }> = {};
+  for (let i = 13; i >= 1; i--) {
+    if (i % 4 === 0) continue;
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days[dayKey(d)] = { added: 300 + ((i * 137) % 500), removed: (i * 53) % 120, minutes: 25 + ((i * 17) % 60) };
+  }
   return new MemoryFs({
-    "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\n",
+    // Anna, on another computer, is writing the envelope scene (for the next three minutes).
+    ".dante/presence/anna.json": JSON.stringify({ user: "Anna", path: "Manuscript/010 Homecoming/020 Letter/010 Envelope.md", since: now, updated: now }),
+    ".dante/sessions/anna.json": JSON.stringify({ user: "Anna", days }),
+    "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\ngoals:\n  words: 80000\n  deadline: 2027-06-30\n  daily: 500\nproperties:\n  status:\n    kind: text\n    values: [idea, draft, revised, done]\n  pov:\n    kind: link\n    note_type: character\n  place:\n    kind: link\n    note_type: place\n  date: date\n  age: number\n",
     "Story Bible/Characters/Marta Rinaldi.md":
       "---\ntype: character\nrole: protagonist\nage: 42\naliases: [Marta]\n---\nMarta returns home after twenty years. She grew up in [[Rinaldi House]] with her mother, [[Elena Rinaldi|Elena]].\n",
     "Story Bible/Characters/Elena Rinaldi.md":
@@ -13,16 +26,24 @@ export function sampleProject(): MemoryFs {
     "Templates/Character.md": "---\nrole:\nage:\naliases: []\n---\n## Who {{title}} is\n\n## What {{title}} wants\n",
     "Manuscript/000 Prologue/000 Prologue.md": "---\nkind: prologue\n---\n",
     "Manuscript/000 Prologue/010 The call.md":
-      "---\nstatus: draft\npov: \"[[Marta Rinaldi|Marta]]\"\n---\nThe phone rang at three in the morning. *Nobody* calls at three in the morning with good news.\n",
+      "---\ntitle: A call at three\nsynopsis: Marta learns that her mother has died.\nstatus: draft\npov: \"[[Marta Rinaldi|Marta]]\"\ndate: 2007-03-11\n---\nThe phone rang at three in the morning. *Nobody* calls at three in the morning with good news.\n",
     "Manuscript/010 Homecoming/010 Homecoming.md": "---\nkind: part\n---\n",
     "Manuscript/010 Homecoming/010 Return/010 Arrival.md":
-      "---\nstatus: revised\npov: \"[[Marta Rinaldi|Marta]]\"\nplace: \"[[Rinaldi House]]\"\n---\nThe train arrived forty minutes late. Marta stepped down onto the platform and breathed the salt air she had tried to forget.\n\nNo one was waiting for her. She had expected that, and still it hurt.\n",
+      "---\nsynopsis: Marta comes back to town after twenty years. No one is waiting for her.\nstatus: revised\npov: \"[[Marta Rinaldi|Marta]]\"\nplace: \"[[Rinaldi House]]\"\ndate: 2007-03-12\n---\nThe train arrived {--forty--}{>>@Anna 2026-10-14<<}{++fifty++}{>>@Anna 2026-10-14<<} minutes late. Marta stepped down onto the platform and {==breathed the salt air==}{>>@Anna 2026-10-14: Too early for the sea? We only see the harbour in part two.<<} she had tried to forget.\n\nNo one was waiting for her. She had expected that, and still it hurt.\n",
     "Manuscript/010 Homecoming/010 Return/020 The house.md":
-      "---\nstatus: draft\n---\nThe key still turned in the lock. **Twenty years**, and the key still turned.\n",
+      "---\nstatus: draft\ndate: 2007-03-12\n---\nThe key still turned in the lock. **Twenty years**, and the key still turned.\n",
+    // A copy Dropbox makes when two people change the same scene at once.
+    "Manuscript/010 Homecoming/010 Return/020 The house (Anna's conflicted copy 2026-10-14).md":
+      "---\nstatus: draft\n---\nThe key still turned in the old lock. **Twenty years**, and the key still turned.\n",
     "Manuscript/010 Homecoming/020 Letter/010 Envelope.md":
-      "---\nstatus: idea\n---\nThe envelope was on the kitchen table, addressed to her in her mother's hand.\n",
+      "---\nstatus: idea\ndate: 2007-03-13\n---\nThe envelope was on the kitchen table, addressed to her in her mother's hand.\n",
     "Manuscript/900 Epilogue/900 Epilogue.md": "---\nkind: epilogue\n---\n",
     "Manuscript/900 Epilogue/010 Harbour.md": "The boats came back at dawn.\n",
+    // Views: the same notes as a board, a table, cards and a timeline.
+    "Views/Board.yaml": "type: kanban\nitems: scene\ngroup_by: status\ngroups: [idea, draft, revised, done]\nfields: [pov]\n",
+    "Views/Scenes.yaml": "type: table\nitems: scene\nfields: [chapter, status, pov, date, words]\n",
+    "Views/Characters.yaml": "type: cards\nitems: character\nfields: [role, age]\n",
+    "Views/Story time.yaml": "type: timeline\nitems: scene\ndate: date\nfields: [pov, status]\n",
     "Research/Harbours of Liguria.md": "Notes on fishing harbours. The boats leave at four and come back at dawn.\n",
     "Research/Images/Harbour sketch.svg":
       '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220" viewBox="0 0 400 220"><rect width="400" height="220" fill="#dfe9f2"/><rect y="150" width="400" height="70" fill="#4b7aa6"/><path d="M60 150 L120 150 L110 165 L70 165 Z" fill="#7a4b2a"/><line x1="90" y1="150" x2="90" y2="100" stroke="#333" stroke-width="3"/><path d="M92 102 L130 140 L92 140 Z" fill="#fff"/><circle cx="330" cy="50" r="24" fill="#f2c94c"/></svg>',

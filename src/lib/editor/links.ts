@@ -9,6 +9,8 @@ export interface LinkSuggestion {
   alias?: string;
   /** Where the note is, or its type. */
   detail?: string;
+  /** The note's type id, if it has one. */
+  type?: string;
 }
 
 /** What the editor needs from the project to follow and suggest wikilinks. */

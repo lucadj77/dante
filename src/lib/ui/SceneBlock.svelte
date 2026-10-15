@@ -21,6 +21,8 @@
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels } from "./formatLabels";
   import { navigator } from "./navigation";
+  import { collaboration } from "./collaboration.svelte";
+  import { criticHandlerFor } from "./editors.svelte";
 
   interface Props {
     project: Project;
@@ -37,6 +39,8 @@
     onText: (path: string, text: string) => void;
     onAddAfter: (path: string) => void;
     onRename: (path: string, title: string) => void;
+    /** The scene being written, marked when others are on screen too. */
+    current?: boolean;
   }
   let props: Props = $props();
   // Each block is keyed by its path in the list, so the path never changes.
@@ -44,6 +48,7 @@
   const path = props.node.path;
 
   const links = navigator()?.links(path);
+  const collab = collaboration(path, { raw: () => props.raw });
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
   let lastSaved = "";
@@ -117,6 +122,7 @@
         placeholder: "…",
         onChange(next) {
           props.onText(path, next);
+          collab.changed();
           if (applyingRemote) return;
           snapshotting ??= props.project.autoSnapshot(path).catch(() => {});
           pending = next;
@@ -126,11 +132,16 @@
         onSplitScene: (before, after) => props.onSplitScene(path, before, after),
         onSplitChapter: (before, after) => props.onSplitChapter(path, before, after),
         onLeave: (direction) => props.onLeave(path, direction),
-        onFocus: () => props.onFocus(path),
+        onFocus: () => {
+          props.onFocus(path);
+          collab.focused();
+        },
         formatLabels: formatLabels(),
         links,
+        critic: criticHandlerFor(path),
       });
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
+      collab.ready(editor);
       props.register(path, handle);
     }, () => {
       // Moved or renamed meanwhile: the reloaded tree mounts the scene under its new path.
@@ -140,6 +151,7 @@
       // Saving after the file was moved away would recreate it under its old name.
       if (pending !== null) void props.project.fs.exists(path).then((exists) => (exists ? save() : undefined));
       props.register(path, null);
+      collab.destroy();
       editor?.destroy();
     };
   });
@@ -179,7 +191,7 @@
   }
 </script>
 
-<section class="scene" class:raw={props.raw}>
+<section class="scene" class:raw={props.raw} class:current={props.current} data-scene={path}>
   <header>
     {#if renaming}
       <input
@@ -199,6 +211,12 @@
     {/if}
     <button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>
   </header>
+  {#if collab.holder}
+    <div class="presence" role="status">
+      {t("presence.editing", { user: collab.holder.user })}
+      <button onclick={() => collab.force()}>{t("presence.editAnyway")}</button>
+    </div>
+  {/if}
   {#if conflict}
     <div class="conflict" role="alert">
       {t("editor.changedOnDisk")}
@@ -210,7 +228,28 @@
 
 <style>
   .scene {
+    position: relative;
     margin: 0 0 8px;
+    scroll-margin-top: 12px;
+  }
+  /* The scene with the cursor: a bar beside the text and its title in the accent colour. */
+  .scene.current::before {
+    content: "";
+    position: absolute;
+    left: -18px;
+    top: 36px;
+    bottom: 0;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .scene.current header {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .scene.current header::before,
+  .scene.current header::after {
+    border-top-color: var(--accent);
   }
   header {
     display: flex;
@@ -262,6 +301,14 @@
   }
   header::after {
     order: 2;
+  }
+  .presence {
+    background: var(--bg-panel);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
   }
   .conflict {
     background: var(--bg-panel);

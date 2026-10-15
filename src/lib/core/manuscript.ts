@@ -4,6 +4,7 @@ import { parseName } from "./naming";
 import { levelHeading, type LevelHeading } from "./numbering";
 import { basename, isMarkdown, join, stripExt } from "./path";
 import type { NovelSettings } from "./settings";
+import { conflictOf } from "./conflicts";
 
 export type ContainerKind = "part" | "chapter" | "prologue" | "epilogue";
 export type NodeKind = ContainerKind | "scene" | "manuscript";
@@ -12,6 +13,16 @@ export const CONTAINER_KINDS: ContainerKind[] = ["part", "chapter", "prologue", 
 
 /** Folder note property: `numbered: false` leaves a chapter or part without a number. */
 export const NUMBERED = "numbered";
+/** Property of a scene or folder note: the title when it differs from the file name. */
+export const TITLE = "title";
+/** Property of a scene or folder note: what happens in it, in a few lines. */
+export const SYNOPSIS = "synopsis";
+
+/** The `title` property, when it holds one. */
+function ownTitle(properties: Record<string, unknown>): string | null {
+  const value = properties[TITLE];
+  return typeof value === "string" && value.trim() ? value.trim() : typeof value === "number" ? String(value) : null;
+}
 
 export interface ManuscriptNode {
   kind: NodeKind;
@@ -20,7 +31,10 @@ export interface ManuscriptNode {
   /** File or folder name. */
   name: string;
   order: number | null;
+  /** The title shown everywhere: the `title` property, or else the one in the file name. */
   title: string;
+  /** The title in the file or folder name, without the number. */
+  fileTitle: string;
   /** The folder note holding a container's properties, when it exists. */
   notePath: string | null;
   /** A chapter or part with `numbered: false` in its folder note: no number, and not counted. */
@@ -52,6 +66,7 @@ export async function loadManuscript(fs: ProjectFs, settings: NovelSettings): Pr
     name: root,
     order: null,
     title: root,
+    fileTitle: root,
     notePath: null,
     children: [],
   };
@@ -63,13 +78,17 @@ async function loadChildren(fs: ProjectFs, dir: string, depth: number, settings:
   const entries = await fs.list(dir);
   const note = depth === 0 ? null : folderNotePath(dir);
   const children: ManuscriptNode[] = [];
+  const present = new Set(entries.map((e) => e.path));
   for (const entry of entries) {
     if (isHidden(entry.name) || entry.path === note) continue;
+    // A sync service's conflict copy is not a scene of its own: it is offered for merging.
+    if (!entry.isDir && conflictOf(entry.path, (p) => present.has(p))) continue;
     if (entry.isDir) {
       children.push(await loadContainer(fs, entry.path, depth + 1, settings));
     } else if (isMarkdown(entry.path)) {
       const { order, title } = parseName(stripExt(entry.name));
-      children.push({ kind: "scene", path: entry.path, name: entry.name, order, title, notePath: null, children: [] });
+      const own = ownTitle(readProperties(await fs.readText(entry.path)));
+      children.push({ kind: "scene", path: entry.path, name: entry.name, order, title: own ?? title, fileTitle: title, notePath: null, children: [] });
     }
   }
   return children.sort(byOrder);
@@ -81,10 +100,12 @@ async function loadContainer(fs: ProjectFs, dir: string, depth: number, settings
   let kind: ContainerKind = settings.structure.parts && depth === 1 ? "part" : "chapter";
   let hasNote = false;
   let unnumbered = false;
+  let own: string | null = null;
   if (await fs.exists(notePath)) {
     hasNote = true;
     const properties = readProperties(await fs.readText(notePath));
     unnumbered = properties[NUMBERED] === false;
+    own = ownTitle(properties);
     const declared = properties.kind;
     if (typeof declared === "string" && (CONTAINER_KINDS as string[]).includes(declared)) {
       kind = declared as ContainerKind;
@@ -96,7 +117,8 @@ async function loadContainer(fs: ProjectFs, dir: string, depth: number, settings
     path: dir,
     name,
     order,
-    title,
+    title: own ?? title,
+    fileTitle: title,
     notePath: hasNote ? notePath : null,
     unnumbered,
     children: await loadChildren(fs, dir, depth, settings),

@@ -1,10 +1,14 @@
 <script lang="ts">
   import { buildBook } from "$lib/core/export/book";
+  import { pageCount } from "$lib/core/statistics";
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
+  import { bookToEpub, EPUB_CSS } from "$lib/core/export/epub";
+  import { bookToTypst } from "$lib/core/export/typst";
   import type { Project } from "$lib/core/project";
-  import { PAGE_SIZES, type DocxSettings, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import { defaultQuotes, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import type { MessageKey } from "$lib/i18n";
   import { app, rememberExportPreferences, t } from "$lib/state.svelte";
-  import { inTauri } from "$lib/tauriFs";
+  import { inTauri, TauriFs } from "$lib/tauriFs";
   import HeadingLevel from "./HeadingLevel.svelte";
   import FontPicker from "./FontPicker.svelte";
 
@@ -42,6 +46,18 @@
   }
   // svelte-ignore state_referenced_locally
   let revisions = $state<"accept" | "reject">(project.settings.export.revisions);
+  // svelte-ignore state_referenced_locally
+  let format = $state<ExportFormat>(project.settings.export.format);
+  // svelte-ignore state_referenced_locally
+  let epubId = project.settings.export.epubId;
+  // svelte-ignore state_referenced_locally
+  let epubCss = $state(project.settings.export.epubCss.trim() ? project.settings.export.epubCss : EPUB_CSS);
+
+  const FORMATS: Record<ExportFormat, { ext: string; name: string; mime: string }> = {
+    docx: { ext: "docx", name: "Word", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+    pdf: { ext: "pdf", name: "PDF", mime: "application/pdf" },
+    epub: { ext: "epub", name: "EPUB", mime: "application/epub+zip" },
+  };
 
   /** The choices on this page, as the project stores them. */
   function chosen() {
@@ -50,6 +66,10 @@
     settings.export.typography = $state.snapshot(typography);
     settings.export.paratext = $state.snapshot(paratext);
     settings.export.revisions = revisions;
+    settings.export.format = format;
+    settings.export.epubId = epubId;
+    // The default stylesheet is not copied into the project, so later versions of Dante can improve it.
+    settings.export.epubCss = epubCss.trim() === EPUB_CSS.trim() ? "" : epubCss;
     settings.structure = $state.snapshot(structure);
     return settings;
   }
@@ -76,7 +96,7 @@
     return saving;
   }
   $effect(() => {
-    JSON.stringify([options, typography, paratext, structure, revisions]);
+    JSON.stringify([options, typography, paratext, structure, revisions, format]);
     const timer = setTimeout(() => void persist().catch((e) => (error = t("error.generic", { message: String(e) }))), 500);
     return () => clearTimeout(timer);
   });
@@ -94,37 +114,45 @@
     { key: "sceneBreak" as const, label: "export.sceneBreak" as const },
   ]);
 
-  function fileName() {
+  function fileName(ext = FORMATS[format].ext) {
     const base = (project.settings.title || "manuscript").replace(/[\\/:*?"<>|]/g, " ").trim();
-    return `${base}.docx`;
+    return `${base}.${ext}`;
+  }
+
+  /** Asks where to save the file in the desktop app; null if cancelled. */
+  async function choosePath(): Promise<string | null> {
+    const { save: saveDialog } = await import("@tauri-apps/plugin-dialog");
+    let last: string | null = null;
+    try {
+      last = localStorage.getItem(LAST_PATH_KEY);
+    } catch {
+      // No storage: the dialog opens in its default folder.
+    }
+    const defaultPath = last ? last.replace(/[^/\\]+$/, fileName()) : fileName();
+    const { ext, name } = FORMATS[format];
+    const path = await saveDialog({ defaultPath, filters: [{ name, extensions: [ext] }] });
+    if (!path) return null;
+    try {
+      localStorage.setItem(LAST_PATH_KEY, path);
+    } catch {
+      // Not remembered; nothing else depends on it.
+    }
+    return path;
   }
 
   /** Where the file went: a path in the desktop app, "" for a browser download, null if cancelled. */
-  async function save(bytes: Uint8Array): Promise<string | null> {
+  async function save(bytes: Uint8Array, name = fileName(), mime = FORMATS[format].mime): Promise<string | null> {
     if (inTauri()) {
-      const { save: saveDialog } = await import("@tauri-apps/plugin-dialog");
-      const { writeFile } = await import("@tauri-apps/plugin-fs");
-      let last: string | null = null;
-      try {
-        last = localStorage.getItem(LAST_PATH_KEY);
-      } catch {
-        // No storage: the dialog opens in its default folder.
-      }
-      const defaultPath = last ? last.replace(/[^/\\]+$/, fileName()) : fileName();
-      const path = await saveDialog({ defaultPath, filters: [{ name: "Word", extensions: ["docx"] }] });
+      const path = await choosePath();
       if (!path) return null;
-      try {
-        localStorage.setItem(LAST_PATH_KEY, path);
-      } catch {
-        // Not remembered; nothing else depends on it.
-      }
+      const { writeFile } = await import("@tauri-apps/plugin-fs");
       await writeFile(path, bytes);
       return path;
     }
-    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = fileName();
+    link.download = name;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     return "";
@@ -158,11 +186,35 @@
     savedPath = null;
     busy = true;
     try {
+      if (format === "epub" && !epubId) epubId = crypto.randomUUID();
       await persist();
       const book = await buildBook(project, { revisions });
-      const bytes = await docxBytes(bookToDocx(book, project.settings.export.docx, { words: t("export.words") }));
-      const pages = (book.characters / 1800).toLocaleString(undefined, { maximumFractionDigits: 1 });
-      const where = await save(bytes);
+      const layout = project.settings.export.docx;
+      const labels = { words: t("export.words") };
+      const pages = pageCount(book, project.settings.pages).toLocaleString(undefined, { maximumFractionDigits: 1 });
+      let where: string | null;
+      if (format === "docx") {
+        where = await save(await docxBytes(bookToDocx(book, layout, labels)));
+      } else if (format === "epub") {
+        where = await save(bookToEpub(book, layout, epubId, new Date(), epubCss));
+      } else if (inTauri()) {
+        // Typst, inside the app, turns the source into the PDF at the chosen path. Files the
+        // text refers to are looked up in the project's folder; the sample project has none.
+        const source = bookToTypst(book, layout, labels);
+        where = await choosePath();
+        if (where) {
+          const { invoke } = await import("@tauri-apps/api/core");
+          const root = project.fs instanceof TauriFs ? project.fs.root : where.replace(/[\\/][^\\/]*$/, "") || "/";
+          await invoke("compile_pdf", { root, source, output: where });
+        }
+      } else {
+        // Only the desktop app compiles PDFs; a browser gets the Typst source.
+        where = await save(new TextEncoder().encode(bookToTypst(book, layout, labels)), fileName("typ"), "text/plain");
+        if (where !== null) {
+          message = t("export.pdfBrowser");
+          return;
+        }
+      }
       if (where !== null) {
         savedPath = where || null;
         message = t("export.done", { words: book.words.toLocaleString(), pages });
@@ -183,7 +235,26 @@
     }}
   >
     <h2>{t("export.title")}</h2>
-    <h3>{t("export.docx")}</h3>
+    <div class="formats" role="radiogroup" aria-label={t("export.format")}>
+      {#each ["docx", "pdf", "epub"] as const as f (f)}
+        <label class="format" class:chosen={format === f}>
+          <input type="radio" name="format" value={f} bind:group={format} />
+          <strong>{t(`export.format.${f}`)}</strong>
+          <span>{t(`export.format.${f}Hint`)}</span>
+        </label>
+      {/each}
+    </div>
+    {#if format === "epub"}
+      <p class="hint">{t("export.epubHint")}</p>
+      <label
+        >{t("export.epubCss")}
+        <textarea class="code" rows="14" spellcheck="false" bind:value={epubCss}></textarea>
+      </label>
+      <p class="hint">
+        {t("export.epubCssHint")}
+        {#if epubCss.trim() !== EPUB_CSS.trim()}<button type="button" class="link" onclick={() => (epubCss = EPUB_CSS)}>{t("export.epubCssReset")}</button>{/if}
+      </p>
+    {:else}
     <label
       >{t("export.profile")}
       <select value={options.profile} onchange={(e) => setProfile((e.currentTarget as HTMLSelectElement).value as DocxSettings["profile"])}>
@@ -225,8 +296,9 @@
       </label>
       <label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>
     </div>
-    <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
+    {/if}
+    <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
 
     <h4>{t("export.structure")}</h4>
     <div class="row">
@@ -270,14 +342,13 @@
     <label
       >{t("export.quotes")}
       <select bind:value={typography.quotes}>
-        <option value="keep">{t("export.quotesKeep")}</option>
-        <option value="guillemets">{t("export.quotesGuillemets")}</option>
-        <option value="curly">{t("export.quotesCurly")}</option>
-        <option value="dash">{t("export.quotesDash")}</option>
+        {#each QUOTE_STYLES as style (style)}
+          <option value={style}>{t(`export.quotes.${style}` as MessageKey)}{style === defaultQuotes(project.settings.language) ? ` · ${t("export.quotesUsual")}` : ""}</option>
+        {/each}
       </select>
     </label>
-    {#if typography.quotes === "dash"}
-      <p class="hint">{t("export.quotesDashHint")}</p>
+    {#if typography.quotes === "dash" || typography.quotes === "dashAttached"}
+      <p class="hint">{t(typography.quotes === "dash" ? "export.quotesDashHint" : "export.quotesDashAttachedHint")}</p>
       <div class="row">
         <label
           >{t("export.dialogueDash")}
@@ -310,7 +381,7 @@
       </select>
     </label>
     <div class="actions">
-      <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run")}</button>
+      <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run", { format: FORMATS[format].name === "Word" ? "DOCX" : FORMATS[format].name })}</button>
       {#if error}<span class="error" role="alert">{error}</span>{/if}
     </div>
     {#if message}
@@ -326,7 +397,6 @@
         {/if}
       </div>
     {/if}
-    <p class="muted">{t("export.later")}</p>
   </form>
 </div>
 
@@ -351,10 +421,6 @@
     font-size: 20px;
     margin: 0 0 16px;
   }
-  h3 {
-    font-size: 15px;
-    margin: 0 0 12px;
-  }
   fieldset {
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -375,6 +441,44 @@
     margin: 24px 0 10px;
     padding-top: 12px;
     border-top: 1px solid var(--border);
+  }
+  .formats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .format {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .format.chosen {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+  .format input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .format span {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .hint .link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--accent);
+    font-size: inherit;
+    cursor: pointer;
+  }
+  textarea.code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
   }
   .hint {
     color: var(--text-muted);
@@ -436,10 +540,6 @@
     display: flex;
     gap: 8px;
     margin-top: 4px;
-  }
-  .muted {
-    color: var(--text-muted);
-    margin-top: 24px;
   }
   .error {
     color: var(--danger);

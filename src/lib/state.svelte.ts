@@ -10,6 +10,8 @@ export interface AppSettings {
   userName: string;
   /** The formatting bar under the manuscript toolbar. */
   formatBar: boolean;
+  /** Revision mode: changes are written as CriticMarkup signed with the user name. */
+  revisions: boolean;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -24,6 +26,7 @@ function defaults(): AppSettings {
     lineWidth: 68,
     userName: "",
     formatBar: true,
+    revisions: false,
   };
 }
 

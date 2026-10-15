@@ -1,6 +1,7 @@
 import { isolateHistory } from "@codemirror/commands";
 import { EditorView } from "@codemirror/view";
 import type { TypographySettings } from "$lib/core/settings";
+import { QUOTE_MARKS } from "$lib/core/typography";
 
 export interface Replacement {
   /** How many characters before the cursor the replacement starts. */
@@ -25,14 +26,22 @@ export function smartReplacement(before: string, typed: string, rules: Typograph
     const opening = before === "" || /[\s(]/.test(prev);
     return opening ? { back: 0, insert: "— " } : { back: 0, insert: " —" };
   }
+  if (typed === '"' && rules.quotes === "dashAttached") {
+    // Spanish: —Ven —dijo él—. Es tarde. An odd number of dashes before means a line of
+    // dialogue is open: the dash closes it, after a space. Otherwise it opens one, or ends
+    // the narration touching its last word.
+    const inside = ((before.match(/—/g) ?? []).length % 2) === 1;
+    return { back: 0, insert: inside && !/\s/.test(prev) ? " —" : "—" };
+  }
   if (typed === '"' && rules.quotes !== "keep") {
-    const [open, close] = rules.quotes === "guillemets" ? ["«", "»"] : ["“", "”"];
+    const [open, close] = QUOTE_MARKS[rules.quotes] ?? ["“", "”"];
     const opening = before === "" || /[\s([{—–\-]/.test(prev);
     return { back: 0, insert: opening ? open : close };
   }
-  if (typed === " " && rules.quotes === "dash" && /^[ \t]*--?$/.test(before)) {
+  if (typed === " " && (rules.quotes === "dash" || rules.quotes === "dashAttached") && /^[ \t]*--?$/.test(before)) {
     const dash = before.trimStart();
-    return { back: dash.length, insert: "— " };
+    // The space is typed too in the Italian way; in the Spanish one the words touch the dash.
+    return rules.quotes === "dash" ? { back: dash.length, insert: "— " } : { back: dash.length, insert: "—" };
   }
   if (typed === "." && rules.ellipsis && before.endsWith("..") && !before.endsWith("...")) return { back: 2, insert: "…" };
   return null;

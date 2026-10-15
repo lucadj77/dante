@@ -9,6 +9,10 @@
   import SettingsView from "./SettingsView.svelte";
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
+  import ViewsView from "./ViewsView.svelte";
+  import StatsView from "./StatsView.svelte";
+  import { startSessions } from "./sessions.svelte";
+  import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
@@ -18,22 +22,25 @@
   import { linkTarget, resolveLink } from "$lib/core/wikilinks";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { folderNotePath } from "$lib/core/manuscript";
+  import ConflictsDialog from "./ConflictsDialog.svelte";
+  import { startPresence } from "./presence.svelte";
 
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
-  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "export" | "settings" | "files";
+  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "stats" | "export" | "settings" | "files";
   const sections: { id: Section; icon: string }[] = [
     { id: "manuscript", icon: "¶" },
     { id: "codex", icon: "◆" },
     { id: "research", icon: "❖" },
     { id: "laboratory", icon: "⚗" },
     { id: "views", icon: "▦" },
+    { id: "stats", icon: "Σ" },
     { id: "export", icon: "⇪" },
   ];
   let section = $state<Section>("manuscript");
   /** Sections with panels on the sides, which can be hidden. */
-  const panels = $derived(section !== "export" && section !== "settings" && section !== "views");
+  const panels = $derived(section !== "export" && section !== "settings" && section !== "views" && section !== "stats");
   /** What each section shows, so coming back to it finds the same note. */
   let opened = $state<Partial<Record<Section, string | null>>>({});
   /** Root of the "files" section. */
@@ -77,6 +84,7 @@
     if (isWithin(path, f.codex)) return { section: "codex" };
     if (isWithin(path, f.research)) return { section: "research" };
     if (isWithin(path, f.laboratory)) return { section: "laboratory" };
+    if (isView(path, project.settings)) return { section: "views" };
     const note = index?.notes.get(path);
     if (note && noteType(path, note.properties, project.settings) !== null && !isWithin(path, f.templates)) return { section: "codex" };
     return { section: "files", root: path.includes("/") ? path.slice(0, path.indexOf("/")) : "" };
@@ -120,8 +128,8 @@
       const target = linkTarget(path, from, files);
       const type = index?.notes.get(path) ? noteType(path, index.notes.get(path)!.properties, project.settings) : null;
       const detail = type && project.settings.types[type] ? `${project.settings.types[type].icon} ${project.settings.types[type].name}` : dirname(path) || basename(path);
-      out.push({ target, detail });
-      for (const alias of index?.notes.get(path)?.aliases ?? []) out.push({ target, alias });
+      out.push({ target, detail, type: type ?? undefined });
+      for (const alias of index?.notes.get(path)?.aliases ?? []) out.push({ target, alias, type: type ?? undefined });
     }
     suggestionCache.set(from, out);
     return out;
@@ -171,6 +179,16 @@
     rev++;
   }
 
+  onMount(() => startPresence(project));
+  onMount(() => startSessions(project));
+
+  /** Copies made by a sync service, shown above the sections until settled. */
+  const conflicts = $derived.by(() => {
+    void rev;
+    return project.conflicts;
+  });
+  let showConflicts = $state(false);
+
   onMount(() => {
     if (!(project.fs instanceof TauriFs)) return;
     const fs = project.fs;
@@ -200,6 +218,18 @@
 </script>
 
 <svelte:window onkeydown={onKey} />
+
+{#if showConflicts && conflicts.length}
+  <ConflictsDialog
+    {project}
+    {conflicts}
+    onClose={() => (showConflicts = false)}
+    onResolved={async () => {
+      await reload();
+      diskRev++;
+    }}
+  />
+{/if}
 
 <div class="workspace" class:fullscreen>
   {#if !fullscreen}
@@ -258,6 +288,11 @@
           <button onclick={back}>‹ {t("nav.back")}</button>
         {/if}
         <h1 class="section-name">{section === "files" ? filesRoot || project.settings.title : t(`section.${section}`)}</h1>
+        {#if conflicts.length}
+          <button class="conflicts" title={t("tip.conflicts")} onclick={() => (showConflicts = true)}
+            >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
+          >
+        {/if}
         {#if project.settings.title}<span class="project-name">{project.settings.title}</span>{/if}
         {#if panels}
           <button
@@ -314,11 +349,10 @@
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
       <SettingsView {project} onSaved={reload} />
-    {:else}
-      <div class="later">
-        <h2>{t(`section.${section}` as MessageKey)}</h2>
-        <p>{t("section.later")}</p>
-      </div>
+    {:else if section === "stats"}
+      <StatsView {project} {rev} {diskRev} onSaved={reload} />
+    {:else if section === "views"}
+      <ViewsView {project} {rev} {diskRev} open={opened.views ?? null} onShow={(path) => (opened.views = path)} onReload={reload} />
     {/if}
   </div>
 </div>
@@ -435,6 +469,10 @@
     padding: 4px 8px;
     color: var(--accent);
   }
+  .back-bar .conflicts {
+    color: var(--danger);
+    font-size: 13px;
+  }
   .back-bar .panel-toggle {
     padding: 2px 6px;
     font-size: 16px;
@@ -445,12 +483,5 @@
   }
   .panel-toggle.alone {
     margin-left: auto;
-  }
-  .later {
-    padding: 48px;
-    color: var(--text-muted);
-  }
-  .later h2 {
-    color: var(--text);
   }
 </style>

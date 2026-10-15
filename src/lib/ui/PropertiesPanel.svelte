@@ -1,12 +1,16 @@
 <script lang="ts">
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode, folderNotePath, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
+  import { findNode, folderNotePath, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
+  import { isWritingDay } from "$lib/core/sessions";
+  import { writing } from "./sessions.svelte";
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
-  import PropertyInput from "./PropertyInput.svelte";
+  import PropertyField from "./PropertyField.svelte";
+  import { emptyValue, KIND_ICONS, propertyDef, withDef, type PropertyDef } from "$lib/core/properties";
+  import PropertyDefEditor from "./PropertyDefEditor.svelte";
   import { displayValue, isList, parseValue } from "./propertyText";
 
   interface Props {
@@ -20,7 +24,7 @@
     onChanged: () => Promise<void>;
     beforeRead: (path: string) => Promise<void>;
     onRestored: () => void;
-    onRename: (path: string, title: string) => void;
+    onRename: (path: string, title: string, file?: boolean) => void;
   }
   let p: Props = $props();
 
@@ -48,7 +52,22 @@
   });
 
   // `kind` and `numbered` live in folder notes and are set with the controls above the list.
-  const entries = $derived(Object.entries(properties).filter(([key]) => !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))));
+  // Title and synopsis have their own fields above the list.
+  const entries = $derived(
+    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
+  );
+  const synopsis = $derived(typeof properties[SYNOPSIS] === "string" ? (properties[SYNOPSIS] as string) : displayValue(properties[SYNOPSIS]));
+
+  async function retitle(title: string) {
+    if (!node || title.trim() === node.title) return;
+    error = "";
+    try {
+      await p.project.retitle(node.path, title);
+      await p.onChanged();
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
+  }
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
   const kinds = $derived<ContainerKind[]>(p.project.settings.structure.parts ? ["part", "chapter", "prologue", "epilogue"] : ["chapter", "prologue", "epilogue"]);
 
@@ -71,16 +90,29 @@
     }
   }
 
-  function commit(key: string, text: string) {
-    const value = parse(text, properties[key], key);
-    if (display(value) !== display(properties[key])) void update({ [key]: value });
+  /** The property whose definition is being edited. */
+  let defining = $state<string | null>(null);
+
+  async function define(key: string, def: PropertyDef | null) {
+    error = "";
+    try {
+      await p.project.saveSettings({ ...p.project.settings, properties: withDef(p.project.settings.properties, key, def) });
+      await p.onChanged();
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  function change(key: string, value: unknown) {
+    if (JSON.stringify(value) !== JSON.stringify(properties[key])) void update({ [key]: value });
   }
 
   function add() {
     const key = newName.trim();
     if (!key || key in properties) return;
     newName = "";
-    void update({ [key]: isList(key, undefined) ? [] : "" });
+    const def = propertyDef(p.project.settings.properties, key);
+    void update({ [key]: def ? emptyValue(def) : isList(key, undefined) ? [] : "" });
   }
 
   function sum(texts: string[]) {
@@ -101,17 +133,45 @@
       <p class="what">{t(`kind.${node.kind}` as MessageKey)}</p>
       <label class="title-field">
         <span>{t("panel.title")}</span>
-        {#key node.path}
+        {#key node.path + node.title}
           <input
             value={node.title}
+            placeholder={node.fileTitle}
+            data-tip={t("panel.titleHint")}
+            onchange={(e) => void retitle((e.currentTarget as HTMLInputElement).value)}
+            onkeydown={(e) => {
+              if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+            }}
+          />
+        {/key}
+      </label>
+      <label class="title-field">
+        <span>{t("panel.fileName")}</span>
+        {#key node.path}
+          <input
+            value={node.fileTitle}
             onchange={(e) => {
               const value = (e.currentTarget as HTMLInputElement).value;
-              if (value.trim() && value !== node.title) p.onRename(node.path, value);
+              if (value.trim() && value !== node.fileTitle) p.onRename(node.path, value, true);
             }}
             onkeydown={(e) => {
               if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
             }}
           />
+        {/key}
+      </label>
+      <label class="title-field">
+        <span>{t("panel.synopsis")}</span>
+        {#key node.path + synopsis}
+          <textarea
+            rows="4"
+            value={synopsis}
+            placeholder={t("panel.synopsisHint")}
+            onchange={(e) => {
+              const value = (e.currentTarget as HTMLTextAreaElement).value.trim();
+              if (value !== synopsis) void update({ [SYNOPSIS]: value === "" ? undefined : value });
+            }}
+          ></textarea>
         {/key}
       </label>
       {#if isContainer && node}
@@ -136,18 +196,30 @@
       {/if}
       <dl>
         {#each entries as [key, value] (key)}
+          {@const def = propertyDef(p.project.settings.properties, key)}
           <div class="prop">
-            <dt>{key}</dt>
+            <dt>
+              <button
+                class="kind"
+                aria-expanded={defining === key}
+                data-tip={t("property.defineTip", { kind: def ? t(`property.kind.${def.kind}` as MessageKey) : t("property.free") })}
+                onclick={() => (defining = defining === key ? null : key)}>{KIND_ICONS[def?.kind ?? ""]}</button
+              >
+              {key}
+            </dt>
             <dd>
-              <PropertyInput
-                value={display(value)}
-                label={key}
+              <PropertyField
+                name={key}
+                {value}
+                {def}
                 from={propertiesPath(node.path)}
-                placeholder={isList(key, value) ? t("panel.listHint") : ""}
-                onCommit={(text) => commit(key, text)}
+                onChange={(v) => change(key, v)}
               />
               <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => update({ [key]: undefined })}>×</button>
             </dd>
+            {#if defining === key}
+              <PropertyDefEditor name={key} {def} types={p.project.settings.types} onSave={(d) => define(key, d)} />
+            {/if}
           </div>
         {/each}
       </dl>
@@ -198,10 +270,22 @@
         </tr>
       </tbody>
     </table>
+    <p class="today">
+      {!isWritingDay(new Date(), p.project.settings.goals.days)
+        ? t(writing.today ? "panel.todayRest" : "panel.rest", { words: format(writing.today) })
+        : p.project.settings.goals.daily > 0
+          ? t("panel.todayGoal", { words: format(writing.today), goal: format(p.project.settings.goals.daily) })
+          : t("panel.today", { words: format(writing.today) })}
+    </p>
   </section>
 </div>
 
 <style>
+  .today {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+  }
   label.check {
     display: flex;
     align-items: center;
@@ -219,6 +303,12 @@
   }
   .title-field input {
     font-size: 14px;
+  }
+  .title-field textarea {
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    resize: vertical;
   }
   .panel > :global(section + section) {
     margin-top: 24px;
@@ -247,6 +337,23 @@
     font-size: 12px;
     color: var(--text-muted);
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .kind {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    font-size: 11px;
+    line-height: 18px;
+    color: var(--text-muted);
+  }
+  .kind:hover,
+  .kind[aria-expanded="true"] {
+    background: var(--bg-active);
+    color: var(--text);
   }
   dd {
     margin: 0;

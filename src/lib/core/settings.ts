@@ -1,4 +1,5 @@
 import { parseDocument } from "yaml";
+import { parsePropertyDefs, serializePropertyDefs, type PropertyDef } from "./properties";
 
 export const SETTINGS_FILE = "dante.yaml";
 
@@ -19,15 +20,59 @@ export interface LevelSettings {
 /** How a new part, chapter or scene is set apart from what comes before it. */
 export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
 
+/**
+ * How dialogue is marked, by the conventions of different countries:
+ * - guillemets «Vieni» (Italy, Switzerland, Russia), guillemetsSpaced « Viens » (France),
+ *   guillemetsReversed »Komm« (German books, Denmark);
+ * - curly “Come” (United States), curlySingle ‘Come’ (United Kingdom), low „Komm“
+ *   (Germany, Austria, Czechia), lowPolish „Chodź” (Poland, Hungary, Romania),
+ *   swedish ”Kom” (Sweden, Finland);
+ * - dash: — Vieni — disse (Italy), dashAttached: —Ven —dijo él— (Spain, Latin America,
+ *   Portugal, Brazil).
+ * Straight quotes become the chosen marks; with a dash, guillemets and straight quotes
+ * become dashes, while curly quotes stay as quotation marks inside dialogue.
+ */
+export const QUOTE_STYLES = [
+  "keep",
+  "guillemets",
+  "guillemetsSpaced",
+  "guillemetsReversed",
+  "curly",
+  "curlySingle",
+  "low",
+  "lowPolish",
+  "swedish",
+  "dash",
+  "dashAttached",
+] as const;
+export type QuoteStyle = (typeof QUOTE_STYLES)[number];
+
+/** The usual way of marking dialogue in a language's books. */
+export function defaultQuotes(language: string): QuoteStyle {
+  const byLanguage: Record<string, QuoteStyle> = {
+    it: "guillemets",
+    fr: "guillemetsSpaced",
+    es: "dashAttached",
+    pt: "dashAttached",
+    de: "low",
+    cs: "low",
+    sk: "low",
+    pl: "lowPolish",
+    hu: "lowPolish",
+    ro: "lowPolish",
+    sv: "swedish",
+    fi: "swedish",
+    da: "guillemetsReversed",
+    ru: "guillemets",
+    uk: "guillemets",
+  };
+  if (language.toLowerCase() === "en-gb") return "curlySingle";
+  return byLanguage[language.slice(0, 2).toLowerCase()] ?? "curly";
+}
+
 export interface TypographySettings {
-  /**
-   * How dialogue is marked: «guillemets», “curly quotes”, or a dash opening each line of
-   * dialogue as some Italian publishers do (— Vieni — disse). Straight quotes become the
-   * chosen marks; with "dash", guillemets and straight quotes become dashes, while
-   * “curly quotes” stay as quotation marks inside dialogue.
-   */
-  quotes: "keep" | "guillemets" | "curly" | "dash";
-  /** Dash used for dialogue when quotes is "dash": em dash (—) or en dash (–). */
+  quotes: QuoteStyle;
+  /** Dash used for dialogue with a dash style: em dash (—) or en dash (–). */
   dialogueDash: "em" | "en";
   /** l'amico becomes l’amico. */
   apostrophes: boolean;
@@ -67,6 +112,10 @@ export const PAGE_SIZES = {
 } as const satisfies Record<string, readonly [number, number]>;
 
 export type PageSize = keyof typeof PAGE_SIZES | "custom";
+
+export type PageUnit = "characters" | "words";
+
+export type ExportFormat = "docx" | "pdf" | "epub";
 
 export interface DocxSettings {
   /** Standard manuscript for agents and publishers, or a typeset, readable book. */
@@ -131,6 +180,8 @@ export interface NovelSettings {
    * takes the type of the Codex folder it is in.
    */
   types: Record<string, NoteType>;
+  /** Properties with a kind and allowed values, by name, shared by every note. */
+  properties: Record<string, PropertyDef>;
   structure: {
     /** When true, the first level of folders in the manuscript are parts. */
     parts: boolean;
@@ -140,7 +191,31 @@ export interface NovelSettings {
       restartEachPart: boolean;
     };
   };
+  /** Writing goals, shared by everyone working on the novel; 0 or "" means none. */
+  goals: {
+    /** Length of the finished novel, in words. */
+    words: number;
+    /** Date to finish by, as YYYY-MM-DD. */
+    deadline: string;
+    /** Words to write each day. */
+    daily: number;
+    /** Days of the week given to writing, 1 (Monday) to 7 (Sunday); the others are rest days. */
+    days: number[];
+  };
+  /** What makes a page in the statistics and the export summary. */
+  pages: {
+    /** Characters (spaces included) or words. */
+    unit: PageUnit;
+    size: number;
+  };
   export: {
+    /** The format chosen last on the export page. */
+    format: ExportFormat;
+    /** Identifies the ebook across exports, so readers see a new version and not a new book. */
+    epubId: string;
+    /** The ebook's stylesheet when it is not the default one. */
+    epubCss: string;
+    /** Layout of DOCX and PDF; EPUB takes the structure and headings from it. */
     docx: DocxSettings;
     /** Applied to the exported text only; the files keep what was typed. */
     typography: TypographySettings;
@@ -237,6 +312,24 @@ function parseTypes(value: unknown, language: string): Record<string, NoteType> 
   return types;
 }
 
+/** Kinds for the default types' suggested properties: age, date, place, owner. */
+const PROPERTY_NAMES: Record<string, [string, string, string, string]> = {
+  en: ["age", "date", "place", "owner"],
+  it: ["età", "data", "luogo", "proprietario"],
+  es: ["edad", "fecha", "lugar", "dueño"],
+  fr: ["âge", "date", "lieu", "propriétaire"],
+};
+
+export function defaultPropertyDefs(language: string): Record<string, PropertyDef> {
+  const [age, date, place, owner] = PROPERTY_NAMES[language.slice(0, 2)] ?? PROPERTY_NAMES.en;
+  return {
+    [age]: { kind: "number", values: [], note_type: "" },
+    [date]: { kind: "date", values: [], note_type: "" },
+    [place]: { kind: "link", values: [], note_type: "place" },
+    [owner]: { kind: "link", values: [], note_type: "character" },
+  };
+}
+
 export function defaultFolders(language: string): NovelSettings["folders"] {
   return { ...(FOLDERS[language.slice(0, 2)] ?? FOLDERS.en) };
 }
@@ -258,6 +351,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     language,
     folders: defaultFolders(language),
     types: defaultTypes(language),
+    properties: defaultPropertyDefs(language),
     structure: {
       parts: false,
       part: { numbering: "roman", showLabel: true, label: labels.part, showTitle: true, separator: ": " },
@@ -270,7 +364,12 @@ export function defaultSettings(language = "en"): NovelSettings {
         restartEachPart: false,
       },
     },
+    goals: { words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
+    pages: { unit: "characters", size: 1800 },
     export: {
+      format: "docx",
+      epubId: "",
+      epubCss: "",
       docx: {
         profile: "manuscript",
         pageSize: "a4",
@@ -291,7 +390,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         omitSingleSceneHeading: true,
       },
       typography: {
-        quotes: language.startsWith("it") || language.startsWith("fr") || language.startsWith("es") ? "guillemets" : "curly",
+        quotes: defaultQuotes(language),
         apostrophes: true,
         ellipsis: true,
         spaces: true,
@@ -332,9 +431,18 @@ export function parseSettings(text: string): NovelSettings {
   const settings = merge(defaultSettings(language), raw);
   // Types are a free list: the user's replace the defaults instead of being merged into them.
   settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
+  settings.properties = parsePropertyDefs(isObject(raw) ? raw.properties : undefined);
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  if (!["docx", "pdf", "epub"].includes(settings.export.format)) settings.export.format = "docx";
+  if (!(QUOTE_STYLES as readonly string[]).includes(settings.export.typography.quotes)) settings.export.typography.quotes = defaultQuotes(language);
+  const days: unknown = settings.goals.days;
+  settings.goals.days = Array.isArray(days)
+    ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort()
+    : [1, 2, 3, 4, 5, 6, 7];
+  if (settings.pages.unit !== "words") settings.pages.unit = "characters";
+  if (!(settings.pages.size > 0)) settings.pages.size = settings.pages.unit === "words" ? 250 : 1800;
   // Before the page size could be chosen, a typeset book was always A5.
   if (docx.pageSize === undefined && docx.profile === "typeset") settings.export.docx.pageSize = "a5";
   // Files written before the heading choices existed had a template such as "{label} {number}: {title}".
@@ -361,6 +469,12 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     // Types are written whole, so a removed type disappears from the file too.
     if (path.length === 1 && path[0] === "types") {
       doc.setIn(path, doc.createNode(value));
+      return;
+    }
+    if (path.length === 1 && path[0] === "properties") {
+      const defs = serializePropertyDefs(value as Record<string, PropertyDef>);
+      if (Object.keys(defs).length) doc.setIn(path, doc.createNode(defs));
+      else doc.deleteIn(path);
       return;
     }
     if (isObject(value)) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyTypography } from "../typography";
-import type { TypographySettings } from "../settings";
+import { defaultQuotes, type TypographySettings } from "../settings";
 
 const all: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dialogueDash: "em", whileTyping: true };
 
@@ -59,5 +59,43 @@ describe("dialogue with dashes", () => {
   it("keeps dialogue dashes typed by the author", () => {
     expect(applyTypography("— Vieni — disse - piano - lui.", rules)).toBe("— Vieni — disse - piano - lui.");
     expect(applyTypography("— Vieni — disse.", { ...rules, dialogueDash: "en" })).toBe("– Vieni – disse.");
+  });
+});
+
+describe("dialogue conventions of other countries", () => {
+  const rules = (quotes: TypographySettings["quotes"]): TypographySettings => ({ ...all, quotes });
+
+  it("uses each country's quotation marks", () => {
+    const text = `"Komm", sagte er.`;
+    expect(applyTypography(text, rules("low"))).toBe("„Komm“, sagte er.");
+    expect(applyTypography(text, rules("guillemetsReversed"))).toBe("»Komm«, sagte er.");
+    expect(applyTypography(`"Chodź" - powiedział.`, rules("lowPolish"))).toBe("„Chodź” - powiedział.");
+    expect(applyTypography(`"Kom", sa han.`, rules("swedish"))).toBe("”Kom”, sa han.");
+    expect(applyTypography(`"Come in," she said.`, rules("curlySingle"))).toBe("‘Come in,’ she said.");
+    // Guillemets typed by habit take the chosen marks.
+    expect(applyTypography("«Komm», sagte er.", rules("low"))).toBe("„Komm“, sagte er.");
+  });
+
+  it("spaces French guillemets and high punctuation", () => {
+    expect(applyTypography(`"Viens !" dit-il. Pourquoi ? Voici : rien.`, rules("guillemetsSpaced"))).toBe(
+      "« Viens ! » dit-il. Pourquoi ? Voici : rien.",
+    );
+    expect(applyTypography("« Viens »", rules("guillemetsSpaced"))).toBe("« Viens »");
+  });
+
+  it("writes Spanish dialogue with the dash against the words", () => {
+    expect(applyTypography("«Ven» dijo él «es tarde.»", rules("dashAttached"))).toBe("—Ven —dijo él— es tarde.");
+    expect(applyTypography("- Ven.", rules("dashAttached"))).toBe("—Ven.");
+  });
+
+  it("picks the usual convention from the novel's language", () => {
+    expect([defaultQuotes("it"), defaultQuotes("fr"), defaultQuotes("es"), defaultQuotes("de-AT"), defaultQuotes("en-GB"), defaultQuotes("en")]).toEqual([
+      "guillemets",
+      "guillemetsSpaced",
+      "dashAttached",
+      "low",
+      "curlySingle",
+      "curly",
+    ]);
   });
 });
