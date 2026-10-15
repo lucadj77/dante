@@ -15,6 +15,19 @@
     revisions: "M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
     zoomOut: "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3 M8 11h6",
     zoomIn: "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3 M8 11h6 M11 8v6",
+    // Sections of the side bar.
+    search: "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13z M20 20l-4.8-4.8",
+    manuscript: "M12 3l6 7.5L12 21l-6-10.5z M12 13v8 M12 9.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3z",
+    codex: "M5 19V5a2 2 0 0 1 2-2h12v14H7a2 2 0 0 0-2 2a2 2 0 0 0 2 2h12v-4 M10 3v7l2-1.5 2 1.5V3",
+    research: "M8 3h8l4 4v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z M16 3v4h4 M4 7v13a1 1 0 0 0 1 1h11 M10 11h7 M10 15h5",
+    laboratory: "M9 3h6 M10 3v6l-5.6 9.8A1.5 1.5 0 0 0 5.7 21h12.6a1.5 1.5 0 0 0 1.3-2.2L14 9V3 M7.5 15h9",
+    views: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z M9 4v16 M15 4v16 M5 8h2 M11 8h2 M17 8h2 M11 12h2",
+    stats: "M4 20h16 M7 17v-6 M12 17V6 M17 17v-9",
+    export: "M12 15V3 M7 8l5-5 5 5 M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5",
+    settings: "M4 6h9 M17 6h3 M15 4v4 M4 12h3 M11 12h9 M9 10v4 M4 18h11 M19 18h1 M17 16v4",
+    close: "M13 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h7 M10 12h11 M18 9l3 3-3 3",
+    showNames: "M6 6l6 6-6 6 M13 6l6 6-6 6",
+    hideNames: "M18 6l-6 6 6 6 M11 6l-6 6 6 6",
   } as const;
   export type IconName = keyof typeof PATHS;
 </script>

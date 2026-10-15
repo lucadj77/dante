@@ -14,6 +14,7 @@
   import { startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
+  import Icon, { type IconName } from "./Icon.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
   import type { NoteIndex } from "$lib/core/notes";
@@ -29,14 +30,14 @@
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
   type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "stats" | "export" | "settings" | "files";
-  const sections: { id: Section; icon: string }[] = [
-    { id: "manuscript", icon: "¶" },
-    { id: "codex", icon: "◆" },
-    { id: "research", icon: "❖" },
-    { id: "laboratory", icon: "⚗" },
-    { id: "views", icon: "▦" },
-    { id: "stats", icon: "Σ" },
-    { id: "export", icon: "⇪" },
+  const sections: { id: Section & IconName }[] = [
+    { id: "manuscript" },
+    { id: "codex" },
+    { id: "research" },
+    { id: "laboratory" },
+    { id: "views" },
+    { id: "stats" },
+    { id: "export" },
   ];
   let section = $state<Section>("manuscript");
   /** Sections with panels on the sides, which can be hidden. */
@@ -234,7 +235,7 @@
 <div class="workspace" class:fullscreen>
   {#if !fullscreen}
     <nav aria-label="Sections" class:wide={layout.wideNav}>
-      {#snippet item(id: string, icon: string, label: string, pressed: boolean | undefined, onclick: () => void, tip = label)}
+      {#snippet item(id: string, icon: IconName, label: string, pressed: boolean | undefined, onclick: () => void, tip = label)}
         <button
           class="section"
           aria-pressed={pressed}
@@ -244,26 +245,19 @@
           data-section={id}
           {onclick}
         >
-          <span class="icon" aria-hidden="true">
-            {#if id === "search"}
-              <!-- No font draws a magnifier the size of the other icons. -->
-              <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                <circle cx="8.5" cy="8.5" r="5.5" /><path d="M12.6 12.6 17 17" />
-              </svg>
-            {:else}{icon}{/if}
-          </span>
+          <span class="icon" aria-hidden="true"><Icon name={icon} size={20} /></span>
           {#if layout.wideNav}<span class="label">{label}</span>{/if}
         </button>
       {/snippet}
-      {@render item("search", "", t("side.search"), searching, () => (searching = !searching), t("tip.search"))}
+      {@render item("search", "search", t("side.search"), searching, () => (searching = !searching), t("tip.search"))}
       <hr />
       {#each sections as s (s.id)}
-        {@render item(s.id, s.icon, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); }, t(`tip.section.${s.id}` as MessageKey))}
+        {@render item(s.id, s.id, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); }, t(`tip.section.${s.id}` as MessageKey))}
       {/each}
       <div class="spacer"></div>
-      {@render item("settings", "⚙", t("section.settings"), section === "settings", () => go("settings"), t("tip.section.settings"))}
-      {@render item("close", "⏏", t("app.close"), undefined, onClose, t("tip.close"))}
-      {@render item("names", layout.wideNav ? "«" : "»", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
+      {@render item("settings", "settings", t("section.settings"), section === "settings", () => go("settings"), t("tip.section.settings"))}
+      {@render item("close", "close", t("app.close"), undefined, onClose, t("tip.close"))}
+      {@render item("names", layout.wideNav ? "hideNames" : "showNames", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
     </nav>
   {/if}
   {#if searching && !fullscreen}
@@ -418,14 +412,10 @@
     padding-right: 10px;
   }
   .section .icon {
+    display: flex;
+    justify-content: center;
     width: 38px;
     flex: none;
-    font-size: 18px;
-    text-align: center;
-  }
-  .section .icon svg {
-    display: block;
-    margin: 0 auto;
   }
   .section .label {
     font-size: 14px;
