@@ -9,6 +9,8 @@
   import SettingsView from "./SettingsView.svelte";
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
+  import ViewsView from "./ViewsView.svelte";
+  import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
@@ -79,6 +81,7 @@
     if (isWithin(path, f.codex)) return { section: "codex" };
     if (isWithin(path, f.research)) return { section: "research" };
     if (isWithin(path, f.laboratory)) return { section: "laboratory" };
+    if (isView(path, project.settings)) return { section: "views" };
     const note = index?.notes.get(path);
     if (note && noteType(path, note.properties, project.settings) !== null && !isWithin(path, f.templates)) return { section: "codex" };
     return { section: "files", root: path.includes("/") ? path.slice(0, path.indexOf("/")) : "" };
@@ -342,11 +345,8 @@
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
       <SettingsView {project} onSaved={reload} />
-    {:else}
-      <div class="later">
-        <h2>{t(`section.${section}` as MessageKey)}</h2>
-        <p>{t("section.later")}</p>
-      </div>
+    {:else if section === "views"}
+      <ViewsView {project} {rev} {diskRev} open={opened.views ?? null} onShow={(path) => (opened.views = path)} onReload={reload} />
     {/if}
   </div>
 </div>
@@ -477,12 +477,5 @@
   }
   .panel-toggle.alone {
     margin-left: auto;
-  }
-  .later {
-    padding: 48px;
-    color: var(--text-muted);
-  }
-  .later h2 {
-    color: var(--text);
   }
 </style>

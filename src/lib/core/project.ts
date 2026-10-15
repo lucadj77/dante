@@ -26,6 +26,7 @@ import { snapshotDir, takeSnapshot } from "./snapshots";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
+import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
@@ -269,6 +270,25 @@ export class Project {
       await this.reload();
     }
     return path;
+  }
+
+  /** View files in the Views folder, by name. */
+  get views(): string[] {
+    return this.files.filter((f) => isView(f, this.settings)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+
+  /** A new view file in the Views folder; returns its path. */
+  async createView(name: string, view: ViewSpec): Promise<string> {
+    const dir = this.settings.folders.views;
+    await this.fs.mkdir(dir);
+    const path = await this.freeName(dir, (sanitizeTitle(name) || "Untitled") + VIEW_EXT);
+    await this.fs.writeText(path, serializeView(view));
+    await this.reload();
+    return path;
+  }
+
+  async saveView(path: string, view: ViewSpec): Promise<void> {
+    await this.fs.writeText(path, serializeView(view));
   }
 
   /** Renames a note, file or folder in place, keeping its extension, and fixes links. */

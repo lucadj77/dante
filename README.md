@@ -101,6 +101,37 @@ Several people can work on the same folder shared through Dropbox or Google Driv
   merges the copy's differences as revisions to accept one by one (existing comments are kept
   whole). What is set aside goes to `.trash`; a merge keeps a snapshot of the file first.
 
+## What phase 4 adds
+
+The Views section lists notes as a table, a list, cards, a board (kanban) or a timeline. Each
+view is a YAML file in the Views folder, so it is synced with the project and can be written
+by hand:
+
+```yaml
+type: kanban            # table, list, cards, kanban, timeline
+items: scene            # scene, chapter, note (any note), or a type id such as character
+source: Manuscript      # folders to take notes from; omitted means the whole project
+filter:
+  pov: Marta            # every condition must hold; a list means any of its values
+sort: -date             # a minus sorts in reverse; omitted keeps the manuscript's order
+group_by: status        # the board's columns, or the groups of a table, list or cards
+groups: [idea, draft, revised, done]   # shown in this order, even when empty
+fields: [pov, words]    # shown on each item; also name, folder, type, words, chapter
+date: date              # timeline only: the property with each note's date
+end: until              # timeline only: optional end
+```
+
+- Everything is also set from the app (⚙ Settings above the view); changes are saved to the file
+  at once, rewriting it without comments.
+- Table: click a header to sort, click a property cell to change it in the note.
+- Board: drag a card to another column to change its property; "New column" adds a group.
+- Timeline: dates such as `1987`, `1987-03` or `1987-03-12`, negative years, or plain numbers
+  such as a story day; notes without a date are listed below.
+- Chapter rows read and write the properties of the chapter's folder note and count the words of
+  their scenes. Conflict copies, templates and the views themselves are never listed.
+- A project without views offers two starting ones: scenes by status on a board, and a table of
+  scenes.
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
