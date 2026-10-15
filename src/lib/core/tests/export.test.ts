@@ -171,3 +171,14 @@ describe("PDF and EPUB", () => {
     expect(crc32(new TextEncoder().encode("123456789")).toString(16)).toBe("cbf43926");
   });
 });
+
+describe("EPUB stylesheet", () => {
+  it("uses the project's stylesheet when there is one", async () => {
+    const { bookToEpub, EPUB_CSS } = await import("../export/epub");
+    const { defaultSettings } = await import("../settings");
+    const book = { title: "T", subtitle: "", author: "A", language: "it", paratext: defaultSettings("it").export.paratext, entries: [], words: 0, characters: 0 };
+    const text = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
+    expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id"))).toContain(EPUB_CSS.slice(0, 40));
+    expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id", new Date(), "p { color: red; }"))).toContain("p { color: red; }");
+  });
+});

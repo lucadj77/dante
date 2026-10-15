@@ -27,7 +27,8 @@ function runs(items: Run[]): string {
     .join("");
 }
 
-const CSS = `body { font-family: serif; line-height: 1.5; margin: 0 5%; }
+/** The ebook's default stylesheet; the project can replace it (export.epubCss). */
+export const EPUB_CSS = `body { font-family: serif; line-height: 1.5; margin: 0 5%; }
 p { margin: 0; text-indent: 1.2em; text-align: justify; }
 p.first, h1 + p, h2 + p, h3 + p, h4 + p, .break + p, blockquote + p { text-indent: 0; }
 h1, h2, h3, h4, h5, h6 { text-align: center; font-weight: normal; margin: 2em 0 1.5em; page-break-after: avoid; }
@@ -75,7 +76,7 @@ interface Chapter {
 }
 
 /** Renders the book as an EPUB file. `id` identifies the book across exports. */
-export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new Date()): Uint8Array {
+export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new Date(), css = ""): Uint8Array {
   const language = book.language || "en";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -223,7 +224,7 @@ ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
       { name: "META-INF/container.xml", data: container },
       { name: "OEBPS/content.opf", data: opf },
       { name: "OEBPS/nav.xhtml", data: nav },
-      { name: "OEBPS/style.css", data: CSS },
+      { name: "OEBPS/style.css", data: css.trim() ? css : EPUB_CSS },
       ...chapters.map((c) => ({ name: `OEBPS/${c.file}`, data: c.html })),
     ],
     now,

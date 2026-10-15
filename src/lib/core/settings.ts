@@ -213,6 +213,8 @@ export interface NovelSettings {
     format: ExportFormat;
     /** Identifies the ebook across exports, so readers see a new version and not a new book. */
     epubId: string;
+    /** The ebook's stylesheet when it is not the default one. */
+    epubCss: string;
     /** Layout of DOCX and PDF; EPUB takes the structure and headings from it. */
     docx: DocxSettings;
     /** Applied to the exported text only; the files keep what was typed. */
@@ -367,6 +369,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     export: {
       format: "docx",
       epubId: "",
+      epubCss: "",
       docx: {
         profile: "manuscript",
         pageSize: "a4",

@@ -17,6 +17,7 @@
     values,
     VIEW_KINDS,
     type Group,
+    type Moment,
     type ViewKind,
     type ViewRow,
     type ViewSpec,
@@ -107,7 +108,6 @@
   const groups = $derived<Group[]>(
     spec.group_by ? group(spec.groups.length || !groupDef?.values.length ? spec : { ...spec, groups: groupDef.values }, rows) : [{ key: "", rows }],
   );
-  const moments = $derived(timeline(spec, rows));
 
   function label(field: string): string {
     return (BUILT_IN as readonly string[]).includes(field) ? t(`views.field.${field}` as MessageKey) : field;
@@ -417,7 +417,7 @@
           </label>
           <label>
             <span>{spec.type === "kanban" ? t("views.columnsBy") : t("views.groupBy")}</span>
-            <select value={spec.group_by} onchange={(e) => save({ group_by: e.currentTarget.value })}>
+            <select value={spec.group_by} onchange={(e) => save({ group_by: e.currentTarget.value, groups: [] })}>
               <option value="">{t("views.nothing")}</option>
               {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
             </select>
@@ -563,31 +563,38 @@
             </form>
           </div>
         {:else if spec.type === "timeline"}
-          <ol class="timeline">
-            {#each moments.moments as m (m.key + "|" + m.end)}
-              <li>
-                <div class="when">{m.label}{#if m.end}<span class="end"> – {m.end}</span>{/if}</div>
-                <div class="what">
-                  {#each m.rows as row (row.path)}
-                    {@render card(row, false)}
-                  {/each}
-                </div>
-              </li>
-            {/each}
-          </ol>
-          {#if moments.undated.length}
-            <h3 class="group-title">{t("views.undated")} <span class="count">{moments.undated.length}</span></h3>
-            <ul class="list">
-              {#each moments.undated as row (row.path)}
-                <li><button class="link" onclick={() => openRow(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
-              {/each}
-            </ul>
-          {/if}
+          {#each groups as g (g.key)}
+            {#if spec.group_by}<h3 class="group-title">{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></h3>{/if}
+            {@render timelineOf(timeline(spec, g.rows))}
+          {/each}
         {/if}
       </div>
     {/if}
   </main>
 </div>
+
+{#snippet timelineOf(tl: { moments: Moment[]; undated: ViewRow[] })}
+  <ol class="timeline">
+    {#each tl.moments as m (m.key + "|" + m.end)}
+      <li>
+        <div class="when">{m.label}{#if m.end}<span class="end"> – {m.end}</span>{/if}</div>
+        <div class="what">
+          {#each m.rows as row (row.path)}
+            {@render card(row, false)}
+          {/each}
+        </div>
+      </li>
+    {/each}
+  </ol>
+  {#if tl.undated.length}
+    <h3 class="group-title">{t("views.undated")} <span class="count">{tl.undated.length}</span></h3>
+    <ul class="list">
+      {#each tl.undated as row (row.path)}
+        <li><button class="link" onclick={() => openRow(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
 
 {#snippet details(row: ViewRow)}
   {#each fields as f (f)}
@@ -625,7 +632,7 @@
 {#snippet need(message: string, key: "group_by" | "date")}
   <div class="intro">
     <p>{message}</p>
-    <select aria-label={t("views.pickProperty")} value="" onchange={(e) => save({ [key]: e.currentTarget.value } as Partial<ViewSpec>)}>
+    <select aria-label={t("views.pickProperty")} value="" onchange={(e) => save({ [key]: e.currentTarget.value, ...(key === "group_by" ? { groups: [] } : {}) } as Partial<ViewSpec>)}>
       <option value="">{t("views.pickProperty")}</option>
       {#each choices.filter((c) => c !== "name") as c (c)}<option value={c}>{label(c)}</option>{/each}
     </select>

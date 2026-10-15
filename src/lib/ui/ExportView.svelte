@@ -2,7 +2,7 @@
   import { buildBook } from "$lib/core/export/book";
   import { pageCount } from "$lib/core/statistics";
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
-  import { bookToEpub } from "$lib/core/export/epub";
+  import { bookToEpub, EPUB_CSS } from "$lib/core/export/epub";
   import { bookToTypst } from "$lib/core/export/typst";
   import type { Project } from "$lib/core/project";
   import { defaultQuotes, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
@@ -50,6 +50,8 @@
   let format = $state<ExportFormat>(project.settings.export.format);
   // svelte-ignore state_referenced_locally
   let epubId = project.settings.export.epubId;
+  // svelte-ignore state_referenced_locally
+  let epubCss = $state(project.settings.export.epubCss.trim() ? project.settings.export.epubCss : EPUB_CSS);
 
   const FORMATS: Record<ExportFormat, { ext: string; name: string; mime: string }> = {
     docx: { ext: "docx", name: "Word", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
@@ -66,6 +68,8 @@
     settings.export.revisions = revisions;
     settings.export.format = format;
     settings.export.epubId = epubId;
+    // The default stylesheet is not copied into the project, so later versions of Dante can improve it.
+    settings.export.epubCss = epubCss.trim() === EPUB_CSS.trim() ? "" : epubCss;
     settings.structure = $state.snapshot(structure);
     return settings;
   }
@@ -192,14 +196,16 @@
       if (format === "docx") {
         where = await save(await docxBytes(bookToDocx(book, layout, labels)));
       } else if (format === "epub") {
-        where = await save(bookToEpub(book, layout, epubId));
-      } else if (project.fs instanceof TauriFs) {
-        // Typst, inside the app, turns the source into the PDF at the chosen path.
+        where = await save(bookToEpub(book, layout, epubId, new Date(), epubCss));
+      } else if (inTauri()) {
+        // Typst, inside the app, turns the source into the PDF at the chosen path. Files the
+        // text refers to are looked up in the project's folder; the sample project has none.
         const source = bookToTypst(book, layout, labels);
         where = await choosePath();
         if (where) {
           const { invoke } = await import("@tauri-apps/api/core");
-          await invoke("compile_pdf", { root: project.fs.root, source, output: where });
+          const root = project.fs instanceof TauriFs ? project.fs.root : where.replace(/[\\/][^\\/]*$/, "") || "/";
+          await invoke("compile_pdf", { root, source, output: where });
         }
       } else {
         // Only the desktop app compiles PDFs; a browser gets the Typst source.
@@ -240,6 +246,14 @@
     </div>
     {#if format === "epub"}
       <p class="hint">{t("export.epubHint")}</p>
+      <label
+        >{t("export.epubCss")}
+        <textarea class="code" rows="14" spellcheck="false" bind:value={epubCss}></textarea>
+      </label>
+      <p class="hint">
+        {t("export.epubCssHint")}
+        {#if epubCss.trim() !== EPUB_CSS.trim()}<button type="button" class="link" onclick={() => (epubCss = EPUB_CSS)}>{t("export.epubCssReset")}</button>{/if}
+      </p>
     {:else}
     <label
       >{t("export.profile")}
@@ -453,6 +467,18 @@
   .format span {
     font-size: 12px;
     color: var(--text-muted);
+  }
+  .hint .link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--accent);
+    font-size: inherit;
+    cursor: pointer;
+  }
+  textarea.code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
   }
   .hint {
     color: var(--text-muted);
