@@ -120,3 +120,13 @@ describe("arranging", () => {
     expect([dateKey("-300")! < dateKey("12")!, dateKey("1950-4")! < dateKey("1950-04-02")!, dateKey("later")]).toEqual([true, true, null]);
   });
 });
+
+describe("synopsis in views", () => {
+  it("is shown unless the view says otherwise", () => {
+    expect(parseView("type: cards\n").synopsis).toBe(true);
+    const off = parseView("type: cards\nsynopsis: false\n");
+    expect(off.synopsis).toBe(false);
+    expect(serializeView(off)).toContain("synopsis: false");
+    expect(serializeView(parseView("type: cards\n"))).not.toContain("synopsis");
+  });
+});

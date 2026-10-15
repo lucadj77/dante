@@ -6,6 +6,7 @@ import {
   folderNotePath,
   loadManuscript,
   parentOf,
+  TITLE,
   type ContainerKind,
   type ManuscriptNode,
 } from "./manuscript";
@@ -360,8 +361,8 @@ export class Project {
     const siblings = parent.children.filter((c) => c.path !== path);
     const clamped = Math.max(0, Math.min(index, siblings.length));
     // In its new place the item may need another title, so it is not taken for a folder note.
-    const clash = parent.kind !== "manuscript" && parent.title.toLowerCase() === node.title.toLowerCase();
-    const moved = clash ? { ...node, title: this.uniqueTitle(parent, node.title, path) } : node;
+    const clash = parent.kind !== "manuscript" && parent.fileTitle.toLowerCase() === node.fileTitle.toLowerCase();
+    const moved = clash ? { ...node, fileTitle: this.uniqueTitle(parent, node.fileTitle, path) } : node;
     const sequence = [...siblings.slice(0, clamped), moved, ...siblings.slice(clamped)];
     // The moved item gets a new number; its siblings keep theirs where they can.
     const orders = assignOrders(sequence.map((n) => (n === moved ? null : n.order)));
@@ -370,10 +371,20 @@ export class Project {
     return this.movedPath(moves, path);
   }
 
+  /**
+   * Sets the title shown for a scene, chapter or part without renaming its file: the
+   * `title` property, removed when it is empty or the same as the file name.
+   */
+  async retitle(path: string, title: string): Promise<void> {
+    const node = this.node(path);
+    const clean = title.trim();
+    await this.setProperties(path, { [TITLE]: clean === "" || clean === node.fileTitle ? undefined : clean });
+  }
+
   async rename(path: string, title: string): Promise<string> {
     const node = this.node(path);
     const clean = sanitizeTitle(title);
-    if (clean === "" || clean === node.title) return path;
+    if (clean === "" || clean === node.fileTitle) return path;
     const parent = parentOf(this.manuscript, path)!;
     const unique = this.uniqueTitle(parent, clean, path);
     const name = node.order === null ? unique : formatName(node.order, unique);
@@ -485,7 +496,7 @@ export class Project {
     const sequence = [...parent.children];
     const clamped = Math.max(0, Math.min(index, sequence.length));
     const fake: ManuscriptNode = {
-      kind: ext ? "scene" : "chapter", path: placeholder, name: "", order: null, title, notePath: null, children: [],
+      kind: ext ? "scene" : "chapter", path: placeholder, name: "", order: null, title, fileTitle: title, notePath: null, children: [],
     };
     sequence.splice(clamped, 0, fake);
     const orders = assignOrders(sequence.map((n) => n.order));
@@ -503,10 +514,10 @@ export class Project {
    * children's titles.
    */
   private uniqueTitle(parent: ManuscriptNode, title: string, except?: string): string {
-    const taken = new Set(parent.children.filter((c) => c.path !== except).map((c) => c.title.toLowerCase()));
-    if (parent.kind !== "manuscript") taken.add(parent.title.toLowerCase());
+    const taken = new Set(parent.children.filter((c) => c.path !== except).map((c) => c.fileTitle.toLowerCase()));
+    if (parent.kind !== "manuscript") taken.add(parent.fileTitle.toLowerCase());
     const self = except ? findNode(this.manuscript, except) : null;
-    for (const child of self?.children ?? []) taken.add(child.title.toLowerCase());
+    for (const child of self?.children ?? []) taken.add(child.fileTitle.toLowerCase());
     if (!taken.has(title.toLowerCase())) return title;
     let n = 2;
     while (taken.has(`${title} ${n}`.toLowerCase())) n++;
@@ -516,7 +527,7 @@ export class Project {
   private orderMovesFrom(parentPath: string, sequence: ManuscriptNode[], orders: number[]): Move[] {
     const moves: Move[] = [];
     sequence.forEach((node, i) => {
-      const name = formatName(orders[i], node.title) + (node.kind === "scene" ? ".md" : "");
+      const name = formatName(orders[i], node.fileTitle) + (node.kind === "scene" ? ".md" : "");
       const to = join(parentPath, name);
       if (to !== node.path) moves.push({ from: node.path, to });
     });

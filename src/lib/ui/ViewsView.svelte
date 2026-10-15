@@ -26,6 +26,7 @@
   import { confirmDelete } from "./dialogs";
   import { navigator } from "./navigation";
   import { displayValue, parseValue } from "./propertyText";
+  import { SYNOPSIS, TITLE } from "$lib/core/manuscript";
   import { coerce, propertyDef } from "$lib/core/properties";
 
   interface Props {
@@ -226,6 +227,8 @@
     const value = e.text.trim() === "" ? undefined : readValue(e.text, row.properties[e.field], e.field);
     await setValues(row, { [e.field]: value });
   }
+
+  const synopsisText = (row: ViewRow) => displayValue(row.properties[SYNOPSIS]).trim();
 
   /** A typed value back from the cell's text, by the property's definition when there is one. */
   function readValue(text: string, previous: unknown, field: string): unknown {
@@ -443,7 +446,8 @@
           {/if}
           <fieldset>
             <legend>{t("views.fields")}</legend>
-            {#each choices.filter((c) => c !== "name") as c (c)}
+            <label class="check"><input type="checkbox" checked={spec.synopsis} onchange={(e) => save({ synopsis: e.currentTarget.checked })} /> {t("views.synopsis")}</label>
+            {#each choices.filter((c) => c !== "name" && c !== SYNOPSIS && c !== TITLE) as c (c)}
               <label class="check"><input type="checkbox" checked={fields.includes(c)} onchange={(e) => toggleField(c, e.currentTarget.checked)} /> {label(c)}</label>
             {/each}
           </fieldset>
@@ -475,7 +479,7 @@
                 {/if}
                 {#each g.rows as row (row.path)}
                   <tr>
-                    <td><button class="link" onclick={() => openRow(row)}>{row.name}</button></td>
+                    <td><button class="link" onclick={() => openRow(row)}>{row.name}</button>{@render synopsisOf(row)}</td>
                     {#each fields as f (f)}
                       <td class:number={f === "words"}>
                         {#if editing && editing.path === row.path && editing.field === f}
@@ -510,6 +514,7 @@
                 <li>
                   <button class="link" onclick={() => openRow(row)}>{row.name}</button>
                   {@render details(row)}
+                  {@render synopsisOf(row)}
                 </li>
               {/each}
             </ul>
@@ -574,7 +579,7 @@
             <h3 class="group-title">{t("views.undated")} <span class="count">{moments.undated.length}</span></h3>
             <ul class="list">
               {#each moments.undated as row (row.path)}
-                <li><button class="link" onclick={() => openRow(row)}>{row.name}</button> {@render details(row)}</li>
+                <li><button class="link" onclick={() => openRow(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
               {/each}
             </ul>
           {/if}
@@ -588,6 +593,10 @@
   {#each fields as f (f)}
     {#if shown(row, f)}<span class="field"><span class="key">{label(f)}</span> {shown(row, f)}</span>{/if}
   {/each}
+{/snippet}
+
+{#snippet synopsisOf(row: ViewRow)}
+  {#if spec.synopsis && synopsisText(row)}<p class="synopsis">{synopsisText(row)}</p>{/if}
 {/snippet}
 
 {#snippet card(row: ViewRow, long: boolean)}
@@ -606,7 +615,9 @@
   >
     <button class="link title" onclick={() => openRow(row)}>{row.name}</button>
     {#if long && row.chapter && spec.items === "scene"}<div class="muted small">{row.chapter}</div>{/if}
-    {#if long && row.excerpt}<p class="excerpt">{row.excerpt}</p>{/if}
+    {#if spec.synopsis && synopsisText(row)}
+      {@render synopsisOf(row)}
+    {:else if long && row.excerpt}<p class="excerpt">{row.excerpt}</p>{/if}
     <div class="fields">{@render details(row)}</div>
   </article>
 {/snippet}
@@ -882,6 +893,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: 2px 10px;
+  }
+  .synopsis {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: pre-line;
   }
   .excerpt {
     margin: 0;

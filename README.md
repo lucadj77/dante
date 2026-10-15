@@ -180,6 +180,16 @@ properties:
   when the view lists none.
 - New projects define age, date, place and owner (in the novel's language).
 
+## Title and synopsis
+
+- A scene, chapter or part can have a `title` property (in a chapter's or part's folder note).
+  It is the title shown in the tree, the headings, the views, the statistics and the export;
+  without it, the title is the one in the file name. The properties panel has both fields:
+  the title, and the file name (which renames the file). Renaming from the tree changes the
+  title when the item has its own, otherwise the file. `published_title` still wins in the export.
+- Every scene, chapter and part has a synopsis field in the panel (`synopsis` property). Views
+  show it under each item's name unless their file says `synopsis: false` (⚙ Settings → Synopsis).
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).

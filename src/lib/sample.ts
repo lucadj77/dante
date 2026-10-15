@@ -26,10 +26,10 @@ export function sampleProject(): MemoryFs {
     "Templates/Character.md": "---\nrole:\nage:\naliases: []\n---\n## Who {{title}} is\n\n## What {{title}} wants\n",
     "Manuscript/000 Prologue/000 Prologue.md": "---\nkind: prologue\n---\n",
     "Manuscript/000 Prologue/010 The call.md":
-      "---\nstatus: draft\npov: \"[[Marta Rinaldi|Marta]]\"\ndate: 2007-03-11\n---\nThe phone rang at three in the morning. *Nobody* calls at three in the morning with good news.\n",
+      "---\ntitle: A call at three\nsynopsis: Marta learns that her mother has died.\nstatus: draft\npov: \"[[Marta Rinaldi|Marta]]\"\ndate: 2007-03-11\n---\nThe phone rang at three in the morning. *Nobody* calls at three in the morning with good news.\n",
     "Manuscript/010 Homecoming/010 Homecoming.md": "---\nkind: part\n---\n",
     "Manuscript/010 Homecoming/010 Return/010 Arrival.md":
-      "---\nstatus: revised\npov: \"[[Marta Rinaldi|Marta]]\"\nplace: \"[[Rinaldi House]]\"\ndate: 2007-03-12\n---\nThe train arrived {--forty--}{>>@Anna 2026-10-14<<}{++fifty++}{>>@Anna 2026-10-14<<} minutes late. Marta stepped down onto the platform and {==breathed the salt air==}{>>@Anna 2026-10-14: Too early for the sea? We only see the harbour in part two.<<} she had tried to forget.\n\nNo one was waiting for her. She had expected that, and still it hurt.\n",
+      "---\nsynopsis: Marta comes back to town after twenty years. No one is waiting for her.\nstatus: revised\npov: \"[[Marta Rinaldi|Marta]]\"\nplace: \"[[Rinaldi House]]\"\ndate: 2007-03-12\n---\nThe train arrived {--forty--}{>>@Anna 2026-10-14<<}{++fifty++}{>>@Anna 2026-10-14<<} minutes late. Marta stepped down onto the platform and {==breathed the salt air==}{>>@Anna 2026-10-14: Too early for the sea? We only see the harbour in part two.<<} she had tried to forget.\n\nNo one was waiting for her. She had expected that, and still it hurt.\n",
     "Manuscript/010 Homecoming/010 Return/020 The house.md":
       "---\nstatus: draft\ndate: 2007-03-12\n---\nThe key still turned in the lock. **Twenty years**, and the key still turned.\n",
     // A copy Dropbox makes when two people change the same scene at once.

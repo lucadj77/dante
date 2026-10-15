@@ -40,6 +40,8 @@ export interface ViewSpec {
   /** Property holding each item's date on the timeline, and its end. */
   date: string;
   end: string;
+  /** Shows each item's synopsis under its name; on unless the file says `synopsis: false`. */
+  synopsis: boolean;
 }
 
 /** Fields every item has, besides its properties. */
@@ -47,7 +49,7 @@ export const BUILT_IN = ["name", "folder", "type", "words", "chapter"] as const;
 export const VIEW_EXT = ".yaml";
 
 export function defaultView(type: ViewKind = "table"): ViewSpec {
-  return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "" };
+  return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true };
 }
 
 const text = (v: unknown): string => (v === null || v === undefined ? "" : String(v).trim());
@@ -80,6 +82,7 @@ export function parseView(yaml: string): ViewSpec {
   view.fields = list(raw.fields ?? card.fields);
   view.date = text(raw.date);
   view.end = text(raw.end);
+  view.synopsis = raw.synopsis !== false;
   return view;
 }
 
@@ -95,6 +98,7 @@ export function serializeView(view: ViewSpec): string {
   if (view.fields.length) out.fields = view.fields;
   if (view.date) out.date = view.date;
   if (view.end) out.end = view.end;
+  if (!view.synopsis) out.synopsis = false;
   return stringify(out, { lineWidth: 0 });
 }
 

@@ -217,12 +217,18 @@
     }, "start");
   }
 
-  /** Renames without moving the selection: paths inside a renamed chapter follow it. */
-  async function rename(path: string, title: string) {
+  /**
+   * Renames without moving the selection: paths inside a renamed chapter follow it.
+   * `file` renames the file even when the item has a title of its own.
+   */
+  async function rename(path: string, title: string, file = false) {
     let renamed = path;
     const before = { selected, active };
+    // A scene or chapter with its own title keeps its file name: the title changes.
+    const node = findNode(path);
     await run(async () => {
-      renamed = await project.rename(path, title);
+      if (!file && node && node.title !== node.fileTitle) await project.retitle(path, title);
+      else renamed = await project.rename(path, title);
     });
     if (before.selected) selected = rebase(before.selected, path, renamed);
     if (before.active) active = rebase(before.active, path, renamed);

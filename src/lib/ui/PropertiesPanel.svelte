@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode, folderNotePath, NUMBERED, type ContainerKind } from "$lib/core/manuscript";
+  import { findNode, folderNotePath, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import { isWritingDay } from "$lib/core/sessions";
@@ -24,7 +24,7 @@
     onChanged: () => Promise<void>;
     beforeRead: (path: string) => Promise<void>;
     onRestored: () => void;
-    onRename: (path: string, title: string) => void;
+    onRename: (path: string, title: string, file?: boolean) => void;
   }
   let p: Props = $props();
 
@@ -52,7 +52,22 @@
   });
 
   // `kind` and `numbered` live in folder notes and are set with the controls above the list.
-  const entries = $derived(Object.entries(properties).filter(([key]) => !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))));
+  // Title and synopsis have their own fields above the list.
+  const entries = $derived(
+    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
+  );
+  const synopsis = $derived(typeof properties[SYNOPSIS] === "string" ? (properties[SYNOPSIS] as string) : displayValue(properties[SYNOPSIS]));
+
+  async function retitle(title: string) {
+    if (!node || title.trim() === node.title) return;
+    error = "";
+    try {
+      await p.project.retitle(node.path, title);
+      await p.onChanged();
+    } catch (e) {
+      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    }
+  }
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
   const kinds = $derived<ContainerKind[]>(p.project.settings.structure.parts ? ["part", "chapter", "prologue", "epilogue"] : ["chapter", "prologue", "epilogue"]);
 
@@ -118,17 +133,45 @@
       <p class="what">{t(`kind.${node.kind}` as MessageKey)}</p>
       <label class="title-field">
         <span>{t("panel.title")}</span>
-        {#key node.path}
+        {#key node.path + node.title}
           <input
             value={node.title}
+            placeholder={node.fileTitle}
+            data-tip={t("panel.titleHint")}
+            onchange={(e) => void retitle((e.currentTarget as HTMLInputElement).value)}
+            onkeydown={(e) => {
+              if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+            }}
+          />
+        {/key}
+      </label>
+      <label class="title-field">
+        <span>{t("panel.fileName")}</span>
+        {#key node.path}
+          <input
+            value={node.fileTitle}
             onchange={(e) => {
               const value = (e.currentTarget as HTMLInputElement).value;
-              if (value.trim() && value !== node.title) p.onRename(node.path, value);
+              if (value.trim() && value !== node.fileTitle) p.onRename(node.path, value, true);
             }}
             onkeydown={(e) => {
               if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
             }}
           />
+        {/key}
+      </label>
+      <label class="title-field">
+        <span>{t("panel.synopsis")}</span>
+        {#key node.path + synopsis}
+          <textarea
+            rows="4"
+            value={synopsis}
+            placeholder={t("panel.synopsisHint")}
+            onchange={(e) => {
+              const value = (e.currentTarget as HTMLTextAreaElement).value.trim();
+              if (value !== synopsis) void update({ [SYNOPSIS]: value === "" ? undefined : value });
+            }}
+          ></textarea>
         {/key}
       </label>
       {#if isContainer && node}
@@ -260,6 +303,12 @@
   }
   .title-field input {
     font-size: 14px;
+  }
+  .title-field textarea {
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    resize: vertical;
   }
   .panel > :global(section + section) {
     margin-top: 24px;

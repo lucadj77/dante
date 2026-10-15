@@ -196,3 +196,28 @@ describe("unnumbered chapters", () => {
     expect([...headings(project.manuscript, project.settings).values()]).toEqual(["Prologo", "Chapter 1: Uno", "Interludio", "Chapter 2: Due"]);
   });
 });
+
+describe("own titles", () => {
+  it("uses the title property for headings and keeps file names when moving", async () => {
+    const fs = sample();
+    fs.files.set("Manuscript/010 Return/010 Return.md", "---\ntitle: The return home\n---\n");
+    fs.files.set("Manuscript/010 Return/020 House.md", "---\ntitle: The old house\n---\nThe house.");
+    const p = await Project.open(fs);
+    expect(headings(p.manuscript, p.settings).get("Manuscript/010 Return")).toBe("Chapter 1: The return home");
+    const house = p.node("Manuscript/010 Return/020 House.md");
+    expect([house.title, house.fileTitle]).toEqual(["The old house", "House"]);
+    const moved = await p.move("Manuscript/010 Return/020 House.md", "Manuscript/010 Return", 0);
+    expect(moved).toBe("Manuscript/010 Return/005 House.md");
+  });
+
+  it("sets and clears a title without renaming the file", async () => {
+    const fs = sample();
+    const p = await Project.open(fs);
+    await p.retitle("Manuscript/020 Letter", "A letter from Elena");
+    expect(p.node("Manuscript/020 Letter").title).toBe("A letter from Elena");
+    expect(fs.files.get("Manuscript/020 Letter/020 Letter.md")).toContain("title: A letter from Elena");
+    await p.retitle("Manuscript/020 Letter", "Letter");
+    expect(p.node("Manuscript/020 Letter").title).toBe("Letter");
+    expect(fs.files.get("Manuscript/020 Letter/020 Letter.md")).not.toContain("title:");
+  });
+});
