@@ -205,14 +205,33 @@
 
   function newContainer(kind: "chapter" | "part") {
     const node = selected ? findNode(selected) : null;
-    // A chapter goes after the selected one, inside the same part; a part at the top level.
-    const anchor = node ? (kind === "part" ? enclosing(tree, node.path, ["part", "prologue", "epilogue", "chapter"]) : enclosing(tree, node.path, ["chapter", "prologue", "epilogue"])) : null;
-    let holder = anchor ? parentOf(tree, anchor.path)! : tree;
-    if (kind === "part") holder = tree;
-    const topAnchor = anchor && kind === "part" ? (holder.children.find((c) => findIn(c, anchor.path)) ?? null) : anchor;
-    const index = topAnchor ? holder.children.findIndex((c) => c.path === topAnchor.path) + 1 : holder.children.length;
+    let holder: ManuscriptNode = tree;
+    let index = tree.children.length;
+    if (kind === "part") {
+      // A part goes after the top-level item holding the selection.
+      const top = node ? tree.children.findIndex((c) => findIn(c, node.path)) : -1;
+      if (top >= 0) index = top + 1;
+    } else if (node) {
+      // A chapter goes after the selected one, in the same part; with a part (or a scene loose
+      // in it) selected, at the end of that part.
+      const chapter = enclosing(tree, node.path, ["chapter", "prologue", "epilogue"]);
+      const part = enclosing(tree, node.path, ["part"]);
+      if (chapter) {
+        holder = parentOf(tree, chapter.path)!;
+        index = holder.children.findIndex((c) => c.path === chapter.path) + 1;
+      } else if (part) {
+        holder = part;
+        index = part.children.length;
+      }
+    }
     void run(async () => {
-      const created = await project.createContainer(holder.path, index, t("untitled"), kind === "part" ? "part" : undefined);
+      if (kind === "part") {
+        // A new part starts with a chapter, so its first scene is not loose in it.
+        const part = await project.createContainer(holder.path, index, t("untitled"), "part");
+        const chapter = await project.createContainer(part, 0, t("untitled"));
+        return project.createScene(chapter, 0, t("untitledScene"));
+      }
+      const created = await project.createContainer(holder.path, index, t("untitled"));
       return project.createScene(created, 0, t("untitledScene"));
     }, "start");
   }
