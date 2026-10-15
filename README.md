@@ -156,6 +156,30 @@ end: until              # timeline only: optional end
   `.dante/sessions/<name>.json` (one file per person, so a shared folder never has two writers);
   the chart shows the last 30 days for everyone, the table each person.
 
+## Properties with a kind
+
+A property can be defined once in `dante.yaml` and then works the same way in every note:
+
+```yaml
+properties:
+  status:
+    kind: text                       # text, number, date, checkbox, list, link
+    values: [idea, draft, revised, done]   # text: one of them; list: any of them
+  pov:
+    kind: link
+    note_type: character             # only characters are suggested
+  date: date                         # short for { kind: date }
+```
+
+- The properties panel shows the right field for each kind: a menu of the allowed values, a
+  number, a date picker, a checkbox, toggles for a list, link suggestions limited to a type.
+  A value that does not fit is kept as written and flagged.
+- The sign before a property's name sets its kind from the panel; Settings lists every definition.
+- Values are written as Obsidian writes them (numbers, true/false, YYYY-MM-DD, YAML lists,
+  "[[links]]"). A board grouped by a property with allowed values takes them as its columns
+  when the view lists none.
+- New projects define age, date, place and owner (in the novel's language).
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).

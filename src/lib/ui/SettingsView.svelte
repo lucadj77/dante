@@ -2,6 +2,8 @@
   import type { Project } from "$lib/core/project";
   import type { NovelSettings } from "$lib/core/settings";
   import HeadingLevel from "./HeadingLevel.svelte";
+  import PropertyDefEditor from "./PropertyDefEditor.svelte";
+  import { propertyDef, withDef } from "$lib/core/properties";
   import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
   import { app, saveAppSettings, t } from "$lib/state.svelte";
@@ -13,6 +15,7 @@
   let novel = $state<NovelSettings>(structuredClone($state.snapshot(project.settings)));
   let appSettings = $state(structuredClone($state.snapshot(app.settings)));
   let saved = $state(false);
+  let newProperty = $state("");
   let error = $state("");
 
   const levels = $derived<("part" | "chapter")[]>(novel.structure.parts ? ["part", "chapter"] : ["chapter"]);
@@ -84,6 +87,35 @@
         ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
       >
     {/if}
+
+    <h3>{t("property.defined")}</h3>
+    <p class="hint">{t("property.definedHint")}</p>
+    {#each Object.keys(novel.properties) as name (name)}
+      <fieldset class="property">
+        <legend>{name}</legend>
+        <PropertyDefEditor
+          {name}
+          def={novel.properties[name]}
+          types={novel.types}
+          hint={false}
+          onSave={(def) => (novel.properties = withDef(novel.properties, name, def))}
+        />
+      </fieldset>
+    {:else}
+      <p class="hint">{t("property.none")}</p>
+    {/each}
+    <div class="define">
+      <input bind:value={newProperty} placeholder={t("property.name")} aria-label={t("property.name")} />
+      <button
+        type="button"
+        disabled={!newProperty.trim()}
+        onclick={() => {
+          const name = newProperty.trim();
+          if (!propertyDef(novel.properties, name)) novel.properties = withDef(novel.properties, name, { kind: "text", values: [], note_type: "" });
+          newProperty = "";
+        }}>{t("property.add")}</button
+      >
+    </div>
 
     <h3>{t("settings.pages")}</h3>
     <label
@@ -212,6 +244,24 @@
     align-items: center;
     gap: 12px;
     margin-top: 24px;
+  }
+  .hint {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin: 0 0 12px;
+  }
+  fieldset.property {
+    padding: 4px 12px 0;
+  }
+  fieldset.property :global(.def) {
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .define {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
   }
   .clean {
     display: flex;

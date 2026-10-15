@@ -26,6 +26,7 @@
   import { confirmDelete } from "./dialogs";
   import { navigator } from "./navigation";
   import { displayValue, parseValue } from "./propertyText";
+  import { coerce, propertyDef } from "$lib/core/properties";
 
   interface Props {
     project: Project;
@@ -100,7 +101,11 @@
     return [...(spec.items === "scene" ? ["chapter"] : spec.items === "chapter" ? ["type"] : []), ...used.slice(0, 6), "words"];
   });
 
-  const groups = $derived<Group[]>(spec.group_by ? group(spec, rows) : [{ key: "", rows }]);
+  // A property with allowed values gives its columns when the view lists none.
+  const groupDef = $derived(spec.group_by ? propertyDef(p.project.settings.properties, spec.group_by) : null);
+  const groups = $derived<Group[]>(
+    spec.group_by ? group(spec.groups.length || !groupDef?.values.length ? spec : { ...spec, groups: groupDef.values }, rows) : [{ key: "", rows }],
+  );
   const moments = $derived(timeline(spec, rows));
 
   function label(field: string): string {
@@ -218,8 +223,14 @@
     const e = editing;
     editing = null;
     if (!e || e.text === displayValue(row.properties[e.field])) return;
-    const value = e.text.trim() === "" ? undefined : parseValue(e.text, row.properties[e.field], e.field);
+    const value = e.text.trim() === "" ? undefined : readValue(e.text, row.properties[e.field], e.field);
     await setValues(row, { [e.field]: value });
+  }
+
+  /** A typed value back from the cell's text, by the property's definition when there is one. */
+  function readValue(text: string, previous: unknown, field: string): unknown {
+    const def = propertyDef(p.project.settings.properties, field);
+    return def ? coerce(text, def) : parseValue(text, previous, field);
   }
 
   function focus(node: HTMLInputElement) {

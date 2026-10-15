@@ -128,8 +128,8 @@
       const target = linkTarget(path, from, files);
       const type = index?.notes.get(path) ? noteType(path, index.notes.get(path)!.properties, project.settings) : null;
       const detail = type && project.settings.types[type] ? `${project.settings.types[type].icon} ${project.settings.types[type].name}` : dirname(path) || basename(path);
-      out.push({ target, detail });
-      for (const alias of index?.notes.get(path)?.aliases ?? []) out.push({ target, alias });
+      out.push({ target, detail, type: type ?? undefined });
+      for (const alias of index?.notes.get(path)?.aliases ?? []) out.push({ target, alias, type: type ?? undefined });
     }
     suggestionCache.set(from, out);
     return out;

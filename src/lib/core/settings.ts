@@ -1,4 +1,5 @@
 import { parseDocument } from "yaml";
+import { parsePropertyDefs, serializePropertyDefs, type PropertyDef } from "./properties";
 
 export const SETTINGS_FILE = "dante.yaml";
 
@@ -135,6 +136,8 @@ export interface NovelSettings {
    * takes the type of the Codex folder it is in.
    */
   types: Record<string, NoteType>;
+  /** Properties with a kind and allowed values, by name, shared by every note. */
+  properties: Record<string, PropertyDef>;
   structure: {
     /** When true, the first level of folders in the manuscript are parts. */
     parts: boolean;
@@ -263,6 +266,24 @@ function parseTypes(value: unknown, language: string): Record<string, NoteType> 
   return types;
 }
 
+/** Kinds for the default types' suggested properties: age, date, place, owner. */
+const PROPERTY_NAMES: Record<string, [string, string, string, string]> = {
+  en: ["age", "date", "place", "owner"],
+  it: ["età", "data", "luogo", "proprietario"],
+  es: ["edad", "fecha", "lugar", "dueño"],
+  fr: ["âge", "date", "lieu", "propriétaire"],
+};
+
+export function defaultPropertyDefs(language: string): Record<string, PropertyDef> {
+  const [age, date, place, owner] = PROPERTY_NAMES[language.slice(0, 2)] ?? PROPERTY_NAMES.en;
+  return {
+    [age]: { kind: "number", values: [], note_type: "" },
+    [date]: { kind: "date", values: [], note_type: "" },
+    [place]: { kind: "link", values: [], note_type: "place" },
+    [owner]: { kind: "link", values: [], note_type: "character" },
+  };
+}
+
 export function defaultFolders(language: string): NovelSettings["folders"] {
   return { ...(FOLDERS[language.slice(0, 2)] ?? FOLDERS.en) };
 }
@@ -284,6 +305,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     language,
     folders: defaultFolders(language),
     types: defaultTypes(language),
+    properties: defaultPropertyDefs(language),
     structure: {
       parts: false,
       part: { numbering: "roman", showLabel: true, label: labels.part, showTitle: true, separator: ": " },
@@ -362,6 +384,7 @@ export function parseSettings(text: string): NovelSettings {
   const settings = merge(defaultSettings(language), raw);
   // Types are a free list: the user's replace the defaults instead of being merged into them.
   settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
+  settings.properties = parsePropertyDefs(isObject(raw) ? raw.properties : undefined);
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
@@ -398,6 +421,12 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     // Types are written whole, so a removed type disappears from the file too.
     if (path.length === 1 && path[0] === "types") {
       doc.setIn(path, doc.createNode(value));
+      return;
+    }
+    if (path.length === 1 && path[0] === "properties") {
+      const defs = serializePropertyDefs(value as Record<string, PropertyDef>);
+      if (Object.keys(defs).length) doc.setIn(path, doc.createNode(defs));
+      else doc.deleteIn(path);
       return;
     }
     if (isObject(value)) {

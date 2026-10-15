@@ -16,7 +16,7 @@ export function sampleProject(): MemoryFs {
     // Anna, on another computer, is writing the envelope scene (for the next three minutes).
     ".dante/presence/anna.json": JSON.stringify({ user: "Anna", path: "Manuscript/010 Homecoming/020 Letter/010 Envelope.md", since: now, updated: now }),
     ".dante/sessions/anna.json": JSON.stringify({ user: "Anna", days }),
-    "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\ngoals:\n  words: 80000\n  deadline: 2027-06-30\n  daily: 500\n",
+    "dante.yaml": "title: The Inheritance\nauthor: Sample Author\nlanguage: en\nstructure:\n  parts: true\ngoals:\n  words: 80000\n  deadline: 2027-06-30\n  daily: 500\nproperties:\n  status:\n    kind: text\n    values: [idea, draft, revised, done]\n  pov:\n    kind: link\n    note_type: character\n  place:\n    kind: link\n    note_type: place\n  date: date\n  age: number\n",
     "Story Bible/Characters/Marta Rinaldi.md":
       "---\ntype: character\nrole: protagonist\nage: 42\naliases: [Marta]\n---\nMarta returns home after twenty years. She grew up in [[Rinaldi House]] with her mother, [[Elena Rinaldi|Elena]].\n",
     "Story Bible/Characters/Elena Rinaldi.md":
