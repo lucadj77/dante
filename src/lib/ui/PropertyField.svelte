@@ -24,6 +24,10 @@
     p.onChange(p.def ? coerce(input, p.def) : parseValue(input, p.value, p.name));
   }
 
+  function blurOnEnter(e: KeyboardEvent) {
+    if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+  }
+
   function toggle(value: string) {
     const current = Array.isArray(p.value) ? p.value.map(String) : listed;
     p.onChange(has(value) ? current.filter((v) => v.toLowerCase() !== value.toLowerCase()) : [...current, value]);
@@ -39,13 +43,25 @@
       step="any"
       aria-label={p.name}
       value={text}
-      onchange={(e) => {
-        const v = (e.currentTarget as HTMLInputElement).value;
-        p.onChange(v === "" ? "" : Number(v));
+      onkeydown={blurOnEnter}
+      onblur={(e) => {
+        const v = e.currentTarget.value;
+        if (v !== text) p.onChange(v === "" ? "" : Number(v));
       }}
     />
   {:else if p.def?.kind === "date" && !issue}
-    <input type="date" aria-label={p.name} value={text} onchange={(e) => p.onChange((e.currentTarget as HTMLInputElement).value)} />
+    <!-- Saved when the field is left: while a date is typed, the browser already reports
+         partial ones such as year 2 or 20, which would be written and reload the field. -->
+    <input
+      type="date"
+      aria-label={p.name}
+      value={text}
+      onkeydown={blurOnEnter}
+      onblur={(e) => {
+        const v = e.currentTarget.value;
+        if (v !== text) p.onChange(v);
+      }}
+    />
   {:else if p.def?.kind === "text" && p.def.values.length}
     <select aria-label={p.name} value={text} onchange={(e) => p.onChange((e.currentTarget as HTMLSelectElement).value)}>
       <option value="">–</option>
