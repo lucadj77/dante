@@ -140,7 +140,6 @@
       </div>
     </form>
   {:else}
-    <p>{t("welcome.body")}</p>
     <div class="actions">
       {#if desktop}
         <button class="primary" onclick={() => (creating = true)}>{t("welcome.new")}</button>

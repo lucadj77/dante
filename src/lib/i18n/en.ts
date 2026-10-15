@@ -3,7 +3,6 @@ export const en = {
   "app.name": "Dante",
   "app.close": "Close project",
   "welcome.title": "Open a novel",
-  "welcome.body": "A project is a folder of Markdown files, readable in Obsidian too.",
   "welcome.open": "Open folder…",
   "welcome.sample": "Try the sample project",
   "welcome.new": "New project",

@@ -3,7 +3,6 @@ import type { MessageKey } from "./en";
 export const it: Partial<Record<MessageKey, string>> = {
   "app.close": "Chiudi progetto",
   "welcome.title": "Apri un romanzo",
-  "welcome.body": "Un progetto è una cartella di file Markdown, leggibile anche in Obsidian.",
   "welcome.open": "Apri cartella…",
   "welcome.sample": "Prova il progetto di esempio",
   "welcome.new": "Nuovo progetto",
