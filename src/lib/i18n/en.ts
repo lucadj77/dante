@@ -102,6 +102,7 @@ export const en = {
   "tip.showLeft": "Left panel\nShows the panel on the left again.",
   "tip.hideRight": "Right panel\nHides the panel on the right. Drag its edge to resize it.",
   "tip.showRight": "Right panel\nShows the panel on the right again.",
+  "tree.outline": "Outline",
   "tree.add": "Add",
   "toolbar.show": "Show",
   "toolbar.writing": "Writing",

@@ -39,6 +39,8 @@
     onText: (path: string, text: string) => void;
     onAddAfter: (path: string) => void;
     onRename: (path: string, title: string) => void;
+    /** The scene being written, marked when others are on screen too. */
+    current?: boolean;
   }
   let props: Props = $props();
   // Each block is keyed by its path in the list, so the path never changes.
@@ -189,7 +191,7 @@
   }
 </script>
 
-<section class="scene" class:raw={props.raw}>
+<section class="scene" class:raw={props.raw} class:current={props.current} data-scene={path}>
   <header>
     {#if renaming}
       <input
@@ -226,7 +228,28 @@
 
 <style>
   .scene {
+    position: relative;
     margin: 0 0 8px;
+    scroll-margin-top: 12px;
+  }
+  /* The scene with the cursor: a bar beside the text and its title in the accent colour. */
+  .scene.current::before {
+    content: "";
+    position: absolute;
+    left: -18px;
+    top: 36px;
+    bottom: 0;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .scene.current header {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .scene.current header::before,
+  .scene.current header::after {
+    border-top-color: var(--accent);
   }
   header {
     display: flex;

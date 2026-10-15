@@ -102,6 +102,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "tip.showLeft": "Pannello a sinistra\nMostra di nuovo il pannello a sinistra.",
   "tip.hideRight": "Pannello a destra\nNasconde il pannello a destra. Trascinane il bordo per ridimensionarlo.",
   "tip.showRight": "Pannello a destra\nMostra di nuovo il pannello a destra.",
+  "tree.outline": "Albero",
   "tree.add": "Aggiungi",
   "toolbar.show": "Mostra",
   "toolbar.writing": "Scrittura",

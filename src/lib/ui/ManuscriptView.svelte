@@ -57,8 +57,24 @@
     if (findIn(tree, target)) {
       selected = target;
       active = target;
+      void bringIntoView(target);
     }
   });
+
+  /**
+   * Scrolls the text to an item picked in the tree and marks its scene, so the tree and the
+   * text show the same place when a whole chapter, part or novel is on screen. The focus stays
+   * in the tree, which the arrow keys keep moving through.
+   */
+  async function bringIntoView(path: string) {
+    await tick();
+    const node = findNode(path);
+    const scene = node?.kind === "scene" ? node : node ? scenesOf(node)[0] : null;
+    if (!scene) return;
+    const el = document.querySelector(`[data-scene="${CSS.escape(scene.path)}"]`);
+    el?.scrollIntoView({ block: "start", behavior: "smooth" });
+    active = scene.path;
+  }
   $effect(() => {
     if (selected) onShow(selected);
   });
@@ -135,6 +151,8 @@
     visit(root);
     return out;
   });
+  /** Whether more than one scene is on screen, so the one being written is marked. */
+  const manyScenes = $derived(items.filter((i) => i.type === "scene").length > 1);
   const shownScenes = $derived(items.filter((i) => i.type === "scene").map((i) => (i as { node: ManuscriptNode }).node.path));
 
   async function run(operation: () => Promise<string | void>, focus?: "start" | "end") {
@@ -384,19 +402,22 @@
   {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
-        <div class="caption">
-          <span>{t("tree.add")}</span>
-          <span class="fold">
-            <button class="icon-only" title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /></button>
-            <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
-          </span>
+        <div class="tree-group" role="group" aria-labelledby="tree-add">
+          <span class="caption" id="tree-add">{t("tree.add")}</span>
+          <div class="add">
+            <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
+            <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
+            {#if project.settings.structure.parts}
+              <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
+            {/if}
+          </div>
         </div>
-        <div class="add">
-          <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
-          <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
-          {#if project.settings.structure.parts}
-            <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
-          {/if}
+        <div class="tree-group" role="group" aria-labelledby="tree-fold">
+          <span class="caption" id="tree-fold">{t("tree.outline")}</span>
+          <div class="fold">
+            <button title={t("tip.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /><span>{t("tree.foldAll")}</span></button>
+            <button title={t("tip.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /><span>{t("tree.unfoldAll")}</span></button>
+          </div>
         </div>
       </div>
       {#if tree.children.length === 0}
@@ -414,6 +435,7 @@
             onSelect={(path) => {
               selected = path;
               active = path;
+              void bringIntoView(path);
             }}
             onRename={rename}
             onDragStart={(path) => (dragging = path)}
@@ -446,6 +468,7 @@
     <div class="toolbar" role="toolbar">
       <div class="group" role="group" aria-label={t("toolbar.show")}>
         <span class="caption">{t("toolbar.show")}</span>
+        <div class="buttons">
         <div class="segmented">
           {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
             {#if l !== "part" || project.settings.structure.parts}
@@ -453,9 +476,11 @@
             {/if}
           {/each}
         </div>
+        </div>
       </div>
       <div class="group" role="group" aria-label={t("toolbar.writing")}>
         <span class="caption">{t("toolbar.writing")}</span>
+        <div class="buttons">
         <button aria-pressed={app.settings.formatBar} title={t("tip.formatBar")} onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}
           ><Icon name="format" /><span class="label">{t("format.bar")}</span></button
         >
@@ -467,18 +492,23 @@
           disabled={!app.settings.userName.trim()}
           onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}><Icon name="revisions" /><span class="label">{t("mode.revisions")}</span></button
         >
+        </div>
       </div>
       <div class="group" role="group" aria-label={t("toolbar.modes")}>
         <span class="caption">{t("toolbar.modes")}</span>
+        <div class="buttons">
         <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
         <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
         <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
+        </div>
       </div>
       <div class="group" role="group" aria-label={t("toolbar.size")}>
         <span class="caption">{t("toolbar.size")}</span>
+        <div class="buttons">
         <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
         <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
         <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
+        </div>
       </div>
     </div>
     {#if app.settings.formatBar}
@@ -537,7 +567,12 @@
               onSplitScene={splitScene}
               onSplitChapter={splitChapter}
               onLeave={leave}
-              onFocus={(path) => (active = path)}
+              current={manyScenes && active === item.node.path}
+              onFocus={(path) => {
+                // The tree follows the cursor: the scene being written is the one selected.
+                active = path;
+                selected = path;
+              }}
               onText={(path, text) => {
                 texts[path] = raw ? splitNote(text).body : text;
                 edited();
@@ -590,25 +625,21 @@
   }
   .tree-actions {
     display: grid;
-    gap: 4px;
+    gap: 10px;
     margin-bottom: 10px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
   }
-  .tree-actions .caption {
-    display: flex;
-    align-items: center;
+  .tree-group {
+    display: grid;
+    gap: 4px;
   }
   .caption {
-    font-size: 11px;
+    font-size: 10px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     color: var(--text-muted);
-  }
-  .fold {
-    display: flex;
-    gap: 2px;
-    margin-left: auto;
   }
   .tree-actions .add {
     display: grid;
@@ -622,6 +653,19 @@
     gap: 2px;
     padding: 6px 4px;
     font-size: 12px;
+  }
+  .tree-actions .fold {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .tree-actions .fold button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 4px;
+    font-size: 11px;
   }
   .icon-only {
     display: inline-flex;
@@ -694,12 +738,17 @@
     border-bottom: 1px solid var(--border);
     container-type: inline-size;
   }
+  /* Each group of buttons under its name, set apart from the next by a line. */
   .group {
+    display: grid;
+    gap: 3px;
+    padding: 0 12px;
+    border-left: 1px solid var(--border);
+  }
+  .group .buttons {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0 12px;
-    border-left: 1px solid var(--border);
   }
   .group:first-child {
     padding-left: 0;
@@ -707,9 +756,6 @@
   }
   .group:last-child {
     margin-left: auto;
-  }
-  .group .caption {
-    margin-right: 2px;
   }
   .group button {
     display: inline-flex;
@@ -742,11 +788,6 @@
     border-color: currentColor;
   }
   /* A narrow window keeps the icons; the names stay in the tooltips. */
-  @container (max-width: 1100px) {
-    .group .caption {
-      display: none;
-    }
-  }
   @container (max-width: 640px) {
     .label {
       display: none;
