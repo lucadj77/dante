@@ -130,3 +130,19 @@ describe("synopsis in views", () => {
     expect(serializeView(parseView("type: cards\n"))).not.toContain("synopsis");
   });
 });
+
+describe("chapters as board columns", () => {
+  it("lists chapters by their heading, in reading order", async () => {
+    const { chapterPaths } = await import("../views");
+    const fs = new MemoryFs({
+      "dante.yaml": "title: T\nlanguage: en\n",
+      "Manuscript/010 Return/010 Arrival.md": "A.",
+      "Manuscript/020 Letter/010 Envelope.md": "B.",
+    });
+    const p = await Project.open(fs);
+    expect([...chapterPaths(p.manuscript, p.settings)]).toEqual([
+      ["Chapter 1: Return", "Manuscript/010 Return"],
+      ["Chapter 2: Letter", "Manuscript/020 Letter"],
+    ]);
+  });
+});

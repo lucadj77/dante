@@ -341,6 +341,21 @@ export function isView(path: string, settings: NovelSettings): boolean {
   return isWithin(path, settings.folders.views) && /\.ya?ml$/i.test(path);
 }
 
+/**
+ * The chapters (and prologue, epilogue) by the heading a view shows for them, in reading
+ * order: a board grouped by chapter has them as columns, and moves scenes into them.
+ */
+export function chapterPaths(manuscript: ManuscriptNode, settings: NovelSettings): Map<string, string> {
+  const titles = headings(manuscript, settings);
+  const out = new Map<string, string>();
+  for (const node of flatten(manuscript)) {
+    if (node.kind === "chapter" || node.kind === "prologue" || node.kind === "epilogue") {
+      out.set((titles.get(node.path) ?? node.title).replace(/\n/g, " · "), node.path);
+    }
+  }
+  return out;
+}
+
 /** Where a row's properties are written: the note, or a chapter's folder note. */
 export function propertiesTarget(row: ViewRow): string {
   return row.file ?? folderNotePath(row.path);

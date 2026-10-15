@@ -125,7 +125,10 @@ end: until              # timeline only: optional end
   at once, rewriting it without comments.
 - Table: click a header to sort, click a property cell to change it in the note.
 - Board: drag a card to another column to change its property; "New column" adds a group.
-- Timeline: dates such as `1987`, `1987-03` or `1987-03-12`, negative years, or plain numbers
+  Grouped by chapter, the columns are the chapters and dragging a scene moves its file there.
+- A click on an item opens its card beside the view: synopsis and properties, changed in place,
+  and a button to open the note.
+- Timeline: grouped, it stays one timeline in date order with a lane for each group. Dates such as `1987`, `1987-03` or `1987-03-12`, negative years, or plain numbers
   such as a story day; notes without a date are listed below.
 - Chapter rows read and write the properties of the chapter's folder note and count the words of
   their scenes. Conflict copies, templates and the views themselves are never listed.

@@ -439,6 +439,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "views.nothing": "Niente",
   "views.groups": "Gruppi, in quest'ordine",
   "views.groupsHint": "Mostrati anche se vuoti, separati da virgole",
+  "views.openNote": "Apri la nota",
   "views.synopsis": "Sinossi",
   "views.fields": "Campi mostrati",
   "views.date": "Data",

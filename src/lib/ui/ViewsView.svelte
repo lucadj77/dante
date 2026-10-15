@@ -1,6 +1,6 @@
 <script lang="ts">
   import { writeProperties } from "$lib/core/frontmatter";
-  import { folderNotePath } from "$lib/core/manuscript";
+  import { findNode, folderNotePath } from "$lib/core/manuscript";
   import type { NoteIndex } from "$lib/core/notes";
   import { basename, stripExt } from "$lib/core/path";
   import type { Project } from "$lib/core/project";
@@ -14,6 +14,7 @@
     parseView,
     propertyNames,
     timeline,
+    chapterPaths,
     values,
     VIEW_KINDS,
     type Group,
@@ -28,7 +29,9 @@
   import { navigator } from "./navigation";
   import { displayValue, parseValue } from "./propertyText";
   import { SYNOPSIS, TITLE } from "$lib/core/manuscript";
-  import { coerce, propertyDef } from "$lib/core/properties";
+  import { coerce, emptyValue, propertyDef } from "$lib/core/properties";
+  import { isWithin } from "$lib/core/path";
+  import PropertyField from "./PropertyField.svelte";
 
   interface Props {
     project: Project;
@@ -105,9 +108,15 @@
 
   // A property with allowed values gives its columns when the view lists none.
   const groupDef = $derived(spec.group_by ? propertyDef(p.project.settings.properties, spec.group_by) : null);
-  const groups = $derived<Group[]>(
-    spec.group_by ? group(spec.groups.length || !groupDef?.values.length ? spec : { ...spec, groups: groupDef.values }, rows) : [{ key: "", rows }],
-  );
+  const chapters = $derived.by(() => {
+    void rows;
+    return chapterPaths(p.project.manuscript, p.project.settings);
+  });
+  /** The groups the view lists, else the property's allowed values, else every chapter. */
+  const defaultGroups = $derived(groupDef?.values.length ? groupDef.values : spec.group_by === "chapter" ? [...chapters.keys()] : []);
+  const groups = $derived<Group[]>(spec.group_by ? group(spec.groups.length ? spec : { ...spec, groups: defaultGroups }, rows) : [{ key: "", rows }]);
+  /** Each row's group, for the timeline's lanes. */
+  const groupOf = $derived(new Map(groups.map((g) => g.rows.map((r) => [r.path, g.key] as const)).flat()));
 
   function label(field: string): string {
     return (BUILT_IN as readonly string[]).includes(field) ? t(`views.field.${field}` as MessageKey) : field;
@@ -194,6 +203,26 @@
     nav?.open(row.file ?? row.path);
   }
 
+  // The card of a note: its properties, changed without opening it.
+  let inspecting = $state<string | null>(null);
+  const inspected = $derived(inspecting ? (rows.find((r) => r.path === inspecting) ?? null) : null);
+  let newProperty = $state("");
+  // Another view starts without a card open.
+  $effect(() => {
+    void selected;
+    inspecting = null;
+  });
+  function inspect(row: ViewRow) {
+    inspecting = inspecting === row.path ? null : row.path;
+  }
+  function addProperty(row: ViewRow) {
+    const key = newProperty.trim();
+    newProperty = "";
+    if (!key || key in row.properties) return;
+    const def = propertyDef(p.project.settings.properties, key);
+    void setValues(row, { [key]: def ? emptyValue(def) : "" });
+  }
+
   /** Writes properties of the note behind a row, or of a chapter's folder note. */
   async function setValues(row: ViewRow, changes: Record<string, unknown>) {
     const file = row.file ?? folderNotePath(row.path);
@@ -252,8 +281,26 @@
     dragging = null;
     over = null;
     if (!row || (values(row, spec.group_by)[0] ?? "").toLowerCase() === key.toLowerCase()) return;
+    if (spec.group_by === "chapter") {
+      // A scene's chapter is its folder: the scene moves there, at the end.
+      const target = chapters.get(key);
+      if (!target || !row.file || row.file !== row.path) return;
+      try {
+        const node = findNode(p.project.manuscript, target);
+        await p.project.move(row.path, target, node?.children.length ?? 0);
+        await p.onReload();
+      } catch (e) {
+        fail(e);
+      }
+      return;
+    }
     await setValues(row, { [spec.group_by]: key === "" ? undefined : key });
   }
+
+  /** Whether dragging a card to another column means something for this grouping. */
+  const canDrag = $derived(
+    spec.type === "kanban" && (!(BUILT_IN as readonly string[]).includes(spec.group_by) || (spec.group_by === "chapter" && spec.items === "scene")),
+  );
 
   function addColumn() {
     const name = newColumn.trim();
@@ -291,7 +338,7 @@
   const typeIds = $derived(Object.keys(p.project.settings.types));
 </script>
 
-<div class="views">
+<div class="views" class:inspecting={!!inspected}>
   <aside>
     <ul>
       {#each views as path (path)}
@@ -479,7 +526,7 @@
                 {/if}
                 {#each g.rows as row (row.path)}
                   <tr>
-                    <td><button class="link" onclick={() => openRow(row)}>{row.name}</button>{@render synopsisOf(row)}</td>
+                    <td><button class="link" onclick={() => inspect(row)}>{row.name}</button>{@render synopsisOf(row)}</td>
                     {#each fields as f (f)}
                       <td class:number={f === "words"}>
                         {#if editing && editing.path === row.path && editing.field === f}
@@ -512,7 +559,7 @@
             <ul class="list">
               {#each g.rows as row (row.path)}
                 <li>
-                  <button class="link" onclick={() => openRow(row)}>{row.name}</button>
+                  <button class="link" onclick={() => inspect(row)}>{row.name}</button>
                   {@render details(row)}
                   {@render synopsisOf(row)}
                 </li>
@@ -562,16 +609,99 @@
               <input bind:value={newColumn} placeholder={"+ " + t("views.addColumn")} aria-label={t("views.addColumn")} data-tip={t("views.addColumnHint")} />
             </form>
           </div>
+        {:else if spec.type === "timeline" && spec.group_by}
+          {@render lanesOf(timeline(spec, rows))}
         {:else if spec.type === "timeline"}
-          {#each groups as g (g.key)}
-            {#if spec.group_by}<h3 class="group-title">{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></h3>{/if}
-            {@render timelineOf(timeline(spec, g.rows))}
-          {/each}
+          {@render timelineOf(timeline(spec, rows))}
         {/if}
       </div>
     {/if}
   </main>
+  {#if inspected}
+    {@const row = inspected}
+    <section class="inspector" aria-label={row.name}>
+      <header>
+        <h3>{row.name}</h3>
+        <button class="close" aria-label={t("app.close")} onclick={() => (inspecting = null)}>×</button>
+      </header>
+      <button class="open" onclick={() => openRow(row)}>{t("views.openNote")}</button>
+      {#if row.chapter && spec.items === "scene"}<p class="muted small">{row.chapter}</p>{/if}
+      {#if row.file === null || isWithin(row.path, p.project.settings.folders.manuscript)}
+        <label class="prop">
+          <span>{t("panel.synopsis")}</span>
+          {#key row.path + synopsisText(row)}
+            <textarea
+              rows="4"
+              value={synopsisText(row)}
+              placeholder={t("panel.synopsisHint")}
+              onchange={(e) => {
+                const value = e.currentTarget.value.trim();
+                if (value !== synopsisText(row)) void setValues(row, { [SYNOPSIS]: value || undefined });
+              }}
+            ></textarea>
+          {/key}
+        </label>
+      {/if}
+      {#each Object.entries(row.properties).filter(([k]) => k !== SYNOPSIS && k !== TITLE && k !== "kind" && k !== "type") as [key, value] (key)}
+        <div class="prop">
+          <span>{key}</span>
+          <div class="field-row">
+            <PropertyField
+              name={key}
+              {value}
+              def={propertyDef(p.project.settings.properties, key)}
+              from={row.file ?? folderNotePath(row.path)}
+              onChange={(v) => {
+                if (JSON.stringify(v) !== JSON.stringify(value)) void setValues(row, { [key]: v });
+              }}
+            />
+            <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => setValues(row, { [key]: undefined })}>×</button>
+          </div>
+        </div>
+      {/each}
+      <form
+        class="add"
+        onsubmit={(e) => {
+          e.preventDefault();
+          addProperty(row);
+        }}
+      >
+        <input bind:value={newProperty} placeholder={t("panel.propertyName")} aria-label={t("panel.propertyName")} />
+        <button type="submit">{t("panel.addProperty")}</button>
+      </form>
+    </section>
+  {/if}
 </div>
+
+{#snippet lanesOf(tl: { moments: Moment[]; undated: ViewRow[] })}
+  <!-- One timeline in date order, with a lane for each group side by side. -->
+  <div class="lanes" style:--lanes={groups.length}>
+    <div class="lane-row head">
+      <span></span>
+      {#each groups as g (g.key)}<span class="lane-title">{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></span>{/each}
+    </div>
+    {#each tl.moments as m (m.key + "|" + m.end)}
+      <div class="lane-row">
+        <div class="when">{m.label}{#if m.end}<span class="end"> – {m.end}</span>{/if}</div>
+        {#each groups as g (g.key)}
+          <div class="lane">
+            {#each m.rows.filter((r) => groupOf.get(r.path) === g.key) as row (row.path)}
+              {@render card(row, false)}
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+  {#if tl.undated.length}
+    <h3 class="group-title">{t("views.undated")} <span class="count">{tl.undated.length}</span></h3>
+    <ul class="list">
+      {#each tl.undated as row (row.path)}
+        <li><button class="link" onclick={() => inspect(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
 
 {#snippet timelineOf(tl: { moments: Moment[]; undated: ViewRow[] })}
   <ol class="timeline">
@@ -590,7 +720,7 @@
     <h3 class="group-title">{t("views.undated")} <span class="count">{tl.undated.length}</span></h3>
     <ul class="list">
       {#each tl.undated as row (row.path)}
-        <li><button class="link" onclick={() => openRow(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
+        <li><button class="link" onclick={() => inspect(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
       {/each}
     </ul>
   {/if}
@@ -609,8 +739,8 @@
 {#snippet card(row: ViewRow, long: boolean)}
   <article
     class="card"
-    draggable={spec.type === "kanban" ? "true" : undefined}
-    data-tip={spec.type === "kanban" ? t("tip.views.drag", { field: label(spec.group_by) }) : undefined}
+    draggable={canDrag ? "true" : undefined}
+    data-tip={canDrag ? t("tip.views.drag", { field: label(spec.group_by) }) : undefined}
     ondragstart={(e) => {
       dragging = row;
       e.dataTransfer?.setData("text/plain", row.path);
@@ -620,7 +750,7 @@
       over = null;
     }}
   >
-    <button class="link title" onclick={() => openRow(row)}>{row.name}</button>
+    <button class="link title" onclick={() => inspect(row)}>{row.name}</button>
     {#if long && row.chapter && spec.items === "scene"}<div class="muted small">{row.chapter}</div>{/if}
     {#if spec.synopsis && synopsisText(row)}
       {@render synopsisOf(row)}
@@ -645,6 +775,65 @@
     grid-template-columns: 200px minmax(0, 1fr);
     height: 100%;
     min-height: 0;
+  }
+  .views.inspecting {
+    grid-template-columns: 200px minmax(0, 1fr) 300px;
+  }
+  .inspector {
+    border-left: 1px solid var(--border);
+    background: var(--bg-panel);
+    padding: 12px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .inspector header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .inspector h3 {
+    flex: 1;
+    margin: 0;
+    font-size: 15px;
+  }
+  .inspector .close,
+  .inspector .remove {
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    padding: 0 4px;
+  }
+  .inspector .open {
+    align-self: flex-start;
+  }
+  .inspector .prop {
+    display: grid;
+    gap: 3px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .inspector .field-row {
+    display: flex;
+    gap: 4px;
+    align-items: flex-start;
+    color: var(--text);
+  }
+  .inspector textarea {
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    resize: vertical;
+  }
+  .inspector .add {
+    display: flex;
+    gap: 4px;
+  }
+  .inspector .add input {
+    flex: 1;
+    min-width: 0;
   }
   aside {
     border-right: 1px solid var(--border);
@@ -977,6 +1166,39 @@
   .end {
     font-weight: normal;
     color: var(--text-muted);
+  }
+  .lanes {
+    overflow-x: auto;
+  }
+  .lane-row {
+    display: grid;
+    grid-template-columns: 140px repeat(var(--lanes), minmax(200px, 1fr));
+    border-top: 1px solid var(--border);
+  }
+  .lane-row.head {
+    border-top: none;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 1;
+  }
+  .lane-title {
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  .lane-row > :not(:first-child) {
+    border-left: 1px solid var(--border);
+  }
+  .lane {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    padding: 6px 8px;
+    min-height: 36px;
+  }
+  .lane-row:nth-child(even) .lane {
+    background: var(--bg-panel);
   }
   .what {
     display: grid;

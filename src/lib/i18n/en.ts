@@ -439,6 +439,7 @@ export const en = {
   "views.nothing": "Nothing",
   "views.groups": "Groups, in this order",
   "views.groupsHint": "Shown even when empty, separated by commas",
+  "views.openNote": "Open the note",
   "views.synopsis": "Synopsis",
   "views.fields": "Fields shown",
   "views.date": "Date",
