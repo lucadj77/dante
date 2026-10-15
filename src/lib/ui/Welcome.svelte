@@ -7,8 +7,8 @@
   import { app, exportPreferences, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { MemoryFs } from "$lib/core/fs";
-  import { readDocx } from "$lib/core/import/docx";
-  import { counts, structure, type ImportedBook } from "$lib/core/import/structure";
+  import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { counts, defaultRoles, headingLevels, structure, type HeadingRole } from "$lib/core/import/structure";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
   let error = $state("");
@@ -24,7 +24,14 @@
   let busy = $state(false);
   const folderName = $derived(sanitizeTitle(title));
   /** A book read from a Word file, made into the new project instead of an empty one. */
-  let imported = $state<ImportedBook | null>(null);
+  let content = $state<DocxContent | null>(null);
+  /** What each heading level of the Word file becomes; the writer can change it. */
+  let roles = $state<Record<number, HeadingRole>>({});
+  const levels = $derived(content ? headingLevels(content.blocks) : []);
+  const imported = $derived(
+    content ? structure(content.blocks, { start: t("untitled"), scene: (n) => t("import.scene", { n }) }, content.title, roles) : null,
+  );
+  const ROLES: HeadingRole[] = ["part", "chapter", "scene", "text"];
   let importedFrom = $state("");
   const importedCounts = $derived(imported ? counts(imported) : null);
   let filePicker = $state<HTMLInputElement>();
@@ -83,11 +90,12 @@
   async function importWord(bytes: Uint8Array, fileName: string) {
     error = "";
     try {
-      const content = await readDocx(bytes);
-      imported = structure(content.blocks, { start: t("untitled"), scene: (n) => t("import.scene", { n }) }, content.title);
+      const read = await readDocx(bytes, { note: t("import.note") });
+      roles = defaultRoles(read.blocks);
+      content = read;
       importedFrom = fileName;
-      title = imported.title || fileName.replace(/\.docx$/i, "");
-      if (content.author) author = content.author;
+      title = imported?.title || fileName.replace(/\.docx$/i, "");
+      if (read.author) author = read.author;
       creating = true;
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
@@ -108,7 +116,7 @@
 
   function cancel() {
     creating = false;
-    imported = null;
+    content = null;
   }
 
   async function create() {
@@ -166,6 +174,23 @@
         {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: importedCounts.words.toLocaleString(app.settings.language) })}
       </p>
       <p class="note">{t("import.how")}</p>
+      {#if levels.length}
+        <div class="levels">
+          <span class="label">{t("import.levels")}</span>
+          {#each levels as level (level.level)}
+            <label class="level">
+              <span class="examples" title={level.examples.join(" · ")}>
+                {t("import.level", { n: level.level, count: level.count })}: {level.examples.join(" · ")}
+              </span>
+              <select bind:value={roles[level.level]}>
+                {#each ROLES as role (role)}
+                  <option value={role}>{t(`import.role.${role}`)}</option>
+                {/each}
+              </select>
+            </label>
+          {/each}
+        </div>
+      {/if}
     {/if}
     <form
       onsubmit={(e) => {
@@ -274,6 +299,27 @@
   }
   .summary {
     color: var(--text);
+  }
+  .levels {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .levels .label {
+    color: var(--text-muted);
+  }
+  .level {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .examples {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   form {
     display: grid;

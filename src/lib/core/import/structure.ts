@@ -1,8 +1,7 @@
 // Turns a document read from another program into Dante's structure: parts, chapters and
-// scenes. The heading levels used decide what each is: with three levels, parts, chapters
-// and titled scenes; with two, parts and chapters when the first level reads like parts
-// ("Part One", "Libro primo"), otherwise chapters and titled scenes; with one, chapters.
-// Inside a chapter, a line of only asterisks, hashes or similar marks starts a new scene.
+// scenes. Each heading level becomes one of them, as `defaultRoles` guesses or as the
+// writer chooses. Inside a chapter, a line of only asterisks, hashes or similar marks
+// starts a new scene.
 
 import type { DocBlock } from "./docx";
 
@@ -51,20 +50,57 @@ export interface ImportNames {
   scene: (n: number) => string;
 }
 
-export function structure(blocks: DocBlock[], names: ImportNames, title = ""): ImportedBook {
+/** What the headings of one level become; "text" keeps them in the text, as headings. */
+export type HeadingRole = "part" | "chapter" | "scene" | "text";
+
+export interface LevelSummary {
+  level: number;
+  count: number;
+  /** The first headings of the level, to recognize it. */
+  examples: string[];
+}
+
+/** The heading levels the book uses, from the highest; the title style is left out. */
+export function headingLevels(blocks: DocBlock[]): LevelSummary[] {
+  const levels = new Map<number, LevelSummary>();
+  for (const b of blocks) {
+    if (b.kind !== "heading" || b.level === 0) continue;
+    const summary = levels.get(b.level) ?? { level: b.level, count: 0, examples: [] };
+    summary.count++;
+    if (summary.examples.length < 3) summary.examples.push(b.text);
+    levels.set(b.level, summary);
+  }
+  return [...levels.values()].sort((a, b) => a.level - b.level);
+}
+
+/**
+ * What each heading level becomes unless the writer chooses otherwise: with three levels,
+ * parts, chapters and titled scenes; with two, parts and chapters when the first level
+ * reads like parts, otherwise chapters and titled scenes; with one, chapters.
+ */
+export function defaultRoles(blocks: DocBlock[]): Record<number, HeadingRole> {
+  const levels = headingLevels(blocks).map((l) => l.level);
+  const top = levels.filter((l) => l <= (levels[0] ?? 1) + 2);
+  const firstLevelTexts = blocks.filter((b) => b.kind === "heading" && b.level === top[0]).map((b) => b.text);
+  const named = firstLevelTexts.filter((t) => !FRAME.test(t));
+  const partsFirst = top.length >= 3 || (top.length === 2 && named.length > 0 && named.every((t) => PART_WORDS.test(t)));
+  const order: HeadingRole[] = partsFirst ? ["part", "chapter", "scene"] : ["chapter", "scene"];
+  const roles: Record<number, HeadingRole> = {};
+  levels.forEach((level) => {
+    const i = top.indexOf(level);
+    roles[level] = i >= 0 ? (order[i] ?? "text") : "text";
+  });
+  return roles;
+}
+
+export function structure(blocks: DocBlock[], names: ImportNames, title = "", roles: Record<number, HeadingRole> = defaultRoles(blocks)): ImportedBook {
   // The title style names the book; it is not part of the text.
   const titled = blocks.find((b) => b.kind === "heading" && b.level === 0);
   const body = blocks.filter((b) => !(b.kind === "heading" && b.level === 0));
-  const levels = [...new Set(body.filter((b) => b.kind === "heading").map((b) => (b as { level: number }).level))].sort((a, b) => a - b);
-  const top = levels.filter((l) => l <= (levels[0] ?? 1) + 2);
-  const firstLevelTexts = body.filter((b) => b.kind === "heading" && b.level === top[0]).map((b) => b.text);
-  const named = firstLevelTexts.filter((t) => !FRAME.test(t));
-  const partsFirst = top.length >= 3 || (top.length === 2 && named.length > 0 && named.every((t) => PART_WORDS.test(t)));
+  const partsFirst = Object.values(roles).includes("part");
   const role = (level: number): "part" | "chapter" | "scene" | null => {
-    const i = top.indexOf(level);
-    if (i < 0) return null;
-    if (partsFirst) return (["part", "chapter", "scene"] as const)[i];
-    return (["chapter", "scene"] as const)[i] ?? null;
+    const r = roles[level];
+    return r && r !== "text" ? r : null;
   };
 
   const parts: ImportedPart[] = [{ title: "", chapters: [] }];
