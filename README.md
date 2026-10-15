@@ -202,6 +202,18 @@ Spanish raya (—Ven —dijo él—). New projects start with the usual one for 
 language. French spacing adds narrow no-break spaces inside guillemets and before ; ! ?, and a
 no-break space before the colon.
 
+## Importing from Word
+
+"Import from Word…" on the start screen makes a new project from a `.docx` file
+(`src/lib/core/import/`). Word's heading styles decide the structure: with three levels,
+parts, chapters and titled scenes; with two, parts and chapters when the first level reads
+like parts ("Part One", "Parte prima"; a prologue or epilogue may stand beside them),
+otherwise chapters and titled scenes; with one, chapters. Inside a chapter a line of only
+`***`, `* * *`, `#`, `§` or similar starts a new scene. The "Title" style and the
+document's properties give the title and author. Bold, italic and strikethrough become
+Markdown; deleted text of tracked changes is left out. "Chapter 3: Home" keeps "Home" as
+its title, since Dante numbers chapters itself. The Word file is only read.
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).

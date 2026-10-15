@@ -29,6 +29,7 @@ import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
 import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
+import type { ImportedBook } from "./import/structure";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
@@ -68,7 +69,8 @@ export class Project {
   static async create(
     fs: ProjectFs,
     details: { title: string; author: string; language: string },
-    names: { chapter: string; scene: string },
+    /** Names of the first chapter and scene; null starts an empty manuscript, as an import does. */
+    names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
     preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
   ): Promise<{ project: Project; scene: string }> {
@@ -97,6 +99,7 @@ export class Project {
     await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
     for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
     const project = await Project.open(fs, details.language);
+    if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
     const scene = await project.createScene(chapter, 0, names.scene);
     return { project, scene };
@@ -427,6 +430,77 @@ export class Project {
     await this.fs.rename(path, target);
     await this.reload();
     return target;
+  }
+
+  /**
+   * Adds a book read from another program at the end of the manuscript, writing its files
+   * directly (a reload per scene would be slow on a long novel). A title that cannot be a
+   * file name as it is, or that repeats another, is kept as the `title` property.
+   */
+  async importBook(book: ImportedBook): Promise<void> {
+    const step = 10;
+    const nextOrder = (node: ManuscriptNode) => Math.max(0, ...node.children.map((c) => c.order ?? 0)) + step;
+    const fileName = (title: string, taken: Set<string>) => {
+      const base = sanitizeTitle(title) || "Untitled";
+      let name = base;
+      for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${base} ${n}`;
+      taken.add(name.toLowerCase());
+      return name;
+    };
+    const withTitle = (title: string, file: string, body = "") => {
+      const clean = title.trim();
+      return clean && clean !== file ? writeProperties(body, { [TITLE]: clean }) : body;
+    };
+    if (book.hasParts && !this.settings.structure.parts) {
+      await this.saveSettings({ ...this.settings, structure: { ...this.settings.structure, parts: true } });
+    }
+    const root = this.manuscript;
+    const rootTaken = new Set(root.children.map((c) => c.fileTitle.toLowerCase()));
+    let rootOrder = nextOrder(root);
+    const writeChapter = async (dir: string, order: number, chapter: ImportedBook["parts"][number]["chapters"][number], taken: Set<string>) => {
+      const name = fileName(chapter.title, taken);
+      const path = join(dir, formatName(order, name));
+      await this.fs.mkdir(path);
+      // A prologue or epilogue is said so; a chapter outside the parts must say it is one.
+      const kind = /^(prolog(?:ue|o)?|prólogo)$/i.test(chapter.title.trim())
+        ? "prologue"
+        : /^(epilog(?:ue|o)?|epílogo)$/i.test(chapter.title.trim())
+          ? "epilogue"
+          : dir === root.path && book.hasParts
+            ? "chapter"
+            : null;
+      const note = withTitle(chapter.title, name);
+      if (kind || note) await this.fs.writeText(folderNotePath(path), kind ? writeProperties(note, { kind }) : note);
+      // A scene may not share its chapter's name, or it would be read as the chapter's note.
+      const scenes = new Set([name.toLowerCase()]);
+      let sceneOrder = step;
+      for (const scene of chapter.scenes) {
+        const file = fileName(scene.title, scenes);
+        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        sceneOrder += step;
+      }
+    };
+    for (const part of book.parts) {
+      if (book.hasParts && part.title) {
+        const name = fileName(part.title, rootTaken);
+        const path = join(root.path, formatName(rootOrder, name));
+        rootOrder += step;
+        await this.fs.mkdir(path);
+        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name), { kind: "part" }));
+        const taken = new Set([name.toLowerCase()]);
+        let order = step;
+        for (const chapter of part.chapters) {
+          await writeChapter(path, order, chapter, taken);
+          order += step;
+        }
+      } else {
+        for (const chapter of part.chapters) {
+          await writeChapter(root.path, rootOrder, chapter, rootTaken);
+          rootOrder += step;
+        }
+      }
+    }
+    await this.reload();
   }
 
   async createScene(parentPath: string, index: number, title: string, body = ""): Promise<string> {

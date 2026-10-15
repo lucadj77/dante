@@ -2,6 +2,15 @@ import type { MessageKey } from "./en";
 
 export const it: Partial<Record<MessageKey, string>> = {
   "app.close": "Chiudi progetto",
+  "import.word": "Importa da Word…",
+  "import.title": "Nuovo progetto da Word",
+  "import.found": "In {file} ho trovato",
+  "import.parts": "{n} parti",
+  "import.counts": "{chapters} capitoli, {scenes} scene e {words} parole.",
+  "import.how": "I titoli di Word diventano parti, capitoli e scene; una riga con soli asterischi (***) o simboli simili separa le scene. Grassetto, corsivo e barrato restano; il file Word non viene toccato.",
+  "import.create": "Importa",
+  "import.scene": "Scena {n}",
+  "import.failed": "Non riesco a leggere {name}: {message}",
   "welcome.title": "Apri un romanzo",
   "welcome.open": "Apri cartella…",
   "welcome.sample": "Prova il progetto di esempio",

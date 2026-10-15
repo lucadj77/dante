@@ -6,6 +6,9 @@
   import { sampleProject } from "$lib/sample";
   import { app, exportPreferences, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
+  import { MemoryFs } from "$lib/core/fs";
+  import { readDocx } from "$lib/core/import/docx";
+  import { counts, structure, type ImportedBook } from "$lib/core/import/structure";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
   let error = $state("");
@@ -20,6 +23,11 @@
   let parent = $state("");
   let busy = $state(false);
   const folderName = $derived(sanitizeTitle(title));
+  /** A book read from a Word file, made into the new project instead of an empty one. */
+  let imported = $state<ImportedBook | null>(null);
+  let importedFrom = $state("");
+  const importedCounts = $derived(imported ? counts(imported) : null);
+  let filePicker = $state<HTMLInputElement>();
   const novelLanguages = [
     { code: "en", name: "English" },
     { code: "it", name: "Italiano" },
@@ -71,11 +79,50 @@
     if (typeof folder === "string") parent = folder;
   }
 
+  /** Reads a Word file and opens the form of a new project made from it. */
+  async function importWord(bytes: Uint8Array, fileName: string) {
+    error = "";
+    try {
+      const content = await readDocx(bytes);
+      imported = structure(content.blocks, { start: t("untitled"), scene: (n) => t("import.scene", { n }) }, content.title);
+      importedFrom = fileName;
+      title = imported.title || fileName.replace(/\.docx$/i, "");
+      if (content.author) author = content.author;
+      creating = true;
+    } catch (e) {
+      error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  async function chooseWord() {
+    if (!desktop) {
+      filePicker?.click();
+      return;
+    }
+    const file = await open({ multiple: false, filters: [{ name: "Word", extensions: ["docx"] }] });
+    if (typeof file !== "string") return;
+    const name = file.split(/[\\/]/).pop() ?? file;
+    const dir = file.slice(0, file.length - name.length).replace(/[\\/]+$/, "") || "/";
+    await importWord(await new TauriFs(dir).readBytes(name), name);
+  }
+
+  function cancel() {
+    creating = false;
+    imported = null;
+  }
+
   async function create() {
     error = "";
-    if (!folderName || !parent) return;
+    if (!folderName || (desktop && !parent)) return;
     busy = true;
     try {
+      if (!desktop) {
+        // In a browser an imported book can be tried, kept only while the page is open.
+        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), author: author.trim(), language }, null, exportPreferences());
+        if (imported) await project.importBook(imported);
+        onOpen(project);
+        return;
+      }
       const path = `${parent.replace(/[\\/]+$/, "")}/${folderName}`;
       const fs = new TauriFs(path);
       if ((await fs.exists("")) && (await fs.list("")).length > 0) {
@@ -85,9 +132,10 @@
       const { project } = await Project.create(
         fs,
         { title: title.trim(), author: author.trim(), language },
-        { chapter: t("untitled"), scene: t("untitledScene") },
+        imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
         exportPreferences(),
       );
+      if (imported) await project.importBook(imported);
       // The author's name is offered again next time.
       if (author.trim() && !app.settings.userName) saveAppSettings({ ...app.settings, userName: author.trim() });
       rememberProject(path, project.settings.title);
@@ -110,7 +158,15 @@
   <h1>{t("app.name")}</h1>
 
   {#if creating}
-    <h2>{t("welcome.new")}</h2>
+    <h2>{imported ? t("import.title") : t("welcome.new")}</h2>
+    {#if imported && importedCounts}
+      <p class="summary">
+        {t("import.found", { file: importedFrom })}
+        {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
+        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: importedCounts.words.toLocaleString(app.settings.language) })}
+      </p>
+      <p class="note">{t("import.how")}</p>
+    {/if}
     <form
       onsubmit={(e) => {
         e.preventDefault();
@@ -127,6 +183,7 @@
           {/each}
         </select>
       </label>
+      {#if desktop}
       <div class="where">
         <span class="label">{t("welcome.where")}</span>
         <button type="button" onclick={chooseParent}>{t("welcome.choose")}</button>
@@ -134,9 +191,10 @@
           <span class="path">{parent.replace(/[\\/]+$/, "")}/{folderName}</span>
         {/if}
       </div>
+      {/if}
       <div class="actions">
-        <button class="primary" type="submit" disabled={busy || !folderName || !parent}>{t("welcome.create")}</button>
-        <button type="button" onclick={() => (creating = false)}>{t("welcome.cancel")}</button>
+        <button class="primary" type="submit" disabled={busy || !folderName || (desktop && !parent)}>{imported ? t("import.create") : t("welcome.create")}</button>
+        <button type="button" onclick={cancel}>{t("welcome.cancel")}</button>
       </div>
     </form>
   {:else}
@@ -145,6 +203,19 @@
         <button class="primary" onclick={() => (creating = true)}>{t("welcome.new")}</button>
         <button onclick={openFolder}>{t("welcome.open")}</button>
       {/if}
+      <button onclick={chooseWord}>{t("import.word")}</button>
+      <input
+        bind:this={filePicker}
+        type="file"
+        accept=".docx"
+        hidden
+        onchange={async (e) => {
+          const input = e.currentTarget;
+          const file = input.files?.[0];
+          input.value = "";
+          if (file) await importWord(new Uint8Array(await file.arrayBuffer()), file.name);
+        }}
+      />
       <button onclick={openSample}>{t("welcome.sample")}</button>
     </div>
     {#if !desktop}
@@ -197,8 +268,12 @@
   }
   .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 16px;
+  }
+  .summary {
+    color: var(--text);
   }
   form {
     display: grid;
