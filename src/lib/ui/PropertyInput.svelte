@@ -1,6 +1,6 @@
 <script lang="ts">
   import { fold } from "$lib/core/notes";
-  import { findLinks } from "$lib/core/wikilinks";
+  import { findLinks, readableLinks } from "$lib/core/wikilinks";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { navigator } from "./navigation";
 
@@ -27,9 +27,18 @@
   /** The text last handed to onCommit, so a blur right after choosing does not send it again. */
   let sent: string | null = null;
 
+  // A link field shows the linked note's name and stores "[[Name]]".
+  const showText = (value: string) => (p.link ? readableLinks(value) : value);
+  function stored(input: string): string {
+    const value = input.trim();
+    if (!p.link || !value || value.includes("[[")) return input;
+    if (value === readableLinks(p.value)) return p.value;
+    return `[[${value}]]`;
+  }
+
   // The field follows the stored value whenever it changes outside.
   $effect(() => {
-    text = p.value;
+    text = showText(p.value);
     sent = null;
   });
 
@@ -61,10 +70,11 @@
   function choose(s: LinkSuggestion) {
     if (!open) return;
     if (p.link) {
-      text = `[[${s.alias ? `${s.target}|${s.alias}` : s.target}]]`;
+      const value = `[[${s.alias ? `${s.target}|${s.alias}` : s.target}]]`;
+      text = showText(value);
       open = null;
-      sent = text;
-      p.onCommit(text);
+      sent = value;
+      if (value !== p.value) p.onCommit(value);
       return;
     }
     const cursor = input.selectionStart ?? text.length;
@@ -102,9 +112,10 @@
 
   function commit() {
     open = null;
-    if (text !== p.value && text !== sent) {
-      sent = text;
-      p.onCommit(text);
+    const value = stored(text);
+    if (value !== p.value && value !== sent) {
+      sent = value;
+      p.onCommit(value);
     }
   }
 </script>

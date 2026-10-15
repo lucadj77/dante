@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findLinks, resolveLink, rewriteLinks } from "../wikilinks";
+import { findLinks, readableLinks, resolveLink, rewriteLinks } from "../wikilinks";
 
 const notes = [
   "Codex/Characters/Marta Rinaldi.md",
@@ -33,5 +33,13 @@ describe("wikilinks", () => {
     const renames = new Map([["Manuscript/010 Return/010 Arrival.md", "Manuscript/015 Return/010 Arrival.md"]]);
     const after = notes.map((n) => renames.get(n) ?? n);
     expect(rewriteLinks("[[Marta Rinaldi]]", "x.md", renames, notes, after)).toBeNull();
+  });
+});
+
+describe("readableLinks", () => {
+  it("writes links by alias or note name", () => {
+    expect(readableLinks("[[Marco Rossi]]")).toBe("Marco Rossi");
+    expect(readableLinks("[[People/Anna.md#Past|Annie]] and [[Notes/Rome]]")).toBe("Annie and Rome");
+    expect(readableLinks("plain")).toBe("plain");
   });
 });

@@ -31,6 +31,7 @@
   import { SYNOPSIS, TITLE } from "$lib/core/manuscript";
   import { coerce, emptyValue, propertyDef } from "$lib/core/properties";
   import { isWithin } from "$lib/core/path";
+  import { readableLinks } from "$lib/core/wikilinks";
   import PropertyField from "./PropertyField.svelte";
 
   interface Props {
@@ -128,8 +129,10 @@
       if (["part", "chapter", "prologue", "epilogue", "scene"].includes(row.type)) return t(`kind.${row.type}` as MessageKey);
       return p.project.settings.types[row.type]?.name ?? row.type;
     }
-    return display(row, field);
+    return readableLinks(display(row, field));
   }
+  /** A group's heading: links by their names. */
+  const groupName = (key: string) => (key ? readableLinks(key) : t("views.noValue"));
 
   function itemsLabel(items: string): string {
     if (items === "scene" || items === "chapter" || items === "note") return t(`views.items.${items}`);
@@ -212,6 +215,17 @@
     void selected;
     inspecting = null;
   });
+  const hidden = new Set<string>([SYNOPSIS, TITLE, "kind", "type", "aliases", ...BUILT_IN]);
+  // The view's own properties (fields, grouping, sorting, dates) and those of the note's type are
+  // on the card even when the note has none yet, so a note without a value can be given one.
+  const viewKeys = $derived([...fields, spec.group_by, spec.sort.replace(/^-/, ""), spec.date, spec.end, ...Object.keys(spec.filter)]);
+  function cardKeys(row: ViewRow): string[] {
+    const keys: string[] = [];
+    const typeKeys = (row.type && p.project.settings.types[row.type]?.properties) || [];
+    for (const k of [...Object.keys(row.properties), ...viewKeys, ...typeKeys])
+      if (k && !hidden.has(k) && !keys.some((o) => o.toLowerCase() === k.toLowerCase())) keys.push(k);
+    return keys;
+  }
   function inspect(row: ViewRow) {
     inspecting = inspecting === row.path ? null : row.path;
   }
@@ -522,7 +536,7 @@
             {#each groups as g (g.key)}
               <tbody>
                 {#if spec.group_by}
-                  <tr class="group-row"><th colspan={fields.length + 1}>{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></th></tr>
+                  <tr class="group-row"><th colspan={fields.length + 1}>{groupName(g.key)} <span class="count">{g.rows.length}</span></th></tr>
                 {/if}
                 {#each g.rows as row (row.path)}
                   <tr>
@@ -555,7 +569,7 @@
           </table>
         {:else if spec.type === "list"}
           {#each groups as g (g.key)}
-            {#if spec.group_by}<h3 class="group-title">{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></h3>{/if}
+            {#if spec.group_by}<h3 class="group-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>{/if}
             <ul class="list">
               {#each g.rows as row (row.path)}
                 <li>
@@ -568,7 +582,7 @@
           {/each}
         {:else if spec.type === "cards"}
           {#each groups as g (g.key)}
-            {#if spec.group_by}<h3 class="group-title">{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></h3>{/if}
+            {#if spec.group_by}<h3 class="group-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>{/if}
             <div class="cards">
               {#each g.rows as row (row.path)}
                 {@render card(row, true)}
@@ -581,7 +595,7 @@
               <section
                 class="column"
                 class:over={over === g.key && dragging !== null}
-                aria-label={g.key || t("views.noValue")}
+                aria-label={groupName(g.key)}
                 ondragover={(e) => {
                   if (!dragging) return;
                   e.preventDefault();
@@ -593,7 +607,7 @@
                   void drop(g.key);
                 }}
               >
-                <h3>{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></h3>
+                <h3>{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>
                 {#each g.rows as row (row.path)}
                   {@render card(row, false)}
                 {/each}
@@ -642,8 +656,9 @@
           {/key}
         </label>
       {/if}
-      {#each Object.entries(row.properties).filter(([k]) => k !== SYNOPSIS && k !== TITLE && k !== "kind" && k !== "type") as [key, value] (key)}
-        <div class="prop">
+      {#each cardKeys(row) as key (key)}
+        {@const value = row.properties[key]}
+        <div class="prop" class:unset={!(key in row.properties)}>
           <span>{key}</span>
           <div class="field-row">
             <PropertyField
@@ -652,10 +667,13 @@
               def={propertyDef(p.project.settings.properties, key)}
               from={row.file ?? folderNotePath(row.path)}
               onChange={(v) => {
+                if (value === undefined && (v === "" || (Array.isArray(v) && !v.length))) return;
                 if (JSON.stringify(v) !== JSON.stringify(value)) void setValues(row, { [key]: v });
               }}
             />
-            <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => setValues(row, { [key]: undefined })}>×</button>
+            {#if key in row.properties}
+              <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => setValues(row, { [key]: undefined })}>×</button>
+            {/if}
           </div>
         </div>
       {/each}
@@ -678,7 +696,7 @@
   <div class="lanes" style:--lanes={groups.length}>
     <div class="lane-row head">
       <span></span>
-      {#each groups as g (g.key)}<span class="lane-title">{g.key || t("views.noValue")} <span class="count">{g.rows.length}</span></span>{/each}
+      {#each groups as g (g.key)}<span class="lane-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></span>{/each}
     </div>
     {#each tl.moments as m (m.key + "|" + m.end)}
       <div class="lane-row">
@@ -814,6 +832,9 @@
     gap: 3px;
     color: var(--text-muted);
     font-size: 12px;
+  }
+  .inspector .prop.unset > span {
+    font-style: italic;
   }
   .inspector .field-row {
     display: flex;

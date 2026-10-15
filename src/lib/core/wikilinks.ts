@@ -26,6 +26,11 @@ export function findLinks(text: string): WikiLink[] {
   return links;
 }
 
+/** Text with each link written as a reader sees it: its alias, or the linked note's name. */
+export function readableLinks(text: string): string {
+  return text.replace(LINK, (_m, _embed, target: string, _sub, alias?: string) => (alias ? alias.slice(1) : basename(stripExt(target.trim()))));
+}
+
 function normalize(target: string): string {
   return (isMarkdown(target) ? stripExt(target) : target).replace(/^\/+/, "").toLowerCase();
 }
