@@ -4,6 +4,7 @@
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
   import { saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import Icon from "./Icon.svelte";
   import { ACTIONS, ICONS } from "$lib/editor/formatting";
   import { formatLabels } from "./formatLabels";
   import { app } from "$lib/state.svelte";
@@ -383,15 +384,20 @@
   {#if !fullscreen && layout.left}
     <aside class="tree" aria-label={t("section.manuscript")}>
       <div class="tree-actions">
-        <button title={t("tip.newScene")} onclick={newScene}>{t("tree.newScene")}</button>
-        <button title={t("tip.newChapter")} onclick={() => newContainer("chapter")}>{t("tree.newChapter")}</button>
-        {#if project.settings.structure.parts}
-          <button title={t("tip.newPart")} onclick={() => newContainer("part")}>{t("tree.newPart")}</button>
-        {/if}
-        <span class="fold">
-          <button title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}>⊟</button>
-          <button title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}>⊞</button>
-        </span>
+        <div class="caption">
+          <span>{t("tree.add")}</span>
+          <span class="fold">
+            <button class="icon-only" title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /></button>
+            <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
+          </span>
+        </div>
+        <div class="add">
+          <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
+          <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
+          {#if project.settings.structure.parts}
+            <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
+          {/if}
+        </div>
       </div>
       {#if tree.children.length === 0}
         <p class="empty">{t("tree.empty")}</p>
@@ -438,38 +444,42 @@
 
   <main class="center">
     <div class="toolbar" role="toolbar">
-      <div class="group" role="group">
-        {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
-          {#if l !== "part" || project.settings.structure.parts}
-            <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}>{t(`level.${l}`)}</button>
-          {/if}
-        {/each}
+      <div class="group" role="group" aria-label={t("toolbar.show")}>
+        <span class="caption">{t("toolbar.show")}</span>
+        <div class="segmented">
+          {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
+            {#if l !== "part" || project.settings.structure.parts}
+              <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}><Icon name={l} /><span class="label">{t(`level.${l}`)}</span></button>
+            {/if}
+          {/each}
+        </div>
       </div>
-      <div class="group" role="group">
-        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}>{t("mode.typewriter")}</button>
-        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}>{t("mode.focus")}</button>
-        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}>{t("mode.fullscreen")}</button>
-        <button aria-pressed={raw} title={t("tip.raw")} onclick={toggleRaw}>{t("editor.raw")}</button>
+      <div class="group" role="group" aria-label={t("toolbar.writing")}>
+        <span class="caption">{t("toolbar.writing")}</span>
+        <button aria-pressed={app.settings.formatBar} title={t("tip.formatBar")} onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}
+          ><Icon name="format" /><span class="label">{t("format.bar")}</span></button
+        >
+        <button aria-pressed={raw} title={t("tip.raw")} onclick={toggleRaw}><Icon name="raw" /><span class="label">{t("editor.raw")}</span></button>
         <button
           aria-pressed={app.settings.revisions}
           class:tracking={app.settings.revisions}
           title={app.settings.userName.trim() ? t("tip.revisions") : t("tip.revisionsNoName")}
           disabled={!app.settings.userName.trim()}
-          onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}>{t("mode.revisions")}</button
-        >
-        <button
-          aria-pressed={app.settings.formatBar}
-          title={t("tip.formatBar")}
-          aria-label={t("format.bar")}
-          onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}><b>B</b><i>I</i></button
+          onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}><Icon name="revisions" /><span class="label">{t("mode.revisions")}</span></button
         >
       </div>
-      {#if !app.settings.formatBar}
-        <div class="group" role="group">
-          <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
-          <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
-        </div>
-      {/if}
+      <div class="group" role="group" aria-label={t("toolbar.modes")}>
+        <span class="caption">{t("toolbar.modes")}</span>
+        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
+        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
+        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
+      </div>
+      <div class="group" role="group" aria-label={t("toolbar.size")}>
+        <span class="caption">{t("toolbar.size")}</span>
+        <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
+        <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
+        <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
+      </div>
     </div>
     {#if app.settings.formatBar}
       {@const labels = formatLabels()}
@@ -487,10 +497,6 @@
             >
           {/if}
         {/each}
-        <span class="zoom">
-          <button title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}>A−</button>
-          <button title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}>A+</button>
-        </span>
       </div>
     {/if}
     {#if error}
@@ -583,23 +589,44 @@
     padding: 8px;
   }
   .tree-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: 4px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tree-actions .caption {
+    display: flex;
+    align-items: center;
+  }
+  .caption {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
   }
   .fold {
     display: flex;
     gap: 2px;
     margin-left: auto;
   }
-  .tree-actions .fold button {
-    padding: 0 6px;
-    font-size: 14px;
+  .tree-actions .add {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 4px;
   }
-  .tree-actions button {
+  .tree-actions .add button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
     font-size: 12px;
-    padding: 2px 8px;
+  }
+  .icon-only {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 5px;
   }
   .tree ul {
     margin: 0;
@@ -654,31 +681,76 @@
     padding: 4px 12px;
     border-bottom: 1px solid var(--border);
   }
-  .format-row .zoom {
-    margin-left: auto;
-  }
   .format-row button:disabled {
     opacity: 0.4;
     cursor: default;
   }
   .toolbar {
     display: flex;
-    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px 12px;
+    align-items: center;
+    gap: 6px 0;
+    padding: 6px 12px;
     border-bottom: 1px solid var(--border);
+    container-type: inline-size;
   }
   .group {
     display: flex;
+    align-items: center;
     gap: 4px;
+    padding: 0 12px;
+    border-left: 1px solid var(--border);
+  }
+  .group:first-child {
+    padding-left: 0;
+    border-left: none;
+  }
+  .group:last-child {
+    margin-left: auto;
+  }
+  .group .caption {
+    margin-right: 2px;
   }
   .group button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: 12px;
+  }
+  .segmented {
+    display: flex;
+  }
+  .segmented button {
+    border-radius: 0;
+  }
+  .segmented button + button {
+    margin-left: -1px;
+  }
+  .segmented button:first-child {
+    border-radius: 6px 0 0 6px;
+  }
+  .segmented button:last-child {
+    border-radius: 0 6px 6px 0;
+  }
+  .group button.size {
+    min-width: 32px;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
   }
   .group button.tracking {
     color: var(--critic-add, #1a7f37);
     border-color: currentColor;
+  }
+  /* A narrow window keeps the icons; the names stay in the tooltips. */
+  @container (max-width: 1100px) {
+    .group .caption {
+      display: none;
+    }
+  }
+  @container (max-width: 640px) {
+    .label {
+      display: none;
+    }
   }
   .page {
     flex: 1;
