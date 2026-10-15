@@ -42,6 +42,8 @@ export interface ViewSpec {
   end: string;
   /** Shows each item's synopsis under its name; on unless the file says `synopsis: false`. */
   synopsis: boolean;
+  /** Items put in order by dragging them, used when there is no sort; the others follow. */
+  order: string[];
 }
 
 /** Fields every item has, besides its properties. */
@@ -49,7 +51,7 @@ export const BUILT_IN = ["name", "folder", "type", "words", "chapter"] as const;
 export const VIEW_EXT = ".yaml";
 
 export function defaultView(type: ViewKind = "table"): ViewSpec {
-  return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true };
+  return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true, order: [] };
 }
 
 const text = (v: unknown): string => (v === null || v === undefined ? "" : String(v).trim());
@@ -83,6 +85,7 @@ export function parseView(yaml: string): ViewSpec {
   view.date = text(raw.date);
   view.end = text(raw.end);
   view.synopsis = raw.synopsis !== false;
+  view.order = list(raw.order);
   return view;
 }
 
@@ -99,6 +102,7 @@ export function serializeView(view: ViewSpec): string {
   if (view.date) out.date = view.date;
   if (view.end) out.end = view.end;
   if (!view.synopsis) out.synopsis = false;
+  if (view.order.length) out.order = view.order;
   return stringify(out, { lineWidth: 0 });
 }
 
@@ -244,8 +248,12 @@ export function arrange(view: ViewSpec, rows: ViewRow[], sort = view.sort): View
   );
   const desc = sort.startsWith("-");
   const by = desc ? sort.slice(1) : sort;
+  // Scenes by chapter keep the manuscript's order, which dragging changes instead.
+  const byChapter = view.group_by === "chapter" && view.items === "scene";
+  const at = new Map(byChapter ? [] : view.order.map((path, i) => [path, i]));
+  const byHand = (a: ViewRow, b: ViewRow) => (at.get(a.path) ?? at.size) - (at.get(b.path) ?? at.size) || natural(a, b);
   return kept.sort((a, b) => {
-    if (!by) return natural(a, b);
+    if (!by) return byHand(a, b);
     const x = display(a, by);
     const y = display(b, by);
     if (!x !== !y) return x ? -1 : 1;
@@ -323,6 +331,28 @@ export function timeline(view: ViewSpec, rows: ViewRow[]): { moments: Moment[]; 
   }
   const sorted = [...moments.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.end.localeCompare(b.end)));
   return { moments: sorted, undated };
+}
+
+/**
+ * The items' order after dragging `path` before `before`, or, with no `before`, after the
+ * last of `group` (the items it was dropped among), or last of all.
+ */
+export function moveBefore(paths: string[], path: string, before: string | null, group: string[] = []): string[] {
+  const rest = paths.filter((p) => p !== path);
+  let at = before ? rest.indexOf(before) : -1;
+  if (at < 0) {
+    const last = Math.max(-1, ...group.filter((p) => p !== path).map((p) => rest.indexOf(p)));
+    at = last >= 0 ? last + 1 : rest.length;
+  }
+  return [...rest.slice(0, at), path, ...rest.slice(at)];
+}
+
+/** An end date moved with its start, so the event keeps its length; as it was when not a full date. */
+export function shiftEnd(start: string, end: string, newStart: string): string {
+  const day = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) : null);
+  const [a, b, c] = [day(start), day(end), day(newStart)];
+  if (a === null || b === null || c === null) return end;
+  return new Date(b + (c - a)).toISOString().slice(0, 10);
 }
 
 /** Properties used by the listed notes, for the choices of the view editor. */

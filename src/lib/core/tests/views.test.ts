@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
-import { arrange, collect, dateKey, defaultView, excerpt, group, parseView, propertiesTarget, serializeView, timeline, values, type ViewSpec } from "../views";
+import { arrange, collect, dateKey, defaultView, excerpt, group, moveBefore, parseView, propertiesTarget, serializeView, shiftEnd, timeline, values, type ViewSpec } from "../views";
 
 function sample() {
   return new MemoryFs({
@@ -144,5 +144,25 @@ describe("chapters as board columns", () => {
       ["Chapter 1: Return", "Manuscript/010 Return"],
       ["Chapter 2: Letter", "Manuscript/020 Letter"],
     ]);
+  });
+});
+
+describe("order by hand", () => {
+  it("puts listed items first in their order, unless the view sorts", async () => {
+    const { view, rows: all } = await rows({ items: "scene", order: ["Manuscript/020 Letter/010 Envelope.md", "Manuscript/010 Return/020 House.md"] });
+    expect(arrange(view, all).map((r) => r.name)).toEqual(["Envelope", "House", "Arrival"]);
+    expect(arrange({ ...view, sort: "name" }, all).map((r) => r.name)).toEqual(["Arrival", "Envelope", "House"]);
+    expect(parseView(serializeView(view)).order).toEqual(view.order);
+  });
+
+  it("moves an item before another, or after the last of its group", () => {
+    expect(moveBefore(["a", "b", "c", "d"], "d", "b")).toEqual(["a", "d", "b", "c"]);
+    expect(moveBefore(["a", "b", "c", "d"], "a", null, ["b", "c"])).toEqual(["b", "c", "a", "d"]);
+    expect(moveBefore(["a", "b"], "a", null)).toEqual(["b", "a"]);
+  });
+
+  it("moves an end date with its start", () => {
+    expect(shiftEnd("1950-04-02", "1950-04-05", "1950-05-30")).toBe("1950-06-02");
+    expect(shiftEnd("1950", "1951", "1960")).toBe("1951");
   });
 });

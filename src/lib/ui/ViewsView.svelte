@@ -16,6 +16,8 @@
     timeline,
     chapterPaths,
     values,
+    moveBefore,
+    shiftEnd,
     VIEW_KINDS,
     type Group,
     type Moment,
@@ -284,37 +286,120 @@
     node.select();
   }
 
-  // Board: dragging a card to another column changes the grouping property.
+  // Dragging an item: to another group it changes the grouping property (a scene grouped by
+  // chapter moves into that chapter's folder); among the others it changes the view's order
+  // (the manuscript's, for scenes grouped by chapter); on the timeline it changes the date.
 
+  /** Where an item is being dropped: a group (null without one), the item it goes before, a date. */
+  interface Target {
+    key: string | null;
+    before: string | null;
+    date?: string;
+    reorder: boolean;
+  }
   let dragging = $state<ViewRow | null>(null);
-  let over = $state<string | null>(null);
+  let target = $state<Target | null>(null);
   let newColumn = $state("");
 
-  async function drop(key: string) {
-    const row = dragging;
-    dragging = null;
-    over = null;
-    if (!row || (values(row, spec.group_by)[0] ?? "").toLowerCase() === key.toLowerCase()) return;
-    if (spec.group_by === "chapter") {
-      // A scene's chapter is its folder: the scene moves there, at the end.
-      const target = chapters.get(key);
-      if (!target || !row.file || row.file !== row.path) return;
-      try {
-        const node = findNode(p.project.manuscript, target);
-        await p.project.move(row.path, target, node?.children.length ?? 0);
-        await p.onReload();
-      } catch (e) {
-        fail(e);
-      }
-      return;
+  const builtIn = (field: string) => (BUILT_IN as readonly string[]).includes(field);
+  const byChapter = $derived(spec.group_by === "chapter" && spec.items === "scene");
+  const canRegroup = $derived(!!spec.group_by && (!builtIn(spec.group_by) || byChapter));
+  /** Whether dragging means something in this view. */
+  const canDrag = $derived(spec.type === "timeline" ? canRegroup || (!!spec.date && !builtIn(spec.date)) : true);
+  const dragTip = $derived(spec.type === "timeline" ? t("tip.views.dragTimeline") : canRegroup ? t("tip.views.drag", { field: label(spec.group_by) }) : t("tip.views.dragOrder"));
+
+  /** Follows the pointer over a drop zone: which item the dragged one would go before. */
+  function dragOver(e: DragEvent, zone: Omit<Target, "before">) {
+    if (!dragging) return;
+    e.preventDefault();
+    let before: string | null = null;
+    const el = zone.reorder ? (e.target as Element).closest<HTMLElement>("[data-path]") : null;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const after = el.dataset.flow === "x" ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2;
+      before = after ? el.dataset.next || null : (el.dataset.path ?? null);
     }
-    await setValues(row, { [spec.group_by]: key === "" ? undefined : key });
+    if (target?.key !== zone.key || target.before !== before || target.date !== zone.date) target = { ...zone, before };
+  }
+  function dragLeave(e: DragEvent) {
+    const into = e.relatedTarget as Node | null;
+    if (!into || !(e.currentTarget as Element).contains(into)) target = null;
+  }
+  const isZone = (key: string | null, date?: string) => !!dragging && !!target && target.key === key && target.date === date;
+  const dropsBefore = (row: ViewRow, key: string | null) => isZone(key) && target!.before === row.path && dragging!.path !== row.path;
+
+  async function drop(e: DragEvent) {
+    e.preventDefault();
+    const row = dragging;
+    const to = target;
+    dragging = null;
+    target = null;
+    if (!row || !to) return;
+    const from = groupOf.get(row.path) ?? "";
+    const regroup = canRegroup && to.key !== null && from.toLowerCase() !== to.key.toLowerCase();
+    const reorder = to.reorder && (to.before !== null || !regroup);
+    const changes: Record<string, unknown> = {};
+    if (regroup && !byChapter) changes[spec.group_by] = to.key === "" ? undefined : to.key;
+    if (to.date !== undefined && spec.date && !builtIn(spec.date)) {
+      const start = values(row, spec.date)[0] ?? "";
+      if (start !== to.date) {
+        changes[spec.date] = to.date;
+        const end = spec.end && !builtIn(spec.end) ? (values(row, spec.end)[0] ?? "") : "";
+        if (end) {
+          const moved = shiftEnd(start, end, to.date);
+          if (moved !== end) changes[spec.end] = moved;
+        }
+      }
+    }
+    // The view's new order, worked out before the notes change.
+    const all = groups.flatMap((g) => g.rows.map((r) => r.path));
+    const among = groups.find((g) => g.key === to.key)?.rows.map((r) => r.path) ?? [];
+    const order = reorder && !byChapter ? moveBefore(all, row.path, to.before, among) : null;
+    try {
+      if (byChapter && (regroup || reorder) && to.key !== null) await moveScene(row, to.key, to.before);
+      if (Object.keys(changes).length) await setValues(row, changes);
+      if (order && (order.join("\n") !== all.join("\n") || spec.sort)) await save({ order, sort: "" });
+      else if (byChapter && reorder && (spec.sort || spec.order.length)) await save({ order: [], sort: "" });
+    } catch (e) {
+      fail(e);
+    }
   }
 
-  /** Whether dragging a card to another column means something for this grouping. */
-  const canDrag = $derived(
-    spec.type === "kanban" && (!(BUILT_IN as readonly string[]).includes(spec.group_by) || (spec.group_by === "chapter" && spec.items === "scene")),
-  );
+  /** What makes an item draggable: `next` is the item after it in its group, `flow` "x" for a grid. */
+  function item(row: ViewRow, next: ViewRow | undefined, flow: "x" | "y" = "y") {
+    if (!canDrag || (editing && editing.path === row.path)) return {};
+    return {
+      draggable: "true" as const,
+      "data-path": row.path,
+      "data-next": next?.path ?? "",
+      "data-flow": flow,
+      "data-tip": dragTip,
+      ondragstart: (e: DragEvent) => {
+        dragging = row;
+        e.dataTransfer?.setData("text/plain", row.path);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      },
+      ondragend: () => {
+        dragging = null;
+        target = null;
+      },
+    };
+  }
+  /** What makes an element a place to drop items on. */
+  function zone(z: Omit<Target, "before">) {
+    if (!canDrag) return {};
+    return { ondragover: (e: DragEvent) => dragOver(e, z), ondragleave: dragLeave, ondrop: drop };
+  }
+
+  /** A scene grouped by chapter moves into the chapter's folder, before `before` or last. */
+  async function moveScene(row: ViewRow, key: string, before: string | null) {
+    const folder = chapters.get(key);
+    if (!folder || !row.file || row.file !== row.path) return;
+    const siblings = (findNode(p.project.manuscript, folder)?.children ?? []).filter((c) => c.path !== row.path);
+    const at = before ? siblings.findIndex((c) => c.path === before) : -1;
+    await p.project.move(row.path, folder, at < 0 ? siblings.length : at);
+    await p.onReload();
+  }
 
   function addColumn() {
     const name = newColumn.trim();
@@ -534,12 +619,12 @@
               </tr>
             </thead>
             {#each groups as g (g.key)}
-              <tbody>
+              <tbody class:over={isZone(g.key) && target?.before === null} {...zone({ key: g.key, reorder: true })}>
                 {#if spec.group_by}
                   <tr class="group-row"><th colspan={fields.length + 1}>{groupName(g.key)} <span class="count">{g.rows.length}</span></th></tr>
                 {/if}
-                {#each g.rows as row (row.path)}
-                  <tr>
+                {#each g.rows as row, i (row.path)}
+                  <tr class:drop-before={dropsBefore(row, g.key)} {...item(row, g.rows[i + 1])}>
                     <td><button class="link" onclick={() => inspect(row)}>{row.name}</button>{@render synopsisOf(row)}</td>
                     {#each fields as f (f)}
                       <td class:number={f === "words"}>
@@ -570,9 +655,9 @@
         {:else if spec.type === "list"}
           {#each groups as g (g.key)}
             {#if spec.group_by}<h3 class="group-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>{/if}
-            <ul class="list">
-              {#each g.rows as row (row.path)}
-                <li>
+            <ul class="list" class:over={isZone(g.key) && target?.before === null} {...zone({ key: g.key, reorder: true })}>
+              {#each g.rows as row, i (row.path)}
+                <li class:drop-before={dropsBefore(row, g.key)} {...item(row, g.rows[i + 1])}>
                   <button class="link" onclick={() => inspect(row)}>{row.name}</button>
                   {@render details(row)}
                   {@render synopsisOf(row)}
@@ -583,33 +668,19 @@
         {:else if spec.type === "cards"}
           {#each groups as g (g.key)}
             {#if spec.group_by}<h3 class="group-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>{/if}
-            <div class="cards">
-              {#each g.rows as row (row.path)}
-                {@render card(row, true)}
+            <div class="cards" class:over={isZone(g.key) && target?.before === null} {...zone({ key: g.key, reorder: true })}>
+              {#each g.rows as row, i (row.path)}
+                {@render card(row, true, g.key, g.rows[i + 1], "x")}
               {/each}
             </div>
           {/each}
         {:else if spec.type === "kanban"}
           <div class="board">
             {#each groups as g (g.key)}
-              <section
-                class="column"
-                class:over={over === g.key && dragging !== null}
-                aria-label={groupName(g.key)}
-                ondragover={(e) => {
-                  if (!dragging) return;
-                  e.preventDefault();
-                  over = g.key;
-                }}
-                ondragleave={() => over === g.key && (over = null)}
-                ondrop={(e) => {
-                  e.preventDefault();
-                  void drop(g.key);
-                }}
-              >
+              <section class="column" class:over={isZone(g.key) && target?.before === null} aria-label={groupName(g.key)} {...zone({ key: g.key, reorder: true })}>
                 <h3>{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>
-                {#each g.rows as row (row.path)}
-                  {@render card(row, false)}
+                {#each g.rows as row, i (row.path)}
+                  {@render card(row, false, g.key, g.rows[i + 1])}
                 {/each}
               </section>
             {/each}
@@ -702,9 +773,9 @@
       <div class="lane-row">
         <div class="when">{m.label}{#if m.end}<span class="end"> – {m.end}</span>{/if}</div>
         {#each groups as g (g.key)}
-          <div class="lane">
+          <div class="lane" class:over={isZone(g.key, m.label)} {...zone({ key: g.key, date: spec.date && !builtIn(spec.date) ? m.label : undefined, reorder: false })}>
             {#each m.rows.filter((r) => groupOf.get(r.path) === g.key) as row (row.path)}
-              {@render card(row, false)}
+              {@render card(row, false, g.key)}
             {/each}
           </div>
         {/each}
@@ -726,9 +797,9 @@
     {#each tl.moments as m (m.key + "|" + m.end)}
       <li>
         <div class="when">{m.label}{#if m.end}<span class="end"> – {m.end}</span>{/if}</div>
-        <div class="what">
+        <div class="what" class:over={isZone("", m.label)} {...zone({ key: "", date: spec.date && !builtIn(spec.date) ? m.label : undefined, reorder: false })}>
           {#each m.rows as row (row.path)}
-            {@render card(row, false)}
+            {@render card(row, false, "")}
           {/each}
         </div>
       </li>
@@ -754,20 +825,8 @@
   {#if spec.synopsis && synopsisText(row)}<p class="synopsis">{synopsisText(row)}</p>{/if}
 {/snippet}
 
-{#snippet card(row: ViewRow, long: boolean)}
-  <article
-    class="card"
-    draggable={canDrag ? "true" : undefined}
-    data-tip={canDrag ? t("tip.views.drag", { field: label(spec.group_by) }) : undefined}
-    ondragstart={(e) => {
-      dragging = row;
-      e.dataTransfer?.setData("text/plain", row.path);
-    }}
-    ondragend={() => {
-      dragging = null;
-      over = null;
-    }}
-  >
+{#snippet card(row: ViewRow, long: boolean, key: string, next?: ViewRow, flow: "x" | "y" = "y")}
+  <article class="card" class:drop-before={dropsBefore(row, key)} class:flow-x={flow === "x"} {...item(row, next, flow)}>
     <button class="link title" onclick={() => inspect(row)}>{row.name}</button>
     {#if long && row.chapter && spec.items === "scene"}<div class="muted small">{row.chapter}</div>{/if}
     {#if spec.synopsis && synopsisText(row)}
@@ -1143,6 +1202,30 @@
   }
   .column.over {
     border-color: var(--accent);
+  }
+  /* Where a dragged item will land: a line before an item, or the outline of its group. */
+  .drop-before {
+    box-shadow: 0 -2px 0 var(--accent);
+  }
+  .card.flow-x.drop-before {
+    box-shadow: -3px 0 0 var(--accent);
+  }
+  tr.drop-before > td {
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+  .list.over,
+  .cards.over,
+  .lane.over,
+  .what.over {
+    outline: 2px dashed var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  tbody.over > tr:last-child > td {
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  [draggable="true"] {
+    cursor: grab;
   }
   .column h3 {
     margin: 0 0 2px;
