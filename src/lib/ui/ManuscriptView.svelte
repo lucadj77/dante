@@ -39,6 +39,8 @@
   /** Scenes chosen together with Cmd/Ctrl+click, to merge them. */
   let chosen = $state<string[]>([]);
   let active = $state<string | null>(null);
+  /** A chapter or part picked in the tree: the side panel shows it until a scene gets the cursor. */
+  let picked = $state<string | null>(null);
   let raw = $state(false);
   let typewriter = $state(false);
   let focusMode = $state(false);
@@ -59,6 +61,7 @@
     if (findIn(tree, target)) {
       selected = target;
       active = target;
+      picked = target;
       void bringIntoView(target);
     }
   });
@@ -73,9 +76,28 @@
     const node = findNode(path);
     const scene = node?.kind === "scene" ? node : node ? scenesOf(node)[0] : null;
     if (!scene) return;
-    const el = document.querySelector(`[data-scene="${CSS.escape(scene.path)}"]`);
-    el?.scrollIntoView({ block: "start", behavior: "smooth" });
     active = scene.path;
+    await scrollToScene(scene.path);
+  }
+
+  /**
+   * The editors only lay out the lines on screen and estimate the height of the others, so
+   * the place of a scene far away changes while the text scrolls towards it. Jumping again
+   * until it stays put lands on the scene even in a long novel.
+   */
+  async function scrollToScene(path: string) {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    let last = NaN;
+    for (let i = 0; i < 20; i++) {
+      const el = document.querySelector(`[data-scene="${CSS.escape(path)}"]`);
+      if (!el || active !== path) return;
+      el.scrollIntoView({ block: "start" });
+      await frame();
+      await frame();
+      const top = el.getBoundingClientRect().top;
+      if (Math.abs(top - last) < 1) return;
+      last = top;
+    }
   }
   $effect(() => {
     if (selected) onShow(selected);
@@ -86,6 +108,8 @@
   function containers(node: ManuscriptNode): string[] {
     return node.children.filter((c) => c.kind !== "scene").flatMap((c) => [c.path, ...containers(c)]);
   }
+
+  const inspected = $derived(picked ?? active ?? selected);
 
   /** Bumped a moment after typing stops, so the links panel catches up with saved text. */
   let edits = $state(0);
@@ -112,6 +136,7 @@
     const scenes = scenesOf(tree);
     if (selected === null || !scenes.length || !findIn(tree, selected)) selected = scenes[0]?.path ?? null;
     if (active !== null && !findIn(tree, active)) active = null;
+    if (picked !== null && !findIn(tree, picked)) picked = null;
   });
 
   function findIn(node: ManuscriptNode, path: string): boolean {
@@ -263,7 +288,7 @@
    */
   async function rename(path: string, title: string, file = false) {
     let renamed = path;
-    const before = { selected, active };
+    const before = { selected, active, picked };
     // A scene or chapter with its own title keeps its file name: the title changes.
     const node = findNode(path);
     await run(async () => {
@@ -272,6 +297,7 @@
     });
     if (before.selected) selected = rebase(before.selected, path, renamed);
     if (before.active) active = rebase(before.active, path, renamed);
+    if (before.picked) picked = rebase(before.picked, path, renamed);
   }
 
   let renamingHeading = $state<string | null>(null);
@@ -473,6 +499,7 @@
               choose(path, !!add);
               selected = path;
               active = path;
+              picked = path;
               void bringIntoView(path);
             }}
             onRename={rename}
@@ -621,6 +648,7 @@
                 // The tree follows the cursor: the scene being written is the one selected.
                 active = path;
                 selected = path;
+                picked = null;
               }}
               onText={(path, text) => {
                 texts[path] = raw ? splitNote(text).body : text;
@@ -636,15 +664,15 @@
   </main>
 
   {#if !fullscreen && layout.right}
-    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
+    <SidePanel {project} path={inspected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
       {project}
-      path={active ?? selected}
+      path={inspected}
       {rev}
       {localRev}
       sceneTexts={shownScenes.map((p) => texts[p] ?? "")}
-      activeText={(active ?? selected) ? (texts[(active ?? selected)!] ?? null) : null}
+      activeText={inspected ? (texts[inspected] ?? null) : null}
       onChanged={async () => {
         localRev++;
         await onReload();
