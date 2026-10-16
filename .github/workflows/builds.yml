@@ -2,12 +2,14 @@ name: Builds
 
 # Builds Dante for Windows (installer and portable zip), Linux (AppImage, .deb, .rpm)
 # and macOS (universal .dmg, Apple Silicon and Intel).
-# Every run keeps the files as artifacts of the run; runs on main and on manual request
+# Every run keeps the files as artifacts of the run; runs on main (pushed or started by hand)
 # also put them on the "preview" release, where they can be downloaded without unzipping.
 
+# Only main and manual runs: Windows and macOS minutes count several times against
+# the monthly Actions allowance, so branches are built on request (Run workflow).
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -105,41 +107,51 @@ jobs:
           path: out/*
 
   macos:
+    # One image per processor family: each is about half the size of a universal one.
+    # The Intel build is cross-compiled on the Apple Silicon runner.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            name: apple-silicon
+          - target: x86_64-apple-darwin
+            name: intel
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-          key: release
+          key: release-${{ matrix.target }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       # Ad-hoc signed only (signingIdentity "-"): no Apple Developer account yet.
-      - run: npx tauri build --target universal-apple-darwin --bundles app
+      - run: npx tauri build --target ${{ matrix.target }} --bundles app
       - name: Disk image, named after the commit
         run: |
           short=${GITHUB_SHA::7}
           mkdir -p out dmg
-          cp -R src-tauri/target/universal-apple-darwin/release/bundle/macos/Dante.app dmg/
+          cp -R src-tauri/target/${{ matrix.target }}/release/bundle/macos/Dante.app dmg/
           ln -s /Applications dmg/Applications
           # hdiutil underestimates the size of an APFS image ("No space left on device"),
           # so the volume is HFS+ with an explicit size: the app plus some margin.
           size=$(( $(du -sm dmg | cut -f1) + 20 ))
-          hdiutil create -volname Dante -srcfolder dmg -fs HFS+ -size ${size}m -ov -format UDZO "out/Dante-$short-mac.dmg"
+          hdiutil create -volname Dante -srcfolder dmg -fs HFS+ -size ${size}m -ov -format UDZO "out/Dante-$short-mac-${{ matrix.name }}.dmg"
           ls -l out
       - uses: actions/upload-artifact@v4
         with:
-          name: Dante-macos
+          name: Dante-macos-${{ matrix.name }}
           path: out/*
 
   publish:
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main'
     needs: [test-windows, windows, linux, macos]
     runs-on: ubuntu-latest
     steps:
@@ -160,5 +172,5 @@ jobs:
             --notes "Versione di prova compilata da ${GITHUB_REF_NAME} (${GITHUB_SHA::7}).
 
           Windows: Dante-setup è l'installatore; Dante-portable è la versione portatile (estrai lo zip e avvia Dante.exe). Non sono firmati: Windows mostra un avviso di SmartScreen.
-          Mac: apri il .dmg e trascina Dante in Applicazioni; funziona su Apple Silicon e Intel. Non è firmato da Apple: la prima volta macOS lo blocca, poi Impostazioni di Sistema > Privacy e sicurezza > Apri comunque.
+          Mac: scegli il .dmg giusto (apple-silicon per i Mac dal 2020 con chip M1 o successivi, intel per quelli precedenti), aprilo e trascina Dante in Applicazioni. Non è firmato da Apple: la prima volta macOS lo blocca, poi Impostazioni di Sistema > Privacy e sicurezza > Apri comunque.
           Linux: l'AppImage funziona su quasi tutte le distribuzioni (rendilo eseguibile e avvialo); il .deb è per Ubuntu e Debian, il .rpm per Fedora e openSUSE."
