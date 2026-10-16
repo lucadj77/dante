@@ -57,6 +57,9 @@
         }
       }
     ],
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "linux": {
       "deb": {
         "desktopTemplate": "linux/dante.desktop",
