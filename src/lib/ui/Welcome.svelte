@@ -10,6 +10,7 @@
   import { sampleProject } from "$lib/sample";
   import { app, exportPreferences, forgetProject, num, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
+  import { addLauncher, openProjectAt } from "$lib/opening";
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
   import { counts, defaultBlankLines, defaultRoles, headingLevels, structure, type BlankLines, type HeadingRole } from "$lib/core/import/structure";
@@ -71,18 +72,8 @@
     { code: "fr", name: "Français" },
   ];
 
-  function folderOf(path: string): string {
-    return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
-  }
-
   async function openPath(path: string) {
-    const project = await Project.open(new TauriFs(path), app.settings.language);
-    // A new project records its language and folder names, so they no longer follow the interface.
-    if (!(await project.fs.exists(SETTINGS_FILE))) {
-      await project.saveSettings({ ...project.settings, title: project.settings.title || folderOf(path) });
-    }
-    rememberProject(path, project.settings.title || folderOf(path));
-    onOpen(project);
+    onOpen(await openProjectAt(path));
   }
 
   async function openFolder() {
@@ -174,6 +165,7 @@
         exportPreferences(),
       );
       if (imported) await project.importBook(imported);
+      await addLauncher(project);
       // The first author's name is offered again next time.
       const first = authors.find((a) => a.trim())?.trim();
       if (first && !app.settings.userName) saveAppSettings({ ...app.settings, userName: first });
