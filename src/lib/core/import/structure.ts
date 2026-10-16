@@ -215,7 +215,8 @@ export function counts(book: ImportedBook): { parts: number; chapters: number; s
       chapters++;
       for (const s of c.scenes) {
         scenes++;
-        words += s.text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+        // Tags, such as the ones aligning a paragraph, are not words.
+        words += s.text.replace(/<\/?[a-zA-Z][^<>\n]*>/g, " ").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
       }
     }
   return { parts: book.hasParts ? book.parts.filter((p) => p.title).length : 0, chapters, scenes, words };

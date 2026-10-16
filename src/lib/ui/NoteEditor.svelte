@@ -5,6 +5,7 @@
   import { ACTIONS, ICONS, applyFormat } from "$lib/editor/formatting";
   import { app, t } from "$lib/state.svelte";
   import { formatLabels } from "./formatLabels";
+  import Icon from "./Icon.svelte";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
@@ -116,7 +117,7 @@
             aria-label={labels[action]}
             disabled={!ready}
             onmousedown={(e) => e.preventDefault()}
-            onclick={() => editor && applyFormat(editor.view, action)}><span style={ICONS[action].style}>{ICONS[action].text}</span></button
+            onclick={() => editor && applyFormat(editor.view, action)}>{#if ICONS[action].icon}<Icon name={ICONS[action].icon} />{:else}<span style={ICONS[action].style}>{ICONS[action].text}</span>{/if}</button
           >
         {/if}
       {/each}

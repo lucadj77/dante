@@ -150,6 +150,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "format.bullet": "Elenco puntato (⌘⇧8)",
   "format.ordered": "Elenco numerato (⌘⇧7)",
   "format.task": "Casella di spunta (⌘⇧9)",
+  "format.alignCenter": "Allinea al centro (⌘⇧E); di nuovo per tornare a sinistra",
+  "format.alignRight": "Allinea a destra (⌘⇧R); di nuovo per tornare a sinistra",
   "format.code": "Codice: in linea, o blocco su più righe (⌘E)",
   "format.link": "Link (⌘K)",
   "format.wikilink": "Wikilink a una nota",

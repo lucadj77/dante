@@ -41,6 +41,11 @@ h3 { font-size: 1.1em; font-style: italic; }
 .pagebreak { page-break-before: always; }
 blockquote { margin: 0.5em 2em; }
 blockquote p { text-indent: 0; }
+p.align-center, p.align-right { text-indent: 0; }
+p.align-center { text-align: center; }
+p.align-right { text-align: right; }
+p.align-left { text-align: left; }
+p.align-justify { text-align: justify; }
 pre { white-space: pre-wrap; font-size: 0.9em; }
 .title { text-align: center; margin-top: 30%; }
 .title h1 { margin: 0 0 0.5em; font-size: 2em; }
@@ -139,7 +144,10 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       else if (block.type === "quote") out.push(`<blockquote><p>${runs(block.runs)}</p></blockquote>`);
       else if (block.type === "break") out.push(`<p class="break">${lines(opts.sceneSeparator)}</p>`);
       else if (block.runs.length && block.runs.every((r) => r.code)) out.push(`<pre>${escapeXml(block.runs.map((r) => r.text).join(""))}</pre>`);
-      else out.push(`<p${first ? ' class="first"' : ""}>${runs(block.runs)}</p>`);
+      else {
+        const classes = [first ? "first" : "", block.align ? `align-${block.align}` : ""].filter(Boolean).join(" ");
+        out.push(`<p${classes ? ` class="${classes}"` : ""}>${runs(block.runs)}</p>`);
+      }
       first = block.type !== "paragraph";
     }
     return out.join("\n");

@@ -90,6 +90,9 @@ function styles(opts: DocxSettings, typeset: boolean): IParagraphStyleOptions[] 
     { id: "Epigraph", name: "Epigraph", basedOn: "Normal", run: { italics: true }, paragraph: { alignment: AlignmentType.RIGHT, indent: { left: indent * 3, firstLine: 0 } } },
     { id: "EpigraphSource", name: "Epigraph Source", basedOn: "Normal", paragraph: { alignment: AlignmentType.RIGHT, indent: { firstLine: 0 }, spacing: { before: 120 } } },
     { id: "Colophon", name: "Colophon", basedOn: "Normal", run: { size: Math.max(16, size - 4) }, paragraph: { ...centered, spacing: { line: 240 } } },
+    // Paragraphs the author aligned, without the first-line indent.
+    { id: "Centered", name: "Centered", basedOn: "Normal", next: "Normal", paragraph: { ...centered } },
+    { id: "RightAligned", name: "Right Aligned", basedOn: "Normal", next: "Normal", paragraph: { alignment: AlignmentType.RIGHT, indent: { firstLine: 0 } } },
     { id: "Code", name: "Code", basedOn: "Normal", paragraph: { indent: { firstLine: 0 } }, run: { font: "Courier New" } },
   ];
 }
@@ -153,7 +156,10 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
       } else {
         const code = block.runs.every((r) => r.code);
-        body.push(new Paragraph({ style: code ? "Code" : first ? "FirstParagraph" : "Normal", children: runs(block.runs) }));
+        const style = code ? "Code" : block.align === "center" ? "Centered" : block.align === "right" ? "RightAligned" : first ? "FirstParagraph" : "Normal";
+        // Left and justified differ from Normal only when the profile sets the other one.
+        const alignment = block.align === "left" ? AlignmentType.LEFT : block.align === "justify" ? AlignmentType.JUSTIFIED : undefined;
+        body.push(new Paragraph({ style, alignment, children: runs(block.runs) }));
       }
       first = block.type !== "paragraph";
     }

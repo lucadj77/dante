@@ -7,6 +7,7 @@ import { levelHeading } from "../numbering";
 import type { Project } from "../project";
 import { byline, type ParatextSettings } from "../settings";
 import { applyTypography } from "../typography";
+import { extractAlignments, paragraphIndexer, type Align } from "../alignment";
 
 // The manuscript as a format-neutral document, built once and rendered by each
 // exporter (DOCX now; EPUB and PDF later).
@@ -22,7 +23,7 @@ export interface Run {
 }
 
 export type Block =
-  | { type: "paragraph"; runs: Run[] }
+  | { type: "paragraph"; runs: Run[]; align?: Align }
   | { type: "heading"; level: number; runs: Run[] }
   | { type: "quote"; runs: Run[] }
   | { type: "break" };
@@ -132,9 +133,14 @@ function merge(runs: Run[]): Run[] {
   return out.filter((r) => r.text !== "" || r.lineBreak);
 }
 
-export function markdownToBlocks(markdown: string): Block[] {
+/**
+ * The blocks of a scene's Markdown. `aligns` gives the alignment of paragraphs, by their
+ * number, as extractAlignments took it out of the text.
+ */
+export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>): Block[] {
   const source = markdown;
   const tree = parser.parse(source);
+  const paragraphAt = aligns?.size ? paragraphIndexer(source) : null;
   const blocks: Block[] = [];
   const visit = (node: SyntaxNode, inQuote: boolean, marker = "") => {
     for (let child = node.firstChild; child; child = child.nextSibling) {
@@ -146,7 +152,14 @@ export function markdownToBlocks(markdown: string): Block[] {
         if (name === "Task") lead = /x/i.test(source.slice(child.from, child.from + 3)) ? "☑ " : "☐ ";
         if (lead && runs.length) runs.unshift({ text: lead });
         marker = "";
-        if (runs.length) blocks.push(inQuote ? { type: "quote", runs } : { type: "paragraph", runs });
+        if (!runs.length) {
+          // Nothing to show.
+        } else if (inQuote) {
+          blocks.push({ type: "quote", runs });
+        } else {
+          const align = name === "Paragraph" && paragraphAt ? aligns!.get(paragraphAt(child.from)) : undefined;
+          blocks.push(align ? { type: "paragraph", runs, align } : { type: "paragraph", runs });
+        }
       } else if (/^(ATX|Setext)Heading(\d)$/.test(name)) {
         const level = Number(name.slice(-1));
         blocks.push({ type: "heading", level, runs: inlineRuns(source, child, child.from, child.to) });
@@ -217,7 +230,9 @@ export async function buildBook(
 
   const readScene = async (node: ManuscriptNode): Promise<BookScene> => {
     const body = splitNote(await project.fs.readText(node.path)).body;
-    const blocks = markdownToBlocks(typeset(cleanSource(body, options.revisions)));
+    // Alignment tags come out before typography, which would change the quotes in them.
+    const { text, aligns } = extractAlignments(cleanSource(body, options.revisions));
+    const blocks = markdownToBlocks(typeset(text), aligns);
     words += countWords(blocks);
     characters += countCharacters(blocks);
     sceneCount++;

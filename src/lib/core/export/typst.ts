@@ -152,6 +152,10 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       else if (block.type === "quote") emit(`#pad(x: ${cm(opts.indent || 1)})[${runs(block.runs)}]\n`);
       else if (block.type === "break") emit(`#separator[${lines(opts.sceneSeparator)}]\n`);
       else if (block.runs.length && block.runs.every((r) => r.code)) emit(`#raw(block: true, ${str(block.runs.map((r) => r.text).join(""))})\n`);
+      else if (block.align === "center" || block.align === "right") {
+        // Set rules in a content block, not an align block, so the spacing stays a paragraph's.
+        emit(`#[#set align(${block.align}); #set par(first-line-indent: 0pt, justify: false); ${runs(block.runs)}]\n`);
+      } else if (block.align) emit(`#[#set par(justify: ${block.align === "justify"}); ${runs(block.runs)}]\n`);
       else emit(`${runs(block.runs)}\n`);
     }
   };

@@ -723,7 +723,7 @@
               aria-label={labels[action]}
               disabled={!active}
               onmousedown={(e) => e.preventDefault()}
-              onclick={() => active && editors.get(active)?.format(action)}><span style={ICONS[action].style}>{ICONS[action].text}</span></button
+              onclick={() => active && editors.get(active)?.format(action)}>{#if ICONS[action].icon}<Icon name={ICONS[action].icon} />{:else}<span style={ICONS[action].style}>{ICONS[action].text}</span>{/if}</button
             >
           {/if}
         {/each}
