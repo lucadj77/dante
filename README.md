@@ -238,6 +238,26 @@ document's properties give the title and author. Bold, italic and strikethrough 
 Markdown; deleted text of tracked changes is left out. "Chapter 3: Home" keeps "Home" as
 its title, since Dante numbers chapters itself. The Word file is only read.
 
+## Export folder, Markdown and covers
+
+- Exports are written to the project's `export/` folder, named
+  `Author_Title_YYYY-MM-DD-HH-mm.ext` (words joined by `_`, several authors one after the
+  other), so earlier versions stay next to the new one; "Save somewhere else…" still asks
+  for a place. The button at the top of the Export page opens the folder. Dante leaves
+  the folder out of links, searches and statistics.
+- Markdown is a fourth format: one `.md` file with title, subtitle, author and language as
+  properties, then parts, chapters and scenes as headings, with comments removed and
+  revisions settled.
+- Each project has a simple generated cover: authors at the top, title in the middle,
+  abstract shapes behind. Twelve shape templates and eighteen palettes are offered when
+  creating the project and in Settings, kept in `dante.yaml` as `cover: {template,
+  palette}`; nothing else is stored, so the cover follows title and authors. It is the
+  thumbnail of recent projects and, with "Open the book with the cover"
+  (`export.cover`), the first page of the Word file and the EPUB (as PNG) and of the PDF.
+- A novel can have several authors: `authors:` is a list in `dante.yaml` (an older
+  `author:` text is read and split on commas and "e"/"and"). Exports join them as the
+  novel's language joins a list ("Ada Rossi e Bruno Neri"), the EPUB lists each creator.
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).

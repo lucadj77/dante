@@ -100,6 +100,7 @@ pub fn run() {
             files::list_dir,
             files::read_text,
             files::write_text,
+            files::write_bytes,
             files::rename_path,
             files::create_dir,
             files::path_exists,

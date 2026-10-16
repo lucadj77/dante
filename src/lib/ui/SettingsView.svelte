@@ -3,6 +3,8 @@
   import type { NovelSettings } from "$lib/core/settings";
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
+  import CoverPicker from "./CoverPicker.svelte";
+  import AuthorsInput from "./AuthorsInput.svelte";
   import { propertyDef, withDef } from "$lib/core/properties";
   import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
@@ -45,6 +47,7 @@
     try {
       saveAppSettings($state.snapshot(appSettings));
       const settings = $state.snapshot(novel);
+      settings.authors = settings.authors.map((a) => a.trim()).filter(Boolean);
       settings.pages.size = Math.max(1, Math.round(Number(settings.pages.size) || 0)) || (settings.pages.unit === "words" ? 250 : 1800);
       await project.saveSettings(settings);
       await onSaved();
@@ -66,8 +69,12 @@
     <h2>{t("settings.novel")}</h2>
     <label>{t("settings.title")} <input bind:value={novel.title} /></label>
     <label>{t("settings.subtitle")} <input bind:value={novel.subtitle} /></label>
-    <label>{t("settings.author")} <input bind:value={novel.author} /></label>
+    <AuthorsInput bind:authors={novel.authors} />
     <label>{t("settings.language")} <input bind:value={novel.language} size="6" /></label>
+
+    <h3>{t("cover.title")}</h3>
+    <p class="hint">{t("cover.hint")}</p>
+    <CoverPicker bind:cover={novel.cover} text={novel} />
 
     <h3>{t("settings.structure")}</h3>
     <label class="check"><input type="checkbox" bind:checked={novel.structure.parts} /> {t("settings.parts")}</label>

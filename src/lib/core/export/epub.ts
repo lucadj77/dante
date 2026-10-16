@@ -75,8 +75,16 @@ interface Chapter {
   html: string;
 }
 
+/** An image that opens the ebook. */
+export interface EpubCover {
+  data: Uint8Array | string;
+  mediaType: "image/png" | "image/jpeg" | "image/svg+xml";
+}
+
+const COVER_EXT: Record<EpubCover["mediaType"], string> = { "image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg" };
+
 /** Renders the book as an EPUB file. `id` identifies the book across exports. */
-export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new Date(), css = ""): Uint8Array {
+export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new Date(), css = "", cover?: EpubCover): Uint8Array {
   const language = book.language || "en";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -96,6 +104,14 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
     chapters.push({ file: `text${String(chapters.length + 1).padStart(3, "0")}.xhtml`, label, html, part, inPart });
   };
 
+  const coverFile = cover ? `cover.${COVER_EXT[cover.mediaType]}` : "";
+  if (cover) {
+    // Styled here, not in the stylesheet, so a stylesheet of the author's cannot break it.
+    add(
+      "",
+      page(title, language, `<div style="margin: 0; padding: 0; text-align: center; height: 100%;"><img src="${coverFile}" alt="${escapeXml(title)}" style="max-width: 100%; max-height: 100%; height: 100%; object-fit: contain;"/></div>`, "cover"),
+    );
+  }
   const front: string[] = [];
   if (opts.titlePage) {
     front.push(
@@ -199,13 +215,13 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
 <dc:identifier id="book-id">urn:uuid:${id}</dc:identifier>
 <dc:title>${escapeXml(title)}</dc:title>
-<dc:creator>${escapeXml(book.author)}</dc:creator>
+${(book.authors.length ? book.authors : [""]).map((a) => `<dc:creator>${escapeXml(a)}</dc:creator>`).join("\n")}
 <dc:language>${escapeXml(language)}</dc:language>
-<meta property="dcterms:modified">${modified}</meta>
+<meta property="dcterms:modified">${modified}</meta>${cover ? '\n<meta name="cover" content="cover-image"/>' : ""}
 </metadata>
 <manifest>
 <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
-<item id="css" href="style.css" media-type="text/css"/>
+<item id="css" href="style.css" media-type="text/css"/>${cover ? `\n<item id="cover-image" href="${coverFile}" media-type="${cover.mediaType}" properties="cover-image"/>` : ""}
 ${chapters.map((c, i) => `<item id="c${i + 1}" href="${c.file}" media-type="application/xhtml+xml"/>`).join("\n")}
 </manifest>
 <spine>
@@ -225,6 +241,7 @@ ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
       { name: "OEBPS/content.opf", data: opf },
       { name: "OEBPS/nav.xhtml", data: nav },
       { name: "OEBPS/style.css", data: css.trim() ? css : EPUB_CSS },
+      ...(cover ? [{ name: `OEBPS/${coverFile}`, data: cover.data }] : []),
       ...chapters.map((c) => ({ name: `OEBPS/${c.file}`, data: c.html })),
     ],
     now,

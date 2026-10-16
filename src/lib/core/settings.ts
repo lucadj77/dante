@@ -1,4 +1,6 @@
 import { parseDocument } from "yaml";
+import { COVER_PALETTES, COVER_TEMPLATES, type CoverSettings } from "./cover";
+import { authorsOf } from "./export/files";
 import { parsePropertyDefs, serializePropertyDefs, type PropertyDef } from "./properties";
 
 export const SETTINGS_FILE = "dante.yaml";
@@ -115,7 +117,8 @@ export type PageSize = keyof typeof PAGE_SIZES | "custom";
 
 export type PageUnit = "characters" | "words";
 
-export type ExportFormat = "docx" | "pdf" | "epub";
+export type ExportFormat = "docx" | "pdf" | "epub" | "md";
+export const EXPORT_FORMATS: ExportFormat[] = ["docx", "pdf", "epub", "md"];
 
 export interface DocxSettings {
   /** Standard manuscript for agents and publishers, or a typeset, readable book. */
@@ -164,7 +167,8 @@ export interface NoteType {
 export interface NovelSettings {
   title: string;
   subtitle: string;
-  author: string;
+  /** One name each, in the order they appear on the cover and the title page. */
+  authors: string[];
   /** Language of the novel (not of the interface), as a BCP 47 code. */
   language: string;
   folders: {
@@ -202,6 +206,8 @@ export interface NovelSettings {
     /** Days of the week given to writing, 1 (Monday) to 7 (Sunday); the others are rest days. */
     days: number[];
   };
+  /** The generated cover, shown among recent projects and, if chosen, in DOCX, PDF and EPUB. */
+  cover: CoverSettings;
   /** What makes a page in the statistics and the export summary. */
   pages: {
     /** Characters (spaces included) or words. */
@@ -215,6 +221,8 @@ export interface NovelSettings {
     epubId: string;
     /** The ebook's stylesheet when it is not the default one. */
     epubCss: string;
+    /** The generated cover opens the exported book (DOCX, PDF, EPUB). */
+    cover: boolean;
     /** Layout of DOCX and PDF; EPUB takes the structure and headings from it. */
     docx: DocxSettings;
     /** Applied to the exported text only; the files keep what was typed. */
@@ -342,12 +350,27 @@ export function knownFolders(key: keyof NovelSettings["folders"]): string[] {
   return key === "codex" ? [FOLDERS.en.codex, "Codex", "Códex"] : [FOLDERS.en[key]];
 }
 
+/** "Ada Rossi e Bruno Neri", joined as the novel's language joins a list. */
+export function byline(authors: string[], language = "en"): string {
+  const names = authors.map((a) => a.trim()).filter(Boolean);
+  try {
+    return new Intl.ListFormat(language, { type: "conjunction" }).format(names);
+  } catch {
+    return names.join(", ");
+  }
+}
+
+/** Surnames for a running header: "Rossi", or "Rossi, Neri". */
+export function surnames(authors: string[]): string {
+  return authors.map((a) => a.trim().split(/\s+/).pop() ?? "").filter(Boolean).join(", ");
+}
+
 export function defaultSettings(language = "en"): NovelSettings {
   const labels = LABELS[language.slice(0, 2)] ?? LABELS.en;
   return {
     title: "",
     subtitle: "",
-    author: "",
+    authors: [],
     language,
     folders: defaultFolders(language),
     types: defaultTypes(language),
@@ -365,11 +388,13 @@ export function defaultSettings(language = "en"): NovelSettings {
       },
     },
     goals: { words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
+    cover: { template: "", palette: "" },
     pages: { unit: "characters", size: 1800 },
     export: {
       format: "docx",
       epubId: "",
       epubCss: "",
+      cover: false,
       docx: {
         profile: "manuscript",
         pageSize: "a4",
@@ -432,10 +457,19 @@ export function parseSettings(text: string): NovelSettings {
   // Types are a free list: the user's replace the defaults instead of being merged into them.
   settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
   settings.properties = parsePropertyDefs(isObject(raw) ? raw.properties : undefined);
+  // Files written before several authors could be named had one "author" text.
+  const authors = isObject(raw) ? raw.authors : undefined;
+  settings.authors = Array.isArray(authors)
+    ? authors.filter((a): a is string => typeof a === "string").map((a) => a.trim()).filter(Boolean)
+    : isObject(raw) && typeof raw.author === "string"
+      ? authorsOf(raw.author)
+      : [];
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
-  if (!["docx", "pdf", "epub"].includes(settings.export.format)) settings.export.format = "docx";
+  if (!EXPORT_FORMATS.includes(settings.export.format)) settings.export.format = "docx";
+  if (!(COVER_TEMPLATES as readonly string[]).includes(settings.cover.template)) settings.cover.template = "";
+  if (!(settings.cover.palette in COVER_PALETTES)) settings.cover.palette = "";
   if (!(QUOTE_STYLES as readonly string[]).includes(settings.export.typography.quotes)) settings.export.typography.quotes = defaultQuotes(language);
   const days: unknown = settings.goals.days;
   settings.goals.days = Array.isArray(days)
@@ -484,5 +518,6 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     }
   };
   write([], settings);
+  doc.deleteIn(["author"]);
   return doc.toString({ lineWidth: 0 });
 }

@@ -31,9 +31,12 @@ import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts"
 import { today } from "./critic";
 import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
+import { coverFor, type CoverSettings } from "./cover";
+import { EXPORT_FOLDER } from "./export/files";
 
 /** Folders never scanned: app data, other tools' data, version control. */
-const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
+// Exports are copies of the novel: kept out of links, searches and statistics.
+const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules", EXPORT_FOLDER]);
 const TRASH = ".trash";
 
 /** Scenes cannot be merged while one of them has a conflict copy to settle. */
@@ -76,14 +79,14 @@ export class Project {
    */
   static async create(
     fs: ProjectFs,
-    details: { title: string; author: string; language: string },
+    details: { title: string; authors: string[]; language: string; cover?: CoverSettings },
     /** Names of the first chapter and scene; null starts an empty manuscript, as an import does. */
     names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
     preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
   ): Promise<{ project: Project; scene: string }> {
     await fs.mkdir("");
-    const settings = { ...defaultSettings(details.language), title: details.title, author: details.author };
+    const settings = { ...defaultSettings(details.language), title: details.title, authors: details.authors.map((a) => a.trim()).filter(Boolean), cover: details.cover ?? coverFor(details.title) };
     if (preferences) {
       // Through the parser, so stored choices from an older version are completed and checked.
       const merged = parseSettings(

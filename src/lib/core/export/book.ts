@@ -5,7 +5,7 @@ import { readProperties, splitNote } from "../frontmatter";
 import { headingInfo, type ContainerKind, type ManuscriptNode } from "../manuscript";
 import { levelHeading } from "../numbering";
 import type { Project } from "../project";
-import type { ParatextSettings } from "../settings";
+import { byline, type ParatextSettings } from "../settings";
 import { applyTypography } from "../typography";
 
 // The manuscript as a format-neutral document, built once and rendered by each
@@ -43,7 +43,9 @@ export interface BookEntry {
 export interface Book {
   title: string;
   subtitle: string;
+  /** The authors joined in one line, as "Ada Rossi e Bruno Neri". */
   author: string;
+  authors: string[];
   language: string;
   paratext: ParatextSettings;
   entries: BookEntry[];
@@ -287,7 +289,8 @@ export async function buildBook(
   return {
     title: typeset(settings.title),
     subtitle: typeset(settings.subtitle),
-    author: settings.author,
+    author: byline(settings.authors, settings.language),
+    authors: [...settings.authors],
     language: settings.language,
     paratext,
     entries,

@@ -4,6 +4,8 @@ import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
 import { bookToTypst, str } from "../export/typst";
 import { crc32 } from "../export/zip";
+import { bookToMarkdown, escapeMarkdown } from "../export/markdown";
+import { coverSvg } from "../cover";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings, parseSettings } from "../settings";
@@ -151,7 +153,7 @@ describe("PDF and EPUB", () => {
     const book = await buildBook(await Project.open(sample()));
     const source = bookToTypst(book, defaultSettings("it").export.docx, { words: "parole" });
     expect(source).toContain('#"Uno "#emph("due")#" #tre = \\\\ $4 // <b>."');
-    expect(source).toContain('#set document(title: "Test «quoted»", author: "Ada Rossi")');
+    expect(source).toContain('#set document(title: "Test «quoted»", author: ("Ada Rossi",))');
     expect(str('a"b\\c\nd')).toBe('"a\\"b\\\\c\\nd"');
     expect(source).toContain('#heading(level: 1)[#"Parte I: One"]');
     expect(source).toContain('lang: "it"');
@@ -176,9 +178,56 @@ describe("EPUB stylesheet", () => {
   it("uses the project's stylesheet when there is one", async () => {
     const { bookToEpub, EPUB_CSS } = await import("../export/epub");
     const { defaultSettings } = await import("../settings");
-    const book = { title: "T", subtitle: "", author: "A", language: "it", paratext: defaultSettings("it").export.paratext, entries: [], words: 0, characters: 0 };
+    const book = { title: "T", subtitle: "", author: "A", authors: ["A"], language: "it", paratext: defaultSettings("it").export.paratext, entries: [], words: 0, characters: 0 };
     const text = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
     expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id"))).toContain(EPUB_CSS.slice(0, 40));
     expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id", new Date(), "p { color: red; }"))).toContain("p { color: red; }");
+  });
+});
+
+describe("markdown export", () => {
+  it("writes the whole novel as one file", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nauthor: Ada Rossi\nlanguage: it\nexport:\n  paratext:\n    dedication: A Bruno\n",
+      "Manuscript/010 Return/010 Arrival.md": "---\nstatus: draft\n---\nThe *train* left{>>@luca: why?<<}.\n\n- not a list",
+      "Manuscript/010 Return/020 House.md": "# 1 house\n\nThe house.",
+    });
+    const project = await Project.open(fs);
+    const md = bookToMarkdown(await buildBook(project), project.settings.export.docx);
+    expect(md).toBe(
+      [
+        "---\ntitle: Test\nauthor: Ada Rossi\nlang: it\n---",
+        "# Test",
+        "Ada Rossi",
+        "*A Bruno*",
+        "## Capitolo 1: Return",
+        "The *train* left.",
+        "• not a list",
+        "\\#",
+        "#### 1 house",
+        "The house.",
+      ].join("\n\n") + "\n",
+    );
+  });
+
+  it("escapes markup in the text", () => {
+    expect(escapeMarkdown("a_b *c* [d] #e")).toBe("a\\_b \\*c\\* \\[d\\] \\#e");
+  });
+});
+
+describe("cover in exports", () => {
+  it("opens the Word file, the EPUB and the PDF", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nauthor: Ada\n", "Manuscript/010 One/010 A.md": "Text." });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    const svg = coverSvg(project.settings, project.settings.cover);
+    const epub = new TextDecoder("latin1").decode(bookToEpub(book, project.settings.export.docx, "id", new Date(), "", { data: svg, mediaType: "image/svg+xml" }));
+    expect(epub).toContain('properties="cover-image"');
+    expect(epub).toContain("OEBPS/cover.svg");
+    expect(epub).toContain('<img src="cover.svg"');
+    const docx = await docxBytes(bookToDocx(book, project.settings.export.docx, { words: "words" }, new Uint8Array([0x89, 0x50, 0x4e, 0x47])));
+    expect(new TextDecoder("latin1").decode(docx)).toMatch(/word\/media\/[^"]+\.png/);
+    const typst = bookToTypst(book, project.settings.export.docx, { words: "words" }, svg);
+    expect(typst).toContain('#page(margin: 0pt, header: none, footer: none, image(bytes("<svg ');
   });
 });
