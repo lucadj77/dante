@@ -9,6 +9,8 @@
     focus(at: "start" | "end"): void;
     /** Applies a formatting action to the selection. */
     format(action: Action): void;
+    /** Splits the scene at the cursor into a new scene or chapter. */
+    split(kind: "scene" | "chapter"): void;
   }
 </script>
 
@@ -104,6 +106,9 @@
     },
     format(action) {
       if (editor) applyFormat(editor.view, action);
+    },
+    split(kind) {
+      editor?.split(kind);
     },
   };
 

@@ -2,6 +2,10 @@
 export const en = {
   "app.name": "Dante",
   "app.close": "Close project",
+  "split.scene": "Split into scene",
+  "split.chapter": "Split into chapter",
+  "tip.splitScene": "The text after the cursor goes into a new scene (Cmd/Ctrl+Enter)",
+  "tip.splitChapter": "The text after the cursor starts a new chapter, with the scenes that follow (Cmd/Ctrl+Shift+Enter)",
   "import.word": "Import from Word…",
   "import.title": "New project from Word",
   "import.found": "In {file} I found",

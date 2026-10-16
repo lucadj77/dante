@@ -527,6 +527,13 @@
             >
           {/if}
         {/each}
+        <span class="cm-format-gap"></span>
+        <button class="split" title={t("tip.splitScene")} disabled={!active} onmousedown={(e) => e.preventDefault()} onclick={() => active && editors.get(active)?.split("scene")}
+          ><Icon name="scene" /><span>{t("split.scene")}</span></button
+        >
+        <button class="split" title={t("tip.splitChapter")} disabled={!active} onmousedown={(e) => e.preventDefault()} onclick={() => active && editors.get(active)?.split("chapter")}
+          ><Icon name="chapter" /><span>{t("split.chapter")}</span></button
+        >
       </div>
     {/if}
     {#if error}
@@ -724,6 +731,12 @@
     gap: 2px;
     padding: 4px 12px;
     border-bottom: 1px solid var(--border);
+  }
+  .format-row .split {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
   }
   .format-row button:disabled {
     opacity: 0.4;

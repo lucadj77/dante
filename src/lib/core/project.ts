@@ -544,7 +544,9 @@ export class Project {
     const chapterIndex = holder.children.findIndex((c) => c.path === (chapter ?? this.node(path)).path);
 
     await this.writeBody(path, before);
-    const newChapter = await this.createContainer(holder.path, chapterIndex + 1, chapterTitle);
+    // At the top of a manuscript with parts, a folder reads as a part unless it says otherwise.
+    const kind = holder.kind === "manuscript" && this.settings.structure.parts ? "chapter" : undefined;
+    const newChapter = await this.createContainer(holder.path, chapterIndex + 1, chapterTitle, kind);
     const first = await this.createScene(newChapter, 0, sceneTitle, after);
     // Renumbering can rename folders, so positions are looked up again at each step.
     let target = newChapter;

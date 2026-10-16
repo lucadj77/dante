@@ -89,6 +89,18 @@ describe("project", () => {
     expect(fs.files.get(created)).toBe("It was late.");
   });
 
+  it("starts a chapter, not a part, after a prologue in a novel with parts", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: en\nstructure:\n  parts: true\n",
+      "Manuscript/000 Prologue/000 Prologue.md": "---\nkind: prologue\n---\n",
+      "Manuscript/000 Prologue/010 The call.md": "Ring.",
+      "Manuscript/010 One/010 One.md": "---\nkind: part\n---\n",
+    });
+    const p = await Project.open(fs);
+    await p.splitChapter("Manuscript/000 Prologue/010 The call.md", "Ring.", "Silence.", "Untitled", "Untitled");
+    expect(paths(p)).toContain("chapter:Manuscript/005 Untitled");
+  });
+
   it("starts a new chapter at the cursor, taking the following scenes", async () => {
     const fs = sample();
     const p = await Project.open(fs);

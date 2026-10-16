@@ -2,6 +2,10 @@ import type { MessageKey } from "./en";
 
 export const it: Partial<Record<MessageKey, string>> = {
   "app.close": "Chiudi progetto",
+  "split.scene": "Dividi in scena",
+  "split.chapter": "Dividi in capitolo",
+  "tip.splitScene": "Il testo dopo il cursore va in una nuova scena (Cmd/Ctrl+Invio)",
+  "tip.splitChapter": "Il testo dopo il cursore apre un nuovo capitolo, con le scene che seguono (Cmd/Ctrl+Maiusc+Invio)",
   "import.word": "Importa da Word…",
   "import.title": "Nuovo progetto da Word",
   "import.found": "In {file} ho trovato",
