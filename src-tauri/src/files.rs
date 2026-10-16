@@ -63,16 +63,25 @@ pub fn read_text(root: String, path: String) -> Result<String, String> {
 /// never sees a half-written note.
 #[tauri::command]
 pub fn write_text(root: String, path: String, content: String) -> Result<(), String> {
-    let target = resolve(&root, &path)?;
+    write_atomic(&resolve(&root, &path)?, content.as_bytes())
+}
+
+fn write_atomic(target: &Path, content: &[u8]) -> Result<(), String> {
     let dir = target.parent().ok_or("Invalid path")?;
     fs::create_dir_all(dir).map_err(err)?;
     let name = target.file_name().ok_or("Invalid path")?.to_string_lossy().into_owned();
     let temp = dir.join(format!(".{name}.dante-tmp"));
     fs::write(&temp, content).map_err(err)?;
-    fs::rename(&temp, &target).map_err(|e| {
+    fs::rename(&temp, target).map_err(|e| {
         let _ = fs::remove_file(&temp);
         err(e)
     })
+}
+
+/// Writes a file of any kind, such as an export, the same way as `write_text`.
+#[tauri::command]
+pub fn write_bytes(root: String, path: String, content: Vec<u8>) -> Result<(), String> {
+    write_atomic(&resolve(&root, &path)?, &content)
 }
 
 #[tauri::command]

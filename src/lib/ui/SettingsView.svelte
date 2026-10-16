@@ -3,6 +3,7 @@
   import type { NovelSettings } from "$lib/core/settings";
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
+  import CoverPicker from "./CoverPicker.svelte";
   import { propertyDef, withDef } from "$lib/core/properties";
   import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
@@ -68,6 +69,10 @@
     <label>{t("settings.subtitle")} <input bind:value={novel.subtitle} /></label>
     <label>{t("settings.author")} <input bind:value={novel.author} /></label>
     <label>{t("settings.language")} <input bind:value={novel.language} size="6" /></label>
+
+    <h3>{t("cover.title")}</h3>
+    <p class="hint">{t("cover.hint")}</p>
+    <CoverPicker bind:cover={novel.cover} text={novel} />
 
     <h3>{t("settings.structure")}</h3>
     <label class="check"><input type="checkbox" bind:checked={novel.structure.parts} /> {t("settings.parts")}</label>

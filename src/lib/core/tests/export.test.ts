@@ -4,6 +4,8 @@ import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
 import { bookToTypst, str } from "../export/typst";
 import { crc32 } from "../export/zip";
+import { bookToMarkdown, escapeMarkdown } from "../export/markdown";
+import { coverSvg } from "../cover";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings, parseSettings } from "../settings";
@@ -180,5 +182,50 @@ describe("EPUB stylesheet", () => {
     const text = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
     expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id"))).toContain(EPUB_CSS.slice(0, 40));
     expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id", new Date(), "p { color: red; }"))).toContain("p { color: red; }");
+  });
+});
+
+describe("markdown export", () => {
+  it("writes the whole novel as one file", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nauthor: Ada Rossi\nlanguage: it\nexport:\n  paratext:\n    dedication: A Bruno\n",
+      "Manuscript/010 Return/010 Arrival.md": "---\nstatus: draft\n---\nThe *train* left{>>@luca: why?<<}.\n\n- not a list",
+      "Manuscript/010 Return/020 House.md": "# 1 house\n\nThe house.",
+    });
+    const project = await Project.open(fs);
+    const md = bookToMarkdown(await buildBook(project), project.settings.export.docx);
+    expect(md).toBe(
+      [
+        "---\ntitle: Test\nauthor: Ada Rossi\nlang: it\n---",
+        "# Test",
+        "Ada Rossi",
+        "*A Bruno*",
+        "## Capitolo 1: Return",
+        "The *train* left.",
+        "• not a list",
+        "\\#",
+        "#### 1 house",
+        "The house.",
+      ].join("\n\n") + "\n",
+    );
+  });
+
+  it("escapes markup in the text", () => {
+    expect(escapeMarkdown("a_b *c* [d] #e")).toBe("a\\_b \\*c\\* \\[d\\] \\#e");
+  });
+});
+
+describe("cover in exports", () => {
+  it("opens the EPUB and the PDF", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nauthor: Ada\n", "Manuscript/010 One/010 A.md": "Text." });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    const svg = coverSvg(project.settings, project.settings.cover);
+    const epub = new TextDecoder("latin1").decode(bookToEpub(book, project.settings.export.docx, "id", new Date(), "", { data: svg, mediaType: "image/svg+xml" }));
+    expect(epub).toContain('properties="cover-image"');
+    expect(epub).toContain("OEBPS/cover.svg");
+    expect(epub).toContain('<img src="cover.svg"');
+    const typst = bookToTypst(book, project.settings.export.docx, { words: "words" }, svg);
+    expect(typst).toContain('#page(margin: 0pt, header: none, footer: none, image(bytes("<svg ');
   });
 });

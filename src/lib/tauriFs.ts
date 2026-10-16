@@ -29,6 +29,9 @@ export class TauriFs implements ProjectFs {
   async readBytes(path: string) {
     return new Uint8Array(await invoke<ArrayBuffer>("read_bytes", { root: this.root, path }));
   }
+  writeBytes(path: string, content: Uint8Array) {
+    return invoke<void>("write_bytes", { root: this.root, path, content: Array.from(content) });
+  }
   /** Opens the file with the application the system uses for its kind. */
   openWithSystem(path: string) {
     return invoke<void>("open_with_system", { root: this.root, path });

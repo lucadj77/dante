@@ -6,6 +6,7 @@
   import type { MessageKey } from "$lib/i18n";
   import ManuscriptView from "./ManuscriptView.svelte";
   import ExportView from "./ExportView.svelte";
+  import { EXPORT_FOLDER } from "$lib/core/export/files";
   import SettingsView from "./SettingsView.svelte";
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
@@ -201,7 +202,7 @@
       await invoke("watch_project", { root: fs.root });
       unlisten = await listen<string[]>("project-changed", (event) => {
         const relevant = event.payload.some(
-          (p) => !p.startsWith(".dante/") && !p.includes(".dante-tmp") && !p.includes(".dante-move-"),
+          (p) => !p.startsWith(".dante/") && p !== EXPORT_FOLDER && !p.startsWith(`${EXPORT_FOLDER}/`) && !p.includes(".dante-tmp") && !p.includes(".dante-move-"),
         );
         if (!relevant) return;
         clearTimeout(timer);

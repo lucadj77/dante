@@ -39,7 +39,7 @@ function fonts(font: string): string {
 const cm = (n: number) => `${+n.toFixed(2)}cm`;
 
 /** Renders the book with the same choices as the DOCX: manuscript or typeset book. */
-export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }): string {
+export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = ""): string {
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -78,6 +78,9 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   emit(`}`);
   emit(`#let separator(body) = align(center, block(above: ${+(leading + 0.6).toFixed(2)}em, below: ${+(leading + 0.6).toFixed(2)}em, body))`);
   emit("");
+
+  // The cover fills the first page, edge to edge.
+  if (coverSvg) emit(`#page(margin: 0pt, header: none, footer: none, image(bytes(${str(coverSvg)}), format: "svg", width: 100%, height: 100%, fit: "cover"))`);
 
   // Front matter: title page, dedication, epigraph, each on its own page.
   let pages = 0;

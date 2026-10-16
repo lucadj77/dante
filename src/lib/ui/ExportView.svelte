@@ -4,8 +4,12 @@
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
   import { bookToEpub, EPUB_CSS } from "$lib/core/export/epub";
   import { bookToTypst } from "$lib/core/export/typst";
+  import { bookToMarkdown } from "$lib/core/export/markdown";
+  import { EXPORT_FOLDER, exportBaseName } from "$lib/core/export/files";
+  import { coverSvg, svgUrl } from "$lib/core/cover";
+  import { coverPng } from "./coverImage";
   import type { Project } from "$lib/core/project";
-  import { defaultQuotes, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
   import { app, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
@@ -51,13 +55,18 @@
   // svelte-ignore state_referenced_locally
   let epubId = project.settings.export.epubId;
   // svelte-ignore state_referenced_locally
+  let useCover = $state(project.settings.export.cover);
+  const coverUrl = $derived(svgUrl(coverSvg(project.settings, project.settings.cover)));
+  // svelte-ignore state_referenced_locally
   let epubCss = $state(project.settings.export.epubCss.trim() ? project.settings.export.epubCss : EPUB_CSS);
 
   const FORMATS: Record<ExportFormat, { ext: string; name: string; mime: string }> = {
     docx: { ext: "docx", name: "Word", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
     pdf: { ext: "pdf", name: "PDF", mime: "application/pdf" },
     epub: { ext: "epub", name: "EPUB", mime: "application/epub+zip" },
+    md: { ext: "md", name: "Markdown", mime: "text/markdown" },
   };
+  const desktop = inTauri();
 
   /** The choices on this page, as the project stores them. */
   function chosen() {
@@ -68,6 +77,7 @@
     settings.export.revisions = revisions;
     settings.export.format = format;
     settings.export.epubId = epubId;
+    settings.export.cover = useCover;
     // The default stylesheet is not copied into the project, so later versions of Dante can improve it.
     settings.export.epubCss = epubCss.trim() === EPUB_CSS.trim() ? "" : epubCss;
     settings.structure = $state.snapshot(structure);
@@ -96,7 +106,7 @@
     return saving;
   }
   $effect(() => {
-    JSON.stringify([options, typography, paratext, structure, revisions, format]);
+    JSON.stringify([options, typography, paratext, structure, revisions, format, useCover]);
     const timer = setTimeout(() => void persist().catch((e) => (error = t("error.generic", { message: String(e) }))), 500);
     return () => clearTimeout(timer);
   });
@@ -114,9 +124,17 @@
     { key: "sceneBreak" as const, label: "export.sceneBreak" as const },
   ]);
 
-  function fileName(ext = FORMATS[format].ext) {
-    const base = (project.settings.title || "manuscript").replace(/[\\/:*?"<>|]/g, " ").trim();
-    return `${base}.${ext}`;
+  /** "Author_Title_2026-10-16-11-30.ext": each export gets its own name, so none replaces another. */
+  function fileName(ext = FORMATS[format].ext, date = new Date()) {
+    return `${exportBaseName(project.settings, date)}.${ext}`;
+  }
+
+  /** A path in the export folder not taken yet, relative to the project. */
+  async function exportPath(ext = FORMATS[format].ext): Promise<string> {
+    const name = fileName(ext).replace(/\.[^.]+$/, "");
+    let path = `${EXPORT_FOLDER}/${name}.${ext}`;
+    for (let n = 2; await project.fs.exists(path); n++) path = `${EXPORT_FOLDER}/${name}-${n}.${ext}`;
+    return path;
   }
 
   /** Asks where to save the file in the desktop app; null if cancelled. */
@@ -140,14 +158,42 @@
     return path;
   }
 
-  /** Where the file went: a path in the desktop app, "" for a browser download, null if cancelled. */
-  async function save(bytes: Uint8Array, name = fileName(), mime = FORMATS[format].mime): Promise<string | null> {
-    if (inTauri()) {
+  /** Where a file went: in the project, or anywhere on the computer. */
+  interface Saved {
+    /** Path in the project, for files in the export folder. */
+    relative: string;
+    absolute: string;
+  }
+
+  // svelte-ignore state_referenced_locally
+  const root = project.fs instanceof TauriFs ? project.fs.root : "";
+  const inProject = (relative: string): Saved => ({ relative, absolute: `${root.replace(/[\\/]+$/, "")}/${relative}` });
+
+  /**
+   * Where to write: a new file in the export folder, or the place chosen in a dialog.
+   * Null if the dialog was cancelled.
+   */
+  async function destination(elsewhere: boolean): Promise<Saved | null> {
+    if (elsewhere) {
       const path = await choosePath();
-      if (!path) return null;
-      const { writeFile } = await import("@tauri-apps/plugin-fs");
-      await writeFile(path, bytes);
-      return path;
+      return path ? { relative: "", absolute: path } : null;
+    }
+    return inProject(await exportPath());
+  }
+
+  /** Writes the file in the desktop app; a browser downloads it instead and gets "". */
+  async function save(bytes: Uint8Array | string, elsewhere: boolean, name = fileName(), mime = FORMATS[format].mime): Promise<Saved | "" | null> {
+    if (desktop) {
+      const where = await destination(elsewhere);
+      if (!where) return null;
+      if (where.relative) {
+        if (typeof bytes === "string") await project.fs.writeText(where.relative, bytes);
+        else await project.fs.writeBytes(where.relative, bytes);
+      } else {
+        const { writeFile } = await import("@tauri-apps/plugin-fs");
+        await writeFile(where.absolute, typeof bytes === "string" ? new TextEncoder().encode(bytes) : bytes);
+      }
+      return where;
     }
     const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
     const link = document.createElement("a");
@@ -158,32 +204,49 @@
     return "";
   }
 
-  let savedPath = $state<string | null>(null);
+  let saved = $state<Saved | null>(null);
+
+  const fail = (e: unknown) => (error = t("error.generic", { message: e instanceof Error ? e.message : String(e) }));
 
   async function openFile() {
-    if (!savedPath) return;
+    if (!saved) return;
     try {
-      const { openPath } = await import("@tauri-apps/plugin-opener");
-      await openPath(savedPath);
+      if (saved.relative && project.fs instanceof TauriFs) await project.fs.openWithSystem(saved.relative);
+      else {
+        const { openPath } = await import("@tauri-apps/plugin-opener");
+        await openPath(saved.absolute);
+      }
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      fail(e);
     }
   }
 
   async function openFolder() {
-    if (!savedPath) return;
+    if (!saved) return;
     try {
       const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
-      await revealItemInDir(savedPath);
+      await revealItemInDir(saved.absolute);
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      fail(e);
     }
   }
 
-  async function run() {
+  /** Opens the export folder, where earlier exports are, creating it the first time. */
+  async function openExports() {
+    error = "";
+    try {
+      if (!(project.fs instanceof TauriFs)) return;
+      await project.fs.mkdir(EXPORT_FOLDER);
+      await project.fs.openWithSystem(EXPORT_FOLDER);
+    } catch (e) {
+      fail(e);
+    }
+  }
+
+  async function run(elsewhere = false) {
     error = "";
     message = "";
-    savedPath = null;
+    saved = null;
     busy = true;
     try {
       if (format === "epub" && !epubId) epubId = crypto.randomUUID();
@@ -192,35 +255,41 @@
       const layout = project.settings.export.docx;
       const labels = { words: t("export.words") };
       const pages = pageCount(book, project.settings.pages).toLocaleString(undefined, { maximumFractionDigits: 1 });
-      let where: string | null;
+      const cover = useCover && (format === "epub" || format === "pdf") ? coverSvg(project.settings, project.settings.cover) : "";
+      let where: Saved | "" | null;
       if (format === "docx") {
-        where = await save(await docxBytes(bookToDocx(book, layout, labels)));
+        where = await save(await docxBytes(bookToDocx(book, layout, labels)), elsewhere);
+      } else if (format === "md") {
+        where = await save(bookToMarkdown(book, layout), elsewhere);
       } else if (format === "epub") {
-        where = await save(bookToEpub(book, layout, epubId, new Date(), epubCss));
-      } else if (inTauri()) {
+        const png = cover ? await coverPng(cover) : null;
+        const image = png ? { data: png, mediaType: "image/png" as const } : cover ? { data: cover, mediaType: "image/svg+xml" as const } : undefined;
+        where = await save(bookToEpub(book, layout, epubId, new Date(), epubCss, image), elsewhere);
+      } else if (desktop) {
         // Typst, inside the app, turns the source into the PDF at the chosen path. Files the
         // text refers to are looked up in the project's folder; the sample project has none.
-        const source = bookToTypst(book, layout, labels);
-        where = await choosePath();
+        const source = bookToTypst(book, layout, labels, cover);
+        where = await destination(elsewhere);
         if (where) {
+          if (where.relative) await project.fs.mkdir(EXPORT_FOLDER);
           const { invoke } = await import("@tauri-apps/api/core");
-          const root = project.fs instanceof TauriFs ? project.fs.root : where.replace(/[\\/][^\\/]*$/, "") || "/";
-          await invoke("compile_pdf", { root, source, output: where });
+          const typstRoot = root || where.absolute.replace(/[\\/][^\\/]*$/, "") || "/";
+          await invoke("compile_pdf", { root: typstRoot, source, output: where.absolute });
         }
       } else {
         // Only the desktop app compiles PDFs; a browser gets the Typst source.
-        where = await save(new TextEncoder().encode(bookToTypst(book, layout, labels)), fileName("typ"), "text/plain");
+        where = await save(bookToTypst(book, layout, labels, cover), elsewhere, fileName("typ"), "text/plain");
         if (where !== null) {
           message = t("export.pdfBrowser");
           return;
         }
       }
       if (where !== null) {
-        savedPath = where || null;
+        saved = where || null;
         message = t("export.done", { words: book.words.toLocaleString(), pages });
       }
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      fail(e);
     } finally {
       busy = false;
     }
@@ -234,9 +303,13 @@
       void run();
     }}
   >
-    <h2>{t("export.title")}</h2>
+    <div class="top">
+      <h2>{t("export.title")}</h2>
+      {#if desktop}<button type="button" onclick={openExports}>{t("export.openExports")}</button>{/if}
+    </div>
+    {#if desktop}<p class="hint">{t("export.folderHint")}</p>{/if}
     <div class="formats" role="radiogroup" aria-label={t("export.format")}>
-      {#each ["docx", "pdf", "epub"] as const as f (f)}
+      {#each EXPORT_FORMATS as f (f)}
         <label class="format" class:chosen={format === f}>
           <input type="radio" name="format" value={f} bind:group={format} />
           <strong>{t(`export.format.${f}`)}</strong>
@@ -254,6 +327,8 @@
         {t("export.epubCssHint")}
         {#if epubCss.trim() !== EPUB_CSS.trim()}<button type="button" class="link" onclick={() => (epubCss = EPUB_CSS)}>{t("export.epubCssReset")}</button>{/if}
       </p>
+    {:else if format === "md"}
+      <p class="hint">{t("export.mdHint")}</p>
     {:else}
     <label
       >{t("export.profile")}
@@ -299,6 +374,15 @@
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
     <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
+    {#if format === "epub" || format === "pdf"}
+      <div class="cover">
+        <img src={coverUrl} alt={t("cover.preview")} />
+        <div>
+          <label class="check"><input type="checkbox" bind:checked={useCover} /> {t("export.cover")}</label>
+          <p class="hint">{t("export.coverHint")}</p>
+        </div>
+      </div>
+    {/if}
 
     <h4>{t("export.structure")}</h4>
     <div class="row">
@@ -382,14 +466,15 @@
     </label>
     <div class="actions">
       <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run", { format: FORMATS[format].name === "Word" ? "DOCX" : FORMATS[format].name })}</button>
+      {#if desktop}<button type="button" class="link" disabled={busy} onclick={() => run(true)}>{t("export.saveElsewhere")}</button>{/if}
       {#if error}<span class="error" role="alert">{error}</span>{/if}
     </div>
     {#if message}
       <div class="success" role="status">
         <strong>{t("export.success")}</strong>
         <span>{message}</span>
-        {#if savedPath}
-          <span class="path">{savedPath}</span>
+        {#if saved}
+          <span class="path">{saved.relative ? t("export.savedAs", { path: saved.relative }) : saved.absolute}</span>
           <div class="buttons">
             <button type="button" onclick={openFile}>{t("export.openFile")}</button>
             <button type="button" onclick={openFolder}>{t("export.openFolder")}</button>
@@ -408,6 +493,38 @@
   .field .label {
     color: var(--text-muted);
     font-size: 13px;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .top h2 {
+    margin: 0;
+  }
+  .cover {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .cover img {
+    width: 48px;
+    aspect-ratio: 2 / 3;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+  }
+  .cover .hint {
+    margin: 0;
+  }
+  .actions .link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--accent);
+    cursor: pointer;
   }
   .export {
     height: 100%;
@@ -444,11 +561,12 @@
   }
   .formats {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
   .format {
     display: grid;
+    align-content: start;
     gap: 2px;
     padding: 8px 10px;
     border: 1px solid var(--border);

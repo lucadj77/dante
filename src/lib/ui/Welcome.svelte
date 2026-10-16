@@ -2,7 +2,9 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { sanitizeTitle } from "$lib/core/naming";
   import { Project } from "$lib/core/project";
-  import { SETTINGS_FILE } from "$lib/core/settings";
+  import { parseSettings, SETTINGS_FILE } from "$lib/core/settings";
+  import { coverSvg, resolveCover, svgUrl, type CoverSettings } from "$lib/core/cover";
+  import CoverPicker from "./CoverPicker.svelte";
   import { sampleProject } from "$lib/sample";
   import { app, exportPreferences, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
@@ -22,6 +24,28 @@
   let language = $state(app.settings.language);
   let parent = $state("");
   let busy = $state(false);
+  /** Follows the title until the writer picks shapes or colours. */
+  let cover = $state<CoverSettings>({ template: "", palette: "" });
+
+  /** Covers of the recent projects, drawn from each project's settings. */
+  let covers = $state<Record<string, string>>({});
+  $effect(() => {
+    for (const r of recent.projects) {
+      if (covers[r.path]) continue;
+      const fallback = svgUrl(coverSvg({ title: r.title, author: "" }, { template: "", palette: "" }));
+      covers[r.path] = fallback;
+      if (!desktop) continue;
+      void new TauriFs(r.path)
+        .readText(SETTINGS_FILE)
+        .then((text) => {
+          const settings = parseSettings(text);
+          covers[r.path] = svgUrl(coverSvg({ ...settings, title: settings.title || r.title }, settings.cover));
+        })
+        .catch(() => {
+          // A project without settings, or out of reach: the title alone makes its cover.
+        });
+    }
+  });
   const folderName = $derived(sanitizeTitle(title));
   /** A book read from a Word file, made into the new project instead of an empty one. */
   let content = $state<DocxContent | null>(null);
@@ -130,7 +154,7 @@
     try {
       if (!desktop) {
         // In a browser an imported book can be tried, kept only while the page is open.
-        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), author: author.trim(), language }, null, exportPreferences());
+        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), author: author.trim(), language, cover: resolveCover(cover, title) }, null, exportPreferences());
         if (imported) await project.importBook(imported);
         onOpen(project);
         return;
@@ -143,7 +167,7 @@
       }
       const { project } = await Project.create(
         fs,
-        { title: title.trim(), author: author.trim(), language },
+        { title: title.trim(), author: author.trim(), language, cover: resolveCover(cover, title) },
         imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
         exportPreferences(),
       );
@@ -222,6 +246,10 @@
           {/each}
         </select>
       </label>
+      <div class="field">
+        <span class="label">{t("cover.title")}</span>
+        <CoverPicker bind:cover text={{ title, author }} />
+      </div>
       {#if desktop}
       <div class="where">
         <span class="label">{t("welcome.where")}</span>
@@ -266,11 +294,11 @@
       <ul class="recent">
         {#each recent.projects as r (r.path)}
           <li>
-            <button class="item" onclick={() => openRecent(r.path)}>
+            <button class="item" title={r.path} onclick={() => openRecent(r.path)}>
+              <img class="cover" src={covers[r.path]} alt="" />
               <span class="name">{r.title}</span>
-              <span class="path">{r.path}</span>
+              <span class="date">{dateFormat.format(new Date(r.opened))}</span>
             </button>
-            <span class="date">{dateFormat.format(new Date(r.opened))}</span>
             <button class="remove" aria-label={t("welcome.forget", { name: r.title })} title={t("welcome.forget", { name: r.title })} onclick={() => forgetProject(r.path)}>×</button>
           </li>
         {/each}
@@ -365,35 +393,48 @@
     color: var(--text-muted);
     width: 100%;
   }
+  .field {
+    display: grid;
+    gap: 4px;
+  }
+  .field .label {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
   .recent {
     list-style: none;
     margin: 0;
     padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+    gap: 16px 12px;
   }
   .recent li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 6px;
-  }
-  .recent li:hover {
-    background: var(--bg-hover);
+    position: relative;
+    min-width: 0;
   }
   .item {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
     display: grid;
+    gap: 2px;
     text-align: left;
     border: none;
     background: none;
-    padding: 6px 8px;
+    padding: 6px;
+    border-radius: 6px;
+  }
+  .item:hover {
+    background: var(--bg-hover);
+  }
+  .cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: 3px;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+    margin-bottom: 6px;
   }
   .name {
-    font-size: 14px;
-  }
-  .path {
-    color: var(--text-muted);
-    font-size: 12px;
+    font-size: 13px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -403,10 +444,16 @@
     font-size: 12px;
   }
   .remove {
-    border: none;
-    background: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
     opacity: 0;
-    padding: 0 8px;
   }
   .recent li:hover .remove,
   .remove:focus-visible {
