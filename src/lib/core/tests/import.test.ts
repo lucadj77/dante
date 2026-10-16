@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CommentRangeEnd, CommentRangeStart, CommentReference, Document, FootnoteReferenceRun, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { readDocument, readDocx } from "../import/docx";
-import { counts, defaultRoles, headingLevels, ownTitle, structure } from "../import/structure";
+import { counts, defaultBlankLines, defaultRoles, headingLevels, ownTitle, structure } from "../import/structure";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 
@@ -112,6 +112,18 @@ describe("the structure of an imported book", () => {
     expect(scenes.hasParts).toBe(false);
     expect(scenes.parts[0].chapters[0].scenes.map((s) => s.title)).toEqual(["Arrival", "The house"]);
     expect(counts(scenes)).toEqual({ parts: 0, chapters: 1, scenes: 2, words: 2 });
+  });
+
+  it("splits scenes at empty paragraphs unless they are spacing", () => {
+    const one = [h(1, "Chapter 1"), p("A."), p("B."), p(""), p("C."), p("D.")];
+    expect(defaultBlankLines(one)).toBe(1);
+    expect(structure(one, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.", "C.\n\nD."]);
+    expect(structure(one, names, "", undefined, 0).parts[0].chapters[0].scenes).toHaveLength(1);
+    // Empty paragraphs between every paragraph are spacing; two in a row still break.
+    const spaced = [h(1, "Chapter 1"), p("A."), p(""), p("B."), p(""), p("C."), p(""), p(""), p("D."), p(""), p("E.")];
+    expect(defaultBlankLines(spaced)).toBe(2);
+    expect(structure(spaced, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.\n\nC.", "D.\n\nE."]);
+    expect(defaultBlankLines([p("A."), p("B.")])).toBe(0);
   });
 
   it("lets the writer choose what each heading level becomes", () => {

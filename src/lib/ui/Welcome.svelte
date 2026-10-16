@@ -8,7 +8,7 @@
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
-  import { counts, defaultRoles, headingLevels, structure, type HeadingRole } from "$lib/core/import/structure";
+  import { counts, defaultBlankLines, defaultRoles, headingLevels, structure, type BlankLines, type HeadingRole } from "$lib/core/import/structure";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
   let error = $state("");
@@ -28,8 +28,11 @@
   /** What each heading level of the Word file becomes; the writer can change it. */
   let roles = $state<Record<number, HeadingRole>>({});
   const levels = $derived(content ? headingLevels(content.blocks) : []);
+  /** How many empty paragraphs in a row start a new scene; 0 when they never do. */
+  let blanks = $state<BlankLines>(0);
+  const hasBlanks = $derived(!!content?.blocks.some((b) => b.kind === "paragraph" && b.text === ""));
   const imported = $derived(
-    content ? structure(content.blocks, { start: t("untitled"), scene: (n) => t("import.scene", { n }) }, content.title, roles) : null,
+    content ? structure(content.blocks, { start: t("untitled"), scene: (n) => t("import.scene", { n }) }, content.title, roles, blanks) : null,
   );
   const ROLES: HeadingRole[] = ["part", "chapter", "scene", "text"];
   let importedFrom = $state("");
@@ -92,6 +95,7 @@
     try {
       const read = await readDocx(bytes, { note: t("import.note") });
       roles = defaultRoles(read.blocks);
+      blanks = defaultBlankLines(read.blocks);
       content = read;
       importedFrom = fileName;
       title = imported?.title || fileName.replace(/\.docx$/i, "");
@@ -190,6 +194,16 @@
             </label>
           {/each}
         </div>
+      {/if}
+      {#if hasBlanks}
+        <label class="level blanks">
+          <span class="examples">{t("import.blanks")}</span>
+          <select bind:value={blanks}>
+            <option value={1}>{t("import.blanks.one")}</option>
+            <option value={2}>{t("import.blanks.two")}</option>
+            <option value={0}>{t("import.blanks.none")}</option>
+          </select>
+        </label>
       {/if}
     {/if}
     <form
@@ -308,6 +322,10 @@
   }
   .levels .label {
     color: var(--text-muted);
+  }
+  .blanks {
+    margin-bottom: 16px;
+    font-size: 13px;
   }
   .level {
     display: flex;
