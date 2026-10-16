@@ -19,7 +19,7 @@
   import type { ManuscriptNode } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
-  import { t } from "$lib/state.svelte";
+  import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels } from "./formatLabels";
   import { navigator } from "./navigation";
@@ -127,7 +127,7 @@
         extensions: [shared.extension],
       });
       shared.attach(editor.view);
-      editor.setModes({ typewriter: props.typewriter, focus: props.focusMode });
+      editor.setModes({ typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight });
       collab.ready(editor);
       props.register(path, handle);
     }, () => {
@@ -145,7 +145,7 @@
 
   // The props are read before the editor exists too, so the effect follows them.
   $effect(() => {
-    const modes = { typewriter: props.typewriter, focus: props.focusMode };
+    const modes = { typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight };
     editor?.setModes(modes);
   });
 

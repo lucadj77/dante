@@ -131,6 +131,7 @@ select {
 .format-row button:hover { background: var(--bg-hover); }
 .cm-format-gap { width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
 .cm-line.cm-dimmed { opacity: 0.35; transition: opacity 0.15s; }
+.cm-cursorLineLayer .cm-cursorLine { border-radius: 3px; background: color-mix(in srgb, var(--text) 6%, transparent); }
 .raw .cm-content { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.85em; }
 .md-wikilink { cursor: pointer; }
 .md-wikilink.md-unresolved { opacity: 0.6; text-decoration: underline dotted; }

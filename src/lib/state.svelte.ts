@@ -12,6 +12,8 @@ export interface AppSettings {
   formatBar: boolean;
   /** Revision mode: changes are written as CriticMarkup signed with the user name. */
   revisions: boolean;
+  /** A light shade on the row the cursor is on. */
+  lineHighlight: boolean;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -27,6 +29,7 @@ function defaults(): AppSettings {
     userName: "",
     formatBar: true,
     revisions: false,
+    lineHighlight: false,
   };
 }
 

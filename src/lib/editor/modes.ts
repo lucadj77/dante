@@ -1,5 +1,5 @@
 import { EditorState, RangeSetBuilder } from "@codemirror/state";
-import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
+import { Decoration, EditorView, layer, RectangleMarker, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 /** Keeps the line being written at the middle of the screen. */
 export const typewriterMode = [
@@ -44,3 +44,29 @@ export const focusMode = ViewPlugin.fromClass(
   },
   { decorations: (v) => v.decorations },
 );
+
+/**
+ * Shades the row the cursor is on, as it is drawn on screen: a long paragraph wraps over
+ * several rows and only the one being written is marked. Drawn under the text, across the
+ * whole column, and only in the editor that has the cursor.
+ */
+export const cursorLine = layer({
+  above: false,
+  class: "cm-cursorLineLayer",
+  markers(view) {
+    if (!view.hasFocus) return [];
+    const { head, assoc } = view.state.selection.main;
+    const at = view.coordsAtPos(head, assoc || 1);
+    if (!at) return [];
+    // The layer's origin, as CodeMirror places it inside the scroller.
+    const scroller = view.scrollDOM.getBoundingClientRect();
+    const baseLeft = scroller.left - view.scrollDOM.scrollLeft * view.scaleX;
+    const baseTop = scroller.top - view.scrollDOM.scrollTop * view.scaleY;
+    const content = view.contentDOM.getBoundingClientRect();
+    // As tall as a row of text, even where the letters are smaller, such as in an empty line.
+    const height = Math.max(at.bottom - at.top, view.defaultLineHeight);
+    const middle = (at.top + at.bottom) / 2;
+    return [new RectangleMarker("cm-cursorLine", content.left - baseLeft, middle - height / 2 - baseTop, content.width, height)];
+  },
+  update: (update) => update.docChanged || update.selectionSet || update.focusChanged || update.geometryChanged || update.viewportChanged,
+});

@@ -11,6 +11,7 @@
     raw: "M8 6l-6 6 6 6 M16 6l6 6-6 6",
     focus: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
     typewriter: "M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M6 10h1 M10 10h1 M14 10h1 M18 10h1 M7 14h10",
+    lineHighlight: "M3 10h18v4H3z M3 5h14 M3 19h12",
     fullscreen: "M3 8V3h5 M21 8V3h-5 M3 16v5h5 M21 16v5h-5",
     revisions: "M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
     zoomOut: "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3 M8 11h6",
