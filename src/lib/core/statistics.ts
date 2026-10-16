@@ -19,6 +19,8 @@ export interface SceneStats {
   title: string;
   /** Path of the chapter (or prologue, epilogue) holding the scene; "" outside any. */
   chapter: string;
+  /** Path of the part holding the scene; "" outside any. */
+  part: string;
   words: number;
   characters: number;
   /** The text as read: no comments, revisions accepted, no Markdown. */
@@ -28,6 +30,18 @@ export interface SceneStats {
 export interface ChapterStats {
   path: string;
   title: string;
+  /** Path of the part holding the chapter; "" outside any. */
+  part: string;
+  scenes: number;
+  words: number;
+  characters: number;
+}
+
+export interface PartStats {
+  /** "" for what lies outside the parts, such as a prologue: one last row for all of it. */
+  path: string;
+  title: string;
+  chapters: number;
   scenes: number;
   words: number;
   characters: number;
@@ -36,6 +50,8 @@ export interface ChapterStats {
 export interface ManuscriptStats {
   scenes: SceneStats[];
   chapters: ChapterStats[];
+  /** The parts in reading order, then a row for anything outside them; empty without parts. */
+  parts: PartStats[];
   words: number;
   characters: number;
   charactersNoSpaces: number;
@@ -45,34 +61,96 @@ export function manuscriptStats(manuscript: ManuscriptNode, index: NoteIndex, se
   const titles = headings(manuscript, settings);
   const scenes: SceneStats[] = [];
   const chapters: ChapterStats[] = [];
+  const parts: PartStats[] = [];
+  // Prologues, epilogues, chapters and scenes outside the parts share one row.
+  const outside: PartStats = { path: "", title: "", chapters: 0, scenes: 0, words: 0, characters: 0 };
+  const label = (node: ManuscriptNode) => (titles.get(node.path) ?? node.title).replace(/\n/g, " · ");
   let characters = 0;
   let charactersNoSpaces = 0;
-  const visit = (node: ManuscriptNode, chapter: ChapterStats | null) => {
+  const visit = (node: ManuscriptNode, part: PartStats | null, chapter: ChapterStats | null) => {
     for (const child of node.children) {
       if (child.kind === "scene") {
         const body = index.notes.get(child.path)?.body ?? "";
         const clean = cleanSource(body);
         const stats = textStats(clean);
-        scenes.push({ path: child.path, title: child.title, chapter: chapter?.path ?? "", words: stats.words, characters: stats.characters, text: plainText(clean) });
+        scenes.push({ path: child.path, title: child.title, chapter: chapter?.path ?? "", part: part?.path ?? "", words: stats.words, characters: stats.characters, text: plainText(clean) });
         characters += stats.characters;
         charactersNoSpaces += stats.charactersNoSpaces;
-        if (chapter) {
-          chapter.scenes++;
-          chapter.words += stats.words;
-          chapter.characters += stats.characters;
+        for (const total of [chapter, part ?? outside]) {
+          if (!total) continue;
+          total.scenes++;
+          total.words += stats.words;
+          total.characters += stats.characters;
         }
       } else if (child.kind === "part") {
-        visit(child, null);
-      } else {
+        const own: PartStats = { path: child.path, title: label(child), chapters: 0, scenes: 0, words: 0, characters: 0 };
+        parts.push(own);
+        visit(child, own, null);
+      } else if (chapter) {
         // Folders inside a chapter count towards it.
-        const own = chapter ?? { path: child.path, title: (titles.get(child.path) ?? child.title).replace(/\n/g, " · "), scenes: 0, words: 0, characters: 0 };
-        if (!chapter) chapters.push(own);
-        visit(child, own);
+        visit(child, part, chapter);
+      } else {
+        const own: ChapterStats = { path: child.path, title: label(child), part: part?.path ?? "", scenes: 0, words: 0, characters: 0 };
+        chapters.push(own);
+        (part ?? outside).chapters++;
+        visit(child, part, own);
       }
     }
   };
-  visit(manuscript, null);
-  return { scenes, chapters, words: scenes.reduce((n, s) => n + s.words, 0), characters, charactersNoSpaces };
+  visit(manuscript, null, null);
+  const withOutside = parts.length && outside.scenes + outside.chapters > 0 ? [...parts, outside] : parts;
+  return { scenes, chapters, parts: withOutside, words: scenes.reduce((n, s) => n + s.words, 0), characters, charactersNoSpaces };
+}
+
+export type LengthUnit = "words" | "characters";
+export type LengthLevel = "scene" | "chapter" | "part";
+
+export interface LengthRow {
+  path: string;
+  title: string;
+  /** Chapter or part holding a scene, part holding a chapter; "" when none. */
+  within: string;
+  /** Scenes in a chapter or part; 0 for a scene. */
+  scenes: number;
+  /** Words, or characters with spaces. */
+  length: number;
+  /** Share of the whole manuscript, 0 to 1. */
+  share: number;
+}
+
+export interface LengthAnalysis {
+  rows: LengthRow[];
+  total: number;
+  average: number;
+  median: number;
+  shortest: LengthRow | null;
+  longest: LengthRow | null;
+}
+
+/** Length of each scene, chapter or part, in words or in characters with spaces. */
+export function lengthAnalysis(stats: ManuscriptStats, level: LengthLevel, unit: LengthUnit): LengthAnalysis {
+  const of = (x: { words: number; characters: number }) => (unit === "words" ? x.words : x.characters);
+  const total = unit === "words" ? stats.words : stats.characters;
+  const name = new Map<string, string>([...stats.chapters, ...stats.parts].map((x) => [x.path, x.title]));
+  const items =
+    level === "scene"
+      ? stats.scenes.map((s) => ({ path: s.path, title: s.title, within: name.get(s.chapter || s.part) ?? "", scenes: 0, length: of(s) }))
+      : level === "chapter"
+        ? stats.chapters.map((c) => ({ path: c.path, title: c.title, within: name.get(c.part) ?? "", scenes: c.scenes, length: of(c) }))
+        : stats.parts.map((p) => ({ path: p.path, title: p.title, within: "", scenes: p.scenes, length: of(p) }));
+  const rows = items.map((x) => ({ ...x, share: total > 0 ? x.length / total : 0 }));
+  // The row outside the parts is not a part: it stays out of the averages.
+  const measured = rows.filter((r) => r.path !== "");
+  const sorted = [...measured].sort((a, b) => a.length - b.length);
+  const mid = sorted.length >> 1;
+  return {
+    rows,
+    total,
+    average: measured.length ? measured.reduce((n, r) => n + r.length, 0) / measured.length : 0,
+    median: !sorted.length ? 0 : sorted.length % 2 ? sorted[mid].length : (sorted[mid - 1].length + sorted[mid].length) / 2,
+    shortest: sorted[0] ?? null,
+    longest: sorted[sorted.length - 1] ?? null,
+  };
 }
 
 /** Words too common to tell anything about a style, by language. */
