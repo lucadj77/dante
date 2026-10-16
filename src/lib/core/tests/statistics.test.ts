@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { frequentWords, goalProgress, manuscriptStats, mentions, pageCount, sceneSheets } from "../statistics";
+import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets } from "../statistics";
 import { parseSettings } from "../settings";
 
 function sample() {
@@ -31,6 +31,43 @@ describe("statistics", () => {
       ["Capitolo 2: Lettera", 1, 6],
     ]);
     expect(stats.words).toBe(20);
+  });
+
+  it("measures scenes, chapters and parts in words or characters", async () => {
+    const p = await Project.open(
+      new MemoryFs({
+        "dante.yaml": "title: Test\nlanguage: it\nstructure:\n  parts: true\n",
+        "Manoscritto/000 Prologo/000 Prologo.md": "---\nkind: prologue\n---\n",
+        "Manoscritto/000 Prologo/010 Inizio.md": "Una parola.",
+        "Manoscritto/010 Prima/010 Ritorno/010 Arrivo.md": "Tre parole qui.",
+        "Manoscritto/010 Prima/010 Ritorno/020 Casa.md": "Cinque parole sono qui adesso.",
+        "Manoscritto/010 Prima/020 Lettera/010 Busta.md": "Due parole.",
+        "Manoscritto/020 Seconda/010 Fine/010 Ultima.md": "Quattro parole qui dentro.",
+      }),
+    );
+    const stats = manuscriptStats(p.manuscript, await p.index(), p.settings);
+    expect(stats.parts.map((x) => [x.path, x.chapters, x.scenes, x.words])).toEqual([
+      ["Manoscritto/010 Prima", 2, 3, 10],
+      ["Manoscritto/020 Seconda", 1, 1, 4],
+      ["", 1, 1, 2],
+    ]);
+    const parts = lengthAnalysis(stats, "part", "words");
+    expect(parts.rows.map((r) => r.length)).toEqual([10, 4, 2]);
+    // The row outside the parts is not a part.
+    expect([parts.average, parts.median, parts.shortest?.length, parts.longest?.length]).toEqual([7, 7, 4, 10]);
+    const chapters = lengthAnalysis(stats, "chapter", "characters");
+    expect(chapters.rows.map((r) => r.length)).toEqual([11, 45, 11, 26]);
+    expect(chapters.rows[1].within).toBe(stats.parts[0].title);
+    expect(chapters.median).toBe(18.5);
+    const scenes = lengthAnalysis(stats, "scene", "words");
+    expect(scenes.rows.map((r) => [r.length, r.within])).toEqual([
+      [2, chapters.rows[0].title],
+      [3, chapters.rows[1].title],
+      [5, chapters.rows[1].title],
+      [2, chapters.rows[2].title],
+      [4, chapters.rows[3].title],
+    ]);
+    expect(scenes.rows.reduce((n, r) => n + r.share, 0)).toBeCloseTo(1);
   });
 
   it("finds the Story Bible notes named in the scenes, by name or alias", async () => {

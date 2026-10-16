@@ -12,6 +12,9 @@ export interface AppSettings {
   formatBar: boolean;
   /** Revision mode: changes are written as CriticMarkup signed with the user name. */
   revisions: boolean;
+  /** Length analysis in the statistics: what to measure and at which level. */
+  statsUnit: "words" | "characters";
+  statsLevel: "scene" | "chapter" | "part";
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -27,6 +30,8 @@ function defaults(): AppSettings {
     userName: "",
     formatBar: true,
     revisions: false,
+    statsUnit: "words",
+    statsLevel: "chapter",
   };
 }
 

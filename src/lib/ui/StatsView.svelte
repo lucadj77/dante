@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Project } from "$lib/core/project";
   import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
-  import { frequentWords, goalProgress, manuscriptStats, mentions, pageCount, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
+  import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
-  import { app, t } from "$lib/state.svelte";
+  import { app, saveAppSettings, t } from "$lib/state.svelte";
   import { navigator } from "./navigation";
   import { flushSessions, writing } from "./sessions.svelte";
 
@@ -113,7 +113,15 @@
       .sort((a, b) => b.last7 - a.last7);
   });
 
-  const longest = $derived(Math.max(1, ...(stats?.chapters ?? []).map((c) => c.words)));
+  // Length of scenes, chapters or parts, in words or characters: a choice of this computer.
+  const levels = $derived<LengthLevel[]>(stats?.parts.length ? ["scene", "chapter", "part"] : stats?.chapters.length ? ["scene", "chapter"] : ["scene"]);
+  const level = $derived(levels.includes(app.settings.statsLevel) ? app.settings.statsLevel : levels[levels.length - 1]);
+  const unit = $derived(app.settings.statsUnit);
+  const lengths = $derived(stats ? lengthAnalysis(stats, level, unit) : null);
+  const longest = $derived(Math.max(1, lengths?.longest?.length ?? 0, ...(lengths?.rows ?? []).map((r) => r.length)));
+  const levelName: Record<LengthLevel, "level.scene" | "level.chapter" | "level.part"> = { scene: "level.scene", chapter: "level.chapter", part: "level.part" };
+  const levelPlural: Record<LengthLevel, "statsView.scenes" | "statsView.chapters" | "statsView.parts"> = { scene: "statsView.scenes", chapter: "statsView.chapters", part: "statsView.parts" };
+  const setLength = (change: { statsUnit?: LengthUnit; statsLevel?: LengthLevel }) => saveAppSettings({ ...app.settings, ...change });
   const typeName = (id: string) => {
     const type = p.project.settings.types[id];
     return type ? `${type.icon} ${type.name}`.trim() : id;
@@ -224,20 +232,55 @@
       {/if}
     </section>
 
-    {#if stats.chapters.length}
+    {#if lengths && lengths.rows.length}
       <section>
-        <h2>{t("statsView.byChapter")}</h2>
+        <h2>{t("statsView.length")}</h2>
+        <div class="choices">
+          <div class="segmented" role="group" aria-label={t("statsView.measure")}>
+            {#each [["words", "stats.words"], ["characters", "stats.characters"]] as const as [id, key] (id)}
+              <button aria-pressed={unit === id} onclick={() => setLength({ statsUnit: id })}>{t(key)}</button>
+            {/each}
+          </div>
+          {#if levels.length > 1}
+            <div class="segmented" role="group" aria-label={t("statsView.level")}>
+              {#each levels as id (id)}
+                <button aria-pressed={level === id} onclick={() => setLength({ statsLevel: id })}>{t(levelPlural[id])}</button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+        <p class="line">
+          {t("statsView.lengthSummary", { average: n(lengths.average), median: n(lengths.median) })}
+          {#if lengths.shortest && lengths.longest && lengths.shortest !== lengths.longest}
+            {t("statsView.lengthRange", { shortest: lengths.shortest.title, short: n(lengths.shortest.length), longest: lengths.longest.title, long: n(lengths.longest.length) })}
+          {/if}
+        </p>
         <table class="chapters">
           <thead>
-            <tr><th>{t("level.chapter")}</th><th class="num">{t("statsView.scenes")}</th><th class="num">{t("stats.words")}</th><th class="share"></th></tr>
+            <tr>
+              <th>{t(levelName[level])}</th>
+              {#if level !== "part" && lengths.rows.some((r) => r.within)}<th>{t(level === "scene" ? "statsView.within" : "level.part")}</th>{/if}
+              {#if level !== "scene"}<th class="num">{t("statsView.scenes")}</th>{/if}
+              <th class="num">{t(unit === "words" ? "stats.words" : "stats.characters")}</th>
+              <th class="num">%</th>
+              <th class="share"></th>
+            </tr>
           </thead>
           <tbody>
-            {#each stats.chapters as chapter (chapter.path)}
-              <tr>
-                <td><button class="link" onclick={() => nav?.open(chapter.path)}>{chapter.title}</button></td>
-                <td class="num">{n(chapter.scenes)}</td>
-                <td class="num">{n(chapter.words)}</td>
-                <td class="share"><span style:width="{(chapter.words / longest) * 100}%"></span></td>
+            {#each lengths.rows as row (row.path)}
+              <tr class:outside={row.path === ""}>
+                <td>
+                  {#if row.path}
+                    <button class="link" onclick={() => nav?.open(row.path)}>{row.title}</button>
+                  {:else}
+                    {t("statsView.outsideParts")}
+                  {/if}
+                </td>
+                {#if level !== "part" && lengths.rows.some((r) => r.within)}<td class="small">{row.within}</td>{/if}
+                {#if level !== "scene"}<td class="num">{n(row.scenes)}</td>{/if}
+                <td class="num">{n(row.length)}</td>
+                <td class="num">{n(row.share * 100, 1)}</td>
+                <td class="share"><span style:width="{(row.length / longest) * 100}%"></span></td>
               </tr>
             {/each}
           </tbody>
@@ -479,6 +522,35 @@
   }
   .share {
     width: 30%;
+  }
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .segmented {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .segmented button {
+    border: none;
+    border-radius: 0;
+    font-size: 13px;
+    padding: 4px 10px;
+    background: none;
+  }
+  .segmented button + button {
+    border-left: 1px solid var(--border);
+  }
+  .segmented button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+  }
+  tr.outside td {
+    color: var(--text-muted);
+    font-style: italic;
   }
   .share span {
     display: block;
