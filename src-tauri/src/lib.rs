@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{App, Emitter, WebviewWindowBuilder};
+use tauri::{App, AppHandle, Emitter, Manager, State, WebviewWindowBuilder};
 
 /// Folder name that makes a copy of Dante portable: when it sits next to the program,
 /// settings and recent projects are kept there instead of in the user's profile, so the
@@ -15,6 +15,34 @@ const PORTABLE_DATA: &str = "dante-data";
 fn portable_data_dir() -> Option<PathBuf> {
     let dir = std::env::current_exe().ok()?.parent()?.join(PORTABLE_DATA);
     dir.is_dir().then_some(dir)
+}
+
+/// A project the system asked Dante to open, by double-clicking its launcher file (or its
+/// folder, or "Open with"), waiting for the page to take it.
+struct Opened(Mutex<Option<String>>);
+
+/// The first argument naming something on disk: Windows and Linux pass the file that was
+/// double-clicked this way.
+fn path_argument(args: impl IntoIterator<Item = String>) -> Option<String> {
+    args.into_iter()
+        .skip(1)
+        .find(|a| !a.starts_with('-') && std::path::Path::new(a).exists())
+}
+
+/// Keeps `path` for the page and tells it, bringing the window to the front.
+fn open_from_system(app: &AppHandle, path: String) {
+    *app.state::<Opened>().0.lock().unwrap() = Some(path);
+    let _ = app.emit("open-project", ());
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+/// The path the system asked to open, if any; it is handed out once.
+#[tauri::command]
+fn opened_project(opened: State<Opened>) -> Option<String> {
+    opened.0.lock().unwrap().take()
 }
 
 /// The Mac menu bar, as Tauri makes it but for Cmd+W: the usual "Close Window" would leave
@@ -77,11 +105,24 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
+        // A second copy started by a double-click hands its file to the running one and
+        // quits, so a project opens in the window already there.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            match path_argument(args) {
+                Some(path) => open_from_system(app, path),
+                None => {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(files::WatcherState(Mutex::new(None)))
+        .manage(Opened(Mutex::new(path_argument(std::env::args()))))
         // The window is created here rather than from the configuration, to choose where
         // the web view keeps its data.
         .setup(|app| {
@@ -110,7 +151,17 @@ pub fn run() {
             files::import_files,
             files::watch_project,
             pdf::compile_pdf,
+            opened_project,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+    // On the Mac a double-clicked file arrives as an event, whether Dante was running or not.
+    app.run(|_app, _event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = _event {
+            if let Some(path) = urls.into_iter().find_map(|u| u.to_file_path().ok()) {
+                open_from_system(_app, path.to_string_lossy().into_owned());
+            }
+        }
+    });
 }

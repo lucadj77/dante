@@ -331,6 +331,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "export.acknowledgements": "Ringraziamenti",
   "export.colophon": "Colophon",
   "error.generic": "Qualcosa è andato storto: {message}",
+  "launcher.content": "Questo file apre il romanzo in Dante: basta un doppio clic. Il progetto è la cartella in cui si trova; il file si può rinominare, ma non spostare fuori dalla cartella.\n",
   "side.properties": "Proprietà",
   "side.links": "Collegamenti",
   "side.search": "Cerca",

@@ -331,6 +331,7 @@ export const en = {
   "export.acknowledgements": "Acknowledgements",
   "export.colophon": "Colophon",
   "error.generic": "Something went wrong: {message}",
+  "launcher.content": "This file opens the novel in Dante: double-click it. The project is the folder it is in; the file can be renamed, but not moved out of the folder.\n",
   "side.properties": "Properties",
   "side.links": "Links",
   "side.search": "Search",

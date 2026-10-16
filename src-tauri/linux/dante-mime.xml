@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Makes the launcher file of a Dante project a type of its own, opened by Dante. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-dante-project">
+    <comment>Dante project</comment>
+    <glob pattern="*.dante"/>
+  </mime-type>
+</mime-info>

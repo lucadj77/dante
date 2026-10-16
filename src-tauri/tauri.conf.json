@@ -35,6 +35,41 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "dante"
+        ],
+        "name": "Dante project",
+        "description": "Dante project",
+        "role": "Editor",
+        "rank": "Owner",
+        "mimeType": "application/x-dante-project",
+        "contentTypes": [
+          "app.dante.writer.project"
+        ],
+        "exportedType": {
+          "identifier": "app.dante.writer.project",
+          "conformsTo": [
+            "public.data"
+          ]
+        }
+      }
+    ],
+    "linux": {
+      "deb": {
+        "desktopTemplate": "linux/dante.desktop",
+        "files": {
+          "/usr/share/mime/packages/dante.xml": "linux/dante-mime.xml"
+        }
+      },
+      "rpm": {
+        "desktopTemplate": "linux/dante.desktop",
+        "files": {
+          "/usr/share/mime/packages/dante.xml": "linux/dante-mime.xml"
+        }
+      }
+    }
   }
 }
