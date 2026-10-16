@@ -1,8 +1,7 @@
 // Turns a document read from another program into Dante's structure: parts, chapters and
-// scenes. The heading levels used decide what each is: with three levels, parts, chapters
-// and titled scenes; with two, parts and chapters when the first level reads like parts
-// ("Part One", "Libro primo"), otherwise chapters and titled scenes; with one, chapters.
-// Inside a chapter, a line of only asterisks, hashes or similar marks starts a new scene.
+// scenes. Each heading level becomes one of them, as `defaultRoles` guesses or as the
+// writer chooses. Inside a chapter, a line of only asterisks, hashes or similar marks
+// starts a new scene, and so do empty paragraphs when the writer used them that way.
 
 import type { DocBlock } from "./docx";
 
@@ -51,26 +50,99 @@ export interface ImportNames {
   scene: (n: number) => string;
 }
 
-export function structure(blocks: DocBlock[], names: ImportNames, title = ""): ImportedBook {
+/** What the headings of one level become; "text" keeps them in the text, as headings. */
+export type HeadingRole = "part" | "chapter" | "scene" | "text";
+
+export interface LevelSummary {
+  level: number;
+  count: number;
+  /** The first headings of the level, to recognize it. */
+  examples: string[];
+}
+
+/** The heading levels the book uses, from the highest; the title style is left out. */
+export function headingLevels(blocks: DocBlock[]): LevelSummary[] {
+  const levels = new Map<number, LevelSummary>();
+  for (const b of blocks) {
+    if (b.kind !== "heading" || b.level === 0) continue;
+    const summary = levels.get(b.level) ?? { level: b.level, count: 0, examples: [] };
+    summary.count++;
+    if (summary.examples.length < 3) summary.examples.push(b.text);
+    levels.set(b.level, summary);
+  }
+  return [...levels.values()].sort((a, b) => a.level - b.level);
+}
+
+/**
+ * What each heading level becomes unless the writer chooses otherwise: with three levels,
+ * parts, chapters and titled scenes; with two, parts and chapters when the first level
+ * reads like parts, otherwise chapters and titled scenes; with one, chapters.
+ */
+export function defaultRoles(blocks: DocBlock[]): Record<number, HeadingRole> {
+  const levels = headingLevels(blocks).map((l) => l.level);
+  const top = levels.filter((l) => l <= (levels[0] ?? 1) + 2);
+  const firstLevelTexts = blocks.filter((b) => b.kind === "heading" && b.level === top[0]).map((b) => b.text);
+  const named = firstLevelTexts.filter((t) => !FRAME.test(t));
+  const partsFirst = top.length >= 3 || (top.length === 2 && named.length > 0 && named.every((t) => PART_WORDS.test(t)));
+  const order: HeadingRole[] = partsFirst ? ["part", "chapter", "scene"] : ["chapter", "scene"];
+  const roles: Record<number, HeadingRole> = {};
+  levels.forEach((level) => {
+    const i = top.indexOf(level);
+    roles[level] = i >= 0 ? (order[i] ?? "text") : "text";
+  });
+  return roles;
+}
+
+/**
+ * How many empty paragraphs in a row separate scenes: 0 when they never do, 1 or 2.
+ */
+export type BlankLines = 0 | 1 | 2;
+
+/**
+ * Empty paragraphs separate scenes unless the writer uses them for spacing: when more than
+ * a third of the gaps between paragraphs hold one, only two in a row count, and not even
+ * those when they are as common.
+ */
+export function defaultBlankLines(blocks: DocBlock[]): BlankLines {
+  const gaps: number[] = [];
+  let run = -1;
+  for (const b of blocks) {
+    if (b.kind === "heading") run = -1;
+    else if (b.text === "") {
+      if (run >= 0) run++;
+    } else {
+      if (run >= 0) gaps.push(run);
+      run = 0;
+    }
+  }
+  if (gaps.length === 0) return 0;
+  const share = (min: number) => gaps.filter((g) => g >= min).length / gaps.length;
+  if (share(1) === 0) return 0;
+  if (share(1) <= 1 / 3) return 1;
+  return share(2) > 0 && share(2) <= 1 / 3 ? 2 : 0;
+}
+
+export function structure(
+  blocks: DocBlock[],
+  names: ImportNames,
+  title = "",
+  roles: Record<number, HeadingRole> = defaultRoles(blocks),
+  blanks: BlankLines = defaultBlankLines(blocks),
+): ImportedBook {
   // The title style names the book; it is not part of the text.
   const titled = blocks.find((b) => b.kind === "heading" && b.level === 0);
   const body = blocks.filter((b) => !(b.kind === "heading" && b.level === 0));
-  const levels = [...new Set(body.filter((b) => b.kind === "heading").map((b) => (b as { level: number }).level))].sort((a, b) => a - b);
-  const top = levels.filter((l) => l <= (levels[0] ?? 1) + 2);
-  const firstLevelTexts = body.filter((b) => b.kind === "heading" && b.level === top[0]).map((b) => b.text);
-  const named = firstLevelTexts.filter((t) => !FRAME.test(t));
-  const partsFirst = top.length >= 3 || (top.length === 2 && named.length > 0 && named.every((t) => PART_WORDS.test(t)));
+  const partsFirst = Object.values(roles).includes("part");
   const role = (level: number): "part" | "chapter" | "scene" | null => {
-    const i = top.indexOf(level);
-    if (i < 0) return null;
-    if (partsFirst) return (["part", "chapter", "scene"] as const)[i];
-    return (["chapter", "scene"] as const)[i] ?? null;
+    const r = roles[level];
+    return r && r !== "text" ? r : null;
   };
 
   const parts: ImportedPart[] = [{ title: "", chapters: [] }];
   let chapter: ImportedChapter | null = null;
   let scene: ImportedScene | null = null;
   let lines: string[] = [];
+  let blank = 0;
 
   const closeScene = () => {
     const text = lines.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -90,11 +162,19 @@ export function structure(blocks: DocBlock[], names: ImportNames, title = ""): I
     if (b.kind === "paragraph") {
       if (SCENE_BREAK.test(b.text)) {
         closeScene();
+        blank = 0;
         continue;
       }
-      if (b.text) lines.push(b.text);
+      if (!b.text) {
+        blank++;
+        continue;
+      }
+      if (blanks > 0 && blank >= blanks && lines.length > 0) closeScene();
+      blank = 0;
+      lines.push(b.text);
       continue;
     }
+    blank = 0;
     const r = role(b.level);
     if (r === null) {
       // A deeper heading than the structure uses stays in the text as a heading.

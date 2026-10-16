@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import { CommentRangeEnd, CommentRangeStart, CommentReference, Document, FootnoteReferenceRun, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { readDocument, readDocx } from "../import/docx";
-import { counts, ownTitle, structure } from "../import/structure";
+import { counts, defaultBlankLines, defaultRoles, headingLevels, ownTitle, structure } from "../import/structure";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 
@@ -31,9 +31,59 @@ describe("reading Word documents", () => {
     ]);
   });
 
-  it("joins runs with the same marks and leaves out deleted text", () => {
-    const xml = `<w:body><w:p><w:r><w:rPr><w:i/></w:rPr><w:t>one </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>two</w:t></w:r><w:del><w:r><w:delText>gone</w:delText></w:r></w:del></w:p></w:body>`;
-    expect(readDocument(xml)).toEqual([{ kind: "paragraph", text: "*one two*" }]);
+  it("joins runs with the same marks and keeps tracked changes as revisions", () => {
+    const xml = `<w:body><w:p><w:r><w:rPr><w:i/></w:rPr><w:t>one </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>two</w:t></w:r><w:del w:author="Anna" w:date="2026-10-14T10:00:00Z"><w:r><w:delText> gone</w:delText></w:r></w:del><w:ins w:author="Anna" w:date="2026-10-14T10:00:00Z"><w:r><w:t> new</w:t></w:r></w:ins></w:p></w:body>`;
+    expect(readDocument(xml)).toEqual([{ kind: "paragraph", text: "*one two* {--gone--}{>>@Anna 2026-10-14<<} {++new++}{>>@Anna 2026-10-14<<}" }]);
+  });
+
+  it("keeps comments and footnotes as comments", async () => {
+    const bytes = new Uint8Array(
+      await Packer.toBuffer(
+        new Document({
+          comments: { children: [{ id: 0, author: "Anna Bianchi", date: new Date("2026-10-14T10:00:00Z"), children: [new Paragraph("too early?")] }] },
+          footnotes: { 1: { children: [new Paragraph("True story.")] } },
+          sections: [
+            {
+              children: [
+                new Paragraph({
+                  children: [
+                    new CommentRangeStart(0),
+                    new TextRun("The wind smelled of salt."),
+                    new CommentRangeEnd(0),
+                    new TextRun({ children: [new CommentReference(0)] }),
+                    new FootnoteReferenceRun(1),
+                  ],
+                }),
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+    const content = await readDocx(bytes, { note: "Note" });
+    expect(content.blocks).toEqual([
+      { kind: "paragraph", text: "{==The wind smelled of salt.==}{>>@Anna Bianchi 2026-10-14: too early?<<}{>>Note: True story.<<}" },
+    ]);
+  });
+
+  it("keeps highlighting and escapes what Markdown would misread", async () => {
+    const content = await readDocx(
+      await docx([
+        new Paragraph({ children: [new TextRun({ text: "check", highlight: "yellow" }), new TextRun(" this *now*")] }),
+        new Paragraph("- Come in, she said."),
+        new Paragraph("3. Not a list"),
+      ]),
+    );
+    expect(content.blocks).toEqual([
+      { kind: "paragraph", text: "==check== this \\*now\\*" },
+      { kind: "paragraph", text: "\\- Come in, she said." },
+      { kind: "paragraph", text: "3\\. Not a list" },
+    ]);
+  });
+
+  it("finds chapters by their words when the document has no heading styles", async () => {
+    const content = await readDocx(await docx([new Paragraph("Capitolo primo"), new Paragraph("Testo."), new Paragraph("Capitolo secondo"), new Paragraph("Altro.")]));
+    expect(content.blocks.map((b) => (b.kind === "heading" ? b.level : null))).toEqual([2, null, 2, null]);
   });
 });
 
@@ -62,6 +112,32 @@ describe("the structure of an imported book", () => {
     expect(scenes.hasParts).toBe(false);
     expect(scenes.parts[0].chapters[0].scenes.map((s) => s.title)).toEqual(["Arrival", "The house"]);
     expect(counts(scenes)).toEqual({ parts: 0, chapters: 1, scenes: 2, words: 2 });
+  });
+
+  it("splits scenes at empty paragraphs unless they are spacing", () => {
+    const one = [h(1, "Chapter 1"), p("A."), p("B."), p(""), p("C."), p("D.")];
+    expect(defaultBlankLines(one)).toBe(1);
+    expect(structure(one, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.", "C.\n\nD."]);
+    expect(structure(one, names, "", undefined, 0).parts[0].chapters[0].scenes).toHaveLength(1);
+    // Empty paragraphs between every paragraph are spacing; two in a row still break.
+    const spaced = [h(1, "Chapter 1"), p("A."), p(""), p("B."), p(""), p("C."), p(""), p(""), p("D."), p(""), p("E.")];
+    expect(defaultBlankLines(spaced)).toBe(2);
+    expect(structure(spaced, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.\n\nC.", "D.\n\nE."]);
+    expect(defaultBlankLines([p("A."), p("B.")])).toBe(0);
+  });
+
+  it("lets the writer choose what each heading level becomes", () => {
+    const blocks = [h(1, "Return"), h(2, "Arrival"), p("A."), h(2, "The house"), p("B.")];
+    expect(headingLevels(blocks)).toEqual([
+      { level: 1, count: 1, examples: ["Return"] },
+      { level: 2, count: 2, examples: ["Arrival", "The house"] },
+    ]);
+    expect(defaultRoles(blocks)).toEqual({ 1: "chapter", 2: "scene" });
+    const asParts = structure(blocks, names, "", { 1: "part", 2: "chapter" });
+    expect(asParts.hasParts).toBe(true);
+    expect(asParts.parts.map((x) => [x.title, x.chapters.map((c) => c.title)])).toEqual([["Return", ["Arrival", "The house"]]]);
+    const flat = structure(blocks, names, "", { 1: "chapter", 2: "text" });
+    expect(flat.parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["## Arrival\n\nA.\n\n## The house\n\nB."]);
   });
 
   it("keeps a chapter's own title without its label and number", () => {

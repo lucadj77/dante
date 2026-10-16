@@ -44,6 +44,8 @@ export interface SceneEditor {
   /** Read-only while someone else is editing the same file. */
   setReadOnly(readOnly: boolean): void;
   focus(at: "start" | "end"): void;
+  /** Splits at the cursor into a new scene or a new chapter, as the shortcuts do. */
+  split(kind: "scene" | "chapter"): void;
   destroy(): void;
 }
 
@@ -125,6 +127,9 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
       view.focus();
       const pos = at === "start" ? 0 : view.state.doc.length;
       view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
+    },
+    split(kind) {
+      split(kind === "scene" ? options.onSplitScene : options.onSplitChapter)(view);
     },
     destroy() {
       view.destroy();

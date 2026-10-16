@@ -36,7 +36,11 @@
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
   let selected = $state<string | null>(null);
+  /** Scenes chosen together with Cmd/Ctrl+click, to merge them. */
+  let chosen = $state<string[]>([]);
   let active = $state<string | null>(null);
+  /** A chapter or part picked in the tree: the side panel shows it until a scene gets the cursor. */
+  let picked = $state<string | null>(null);
   let raw = $state(false);
   let typewriter = $state(false);
   let focusMode = $state(false);
@@ -57,6 +61,7 @@
     if (findIn(tree, target)) {
       selected = target;
       active = target;
+      picked = target;
       void bringIntoView(target);
     }
   });
@@ -71,9 +76,28 @@
     const node = findNode(path);
     const scene = node?.kind === "scene" ? node : node ? scenesOf(node)[0] : null;
     if (!scene) return;
-    const el = document.querySelector(`[data-scene="${CSS.escape(scene.path)}"]`);
-    el?.scrollIntoView({ block: "start", behavior: "smooth" });
     active = scene.path;
+    await scrollToScene(scene.path);
+  }
+
+  /**
+   * The editors only lay out the lines on screen and estimate the height of the others, so
+   * the place of a scene far away changes while the text scrolls towards it. Jumping again
+   * until it stays put lands on the scene even in a long novel.
+   */
+  async function scrollToScene(path: string) {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    let last = NaN;
+    for (let i = 0; i < 20; i++) {
+      const el = document.querySelector(`[data-scene="${CSS.escape(path)}"]`);
+      if (!el || active !== path) return;
+      el.scrollIntoView({ block: "start" });
+      await frame();
+      await frame();
+      const top = el.getBoundingClientRect().top;
+      if (Math.abs(top - last) < 1) return;
+      last = top;
+    }
   }
   $effect(() => {
     if (selected) onShow(selected);
@@ -84,6 +108,8 @@
   function containers(node: ManuscriptNode): string[] {
     return node.children.filter((c) => c.kind !== "scene").flatMap((c) => [c.path, ...containers(c)]);
   }
+
+  const inspected = $derived(picked ?? active ?? selected);
 
   /** Bumped a moment after typing stops, so the links panel catches up with saved text. */
   let edits = $state(0);
@@ -110,6 +136,7 @@
     const scenes = scenesOf(tree);
     if (selected === null || !scenes.length || !findIn(tree, selected)) selected = scenes[0]?.path ?? null;
     if (active !== null && !findIn(tree, active)) active = null;
+    if (picked !== null && !findIn(tree, picked)) picked = null;
   });
 
   function findIn(node: ManuscriptNode, path: string): boolean {
@@ -261,7 +288,7 @@
    */
   async function rename(path: string, title: string, file = false) {
     let renamed = path;
-    const before = { selected, active };
+    const before = { selected, active, picked };
     // A scene or chapter with its own title keeps its file name: the title changes.
     const node = findNode(path);
     await run(async () => {
@@ -270,6 +297,7 @@
     });
     if (before.selected) selected = rebase(before.selected, path, renamed);
     if (before.active) active = rebase(before.active, path, renamed);
+    if (before.picked) picked = rebase(before.picked, path, renamed);
   }
 
   let renamingHeading = $state<string | null>(null);
@@ -323,6 +351,33 @@
     } catch {
       return window.confirm(message);
     }
+  }
+
+  /** Cmd/Ctrl+click adds a scene to the chosen ones, or takes it away; a plain click starts over. */
+  function choose(path: string, add: boolean) {
+    if (!add || findNode(path)?.kind !== "scene") {
+      chosen = [];
+      return;
+    }
+    const start = chosen.length ? chosen : selected && findNode(selected)?.kind === "scene" ? [selected] : [];
+    chosen = start.includes(path) ? start.filter((p) => p !== path) : [...start, path];
+  }
+
+  /** Joins the chosen scenes into the first of them; the others go to the trash. */
+  async function merge() {
+    menu = null;
+    const paths = chosen;
+    if (paths.length < 2) return;
+    const conflicted = project.conflicts.find((c) => paths.includes(c.original));
+    if (conflicted) {
+      error = t("tree.mergeConflict", { title: findNode(conflicted.original)?.title ?? conflicted.original });
+      return;
+    }
+    for (const p of paths) editors.get(p)?.cancel();
+    chosen = [];
+    await run(() => project.mergeScenes(paths));
+    // The first scene's editor may be open: it takes the joined text.
+    onDiskChange();
   }
 
   /** Moves the item to the project's .trash folder, after asking. */
@@ -423,6 +478,13 @@
       {#if tree.children.length === 0}
         <p class="empty">{t("tree.empty")}</p>
       {/if}
+      {#if chosen.length > 1}
+        <div class="chosen" role="group">
+          <span>{t("tree.chosen", { n: chosen.length })}</span>
+          <button class="primary" title={t("tip.merge")} onclick={merge}>{t("tree.merge")}</button>
+          <button onclick={() => (chosen = [])}>{t("tree.cancel")}</button>
+        </div>
+      {/if}
       <ul role="tree" ondragend={() => (dragging = null)}>
         {#each tree.children as node (node.path)}
           <TreeItem
@@ -430,11 +492,14 @@
             depth={0}
             loose={node.kind === "scene"}
             {selected}
+            {chosen}
             headings={headingMap}
             {dragging}
-            onSelect={(path) => {
+            onSelect={(path, add) => {
+              choose(path, !!add);
               selected = path;
               active = path;
+              picked = path;
               void bringIntoView(path);
             }}
             onRename={rename}
@@ -455,6 +520,10 @@
     {@const node = findNode(menu.path)}
     <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
     <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px">
+      {#if chosen.length > 1 && chosen.includes(menu.path)}
+        <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
+        <hr />
+      {/if}
       <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
       <button role="menuitem" onclick={() => menuRename(menu!.path)}>{t("tree.rename")}</button>
       <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
@@ -527,6 +596,13 @@
             >
           {/if}
         {/each}
+        <span class="cm-format-gap"></span>
+        <button class="split" title={t("tip.splitScene")} disabled={!active} onmousedown={(e) => e.preventDefault()} onclick={() => active && editors.get(active)?.split("scene")}
+          ><Icon name="scene" /><span>{t("split.scene")}</span></button
+        >
+        <button class="split" title={t("tip.splitChapter")} disabled={!active} onmousedown={(e) => e.preventDefault()} onclick={() => active && editors.get(active)?.split("chapter")}
+          ><Icon name="chapter" /><span>{t("split.chapter")}</span></button
+        >
       </div>
     {/if}
     {#if error}
@@ -572,6 +648,7 @@
                 // The tree follows the cursor: the scene being written is the one selected.
                 active = path;
                 selected = path;
+                picked = null;
               }}
               onText={(path, text) => {
                 texts[path] = raw ? splitNote(text).body : text;
@@ -587,15 +664,15 @@
   </main>
 
   {#if !fullscreen && layout.right}
-    <SidePanel {project} path={active ?? selected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
+    <SidePanel {project} path={inspected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
       {project}
-      path={active ?? selected}
+      path={inspected}
       {rev}
       {localRev}
       sceneTexts={shownScenes.map((p) => texts[p] ?? "")}
-      activeText={(active ?? selected) ? (texts[(active ?? selected)!] ?? null) : null}
+      activeText={inspected ? (texts[inspected] ?? null) : null}
       onChanged={async () => {
         localRev++;
         await onReload();
@@ -683,6 +760,20 @@
     min-height: 0;
     background: var(--editor-bg);
   }
+  .chosen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0 8px 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--bg-hover);
+    font-size: 12px;
+  }
+  .chosen span {
+    flex: 1;
+  }
   .menu-backdrop {
     position: fixed;
     inset: 0;
@@ -724,6 +815,12 @@
     gap: 2px;
     padding: 4px 12px;
     border-bottom: 1px solid var(--border);
+  }
+  .format-row .split {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
   }
   .format-row button:disabled {
     opacity: 0.4;
