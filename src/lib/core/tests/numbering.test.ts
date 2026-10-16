@@ -44,3 +44,10 @@ describe("numbering", () => {
     expect(formatHeading("{number}. {title}", { label: "", number: "III", title: "Home" })).toBe("III. Home");
   });
 });
+
+describe("titles that repeat the number", () => {
+  it("are shown once", () => {
+    const level = { numbering: "arabic", showLabel: true, label: "Capitolo", showTitle: true, separator: ": " } as Parameters<typeof levelHeading>[0];
+    expect(levelHeading(level, 3, "Capitolo 3", "it").text).toBe("Capitolo 3");
+  });
+});

@@ -6,6 +6,7 @@ import {
   folderNotePath,
   loadManuscript,
   parentOf,
+  scenesOf,
   TITLE,
   type ContainerKind,
   type ManuscriptNode,
@@ -29,10 +30,18 @@ import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
 import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
+import type { ImportedBook } from "./import/structure";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
 const TRASH = ".trash";
+
+/** Scenes cannot be merged while one of them has a conflict copy to settle. */
+export class MergeConflictError extends Error {
+  constructor(public path: string) {
+    super(`Settle the conflict copy of ${path} first`);
+  }
+}
 
 interface Move {
   from: string;
@@ -68,7 +77,8 @@ export class Project {
   static async create(
     fs: ProjectFs,
     details: { title: string; author: string; language: string },
-    names: { chapter: string; scene: string },
+    /** Names of the first chapter and scene; null starts an empty manuscript, as an import does. */
+    names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
     preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
   ): Promise<{ project: Project; scene: string }> {
@@ -97,6 +107,7 @@ export class Project {
     await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
     for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
     const project = await Project.open(fs, details.language);
+    if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
     const scene = await project.createScene(chapter, 0, names.scene);
     return { project, scene };
@@ -429,6 +440,108 @@ export class Project {
     return target;
   }
 
+  /**
+   * Adds a book read from another program at the end of the manuscript, writing its files
+   * directly (a reload per scene would be slow on a long novel). A title that cannot be a
+   * file name as it is, or that repeats another, is kept as the `title` property.
+   */
+  async importBook(book: ImportedBook): Promise<void> {
+    const step = 10;
+    const nextOrder = (node: ManuscriptNode) => Math.max(0, ...node.children.map((c) => c.order ?? 0)) + step;
+    const fileName = (title: string, taken: Set<string>) => {
+      const base = sanitizeTitle(title) || "Untitled";
+      let name = base;
+      for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${base} ${n}`;
+      taken.add(name.toLowerCase());
+      return name;
+    };
+    const withTitle = (title: string, file: string, body = "") => {
+      const clean = title.trim();
+      return clean && clean !== file ? writeProperties(body, { [TITLE]: clean }) : body;
+    };
+    if (book.hasParts && !this.settings.structure.parts) {
+      await this.saveSettings({ ...this.settings, structure: { ...this.settings.structure, parts: true } });
+    }
+    const root = this.manuscript;
+    const rootTaken = new Set(root.children.map((c) => c.fileTitle.toLowerCase()));
+    let rootOrder = nextOrder(root);
+    const writeChapter = async (dir: string, order: number, chapter: ImportedBook["parts"][number]["chapters"][number], taken: Set<string>) => {
+      const name = fileName(chapter.title, taken);
+      const path = join(dir, formatName(order, name));
+      await this.fs.mkdir(path);
+      // A prologue or epilogue is said so; a chapter outside the parts must say it is one.
+      const kind = /^(prolog(?:ue|o)?|prólogo)$/i.test(chapter.title.trim())
+        ? "prologue"
+        : /^(epilog(?:ue|o)?|epílogo)$/i.test(chapter.title.trim())
+          ? "epilogue"
+          : dir === root.path && book.hasParts
+            ? "chapter"
+            : null;
+      const note = withTitle(chapter.title, name);
+      if (kind || note) await this.fs.writeText(folderNotePath(path), kind ? writeProperties(note, { kind }) : note);
+      // A scene may not share its chapter's name, or it would be read as the chapter's note.
+      const scenes = new Set([name.toLowerCase()]);
+      let sceneOrder = step;
+      for (const scene of chapter.scenes) {
+        const file = fileName(scene.title, scenes);
+        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        sceneOrder += step;
+      }
+    };
+    for (const part of book.parts) {
+      if (book.hasParts && part.title) {
+        const name = fileName(part.title, rootTaken);
+        const path = join(root.path, formatName(rootOrder, name));
+        rootOrder += step;
+        await this.fs.mkdir(path);
+        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name), { kind: "part" }));
+        const taken = new Set([name.toLowerCase()]);
+        let order = step;
+        for (const chapter of part.chapters) {
+          await writeChapter(path, order, chapter, taken);
+          order += step;
+        }
+      } else {
+        for (const chapter of part.chapters) {
+          await writeChapter(root.path, rootOrder, chapter, rootTaken);
+          rootOrder += step;
+        }
+      }
+    }
+    await this.reload();
+  }
+
+  /**
+   * Joins scenes into the first of them in reading order, wherever they are: their texts
+   * follow one another as paragraphs, the first keeps its properties, and the others go to
+   * .trash. Links to the others lead to the first. Returns the scene that holds the text.
+   */
+  async mergeScenes(paths: string[]): Promise<string> {
+    const chosen = scenesOf(this.manuscript).map((n) => n.path).filter((p) => paths.includes(p));
+    if (chosen.length < 2) return chosen[0] ?? "";
+    // A copy left by a sync service would lose its original: it is settled first.
+    const conflicted = this.conflicts.find((c) => chosen.includes(c.original));
+    if (conflicted) throw new MergeConflictError(conflicted.original);
+    const [first, ...rest] = chosen;
+    await this.autoSnapshot(first);
+    const bodies: string[] = [];
+    for (const path of chosen) bodies.push((await this.readBody(path)).trim());
+    // Written directly, so the writing log does not count moved words as new ones.
+    await this.fs.writeText(first, replaceBody(await this.fs.readText(first), bodies.filter(Boolean).join("\n\n") + "\n"));
+    const before = [...this.files];
+    const after = before.filter((f) => !rest.includes(f));
+    const renames = new Map(rest.map((p) => [p, first]));
+    for (const file of after) {
+      if (!isMarkdown(file)) continue;
+      const updated = rewriteLinks(await this.fs.readText(file), file, renames, before, after);
+      if (updated !== null) await this.fs.writeText(file, updated);
+    }
+    await this.fs.mkdir(TRASH);
+    for (const path of rest) await this.fs.rename(path, await this.freeName(TRASH, basename(path)));
+    await this.reload();
+    return first;
+  }
+
   async createScene(parentPath: string, index: number, title: string, body = ""): Promise<string> {
     const parent = this.node(parentPath);
     const clean = this.uniqueTitle(parent, sanitizeTitle(title) || "Untitled");
@@ -470,7 +583,9 @@ export class Project {
     const chapterIndex = holder.children.findIndex((c) => c.path === (chapter ?? this.node(path)).path);
 
     await this.writeBody(path, before);
-    const newChapter = await this.createContainer(holder.path, chapterIndex + 1, chapterTitle);
+    // At the top of a manuscript with parts, a folder reads as a part unless it says otherwise.
+    const kind = holder.kind === "manuscript" && this.settings.structure.parts ? "chapter" : undefined;
+    const newChapter = await this.createContainer(holder.path, chapterIndex + 1, chapterTitle, kind);
     const first = await this.createScene(newChapter, 0, sceneTitle, after);
     // Renumbering can rename folders, so positions are looked up again at each step.
     let target = newChapter;

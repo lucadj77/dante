@@ -117,7 +117,9 @@ export interface LevelHeading {
 export function levelHeading(level: LevelSettings, n: number, title: string, language = "en", feminine = false): LevelHeading {
   const digits = formatNumber(n, level.numbering, language, feminine);
   const number = digits === "" ? "" : capitalize(level.showLabel && level.label.trim() ? `${level.label.trim()} ${digits}` : digits);
-  const shownTitle = level.showTitle ? title : "";
+  // A title that only repeats the number, as "Chapter 3" brought in from Word, is not shown twice.
+  const repeats = title.trim().toLowerCase() === number.toLowerCase();
+  const shownTitle = level.showTitle && !(number && repeats) ? title : "";
   const text = number && shownTitle ? number + level.separator + shownTitle : number || shownTitle;
   return { text: capitalize(text), number, title: shownTitle };
 }
