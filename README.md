@@ -202,6 +202,30 @@ Spanish raya (—Ven —dijo él—). New projects start with the usual one for 
 language. French spacing adds narrow no-break spaces inside guillemets and before ; ! ?, and a
 no-break space before the colon.
 
+## Panes beside the text
+
+Up to two panes open to the right of a section (Manuscript, Codex, Research, Laboratory,
+Views), and stay while the sections change: a scene, a chapter or part with its scenes, a
+note with its properties, an image or PDF, or a view without its settings
+(`src/lib/ui/PaneArea.svelte`). Alt (Option) with any gesture that opens something opens it
+beside instead: a click on a link, in a tree or a list, on a view's item, or Alt+Enter in the
+search; also "Open beside" in the right-click menus, the ⧉ button in the links panel, and
+dragging an item onto the right edge. The next item opened beside takes the place of the
+pane not pinned. ⌘\ opens a pane choosing what it shows with the search, ⌥⌘\ swaps the
+pane with the section, ⌥⌘←/→ move the cursor among them, ⌘W closes the pane with the
+cursor (on the Mac through the app's menu, which no longer has "Close Window"). The side
+panel shows what the focused pane shows.
+
+"Sheets" in the manuscript toolbar opens the scene sheets pane: the Codex notes the scene
+being written names (by name or alias, as the statistics count mentions) or links to, as
+tabs, in the order the text first names them. Views beside the text mark the item of that
+scene.
+
+A file can be open in several editors at once (the same scene in the manuscript and in a
+pane): they share one document (`src/lib/editor/documents.ts`), so what is typed in one shows
+in the others, and the text is written once, from one place. What the panes show is kept on
+this computer for each project, not in the project folder.
+
 ## Importing from Word
 
 "Import from Word…" on the start screen makes a new project from a `.docx` file

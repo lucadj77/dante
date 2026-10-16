@@ -1,6 +1,6 @@
 import { cleanSource } from "./export/book";
 import { headings, type ManuscriptNode } from "./manuscript";
-import { noteTitle, noteType, type NoteIndex } from "./notes";
+import { noteTitle, noteType, type NoteIndex, type NoteInfo } from "./notes";
 import { isWithin } from "./path";
 import { isWritingDay } from "./sessions";
 import type { NovelSettings } from "./settings";
@@ -120,9 +120,9 @@ function escape(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Notes of the Story Bible (any typed note) and how often the scenes name them. */
-export function mentions(stats: ManuscriptStats, index: NoteIndex, settings: NovelSettings): Mention[] {
-  const out: Mention[] = [];
+/** The notes of the Story Bible (any typed note outside the manuscript and the templates). */
+function bible(index: NoteIndex, settings: NovelSettings): { note: NoteInfo; type: string; title: string; pattern: RegExp }[] {
+  const out: { note: NoteInfo; type: string; title: string; pattern: RegExp }[] = [];
   for (const note of index.notes.values()) {
     if (isWithin(note.path, settings.folders.manuscript) || isWithin(note.path, settings.folders.templates)) continue;
     const type = noteType(note.path, note.properties, settings);
@@ -132,6 +132,15 @@ export function mentions(stats: ManuscriptStats, index: NoteIndex, settings: Nov
     // Whole words, as written: "Marta" is not found in "Martina", and a place called
     // "Casa" is not every "casa" in the text.
     const pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${names.map(escape).join("|")})(?![\\p{L}\\p{N}])`, "gu");
+    out.push({ note, type, title, pattern });
+  }
+  return out;
+}
+
+/** Notes of the Story Bible (any typed note) and how often the scenes name them. */
+export function mentions(stats: ManuscriptStats, index: NoteIndex, settings: NovelSettings): Mention[] {
+  const out: Mention[] = [];
+  for (const { note, type, title, pattern } of bible(index, settings)) {
     const mention: Mention = { path: note.path, title, type, count: 0, scenes: [] };
     for (const scene of stats.scenes) {
       const found = scene.text.match(pattern)?.length ?? 0;
@@ -142,6 +151,26 @@ export function mentions(stats: ManuscriptStats, index: NoteIndex, settings: Nov
     out.push(mention);
   }
   return out.sort((a, b) => b.count - a.count || a.title.localeCompare(b.title));
+}
+
+export interface SceneSheet {
+  path: string;
+  title: string;
+  type: string;
+}
+
+/**
+ * The Story Bible notes a scene names (by name or alias, as the mentions do) or links to,
+ * in the order the text first names them; notes only linked, as from a property, come last.
+ */
+export function sceneSheets(text: string, linked: string[], index: NoteIndex, settings: NovelSettings): SceneSheet[] {
+  const found: (SceneSheet & { at: number })[] = [];
+  for (const { note, type, title, pattern } of bible(index, settings)) {
+    pattern.lastIndex = 0;
+    const at = pattern.exec(text)?.index ?? (linked.includes(note.path) ? Infinity : -1);
+    if (at >= 0) found.push({ path: note.path, title, type, at });
+  }
+  return found.sort((a, b) => a.at - b.at || a.title.localeCompare(b.title)).map(({ path, title, type }) => ({ path, title, type }));
 }
 
 export interface GoalProgress {

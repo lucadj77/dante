@@ -1,6 +1,6 @@
 import type { SceneEditor } from "$lib/editor/sceneEditor";
 import { app } from "$lib/state.svelte";
-import { editorChanged, registerEditor, unregisterEditor } from "./editors.svelte";
+import { editorChanged, editorFor, preferEditor, registerEditor, unregisterEditor } from "./editors.svelte";
 import { announce, leave, lockedBy } from "./presence.svelte";
 
 /**
@@ -39,6 +39,7 @@ export function collaboration(path: string, options: { raw?: () => boolean } = {
       registerEditor(path, created.view);
     },
     focused() {
+      if (editor) preferEditor(path, editor.view);
       if (holder === null) announce(path);
     },
     changed() {
@@ -46,7 +47,8 @@ export function collaboration(path: string, options: { raw?: () => boolean } = {
     },
     destroy() {
       if (editor) unregisterEditor(path, editor.view);
-      leave(path);
+      // Another editor of the same file, as in a pane, keeps it announced.
+      if (!editorFor(path)) leave(path);
       editor = null;
     },
   };

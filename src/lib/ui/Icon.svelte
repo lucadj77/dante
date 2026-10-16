@@ -28,6 +28,13 @@
     close: "M13 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h7 M10 12h11 M18 9l3 3-3 3",
     showNames: "M6 6l6 6-6 6 M13 6l6 6-6 6",
     hideNames: "M18 6l-6 6 6 6 M11 6l-6 6 6 6",
+    // Panes beside the section.
+    beside: "M3 4h18v16H3z M12 4v16",
+    pin: "M9 3h6 M10 3v6l-3 4h10l-3-4V3 M12 13v8",
+    toMain: "M15 3h6v6 M21 3l-7 7 M9 21H3v-6 M3 21l7-7",
+    swap: "M7 7h13 M16 3l4 4-4 4 M17 17H4 M8 13l-4 4 4 4",
+    cross: "M6 6l12 12 M18 6L6 18",
+    sheets: "M3 5h18v14H3z M8 9.5a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M5 17a3 3 0 0 1 6 0 M14 10h4 M14 14h4",
   } as const;
   export type IconName = keyof typeof PATHS;
 </script>

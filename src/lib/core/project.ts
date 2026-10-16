@@ -193,6 +193,12 @@ export class Project {
     await this.writeNote(path, replaceBody(text, body));
   }
 
+  /** Called before files are moved or renamed, to write what the editors still hold. */
+  beforeMove: (() => Promise<void>) | null = null;
+
+  /** Called after files were moved or renamed, with where any old path went. */
+  onMoved: ((moved: (path: string) => string) => void) | null = null;
+
   /** Called after a scene is written, with its words before and after, for the writing log. */
   onSceneWritten: ((path: string, before: number, after: number) => void) | null = null;
 
@@ -656,6 +662,7 @@ export class Project {
   /** Performs renames, renames folder notes with their folders, then fixes wikilinks. */
   private async apply(moves: Move[]): Promise<void> {
     if (moves.length === 0) return;
+    await this.beforeMove?.();
     const before = [...this.files];
 
     // Two passes through temporary names, so that swapping two names never collides.
@@ -699,6 +706,7 @@ export class Project {
       if (updated !== null) await this.fs.writeText(newPath, updated);
     }
     await this.reload();
+    this.onMoved?.((path) => renames.get(path) ?? moves.reduce((p, m) => rebase(p, m.from, m.to), path));
   }
 }
 

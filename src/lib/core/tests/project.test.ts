@@ -80,6 +80,25 @@ describe("project", () => {
     expect(fs.files.get("Codex/Marta.md")).toContain("[[010 Station]]");
   });
 
+  it("writes open editors before files move, and tells where they went", async () => {
+    const fs = sample();
+    const p = await Project.open(fs);
+    const order: string[] = [];
+    let moved: ((path: string) => string) | null = null;
+    p.beforeMove = async () => {
+      order.push("before");
+    };
+    p.onMoved = (m) => {
+      order.push("after");
+      moved = m;
+    };
+    await p.rename("Manuscript/010 Return", "Coming back");
+    expect(order).toEqual(["before", "after"]);
+    expect(moved!("Manuscript/010 Return/010 Arrival.md")).toBe("Manuscript/010 Coming back/010 Arrival.md");
+    expect(moved!("Manuscript/010 Return")).toBe("Manuscript/010 Coming back");
+    expect(moved!("Codex/Marta.md")).toBe("Codex/Marta.md");
+  });
+
   it("splits a scene at the cursor", async () => {
     const fs = sample();
     const p = await Project.open(fs);

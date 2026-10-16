@@ -8,6 +8,7 @@
   import type { MessageKey } from "$lib/i18n";
   import TreeItem from "./TreeItem.svelte";
   import { mark, marked } from "./folding.svelte";
+  import { navigator } from "./navigation";
 
   interface Props {
     node: ManuscriptNode;
@@ -34,6 +35,7 @@
     foldScope: string;
   }
   let p: Props = $props();
+  const nav = navigator();
 
   let editing = $state(false);
   let draft = $state("");
@@ -83,7 +85,7 @@
     role="button"
     tabindex="0"
     title={`${t(`kind.${p.node.kind}` as MessageKey)} · ${t("tree.renameHint")}`}
-    onclick={(e) => p.onSelect(p.node.path, e.metaKey || e.ctrlKey)}
+    onclick={(e) => (e.altKey ? nav?.open(p.node.path, true) : p.onSelect(p.node.path, e.metaKey || e.ctrlKey))}
     ondblclick={startRename}
     oncontextmenu={(e) => {
       e.preventDefault();
