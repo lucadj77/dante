@@ -3,10 +3,11 @@ import type { CriticHandler } from "$lib/editor/critic";
 import { layout, toggle } from "./layout.svelte";
 
 /**
- * The editors open in any section, by the path of their file, so the comments panel can
- * read and change the text of the note it is showing.
+ * The editors open in any section or pane, by the path of their file, so the comments panel
+ * can read and change the text of the note it is showing. A file open in two editors has the
+ * same text in both, so any of them will do; the one that had the cursor last comes first.
  */
-const views = new Map<string, EditorView>();
+const views = new Map<string, EditorView[]>();
 
 export const editors = $state<{
   /** Bumped when an editor opens, closes or its text changes. */
@@ -19,19 +20,27 @@ export const editors = $state<{
   tab: "comments" | null;
 }>({ rev: 0, draft: null, focus: null, tab: null });
 
-export function registerEditor(path: string, view: EditorView | null) {
-  if (view) views.set(path, view);
-  else if (views.has(path)) views.delete(path);
+export function registerEditor(path: string, view: EditorView) {
+  views.set(path, [view, ...(views.get(path) ?? []).filter((v) => v !== view)]);
   editors.rev++;
 }
 
-/** Forgets the editor only if it is still the one registered for `path`. */
+/** Forgets the editor of `path`. */
 export function unregisterEditor(path: string, view: EditorView) {
-  if (views.get(path) === view) registerEditor(path, null);
+  const left = (views.get(path) ?? []).filter((v) => v !== view);
+  if (left.length) views.set(path, left);
+  else views.delete(path);
+  editors.rev++;
+}
+
+/** Puts the editor first among those of its file, as when it gets the cursor. */
+export function preferEditor(path: string, view: EditorView) {
+  const list = views.get(path);
+  if (list && list[0] !== view && list.includes(view)) views.set(path, [view, ...list.filter((v) => v !== view)]);
 }
 
 export function editorFor(path: string | null): EditorView | null {
-  return path ? (views.get(path) ?? null) : null;
+  return path ? (views.get(path)?.[0] ?? null) : null;
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined;

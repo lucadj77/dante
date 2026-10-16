@@ -15,7 +15,8 @@ export interface LinkSuggestion {
 
 /** What the editor needs from the project to follow and suggest wikilinks. */
 export interface LinkHandler {
-  open(target: string): void;
+  /** Follows the link; `beside` opens it in a pane, as Alt (Option) with the click asks. */
+  open(target: string, beside?: boolean): void;
   resolves(target: string): boolean;
   suggestions(): LinkSuggestion[];
 }
@@ -60,7 +61,7 @@ const clicks = EditorView.domEventHandlers({
     });
     if (editing && !modified) return false;
     event.preventDefault();
-    handler.open(target);
+    handler.open(target, event.altKey);
     return true;
   },
 });

@@ -158,7 +158,7 @@
     <div class="links">
       {#each links as link, i (i)}
         {@const found = handler?.resolves(link.target)}
-        <button type="button" class="link" class:missing={!found} disabled={!found} onclick={() => handler?.open(link.target)}>{link.shown}</button>
+        <button type="button" class="link" class:missing={!found} disabled={!found} onclick={(e) => handler?.open(link.target, e.altKey)}>{link.shown}</button>
       {/each}
     </div>
   {/if}

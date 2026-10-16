@@ -52,7 +52,8 @@
   <ul>
     {#each backlinks as link (link.from)}
       <li>
-        <button class="link" onclick={() => nav?.open(link.from)}>
+        <button class="beside" title={t("tip.openBeside")} aria-label={t("panes.openBeside")} onclick={() => nav?.open(link.from, true)}>⧉</button>
+        <button class="link" onclick={(e) => nav?.open(link.from, e.altKey)}>
           <span class="title">{title(link.from)}</span>
           <span class="where">{dirname(link.from)}</span>
         </button>
@@ -73,7 +74,8 @@
   <ul>
     {#each outgoing as target (target)}
       <li>
-        <button class="link" onclick={() => nav?.open(target)}>
+        <button class="beside" title={t("tip.openBeside")} aria-label={t("panes.openBeside")} onclick={() => nav?.open(target, true)}>⧉</button>
+        <button class="link" onclick={(e) => nav?.open(target, e.altKey)}>
           <span class="title">{title(target)}</span>
           <span class="where">{dirname(target)}</span>
         </button>
@@ -111,7 +113,23 @@
     padding: 0;
   }
   li {
+    position: relative;
     margin-bottom: 10px;
+  }
+  /* Opens the note beside the section, shown on the row under the pointer. */
+  .beside {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    padding: 0 5px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    opacity: 0;
+  }
+  li:hover .beside,
+  .beside:focus-visible {
+    opacity: 1;
   }
   .link {
     display: grid;

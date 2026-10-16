@@ -38,6 +38,7 @@
   import { t } from "$lib/state.svelte";
   import { fileIcon } from "./FileViewer.svelte";
   import { mark, marked } from "./folding.svelte";
+  import { navigator } from "./navigation";
 
   interface Props {
     nodes: FileNode[];
@@ -59,6 +60,7 @@
     foldScope: string;
   }
   let p: Props = $props();
+  const nav = navigator();
 
   const expanded = $derived(marked(p.foldScope));
   let dragging = $state<string | null>(null);
@@ -147,7 +149,7 @@
         draggable={p.renaming !== node.path}
         role="button"
         tabindex="0"
-        onclick={() => (node.dir ? toggle(node.path) : p.onOpen(node.path))}
+        onclick={(e) => (node.dir ? toggle(node.path) : e.altKey ? nav?.open(node.path, true) : p.onOpen(node.path))}
         onkeydown={(e) => key(e, node)}
         oncontextmenu={(e) => {
           e.preventDefault();

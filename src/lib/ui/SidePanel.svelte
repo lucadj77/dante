@@ -12,6 +12,9 @@
   import CommentsPanel from "./CommentsPanel.svelte";
   import { editorFor, editors } from "./editors.svelte";
   import { parseCritic } from "$lib/core/critic";
+  import { findNode, scenesOf } from "$lib/core/manuscript";
+  import { focusedPane, shownIn } from "./panes.svelte";
+  import PaneProperties from "./PaneProperties.svelte";
 
   interface Props {
     project: Project;
@@ -27,7 +30,15 @@
   let p: Props = $props();
 
   const tabs: Tab[] = ["properties", "links", "comments"];
-  const commentPaths = $derived(p.commentPaths ?? (p.path ? [p.path] : []));
+  // While a pane beside the section has the cursor, the panel shows what the pane shows.
+  const pane = $derived(focusedPane());
+  const path = $derived(pane ? shownIn(pane) : p.path);
+  const commentPaths = $derived.by(() => {
+    if (!pane) return p.commentPaths ?? (p.path ? [p.path] : []);
+    if (!path) return [];
+    const node = findNode(p.project.manuscript, path);
+    return node && node.kind !== "scene" ? scenesOf(node).map((s) => s.path) : [path];
+  });
   const commentCount = $derived.by(() => {
     void editors.rev;
     return commentPaths.reduce((n, path) => n + parseCritic(editorFor(path)?.state.doc.toString() ?? "").length, 0);
@@ -52,9 +63,13 @@
   </div>
   <div class="body">
     {#if remembered.tab === "properties"}
-      {@render p.properties()}
+      {#if !pane}
+        {@render p.properties()}
+      {:else if path}
+        {#key path}<PaneProperties project={p.project} {path} version={p.version} />{/key}
+      {/if}
     {:else if remembered.tab === "links"}
-      <LinksPanel project={p.project} path={p.path} version={p.version} />
+      <LinksPanel project={p.project} {path} version={p.version} />
     {:else}
       <CommentsPanel project={p.project} paths={commentPaths} />
     {/if}

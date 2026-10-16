@@ -13,6 +13,8 @@
     diskRev: number;
     /** After a result is opened where it belongs. */
     onOpened?: () => void;
+    /** Opened to choose what a new pane shows: a result opens beside the section. */
+    beside?: boolean;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -40,6 +42,19 @@
   function focusOnMount(el: HTMLInputElement) {
     el.focus();
   }
+
+  /** Opens a result in its section, or beside it in a pane. */
+  function openResult(path: string, beside: boolean) {
+    nav?.open(path, beside);
+    p.onOpened?.();
+  }
+
+  /** Enter opens the first result; with Alt (Option) beside the section. */
+  function onKey(e: KeyboardEvent) {
+    if (e.key !== "Enter" || !results.length) return;
+    e.preventDefault();
+    openResult(results[0].path, p.beside || e.altKey);
+  }
 </script>
 
 <script lang="ts" module>
@@ -51,12 +66,13 @@
   {#if preview}
     <div class="preview-bar">
       <button onclick={() => (preview = null)}>‹ {t("search.results")}</button>
-      <button onclick={() => { nav?.open(preview!); p.onOpened?.(); }}>{t("search.open")}</button>
+      <button onclick={(e) => openResult(preview!, !!p.beside || e.altKey)}>{t(p.beside ? "search.openBeside" : "search.open")}</button>
+      {#if !p.beside}<button title={t("tip.search.openBeside")} onclick={() => openResult(preview!, true)}>{t("search.openBeside")}</button>{/if}
     </div>
     <div class="preview">
       {#key preview}
         {#if fileKind(preview) === "note"}
-          <NoteEditor project={p.project} path={preview} diskRev={p.diskRev} compact />
+          <NoteEditor project={p.project} path={preview} diskRev={p.diskRev} compact preview />
         {:else}
           <FileViewer project={p.project} path={preview} compact />
         {/if}
@@ -69,7 +85,9 @@
       placeholder={t("search.placeholder")}
       aria-label={t("search.placeholder")}
       use:focusOnMount
+      onkeydown={onKey}
     />
+    {#if p.beside}<p class="muted">{t("search.besideHint")}</p>{/if}
     <select bind:value={scope} aria-label={t("search.scope")}>
       <option value="all">{t("search.everywhere")}</option>
       <option value="codex">{t("section.codex")}</option>
@@ -83,7 +101,7 @@
     <ul>
       {#each results as r (r.path)}
         <li>
-          <button onclick={() => (preview = r.path)} title={r.path}>
+          <button onclick={(e) => (p.beside || e.altKey ? openResult(r.path, true) : (preview = r.path))} title={r.path}>
             <span class="title"><span aria-hidden="true">{fileIcon(r.path)}</span> {r.title}</span>
             <span class="where">{dirname(r.path)}</span>
             {#if r.snippet}<span class="snippet">{r.snippet}</span>{/if}

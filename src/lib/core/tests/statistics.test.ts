@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { frequentWords, goalProgress, manuscriptStats, mentions, pageCount } from "../statistics";
+import { frequentWords, goalProgress, manuscriptStats, mentions, pageCount, sceneSheets } from "../statistics";
 import { parseSettings } from "../settings";
 
 function sample() {
@@ -41,6 +41,16 @@ describe("statistics", () => {
       ["Marta Rinaldi", 2, 2],
       ["Casa", 0, 0],
     ]);
+  });
+
+  it("lists the sheets a scene names or links to, in the order the text names them", async () => {
+    const p = await Project.open(sample());
+    const index = await p.index();
+    const sheets = (text: string, linked: string[] = []) => sceneSheets(text, linked, index, p.settings).map((s) => s.title);
+    expect(sheets("Dalla Casa uscì Marta.")).toEqual(["Casa", "Marta Rinaldi"]);
+    expect(sheets("Martina e la casa.")).toEqual([]);
+    // Linked only, as from a property: after the names.
+    expect(sheets("Marta tace.", ["Bibbia/Luoghi/Casa.md"])).toEqual(["Marta Rinaldi", "Casa"]);
   });
 
   it("lists the most used words, leaving out the common ones", () => {

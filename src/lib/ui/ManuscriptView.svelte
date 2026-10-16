@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, type Snippet } from "svelte";
   import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
@@ -17,6 +17,9 @@
   import { TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
+  import { flushAll } from "./documents.svelte";
+  import { panes, SCENE_SHEETS, toggleSceneSheets } from "./panes.svelte";
+  import { navigator } from "./navigation";
 
   interface Props {
     project: Project;
@@ -30,8 +33,10 @@
     reveal: string | null;
     /** Called with the selected item, so the workspace can come back to it. */
     onShow: (path: string) => void;
+    /** The panes beside the text, if any are open. */
+    beside?: Snippet | null;
   }
-  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow }: Props = $props();
+  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow, beside = null }: Props = $props();
 
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
@@ -51,6 +56,8 @@
   let pendingFocus: { path: string; at: "start" | "end" } | null = null;
 
   const editors = new Map<string, SceneHandle>();
+  let page = $state<HTMLDivElement | null>(null);
+  const nav = navigator();
 
   // Shows what the workspace asks for, once each time it asks.
   let revealed: string | null = null;
@@ -89,7 +96,8 @@
     const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
     let last = NaN;
     for (let i = 0; i < 20; i++) {
-      const el = document.querySelector(`[data-scene="${CSS.escape(path)}"]`);
+      // A pane beside the text can show the same scene: the one in the middle is the one wanted.
+      const el = page?.querySelector(`[data-scene="${CSS.escape(path)}"]`);
       if (!el || active !== path) return;
       el.scrollIntoView({ block: "start" });
       await frame();
@@ -101,6 +109,10 @@
   }
   $effect(() => {
     if (selected) onShow(selected);
+  });
+  // The scene sheets and the views beside follow the scene picked or written.
+  $effect(() => {
+    if (active && findNode(active)?.kind === "scene") panes.writing = active;
   });
 
   const foldScope = $derived(`${project.fs instanceof TauriFs ? project.fs.root : "sample"}|manuscript`);
@@ -185,7 +197,7 @@
   async function run(operation: () => Promise<string | void>, focus?: "start" | "end") {
     error = "";
     try {
-      await Promise.all([...editors.values()].map((e) => e.flush()));
+      await flushAll(project);
       const result = await operation();
       localRev++;
       await onReload();
@@ -451,7 +463,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="manuscript" class:fullscreen style:grid-template-columns={columns("manuscript", fullscreen ? 0 : 260, fullscreen ? 0 : 280)}>
+<div class="manuscript" class:fullscreen style:grid-template-columns={columns("manuscript", fullscreen ? 0 : 260, fullscreen ? 0 : 280, !!beside)}>
   {#if !fullscreen && layout.left}<Resizer section="manuscript" side="left" usual={260} other={layout.right ? width("manuscript", "right", 280) : 0} />{/if}
   {#if !fullscreen && layout.right}<Resizer section="manuscript" side="right" usual={280} other={layout.left ? width("manuscript", "left", 260) : 0} />{/if}
   {#if !fullscreen && layout.left}
@@ -524,6 +536,8 @@
         <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
         <hr />
       {/if}
+      <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = menu!.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
+      <hr />
       <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
       <button role="menuitem" onclick={() => menuRename(menu!.path)}>{t("tree.rename")}</button>
       <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
@@ -545,6 +559,7 @@
             {/if}
           {/each}
         </div>
+        <button aria-pressed={panes.list.some((p) => p.path === SCENE_SHEETS)} title={t("tip.panes.sheets")} onclick={toggleSceneSheets}><Icon name="sheets" /><span class="label">{t("panes.sheetsButton")}</span></button>
         </div>
       </div>
       <div class="group" role="group" aria-label={t("toolbar.writing")}>
@@ -608,7 +623,7 @@
     {#if error}
       <p class="error" role="alert">{error}</p>
     {/if}
-    <div class="page" class:typewriter>
+    <div class="page" class:typewriter bind:this={page}>
       <div class="column" style="max-width: {app.settings.lineWidth}ch">
         {#if items.length === 0}
           <p class="empty">{t("editor.empty")}</p>
@@ -646,6 +661,7 @@
               current={manyScenes && active === item.node.path}
               onFocus={(path) => {
                 // The tree follows the cursor: the scene being written is the one selected.
+                panes.writing = path;
                 active = path;
                 selected = path;
                 picked = null;
@@ -662,6 +678,8 @@
       </div>
     </div>
   </main>
+
+  {#if beside}{@render beside()}{/if}
 
   {#if !fullscreen && layout.right}
     <SidePanel {project} path={inspected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
