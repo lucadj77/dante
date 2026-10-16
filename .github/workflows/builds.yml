@@ -128,7 +128,10 @@ jobs:
           mkdir -p out dmg
           cp -R src-tauri/target/universal-apple-darwin/release/bundle/macos/Dante.app dmg/
           ln -s /Applications dmg/Applications
-          hdiutil create -volname Dante -srcfolder dmg -ov -format UDZO "out/Dante-$short-mac.dmg"
+          # hdiutil underestimates the size of an APFS image ("No space left on device"),
+          # so the volume is HFS+ with an explicit size: the app plus some margin.
+          size=$(( $(du -sm dmg | cut -f1) + 20 ))
+          hdiutil create -volname Dante -srcfolder dmg -fs HFS+ -size ${size}m -ov -format UDZO "out/Dante-$short-mac.dmg"
           ls -l out
       - uses: actions/upload-artifact@v4
         with:
