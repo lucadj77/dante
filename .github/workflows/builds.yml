@@ -2,12 +2,14 @@ name: Builds
 
 # Builds Dante for Windows (installer and portable zip), Linux (AppImage, .deb, .rpm)
 # and macOS (universal .dmg, Apple Silicon and Intel).
-# Every run keeps the files as artifacts of the run; runs on main and on manual request
+# Every run keeps the files as artifacts of the run; runs on main (pushed or started by hand)
 # also put them on the "preview" release, where they can be downloaded without unzipping.
 
+# Only main and manual runs: Windows and macOS minutes count several times against
+# the monthly Actions allowance, so branches are built on request (Run workflow).
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -139,7 +141,7 @@ jobs:
           path: out/*
 
   publish:
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main'
     needs: [test-windows, windows, linux, macos]
     runs-on: ubuntu-latest
     steps:
