@@ -1,11 +1,12 @@
 import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
+import { tablePreview } from "./tables";
 import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 // Markers hidden when the cursor is elsewhere, as in Obsidian's live preview.
-const HIDDEN = new Set(["HeaderMark", "EmphasisMark", "StrikethroughMark", "CodeMark"]);
+const HIDDEN = new Set(["HeaderMark", "EmphasisMark", "StrikethroughMark", "CodeMark", "QuoteMark"]);
 const hide = Decoration.replace({});
 
 const styles: Record<string, Decoration> = {
@@ -13,8 +14,8 @@ const styles: Record<string, Decoration> = {
   ATXHeading2: Decoration.line({ class: "md-h2" }),
   ATXHeading3: Decoration.line({ class: "md-h3" }),
   ATXHeading4: Decoration.line({ class: "md-h4" }),
-  Blockquote: Decoration.line({ class: "md-quote" }),
 };
+const quoteLine = Decoration.line({ class: "md-quote" });
 const marks: Record<string, Decoration> = {
   Emphasis: Decoration.mark({ class: "md-em" }),
   StrongEmphasis: Decoration.mark({ class: "md-strong" }),
@@ -85,6 +86,7 @@ function build(view: EditorView, focused: boolean): DecorationSet {
   const active = focused ? activeLines(state) : new Set<number>();
   const found: { from: number; to: number; deco: Decoration }[] = [];
   const links = state.facet(linkHandler);
+  const quoted = new Set<number>();
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -95,6 +97,15 @@ function build(view: EditorView, focused: boolean): DecorationSet {
         if (lineDeco) {
           const line = state.doc.lineAt(node.from);
           found.push({ from: line.from, to: line.from, deco: lineDeco });
+        }
+        if (node.name === "Blockquote") {
+          // Every line of the quote, not only its first; a nested quote adds nothing more.
+          for (let n = state.doc.lineAt(node.from).number; n <= state.doc.lineAt(node.to).number; n++) {
+            const line = state.doc.line(n);
+            if (quoted.has(line.from)) continue;
+            quoted.add(line.from);
+            found.push({ from: line.from, to: line.from, deco: quoteLine });
+          }
         }
         if (node.name === "ListMark" && /^[-*+]$/.test(state.doc.sliceString(node.from, node.to)) && !active.has(state.doc.lineAt(node.from).number)) {
           // Before a checkbox the dash goes away; otherwise it becomes a bullet.
@@ -110,8 +121,8 @@ function build(view: EditorView, focused: boolean): DecorationSet {
         if (mark && node.to > node.from) found.push({ from: node.from, to: node.to, deco: mark });
         if (HIDDEN.has(node.name) && !active.has(state.doc.lineAt(node.from).number)) {
           let end = node.to;
-          // A heading's "# " goes together with its space.
-          if (node.name === "HeaderMark" && state.doc.sliceString(end, end + 1) === " ") end++;
+          // A heading's "# " and a quote's "> " go together with their space.
+          if ((node.name === "HeaderMark" || node.name === "QuoteMark") && state.doc.sliceString(end, end + 1) === " ") end++;
           if (end > node.from) found.push({ from: node.from, to: end, deco: hide });
         }
       },
@@ -209,4 +220,4 @@ const plugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme];
+export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview];

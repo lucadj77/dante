@@ -107,6 +107,11 @@ select {
 .cm-line.md-h3 { font-size: 1.15em; font-weight: 600; }
 .cm-line.md-h4 { font-weight: 600; }
 .cm-line.md-quote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--text-muted); }
+.md-table-wrap { overflow-x: auto; padding: 4px 0; cursor: text; }
+.md-table { border-collapse: collapse; font-size: 0.95em; line-height: 1.5; }
+.md-table th,
+.md-table td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; vertical-align: top; }
+.md-table th { font-weight: 600; background: var(--bg-panel); }
 .md-em { font-style: italic; }
 .md-strong { font-weight: 700; }
 .md-strike { text-decoration: line-through; }
