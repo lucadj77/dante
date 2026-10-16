@@ -96,7 +96,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
         if (book.subtitle) emit(`#align(center)[#v(0.5em)#text(size: 1.4em, style: "italic", ${str(book.subtitle)})]`);
         emit(`#align(center)[#v(2em)#"❧"#v(1em)#${str(book.author)}]`);
       } else {
-        emit(`#grid(columns: (1fr, 1fr), ${str(book.author)}, align(right, ${str(`${approxWords(book.words)} ${labels.words}`)}))`);
+        emit(`#grid(columns: (1fr, 1fr), ${str(book.author)}, align(right, ${str(`${approxWords(book.words, book.language)} ${labels.words}`)}))`);
         emit(`#v(${cm(partOpening)})`);
         emit(`#align(center)[#${str(title.toUpperCase())}]`);
         if (book.subtitle) emit(`#align(center)[#emph(${str(book.subtitle)})]`);

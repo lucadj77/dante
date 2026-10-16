@@ -6,7 +6,7 @@
   import { isWritingDay } from "$lib/core/sessions";
   import { writing } from "./sessions.svelte";
   import type { MessageKey } from "$lib/i18n";
-  import { t } from "$lib/state.svelte";
+  import { num, t } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
   import PropertyField from "./PropertyField.svelte";
   import { emptyValue, KIND_ICONS, propertyDef, withDef, type PropertyDef } from "$lib/core/properties";
@@ -123,7 +123,7 @@
   }
   const sceneStats = $derived(p.activeText !== null ? textStats(p.activeText) : null);
   const viewStats = $derived(sum(p.sceneTexts));
-  const format = (n: number) => n.toLocaleString();
+  const format = (n: number) => num(n);
 </script>
 
 <div class="panel">

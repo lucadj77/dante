@@ -26,7 +26,7 @@
     type ViewSpec,
   } from "$lib/core/views";
   import type { MessageKey } from "$lib/i18n";
-  import { t } from "$lib/state.svelte";
+  import { num, t } from "$lib/state.svelte";
   import { confirmDelete } from "./dialogs";
   import { navigator } from "./navigation";
   import { displayValue, parseValue } from "./propertyText";
@@ -135,6 +135,7 @@
       if (["part", "chapter", "prologue", "epilogue", "scene"].includes(row.type)) return t(`kind.${row.type}` as MessageKey);
       return p.project.settings.types[row.type]?.name ?? row.type;
     }
+    if (field === "words") return num(row.words);
     return readableLinks(display(row, field));
   }
   /** A group's heading: links by their names. */
