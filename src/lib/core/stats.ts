@@ -3,6 +3,8 @@ export function plainText(markdown: string): string {
   return markdown
     .replace(/\{>>[\s\S]*?<<\}/g, "") // CriticMarkup comments
     .replace(/<!--[\s\S]*?-->/g, "")
+    // HTML tags, such as the ones that align a paragraph.
+    .replace(/<\/?[a-zA-Z][^<>\n]*>/g, "")
     .replace(/!?\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
     .replace(/!?\[\[([^\]]+)\]\]/g, "$1")
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")

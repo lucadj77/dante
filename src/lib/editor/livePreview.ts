@@ -1,6 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
+import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 // Markers hidden when the cursor is elsewhere, as in Obsidian's live preview.
@@ -27,6 +28,12 @@ const WIKILINK = /\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
 // ==highlight==, but not CriticMarkup's {==highlight==}.
 const HIGHLIGHT = /(?<!\{)==(?=\S)([^=\n]+?)==(?!\})/g;
 const highlight = Decoration.mark({ class: "md-highlight" });
+const alignLines = {
+  left: Decoration.line({ class: "md-align-left" }),
+  center: Decoration.line({ class: "md-align-center" }),
+  right: Decoration.line({ class: "md-align-right" }),
+  justify: Decoration.line({ class: "md-align-justify" }),
+};
 
 /** A list's "-", drawn as a bullet away from the cursor. */
 class Bullet extends WidgetType {
@@ -110,6 +117,25 @@ function build(view: EditorView, focused: boolean): DecorationSet {
       },
     });
 
+    // Aligned paragraphs: their lines are aligned and their tags always hidden, even under
+    // the cursor, since the alignment itself shows them; Backspace at the start removes it.
+    for (let pos = from; pos <= to; ) {
+      const line = state.doc.lineAt(pos);
+      const paragraph = paragraphAround(state.doc, line.from);
+      const p = paragraph && state.doc.sliceString(paragraph.from, paragraph.from + 1) === "<" ? aligned(state.doc, paragraph) : null;
+      if (p) {
+        for (let n = line.number; n <= state.doc.lineAt(p.to).number; n++) {
+          const l = state.doc.line(n);
+          found.push({ from: l.from, to: l.from, deco: alignLines[p.align] });
+        }
+        if (p.from >= from) found.push({ from: p.from, to: p.contentFrom, deco: hide });
+        found.push({ from: p.contentTo, to: p.to, deco: hide });
+      }
+      const end = paragraph ? paragraph.to : line.to;
+      if (end + 1 > state.doc.length) break;
+      pos = end + 1;
+    }
+
     const text = state.doc.sliceString(from, to);
     for (const m of text.matchAll(HIGHLIGHT)) {
       const start = from + m.index!;
@@ -183,4 +209,4 @@ const plugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-export const livePreview = [plugin, taskClicks];
+export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme];

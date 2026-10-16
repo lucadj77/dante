@@ -150,6 +150,8 @@ export const en = {
   "format.bullet": "Bulleted list (⌘⇧8)",
   "format.ordered": "Numbered list (⌘⇧7)",
   "format.task": "Checkbox (⌘⇧9)",
+  "format.alignCenter": "Align centre (⌘⇧E); again to go back to the left",
+  "format.alignRight": "Align right (⌘⇧R); again to go back to the left",
   "format.code": "Code: inline, or a block over several lines (⌘E)",
   "format.link": "Link (⌘K)",
   "format.wikilink": "Wikilink to a note",

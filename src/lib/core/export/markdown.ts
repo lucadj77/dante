@@ -2,6 +2,7 @@ import { stringify } from "yaml";
 import type { DocxSettings, Separator } from "../settings";
 import type { Block, Book, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
+import { setAlignment } from "../alignment";
 
 // The book as one Markdown file: title, author and language as properties, then the
 // novel with parts, chapters and scenes as headings. Comments and revisions are already
@@ -90,7 +91,7 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
       else if (block.type === "quote") add(`> ${runs(block.runs)}`.replace(/\n/g, "\n> "));
       else if (block.type === "break") add(separator("characters") ?? "---");
       else if (block.runs.length && block.runs.every((r) => r.code)) add("```\n" + block.runs.map((r) => r.text).join("").replace(/\n$/, "") + "\n```");
-      else add(runs(block.runs));
+      else add(setAlignment(runs(block.runs), block.align ?? null));
     }
   };
 

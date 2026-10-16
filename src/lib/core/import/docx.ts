@@ -3,8 +3,10 @@
 // comments and tracked changes become signed CriticMarkup, as Dante writes them, and
 // footnotes become comments. Headings are paragraphs whose style is one of Word's headings
 // ("heading 1"… whatever the language of Word, since files keep the English names) or has
-// an outline level; the "Title" style gives the book's title. Layout is left out.
+// an outline level; the "Title" style gives the book's title. Of the layout only centred and
+// right-aligned paragraphs are kept, as Dante aligns them.
 
+import { setAlignment, type Align } from "../alignment";
 import { SCENE_BREAK } from "./structure";
 import { unzip } from "./unzip";
 import { child, descendants, isElement, parseXml, textOf, type XmlElement } from "./xml";
@@ -31,6 +33,8 @@ interface Style {
   basedOn: string | null;
   outline: number | null;
   format: Format;
+  /** Alignment set by the style (w:jc), when it sets one. */
+  align?: string;
 }
 
 interface Change {
@@ -86,6 +90,7 @@ function readStyles(xml: string): Map<string, Style> {
       basedOn: child(s, "w:basedOn")?.attrs[W_VAL] ?? null,
       outline: outline === undefined ? null : Number(outline),
       format: formatOf(child(s, "w:rPr")),
+      align: child(child(s, "w:pPr"), "w:jc")?.attrs[W_VAL],
     });
   }
   return styles;
@@ -107,6 +112,24 @@ function styleOutline(styles: Map<string, Style>, id: string | undefined, depth 
   const style = id ? styles.get(id) : undefined;
   if (!style || depth > 20) return null;
   return style.outline ?? styleOutline(styles, style.basedOn ?? undefined, depth + 1);
+}
+
+function styleAlign(styles: Map<string, Style>, id: string | undefined, depth = 0): string | undefined {
+  const style = id ? styles.get(id) : undefined;
+  if (!style || depth > 20) return undefined;
+  return style.align ?? styleAlign(styles, style.basedOn ?? undefined, depth + 1);
+}
+
+/**
+ * Centred or right-aligned, from the paragraph or its style; null otherwise. Left and
+ * justified text is the default, so it needs nothing.
+ */
+function alignment(styles: Map<string, Style>, pPr: XmlElement | undefined): Align | null {
+  const value = child(pPr, "w:jc")?.attrs[W_VAL] ?? styleAlign(styles, paragraphStyle(styles, pPr));
+  if (value === "center") return "center";
+  // "end" is the right side in left-to-right text; "right" is what older files write.
+  if (value === "right" || value === "end") return "right";
+  return null;
 }
 
 /** Heading level from the paragraph's style or outline level. */
@@ -401,16 +424,20 @@ export function readDocument(documentXml: string, parts: DocumentParts = {}): Do
     } else if (SCENE_BREAK.test(plain)) {
       blocks.push({ kind: "paragraph", text: plain });
     } else {
-      blocks.push({ kind: "paragraph", text: escapeStart(render(list, ctx).replace(/[ \t]+\n/g, "\n")) });
+      const text = escapeStart(render(list, ctx).replace(/[ \t]+\n/g, "\n"));
+      blocks.push({ kind: "paragraph", text: text ? setAlignment(text, alignment(ctx.styles, pPr)) : text });
     }
   }
 
   // Without heading styles, lines such as "Capitolo 3" or "Parte seconda" are the headings.
   if (!blocks.some((b) => b.kind === "heading" && b.level > 0)) {
     blocks.forEach((b, i) => {
-      if (b.kind !== "paragraph" || b.text.length > 80 || b.text.includes("\n")) return;
-      const level = PART_LINE.test(b.text) ? 1 : CHAPTER_LINE.test(b.text) ? 2 : null;
-      if (level !== null) blocks[i] = { kind: "heading", level, text: b.text.replace(/\\/g, "") };
+      if (b.kind !== "paragraph") return;
+      // Such lines are often centred.
+      const text = setAlignment(b.text, null);
+      if (text.length > 80 || text.includes("\n")) return;
+      const level = PART_LINE.test(text) ? 1 : CHAPTER_LINE.test(text) ? 2 : null;
+      if (level !== null) blocks[i] = { kind: "heading", level, text: text.replace(/\\/g, "") };
     });
   }
   return blocks;

@@ -1,10 +1,13 @@
 import { EditorSelection, Prec, StateField, type EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap, showTooltip, type Tooltip } from "@codemirror/view";
+import type { IconName } from "$lib/ui/Icon.svelte";
 import { criticHandler } from "./critic";
+import { toggleAlign } from "./alignment";
 
 export type Format = "bold" | "italic" | "strike" | "highlight";
 export type LineFormat = "quote" | "bullet" | "ordered" | "task";
-export type Action = Format | LineFormat | "heading" | "code" | "link" | "wikilink" | "separator" | "comment";
+export type AlignAction = "alignCenter" | "alignRight";
+export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "comment";
 
 const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
@@ -197,6 +200,10 @@ function transaction(state: EditorState, action: Exclude<Action, "comment">): Tr
       return insertWikilink(state);
     case "separator":
       return insertSeparator(state);
+    case "alignCenter":
+      return toggleAlign(state, "center");
+    case "alignRight":
+      return toggleAlign(state, "right");
   }
 }
 
@@ -215,12 +222,13 @@ export function applyFormat(view: EditorView, action: Action): boolean {
 export const ACTIONS: (Action | null)[] = [
   "bold", "italic", "strike", "highlight", null,
   "heading", "quote", "bullet", "ordered", "task", null,
+  "alignCenter", "alignRight", null,
   "code", "link", "wikilink", "separator", null,
   "comment",
 ];
 
 /** What each button shows, as text, with an inline style where the glyph is the style itself. */
-export const ICONS: Record<Action, { text: string; style?: string }> = {
+export const ICONS: Record<Action, { text: string; style?: string; icon?: IconName }> = {
   bold: { text: "B", style: "font-weight: 700" },
   italic: { text: "I", style: "font-style: italic; font-family: Georgia, serif" },
   strike: { text: "S", style: "text-decoration: line-through" },
@@ -230,6 +238,8 @@ export const ICONS: Record<Action, { text: string; style?: string }> = {
   bullet: { text: "•≡" },
   ordered: { text: "1≡" },
   task: { text: "☑" },
+  alignCenter: { text: "≡", icon: "alignCenter" },
+  alignRight: { text: "≡", icon: "alignRight" },
   code: { text: "</>", style: "font-family: ui-monospace, monospace; font-size: 12px" },
   link: { text: "🔗︎" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
@@ -314,6 +324,8 @@ export function formatting(labels: FormattingLabels): Extension {
         { key: "Mod-Shift-8", run: run_("bullet") },
         { key: "Mod-Shift-9", run: run_("task") },
         { key: "Mod-Shift-.", run: run_("quote") },
+        { key: "Mod-Shift-e", run: run_("alignCenter") },
+        { key: "Mod-Shift-r", run: run_("alignRight") },
       ]),
     ),
     selectionBar(labels),
