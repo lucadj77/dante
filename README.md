@@ -230,3 +230,14 @@ cd src-tauri && cargo test
 The project logic (`src/lib/core`) has no dependency on Tauri or the interface and is
 tested against an in-memory filesystem. The Rust side (`src-tauri/src/files.rs`) only
 reads, writes, renames and watches files inside the opened folder.
+
+## Builds for Windows and Linux
+
+The Builds workflow (`.github/workflows/builds.yml`) builds, on every push, a Windows
+installer, a portable Windows zip, and a Linux AppImage, `.deb` and `.rpm`. They are kept
+as artifacts of the run; runs on `main` or started by hand also put them on the `preview`
+release. The macOS app is built locally with `npm run tauri build`.
+
+The portable copy is `Dante.exe` next to a `dante-data` folder: when that folder exists
+beside the program, the web view keeps its data there (settings, recent projects), so the
+folder can be carried on a USB stick. Without it, data goes to the user's profile as usual.
