@@ -73,9 +73,28 @@
     const node = findNode(path);
     const scene = node?.kind === "scene" ? node : node ? scenesOf(node)[0] : null;
     if (!scene) return;
-    const el = document.querySelector(`[data-scene="${CSS.escape(scene.path)}"]`);
-    el?.scrollIntoView({ block: "start", behavior: "smooth" });
     active = scene.path;
+    await scrollToScene(scene.path);
+  }
+
+  /**
+   * The editors only lay out the lines on screen and estimate the height of the others, so
+   * the place of a scene far away changes while the text scrolls towards it. Jumping again
+   * until it stays put lands on the scene even in a long novel.
+   */
+  async function scrollToScene(path: string) {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    let last = NaN;
+    for (let i = 0; i < 20; i++) {
+      const el = document.querySelector(`[data-scene="${CSS.escape(path)}"]`);
+      if (!el || active !== path) return;
+      el.scrollIntoView({ block: "start" });
+      await frame();
+      await frame();
+      const top = el.getBoundingClientRect().top;
+      if (Math.abs(top - last) < 1) return;
+      last = top;
+    }
   }
   $effect(() => {
     if (selected) onShow(selected);
