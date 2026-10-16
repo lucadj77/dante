@@ -153,7 +153,7 @@ describe("PDF and EPUB", () => {
     const book = await buildBook(await Project.open(sample()));
     const source = bookToTypst(book, defaultSettings("it").export.docx, { words: "parole" });
     expect(source).toContain('#"Uno "#emph("due")#" #tre = \\\\ $4 // <b>."');
-    expect(source).toContain('#set document(title: "Test «quoted»", author: "Ada Rossi")');
+    expect(source).toContain('#set document(title: "Test «quoted»", author: ("Ada Rossi",))');
     expect(str('a"b\\c\nd')).toBe('"a\\"b\\\\c\\nd"');
     expect(source).toContain('#heading(level: 1)[#"Parte I: One"]');
     expect(source).toContain('lang: "it"');
@@ -178,7 +178,7 @@ describe("EPUB stylesheet", () => {
   it("uses the project's stylesheet when there is one", async () => {
     const { bookToEpub, EPUB_CSS } = await import("../export/epub");
     const { defaultSettings } = await import("../settings");
-    const book = { title: "T", subtitle: "", author: "A", language: "it", paratext: defaultSettings("it").export.paratext, entries: [], words: 0, characters: 0 };
+    const book = { title: "T", subtitle: "", author: "A", authors: ["A"], language: "it", paratext: defaultSettings("it").export.paratext, entries: [], words: 0, characters: 0 };
     const text = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
     expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id"))).toContain(EPUB_CSS.slice(0, 40));
     expect(text(bookToEpub(book, defaultSettings("it").export.docx, "id", new Date(), "p { color: red; }"))).toContain("p { color: red; }");
@@ -216,7 +216,7 @@ describe("markdown export", () => {
 });
 
 describe("cover in exports", () => {
-  it("opens the EPUB and the PDF", async () => {
+  it("opens the Word file, the EPUB and the PDF", async () => {
     const fs = new MemoryFs({ "dante.yaml": "title: Test\nauthor: Ada\n", "Manuscript/010 One/010 A.md": "Text." });
     const project = await Project.open(fs);
     const book = await buildBook(project);
@@ -225,6 +225,8 @@ describe("cover in exports", () => {
     expect(epub).toContain('properties="cover-image"');
     expect(epub).toContain("OEBPS/cover.svg");
     expect(epub).toContain('<img src="cover.svg"');
+    const docx = await docxBytes(bookToDocx(book, project.settings.export.docx, { words: "words" }, new Uint8Array([0x89, 0x50, 0x4e, 0x47])));
+    expect(new TextDecoder("latin1").decode(docx)).toMatch(/word\/media\/[^"]+\.png/);
     const typst = bookToTypst(book, project.settings.export.docx, { words: "words" }, svg);
     expect(typst).toContain('#page(margin: 0pt, header: none, footer: none, image(bytes("<svg ');
   });

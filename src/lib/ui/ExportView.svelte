@@ -255,10 +255,10 @@
       const layout = project.settings.export.docx;
       const labels = { words: t("export.words") };
       const pages = pageCount(book, project.settings.pages).toLocaleString(undefined, { maximumFractionDigits: 1 });
-      const cover = useCover && (format === "epub" || format === "pdf") ? coverSvg(project.settings, project.settings.cover) : "";
+      const cover = useCover && format !== "md" ? coverSvg(project.settings, project.settings.cover) : "";
       let where: Saved | "" | null;
       if (format === "docx") {
-        where = await save(await docxBytes(bookToDocx(book, layout, labels)), elsewhere);
+        where = await save(await docxBytes(bookToDocx(book, layout, labels, (cover && (await coverPng(cover))) || undefined)), elsewhere);
       } else if (format === "md") {
         where = await save(bookToMarkdown(book, layout), elsewhere);
       } else if (format === "epub") {
@@ -374,7 +374,7 @@
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
     <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
-    {#if format === "epub" || format === "pdf"}
+    {#if format !== "md"}
       <div class="cover">
         <img src={coverUrl} alt={t("cover.preview")} />
         <div>

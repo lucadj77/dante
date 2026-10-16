@@ -54,9 +54,9 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
   const title = book.title || "Untitled";
   const labels = PARATEXT_LABELS[book.language.slice(0, 2)] ?? PARATEXT_LABELS.en;
 
-  const meta: Record<string, string> = { title };
+  const meta: Record<string, string | string[]> = { title };
   if (book.subtitle) meta.subtitle = book.subtitle;
-  if (book.author) meta.author = book.author;
+  if (book.authors.length) meta.author = book.authors.length > 1 ? book.authors : book.authors[0];
   if (book.language) meta.lang = book.language;
   add(`---\n${stringify(meta, { lineWidth: 0 }).trimEnd()}\n---`);
 

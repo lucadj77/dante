@@ -3,7 +3,7 @@
 // the middle, abstract shapes in one or two colours behind them. Nothing is stored but
 // the chosen template and palette (in dante.yaml), so the cover follows the title.
 
-export const COVER_TEMPLATES = ["circles", "waves", "stripes", "blocks", "arcs"] as const;
+export const COVER_TEMPLATES = ["circles", "waves", "stripes", "blocks", "arcs", "frame", "sun", "mountains", "dots", "corners", "triangles", "band"] as const;
 export type CoverTemplate = (typeof COVER_TEMPLATES)[number];
 
 export interface Palette {
@@ -23,6 +23,16 @@ export const COVER_PALETTES = {
   sand: { background: "#efe3cc", first: "#d39b5c", second: "#a5523a", text: "#38281a" },
   charcoal: { background: "#232323", first: "#e4572e", second: "#4a4a4a", text: "#f5f5f5" },
   sky: { background: "#e6eff8", first: "#93b6db", second: "#2d5d8a", text: "#13283f" },
+  forest: { background: "#1e3b2f", first: "#c9a227", second: "#2f5a45", text: "#f3efe1" },
+  rose: { background: "#f3dde0", first: "#c97b84", second: "#7d3c4a", text: "#3d1f26" },
+  mustard: { background: "#e8b84a", first: "#2f4858", second: "#c4472f", text: "#2a2118" },
+  lavender: { background: "#e4def2", first: "#9b8ac4", second: "#4f3f80", text: "#231a3f" },
+  mint: { background: "#d9efe6", first: "#5fb49c", second: "#1f6f5c", text: "#11332a" },
+  ink: { background: "#f4f1ea", first: "#1d1d1d", second: "#b33a3a", text: "#1d1d1d" },
+  burgundy: { background: "#5c1a2b", first: "#e8b4a0", second: "#3a0f1a", text: "#fbeae4" },
+  olive: { background: "#5a5f2c", first: "#e2d6a8", second: "#3b3f1a", text: "#f7f3e0" },
+  coral: { background: "#fbe3d6", first: "#f06c4f", second: "#2e6e83", text: "#2b2b2b" },
+  midnight: { background: "#0d1b2a", first: "#7fb7be", second: "#415a77", text: "#e0e6ed" },
 } as const satisfies Record<string, Palette>;
 export type CoverPalette = keyof typeof COVER_PALETTES;
 
@@ -119,19 +129,52 @@ function shapes(template: CoverTemplate, p: Palette): string {
         `<rect x="0" y="1340" width="720" height="460" fill="${p.second}"/>`,
         `<rect x="720" y="1220" width="480" height="580" fill="${p.first}"/>`,
         `<rect x="100" y="1240" width="180" height="180" fill="${p.first}"/>`,
-        `<rect x="100" y="390" width="1000" height="6" fill="${p.first}"/>`,
       ].join("");
     case "arcs":
       return [300, 420, 540, 660]
         .map((r, i) => `<circle cx="600" cy="1820" r="${r}" fill="none" stroke="${i % 2 ? p.second : p.first}" stroke-width="56"/>`)
         .join("");
+    case "frame":
+      return [
+        `<rect x="60" y="60" width="1080" height="1680" fill="none" stroke="${p.first}" stroke-width="20"/>`,
+        `<rect x="60" y="1460" width="1080" height="280" fill="${p.second}"/>`,
+      ].join("");
+    case "sun":
+      return [`<circle cx="600" cy="1520" r="270" fill="${p.first}"/>`, `<rect x="0" y="1520" width="1200" height="280" fill="${p.second}"/>`].join("");
+    case "mountains":
+      return [
+        `<polygon points="0,1800 0,1450 320,1200 620,1480 900,1250 1200,1500 1200,1800" fill="${p.second}"/>`,
+        `<polygon points="0,1800 0,1620 260,1420 560,1650 860,1460 1200,1670 1200,1800" fill="${p.first}"/>`,
+      ].join("");
+    case "dots": {
+      const dots: string[] = [];
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 10; col++) {
+          dots.push(`<circle cx="${150 + col * 100}" cy="${1320 + row * 100}" r="${18 + row * 4}" fill="${(row + col) % 2 ? p.second : p.first}"/>`);
+        }
+      }
+      return dots.join("");
+    }
+    case "corners":
+      return [
+        `<circle cx="0" cy="1800" r="520" fill="${p.first}"/>`,
+        `<circle cx="1200" cy="1800" r="360" fill="${p.second}"/>`,
+        `<circle cx="1200" cy="0" r="120" fill="${p.second}"/>`,
+      ].join("");
+    case "triangles":
+      return [
+        `<polygon points="-100,1800 350,1250 800,1800" fill="${p.first}"/>`,
+        `<polygon points="450,1800 900,1340 1350,1800" fill="${p.second}"/>`,
+      ].join("");
+    case "band":
+      return [`<rect x="0" y="1560" width="1200" height="120" fill="${p.first}"/>`, `<rect x="0" y="1680" width="1200" height="120" fill="${p.second}"/>`].join("");
   }
 }
 
 export interface CoverText {
   title: string;
   subtitle?: string;
-  author: string;
+  authors: string[];
 }
 
 /** The cover as an SVG document. */
@@ -142,16 +185,17 @@ export function coverSvg(text: CoverText, cover: CoverSettings): string {
   const usable = W - 200;
   const out: string[] = [];
 
-  // Authors at the top, in spaced capitals, on up to two lines.
-  const author = text.author.trim().toLocaleUpperCase();
-  if (author) {
-    const lines = fit(author, 16, 2);
+  // Authors at the top, in spaced capitals: one per line when there are up to three,
+  // otherwise all together on up to three lines.
+  const names = text.authors.map((a) => a.trim().toLocaleUpperCase()).filter(Boolean);
+  if (names.length) {
+    const lines = names.length === 1 ? fit(names[0], 16, 2) : names.length <= 3 ? names : fit(names.join(" · "), 22, 3);
     const longest = Math.max(...lines.map((l) => l.length));
     // Letter spacing adds about a tenth of the size to each letter.
-    const size = Math.round(Math.min(84, usable / (longest * 0.74)));
+    const size = Math.round(Math.min(lines.length > 2 ? 64 : 84, usable / (longest * 0.74)));
     lines.forEach((line, i) => {
       out.push(
-        `<text x="${W / 2}" y="${Math.round(210 + i * size * 1.25)}" font-family="${SANS}" font-size="${size}" letter-spacing="${Math.round(size * 0.1)}" text-anchor="middle" fill="${p.text}">${escapeXml(line)}</text>`,
+        `<text x="${W / 2}" y="${Math.round(190 + i * size * 1.25)}" font-family="${SANS}" font-size="${size}" letter-spacing="${Math.round(size * 0.1)}" text-anchor="middle" fill="${p.text}">${escapeXml(line)}</text>`,
       );
     });
   }

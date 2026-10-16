@@ -215,7 +215,7 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
 <dc:identifier id="book-id">urn:uuid:${id}</dc:identifier>
 <dc:title>${escapeXml(title)}</dc:title>
-<dc:creator>${escapeXml(book.author)}</dc:creator>
+${(book.authors.length ? book.authors : [""]).map((a) => `<dc:creator>${escapeXml(a)}</dc:creator>`).join("\n")}
 <dc:language>${escapeXml(language)}</dc:language>
 <meta property="dcterms:modified">${modified}</meta>${cover ? '\n<meta name="cover" content="cover-image"/>' : ""}
 </metadata>

@@ -4,6 +4,7 @@ import {
   Footer,
   Header,
   HeadingLevel,
+  ImageRun,
   LineRuleType,
   NumberFormat,
   Packer,
@@ -15,7 +16,7 @@ import {
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
-import { PAGE_SIZES, type DocxSettings, type Separator } from "../settings";
+import { PAGE_SIZES, surnames, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, Run } from "./book";
 
 // Every paragraph uses a named Word style and carries no direct formatting, so that
@@ -110,7 +111,8 @@ function headingStyles(opts: DocxSettings, typeset: boolean) {
 }
 
 /** Renders the book as a standard manuscript or as a typeset book. */
-export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string }): Document {
+/** Renders the book as a Word document; `coverPng`, a 2:3 image, fills the first page. */
+export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string }, coverPng?: Uint8Array): Document {
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -240,7 +242,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     margin: { top: margin, bottom: margin, left: margin, right: margin, header: twips(small ? 1 : 1.25), footer: twips(small ? 1 : 1.25) },
   };
 
-  const surname = book.author.trim().split(/\s+/).pop() ?? "";
+  const surname = surnames(book.authors);
   const header = !opts.header
     ? undefined
     : typeset
@@ -258,6 +260,22 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   const footer = typeset ? new Footer({ children: [new Paragraph({ style: "Colophon", children: [new TextRun({ children: [PageNumber.CURRENT] })] })] }) : undefined;
 
   const sections: ISectionOptions[] = [];
+  if (coverPng) {
+    // The cover on a page of its own without margins, as large as the page allows.
+    const px = (cm: number) => Math.floor((cm / 2.54) * 96);
+    // A little under the page height, or Word moves the image to a page of its own.
+    const scale = Math.min(px(width) / 2, (px(height) * 0.98) / 3);
+    sections.push({
+      properties: { page: { size: page.size, margin: { top: 0, bottom: 0, left: 0, right: 0, header: 0, footer: 0 } } },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 0, after: 0, line: 240, lineRule: LineRuleType.AUTO },
+          children: [new ImageRun({ type: "png", data: coverPng, transformation: { width: Math.floor(scale * 2), height: Math.floor(scale * 3) } })],
+        }),
+      ],
+    });
+  }
   const frontMatter = [...titlePage, ...(titlePage.length ? onNewPage(front) : onNewPage(front).slice(1))];
   if (typeset) {
     // Title page and front matter have no header and no page number; the text starts at page 1.

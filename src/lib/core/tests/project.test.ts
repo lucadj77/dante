@@ -167,7 +167,7 @@ describe("project", () => {
 describe("new project", () => {
   it("creates settings, section folders and a first scene in the novel's language", async () => {
     const fs = new MemoryFs({});
-    const { project, scene } = await Project.create(fs, { title: "Il faro", author: "Luca", language: "it" }, { chapter: "Senza titolo", scene: "Senza titolo" });
+    const { project, scene } = await Project.create(fs, { title: "Il faro", authors: ["Luca"], language: "it" }, { chapter: "Senza titolo", scene: "Senza titolo" });
     expect(project.settings.title).toBe("Il faro");
     expect(project.settings.structure.chapter.label).toBe("Capitolo");
     expect(scene).toBe("Manoscritto/010 Senza titolo/010 Senza titolo 2.md");
@@ -196,14 +196,14 @@ describe("trash", () => {
 
 describe("new project with earlier choices", () => {
   it("starts from them, keeping its own language's labels", async () => {
-    const earlier = await Project.create(new MemoryFs({}), { title: "A", author: "L", language: "en" }, { chapter: "C", scene: "S" });
+    const earlier = await Project.create(new MemoryFs({}), { title: "A", authors: ["L"], language: "en" }, { chapter: "C", scene: "S" });
     const prefs = {
       structure: { ...earlier.project.settings.structure, chapter: { ...earlier.project.settings.structure.chapter, numbering: "ordinal" as const } },
       docx: { ...earlier.project.settings.export.docx, pageSize: "15x21" as const, font: "Garamond" },
       typography: { ...earlier.project.settings.export.typography, quotes: "dash" as const },
       revisions: "reject" as const,
     };
-    const { project } = await Project.create(new MemoryFs({}), { title: "B", author: "L", language: "it" }, { chapter: "C", scene: "S" }, prefs);
+    const { project } = await Project.create(new MemoryFs({}), { title: "B", authors: ["L"], language: "it" }, { chapter: "C", scene: "S" }, prefs);
     expect(project.settings.export.docx.pageSize).toBe("15x21");
     expect(project.settings.export.docx.font).toBe("Garamond");
     expect(project.settings.export.typography.quotes).toBe("dash");

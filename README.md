@@ -225,11 +225,14 @@ its title, since Dante numbers chapters itself. The Word file is only read.
   properties, then parts, chapters and scenes as headings, with comments removed and
   revisions settled.
 - Each project has a simple generated cover: authors at the top, title in the middle,
-  abstract shapes behind. Shapes (`circles`, `waves`, `stripes`, `blocks`, `arcs`) and
-  colours are chosen when creating the project or in Settings, and kept in `dante.yaml`
-  as `cover: {template, palette}`; nothing else is stored, so the cover follows title and
-  author. It is the thumbnail of recent projects and, with "Open the book with the
-  cover" (`export.cover`), the first page of the EPUB (as PNG) and of the PDF.
+  abstract shapes behind. Twelve shape templates and eighteen palettes are offered when
+  creating the project and in Settings, kept in `dante.yaml` as `cover: {template,
+  palette}`; nothing else is stored, so the cover follows title and authors. It is the
+  thumbnail of recent projects and, with "Open the book with the cover"
+  (`export.cover`), the first page of the Word file and the EPUB (as PNG) and of the PDF.
+- A novel can have several authors: `authors:` is a list in `dante.yaml` (an older
+  `author:` text is read and split on commas and "e"/"and"). Exports join them as the
+  novel's language joins a list ("Ada Rossi e Bruno Neri"), the EPUB lists each creator.
 
 ## Development
 

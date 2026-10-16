@@ -1,4 +1,4 @@
-import { PAGE_SIZES, type DocxSettings, type Separator } from "../settings";
+import { PAGE_SIZES, surnames, type DocxSettings, type Separator } from "../settings";
 import { PARATEXT_LABELS, approxWords } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
 
@@ -62,7 +62,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   const emit = (line: string) => out.push(line);
 
   emit(`// Made by Dante from the manuscript of ${str(title)}. Edit the novel, not this file.`);
-  emit(`#set document(title: ${str(title)}, author: ${str(book.author)})`);
+  emit(`#set document(title: ${str(title)}, author: (${book.authors.map((a) => `${str(a)},`).join(" ")}))`);
   emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: ${cm(margin)}, header: none, footer: none)`);
   emit(`#set text(font: ${fonts(opts.font)}, size: ${size}pt, lang: ${str(book.language.slice(0, 2) || "en")}, hyphenate: ${typeset}, top-edge: "ascender", bottom-edge: "descender")`);
   emit(`#set par(justify: ${typeset}, leading: ${+leading.toFixed(2)}em, spacing: ${+leading.toFixed(2)}em, first-line-indent: ${cm(opts.indent)})`);
@@ -121,7 +121,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   }
 
   // The novel: the header and page numbers start here, from page 1 in a typeset book.
-  const surname = book.author.trim().split(/\s+/).pop() ?? "";
+  const surname = surnames(book.authors);
   const header = !opts.header
     ? "none"
     : typeset

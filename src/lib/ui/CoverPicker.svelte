@@ -23,7 +23,7 @@
           title={t(`cover.template.${template}` as MessageKey)}
           onclick={() => (cover = { template, palette: chosen.palette })}
         >
-          <img src={svgUrl(coverSvg({ title: "", author: "" }, { template, palette: chosen.palette }))} alt={t(`cover.template.${template}` as MessageKey)} />
+          <img src={svgUrl(coverSvg({ title: "", authors: [] }, { template, palette: chosen.palette }))} alt={t(`cover.template.${template}` as MessageKey)} />
         </button>
       {/each}
     </div>

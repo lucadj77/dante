@@ -27,8 +27,8 @@ export function exportStamp(date: Date): string {
 }
 
 /** "Ada_Rossi_Bruno_Neri_La_casa_sul_lago_2026-10-16-11-30", without extension. */
-export function exportBaseName(details: { title: string; author: string }, date: Date, fallbackTitle = "manuscript"): string {
+export function exportBaseName(details: { title: string; authors: string[] }, date: Date, fallbackTitle = "manuscript"): string {
   const title = words(details.title);
-  const parts = [...authorsOf(details.author).flatMap(words), ...(title.length ? title : words(fallbackTitle))];
+  const parts = [...details.authors.flatMap(words), ...(title.length ? title : words(fallbackTitle))];
   return [...parts, exportStamp(date)].join("_");
 }

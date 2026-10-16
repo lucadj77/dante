@@ -5,6 +5,8 @@
   import { parseSettings, SETTINGS_FILE } from "$lib/core/settings";
   import { coverSvg, resolveCover, svgUrl, type CoverSettings } from "$lib/core/cover";
   import CoverPicker from "./CoverPicker.svelte";
+  import AuthorsInput from "./AuthorsInput.svelte";
+  import { authorsOf } from "$lib/core/export/files";
   import { sampleProject } from "$lib/sample";
   import { app, exportPreferences, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
@@ -20,7 +22,7 @@
   // New project form.
   let creating = $state(false);
   let title = $state("");
-  let author = $state(app.settings.userName);
+  let authors = $state<string[]>(app.settings.userName ? [app.settings.userName] : []);
   let language = $state(app.settings.language);
   let parent = $state("");
   let busy = $state(false);
@@ -32,7 +34,7 @@
   $effect(() => {
     for (const r of recent.projects) {
       if (covers[r.path]) continue;
-      const fallback = svgUrl(coverSvg({ title: r.title, author: "" }, { template: "", palette: "" }));
+      const fallback = svgUrl(coverSvg({ title: r.title, authors: [] }, { template: "", palette: "" }));
       covers[r.path] = fallback;
       if (!desktop) continue;
       void new TauriFs(r.path)
@@ -123,7 +125,7 @@
       content = read;
       importedFrom = fileName;
       title = imported?.title || fileName.replace(/\.docx$/i, "");
-      if (read.author) author = read.author;
+      if (read.author) authors = authorsOf(read.author);
       creating = true;
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
@@ -154,7 +156,7 @@
     try {
       if (!desktop) {
         // In a browser an imported book can be tried, kept only while the page is open.
-        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), author: author.trim(), language, cover: resolveCover(cover, title) }, null, exportPreferences());
+        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences());
         if (imported) await project.importBook(imported);
         onOpen(project);
         return;
@@ -167,13 +169,14 @@
       }
       const { project } = await Project.create(
         fs,
-        { title: title.trim(), author: author.trim(), language, cover: resolveCover(cover, title) },
+        { title: title.trim(), authors, language, cover: resolveCover(cover, title) },
         imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
         exportPreferences(),
       );
       if (imported) await project.importBook(imported);
-      // The author's name is offered again next time.
-      if (author.trim() && !app.settings.userName) saveAppSettings({ ...app.settings, userName: author.trim() });
+      // The first author's name is offered again next time.
+      const first = authors.find((a) => a.trim())?.trim();
+      if (first && !app.settings.userName) saveAppSettings({ ...app.settings, userName: first });
       rememberProject(path, project.settings.title);
       onOpen(project);
     } catch (e) {
@@ -237,7 +240,7 @@
       }}
     >
       <label>{t("settings.title")} <input bind:value={title} required /></label>
-      <label>{t("settings.author")} <input bind:value={author} /></label>
+      <AuthorsInput bind:authors />
       <label
         >{t("settings.language")}
         <select bind:value={language}>
@@ -248,7 +251,7 @@
       </label>
       <div class="field">
         <span class="label">{t("cover.title")}</span>
-        <CoverPicker bind:cover text={{ title, author }} />
+        <CoverPicker bind:cover text={{ title, authors }} />
       </div>
       {#if desktop}
       <div class="where">

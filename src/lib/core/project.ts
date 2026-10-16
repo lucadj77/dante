@@ -79,14 +79,14 @@ export class Project {
    */
   static async create(
     fs: ProjectFs,
-    details: { title: string; author: string; language: string; cover?: CoverSettings },
+    details: { title: string; authors: string[]; language: string; cover?: CoverSettings },
     /** Names of the first chapter and scene; null starts an empty manuscript, as an import does. */
     names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
     preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
   ): Promise<{ project: Project; scene: string }> {
     await fs.mkdir("");
-    const settings = { ...defaultSettings(details.language), title: details.title, author: details.author, cover: details.cover ?? coverFor(details.title) };
+    const settings = { ...defaultSettings(details.language), title: details.title, authors: details.authors.map((a) => a.trim()).filter(Boolean), cover: details.cover ?? coverFor(details.title) };
     if (preferences) {
       // Through the parser, so stored choices from an older version are completed and checked.
       const merged = parseSettings(
