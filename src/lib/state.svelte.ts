@@ -15,6 +15,8 @@ export interface AppSettings {
   /** Length analysis in the statistics: what to measure and at which level. */
   statsUnit: "words" | "characters";
   statsLevel: "scene" | "chapter" | "part";
+  /** A light shade on the row the cursor is on. */
+  lineHighlight: boolean;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -32,6 +34,7 @@ function defaults(): AppSettings {
     revisions: false,
     statsUnit: "words",
     statsLevel: "chapter",
+    lineHighlight: false,
   };
 }
 

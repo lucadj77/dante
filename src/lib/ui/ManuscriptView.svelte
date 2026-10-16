@@ -448,6 +448,8 @@
 
   async function toggleFullscreen() {
     fullscreen = !fullscreen;
+    edge = null;
+    hovering = false;
     try {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       await getCurrentWindow().setFullscreen(fullscreen);
@@ -457,17 +459,113 @@
   }
 
   function onKey(event: KeyboardEvent) {
-    if (event.key === "Escape" && fullscreen) void toggleFullscreen();
+    // Esc that closed something else first, such as the suggestions, stays there.
+    if (event.key === "Escape" && fullscreen && !event.defaultPrevented && !menu) void toggleFullscreen();
+  }
+
+  // The window can leave full screen by itself, such as with the Mac's green button.
+  $effect(() => {
+    if (!fullscreen || !(project.fs instanceof TauriFs)) return;
+    let stop: (() => void) | undefined;
+    let stopped = false;
+    void import("@tauri-apps/api/window").then(async ({ getCurrentWindow }) => {
+      const win = getCurrentWindow();
+      const unlisten = await win.onResized(async () => {
+        if (!(await win.isFullscreen())) {
+          fullscreen = false;
+          edge = null;
+        }
+      });
+      if (stopped) unlisten();
+      else stop = unlisten;
+    });
+    return () => {
+      stopped = true;
+      stop?.();
+    };
+  });
+
+  /**
+   * In full screen only the text shows; the bars and the panels come out when the mouse
+   * rests on the edge they belong to, and go back when it leaves them.
+   */
+  type Edge = "top" | "left" | "right";
+  let edge = $state<Edge | null>(null);
+  /** The mouse is over the bars or panel that came out. */
+  let hovering = false;
+  let edgeTimer: ReturnType<typeof setTimeout> | undefined;
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  let waiting: Edge | null = null;
+  /** How close to the edge the mouse has to be, and how long it rests there. */
+  const EDGE_ZONE = 4;
+  const EDGE_DWELL = 120;
+
+  function onMouseMove(event: MouseEvent) {
+    if (!fullscreen) return;
+    // Out without the mouse ever going over it, as when it moves away at once.
+    if (edge) {
+      if (!hovering) hideSoon();
+      return;
+    }
+    // A button held down is a drag or the scrollbar, not a wish to see the panels.
+    if (event.buttons) return;
+    const near: Edge | null =
+      event.clientY <= EDGE_ZONE ? "top" : event.clientX <= EDGE_ZONE ? "left" : event.clientX >= window.innerWidth - 1 - EDGE_ZONE ? "right" : null;
+    if (near === waiting) return;
+    clearTimeout(edgeTimer);
+    waiting = near;
+    if (near) edgeTimer = setTimeout(() => ((edge = near), (waiting = null)), EDGE_DWELL);
+  }
+
+  /** Something in the bars or panel that came out is being typed into, so they stay. */
+  function typing(): boolean {
+    const focused = document.activeElement as HTMLElement | null;
+    const out = document.querySelector(".manuscript .edge-top.shown, .manuscript .edge-panel.shown");
+    if (!focused || !out?.contains(focused)) return false;
+    return focused.matches("input, textarea, select, [contenteditable=true], .cm-content");
+  }
+
+  function enterEdge() {
+    hovering = true;
+    clearTimeout(hideTimer);
+    hideTimer = undefined;
+  }
+
+  function hideSoon() {
+    if (hideTimer) return;
+    hideTimer = setTimeout(() => {
+      hideTimer = undefined;
+      if (hovering || menu || typing()) return;
+      edge = null;
+    }, 350);
+  }
+
+  function leaveEdge(event: Event) {
+    if (event.type === "mouseleave") hovering = false;
+    clearTimeout(hideTimer);
+    hideTimer = undefined;
+    hideSoon();
   }
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={onKey} onmousemove={onMouseMove} />
 
-<div class="manuscript" class:fullscreen style:grid-template-columns={columns("manuscript", fullscreen ? 0 : 260, fullscreen ? 0 : 280, !!beside)}>
+<div class="manuscript" class:fullscreen style:grid-template-columns={columns("manuscript", fullscreen ? 0 : 260, fullscreen ? 0 : 280, !!beside && !fullscreen)}>
   {#if !fullscreen && layout.left}<Resizer section="manuscript" side="left" usual={260} other={layout.right ? width("manuscript", "right", 280) : 0} />{/if}
   {#if !fullscreen && layout.right}<Resizer section="manuscript" side="right" usual={280} other={layout.left ? width("manuscript", "left", 260) : 0} />{/if}
-  {#if !fullscreen && layout.left}
-    <aside class="tree" aria-label={t("section.manuscript")}>
+  {#if fullscreen || layout.left}
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <aside
+      class="tree"
+      class:edge-panel={fullscreen}
+      class:shown={edge === "left"}
+      style:width={fullscreen ? `${width("manuscript", "left", 260)}px` : null}
+      aria-label={t("section.manuscript")}
+      inert={fullscreen && edge !== "left"}
+      onmouseenter={enterEdge}
+      onmouseleave={leaveEdge}
+      onfocusout={leaveEdge}
+    >
       <div class="tree-actions">
         <div class="tree-group" role="group" aria-labelledby="tree-add">
           <span class="caption" id="tree-add">{t("tree.add")}</span>
@@ -548,6 +646,16 @@
   {/if}
 
   <main class="center">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="bars"
+      class:edge-top={fullscreen}
+      class:shown={edge === "top"}
+      inert={fullscreen && edge !== "top"}
+      onmouseenter={enterEdge}
+      onmouseleave={leaveEdge}
+      onfocusout={leaveEdge}
+    >
     <div class="toolbar" role="toolbar">
       <div class="group" role="group" aria-label={t("toolbar.show")}>
         <span class="caption">{t("toolbar.show")}</span>
@@ -578,12 +686,19 @@
         >
         </div>
       </div>
+      <!-- The modes leave the cursor in the text, so writing goes on at once. -->
       <div class="group" role="group" aria-label={t("toolbar.modes")}>
         <span class="caption">{t("toolbar.modes")}</span>
         <div class="buttons">
-        <button aria-pressed={focusMode} title={t("tip.focus")} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
-        <button aria-pressed={typewriter} title={t("tip.typewriter")} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
-        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
+        <button aria-pressed={focusMode} title={t("tip.focus")} onmousedown={(e) => e.preventDefault()} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
+        <button aria-pressed={typewriter} title={t("tip.typewriter")} onmousedown={(e) => e.preventDefault()} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
+        <button
+          aria-pressed={app.settings.lineHighlight}
+          title={t("tip.lineHighlight")}
+          onmousedown={(e) => e.preventDefault()}
+          onclick={() => saveAppSettings({ ...app.settings, lineHighlight: !app.settings.lineHighlight })}><Icon name="lineHighlight" /><span class="label">{t("mode.lineHighlight")}</span></button
+        >
+        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onmousedown={(e) => e.preventDefault()} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
         </div>
       </div>
       <div class="group" role="group" aria-label={t("toolbar.size")}>
@@ -595,7 +710,8 @@
         </div>
       </div>
     </div>
-    {#if app.settings.formatBar}
+    <!-- In full screen the formatting comes out with the toolbar, as the bar at the top. -->
+    {#if app.settings.formatBar || fullscreen}
       {@const labels = formatLabels()}
       <div class="format-row" role="toolbar" aria-label={t("format.bar")}>
         {#each ACTIONS as action, i (i)}
@@ -620,6 +736,7 @@
         >
       </div>
     {/if}
+    </div>
     {#if error}
       <p class="error" role="alert">{error}</p>
     {/if}
@@ -679,9 +796,28 @@
     </div>
   </main>
 
-  {#if beside}{@render beside()}{/if}
+  <!-- In full screen the panes beside the text wait until it is left. -->
+  {#if beside && !fullscreen}{@render beside()}{/if}
 
-  {#if !fullscreen && layout.right}
+  {#if fullscreen}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="edge-panel right"
+      class:shown={edge === "right"}
+      style:width="{width('manuscript', 'right', 280)}px"
+      inert={edge !== "right"}
+      onmouseenter={enterEdge}
+      onmouseleave={leaveEdge}
+      onfocusout={leaveEdge}
+    >
+      {@render side()}
+    </div>
+  {:else if layout.right}
+    {@render side()}
+  {/if}
+</div>
+
+{#snippet side()}
     <SidePanel {project} path={inspected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
@@ -703,8 +839,7 @@
     />
       {/snippet}
     </SidePanel>
-  {/if}
-</div>
+{/snippet}
 
 <style>
   .manuscript {
@@ -772,6 +907,7 @@
     padding: 0;
   }
   .center {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -825,6 +961,43 @@
   }
   .menu .danger {
     color: var(--danger);
+  }
+  /* Full screen: the bars and the panels wait off screen, at the edge they come out from. */
+  .bars.edge-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 16;
+    background: var(--editor-bg);
+    transform: translateY(-100%);
+    transition: transform 0.15s ease-out;
+  }
+  .edge-panel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 16;
+    transition: transform 0.15s ease-out;
+  }
+  aside.edge-panel {
+    left: 0;
+    transform: translateX(-100%);
+  }
+  .edge-panel.right {
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-panel);
+    transform: translateX(100%);
+  }
+  .edge-panel.right > :global(*) {
+    flex: 1;
+  }
+  .bars.edge-top.shown,
+  .edge-panel.shown {
+    transform: none;
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.16);
   }
   .format-row {
     display: flex;

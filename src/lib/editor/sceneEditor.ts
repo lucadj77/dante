@@ -4,7 +4,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
 import { formatting, type FormattingLabels } from "./formatting";
-import { focusMode, typewriterMode } from "./modes";
+import { cursorLine, focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
 import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
@@ -40,7 +40,7 @@ export interface SceneEditorOptions {
 export interface SceneEditor {
   view: EditorView;
   setText(text: string): void;
-  setModes(modes: { typewriter: boolean; focus: boolean }): void;
+  setModes(modes: { typewriter: boolean; focus: boolean; line?: boolean }): void;
   /** Revision mode signed by `author`, or off with null. */
   setRevisions(author: string | null): void;
   /** Read-only while someone else is editing the same file. */
@@ -117,8 +117,8 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
       if (text === view.state.doc.toString()) return;
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
     },
-    setModes({ typewriter, focus }) {
-      view.dispatch({ effects: modes.reconfigure([typewriter ? typewriterMode : [], focus ? focusMode : []]) });
+    setModes({ typewriter, focus, line = false }) {
+      view.dispatch({ effects: modes.reconfigure([typewriter ? typewriterMode : [], focus ? focusMode : [], line ? cursorLine : []]) });
     },
     setRevisions(author) {
       view.dispatch({ effects: revisions.reconfigure(author ? trackChanges(author) : []) });
