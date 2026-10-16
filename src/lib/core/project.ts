@@ -6,6 +6,7 @@ import {
   folderNotePath,
   loadManuscript,
   parentOf,
+  scenesOf,
   TITLE,
   type ContainerKind,
   type ManuscriptNode,
@@ -34,6 +35,13 @@ import type { ImportedBook } from "./import/structure";
 /** Folders never scanned: app data, other tools' data, version control. */
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"]);
 const TRASH = ".trash";
+
+/** Scenes cannot be merged while one of them has a conflict copy to settle. */
+export class MergeConflictError extends Error {
+  constructor(public path: string) {
+    super(`Settle the conflict copy of ${path} first`);
+  }
+}
 
 interface Move {
   from: string;
@@ -501,6 +509,37 @@ export class Project {
       }
     }
     await this.reload();
+  }
+
+  /**
+   * Joins scenes into the first of them in reading order, wherever they are: their texts
+   * follow one another as paragraphs, the first keeps its properties, and the others go to
+   * .trash. Links to the others lead to the first. Returns the scene that holds the text.
+   */
+  async mergeScenes(paths: string[]): Promise<string> {
+    const chosen = scenesOf(this.manuscript).map((n) => n.path).filter((p) => paths.includes(p));
+    if (chosen.length < 2) return chosen[0] ?? "";
+    // A copy left by a sync service would lose its original: it is settled first.
+    const conflicted = this.conflicts.find((c) => chosen.includes(c.original));
+    if (conflicted) throw new MergeConflictError(conflicted.original);
+    const [first, ...rest] = chosen;
+    await this.autoSnapshot(first);
+    const bodies: string[] = [];
+    for (const path of chosen) bodies.push((await this.readBody(path)).trim());
+    // Written directly, so the writing log does not count moved words as new ones.
+    await this.fs.writeText(first, replaceBody(await this.fs.readText(first), bodies.filter(Boolean).join("\n\n") + "\n"));
+    const before = [...this.files];
+    const after = before.filter((f) => !rest.includes(f));
+    const renames = new Map(rest.map((p) => [p, first]));
+    for (const file of after) {
+      if (!isMarkdown(file)) continue;
+      const updated = rewriteLinks(await this.fs.readText(file), file, renames, before, after);
+      if (updated !== null) await this.fs.writeText(file, updated);
+    }
+    await this.fs.mkdir(TRASH);
+    for (const path of rest) await this.fs.rename(path, await this.freeName(TRASH, basename(path)));
+    await this.reload();
+    return first;
   }
 
   async createScene(parentPath: string, index: number, title: string, body = ""): Promise<string> {

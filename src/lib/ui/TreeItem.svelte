@@ -15,7 +15,10 @@
     selected: string | null;
     headings: Map<string, string>;
     dragging: string | null;
-    onSelect: (path: string) => void;
+    /** `add` (Cmd/Ctrl+click on a scene) adds the scene to the scenes chosen together. */
+    onSelect: (path: string, add?: boolean) => void;
+    /** Scenes chosen together, for merging. */
+    chosen: string[];
     onRename: (path: string, title: string) => void;
     onDragStart: (path: string) => void;
     onDrop: (target: string, position: DropPosition) => void;
@@ -71,7 +74,7 @@
 <li role="treeitem" aria-selected={p.selected === p.node.path} aria-expanded={isScene ? undefined : !collapsed}>
   <div
     class="row {p.node.kind}"
-    class:selected={p.selected === p.node.path}
+    class:selected={p.selected === p.node.path || p.chosen.includes(p.node.path)}
     class:drop-before={over === "before"}
     class:drop-after={over === "after"}
     class:drop-inside={over === "inside"}
@@ -80,11 +83,12 @@
     role="button"
     tabindex="0"
     title={`${t(`kind.${p.node.kind}` as MessageKey)} · ${t("tree.renameHint")}`}
-    onclick={() => p.onSelect(p.node.path)}
+    onclick={(e) => p.onSelect(p.node.path, e.metaKey || e.ctrlKey)}
     ondblclick={startRename}
     oncontextmenu={(e) => {
       e.preventDefault();
-      p.onSelect(p.node.path);
+      // On a chosen scene the menu acts on all of them, so the choice stays.
+      if (!p.chosen.includes(p.node.path)) p.onSelect(p.node.path);
       p.onMenu(p.node.path, e.clientX, e.clientY);
     }}
     onkeydown={(e) => {

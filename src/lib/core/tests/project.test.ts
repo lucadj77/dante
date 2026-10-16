@@ -89,6 +89,25 @@ describe("project", () => {
     expect(fs.files.get(created)).toBe("It was late.");
   });
 
+  it("merges scenes into the first in reading order, sending the others to the trash", async () => {
+    const fs = sample();
+    const p = await Project.open(fs);
+    const kept = await p.mergeScenes(["Manuscript/020 Letter/010 Envelope.md", "Manuscript/010 Return/010 Arrival.md", "Manuscript/010 Return/020 House.md"]);
+    expect(kept).toBe("Manuscript/010 Return/010 Arrival.md");
+    expect(fs.files.get(kept)).toBe("---\npov: \"[[Marta]]\"\n---\nThe train.\n\nThe house.\n\nThe envelope.\n");
+    expect(paths(p)).not.toContain("scene:Manuscript/010 Return/020 House.md");
+    expect(fs.files.has(".trash/020 House.md")).toBe(true);
+    expect(fs.files.get("Codex/Marta.md")).toBe("Seen in [[010 Arrival]] and [[010 Arrival|the house]].");
+  });
+
+  it("does not merge a scene that has a conflict copy", async () => {
+    const fs = sample();
+    fs.files.set("Manuscript/010 Return/020 House (Anna's conflicted copy 2026-10-14).md", "The house!");
+    const p = await Project.open(fs);
+    await expect(p.mergeScenes(["Manuscript/010 Return/010 Arrival.md", "Manuscript/010 Return/020 House.md"])).rejects.toThrow("conflict");
+    expect(fs.files.get("Manuscript/010 Return/020 House.md")).toBe("The house.");
+  });
+
   it("starts a chapter, not a part, after a prologue in a novel with parts", async () => {
     const fs = new MemoryFs({
       "dante.yaml": "title: Test\nlanguage: en\nstructure:\n  parts: true\n",

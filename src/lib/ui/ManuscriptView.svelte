@@ -36,6 +36,8 @@
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
   let selected = $state<string | null>(null);
+  /** Scenes chosen together with Cmd/Ctrl+click, to merge them. */
+  let chosen = $state<string[]>([]);
   let active = $state<string | null>(null);
   let raw = $state(false);
   let typewriter = $state(false);
@@ -325,6 +327,33 @@
     }
   }
 
+  /** Cmd/Ctrl+click adds a scene to the chosen ones, or takes it away; a plain click starts over. */
+  function choose(path: string, add: boolean) {
+    if (!add || findNode(path)?.kind !== "scene") {
+      chosen = [];
+      return;
+    }
+    const start = chosen.length ? chosen : selected && findNode(selected)?.kind === "scene" ? [selected] : [];
+    chosen = start.includes(path) ? start.filter((p) => p !== path) : [...start, path];
+  }
+
+  /** Joins the chosen scenes into the first of them; the others go to the trash. */
+  async function merge() {
+    menu = null;
+    const paths = chosen;
+    if (paths.length < 2) return;
+    const conflicted = project.conflicts.find((c) => paths.includes(c.original));
+    if (conflicted) {
+      error = t("tree.mergeConflict", { title: findNode(conflicted.original)?.title ?? conflicted.original });
+      return;
+    }
+    for (const p of paths) editors.get(p)?.cancel();
+    chosen = [];
+    await run(() => project.mergeScenes(paths));
+    // The first scene's editor may be open: it takes the joined text.
+    onDiskChange();
+  }
+
   /** Moves the item to the project's .trash folder, after asking. */
   async function remove(path: string) {
     menu = null;
@@ -423,6 +452,13 @@
       {#if tree.children.length === 0}
         <p class="empty">{t("tree.empty")}</p>
       {/if}
+      {#if chosen.length > 1}
+        <div class="chosen" role="group">
+          <span>{t("tree.chosen", { n: chosen.length })}</span>
+          <button class="primary" title={t("tip.merge")} onclick={merge}>{t("tree.merge")}</button>
+          <button onclick={() => (chosen = [])}>{t("tree.cancel")}</button>
+        </div>
+      {/if}
       <ul role="tree" ondragend={() => (dragging = null)}>
         {#each tree.children as node (node.path)}
           <TreeItem
@@ -430,9 +466,11 @@
             depth={0}
             loose={node.kind === "scene"}
             {selected}
+            {chosen}
             headings={headingMap}
             {dragging}
-            onSelect={(path) => {
+            onSelect={(path, add) => {
+              choose(path, !!add);
               selected = path;
               active = path;
               void bringIntoView(path);
@@ -455,6 +493,10 @@
     {@const node = findNode(menu.path)}
     <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
     <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px">
+      {#if chosen.length > 1 && chosen.includes(menu.path)}
+        <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
+        <hr />
+      {/if}
       <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
       <button role="menuitem" onclick={() => menuRename(menu!.path)}>{t("tree.rename")}</button>
       <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
@@ -689,6 +731,20 @@
     min-width: 0;
     min-height: 0;
     background: var(--editor-bg);
+  }
+  .chosen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0 8px 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--bg-hover);
+    font-size: 12px;
+  }
+  .chosen span {
+    flex: 1;
   }
   .menu-backdrop {
     position: fixed;
