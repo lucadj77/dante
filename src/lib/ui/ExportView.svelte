@@ -11,7 +11,7 @@
   import type { Project } from "$lib/core/project";
   import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
-  import { app, rememberExportPreferences, t } from "$lib/state.svelte";
+  import { app, num, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import HeadingLevel from "./HeadingLevel.svelte";
   import FontPicker from "./FontPicker.svelte";
@@ -38,7 +38,7 @@
   /** "A5 (14,8 × 21 cm)", or inches for the sizes printers give in inches. */
   function pageLabel(size: keyof typeof PAGE_SIZES): string {
     const [w, h] = PAGE_SIZES[size];
-    const n = (x: number) => x.toLocaleString(app.settings.language);
+    const n = (x: number) => num(x);
     const inches = size.endsWith("in") || size === "letter";
     const dims = inches ? `${n(+(w / 2.54).toFixed(2))} × ${n(+(h / 2.54).toFixed(2))} in` : `${n(w)} × ${n(h)} cm`;
     return NAMES[size] ? `${NAMES[size]} (${dims})` : dims;
@@ -254,7 +254,7 @@
       const book = await buildBook(project, { revisions });
       const layout = project.settings.export.docx;
       const labels = { words: t("export.words") };
-      const pages = pageCount(book, project.settings.pages).toLocaleString(undefined, { maximumFractionDigits: 1 });
+      const pages = num(pageCount(book, project.settings.pages), 1);
       const cover = useCover && format !== "md" ? coverSvg(project.settings, project.settings.cover) : "";
       let where: Saved | "" | null;
       if (format === "docx") {
@@ -286,7 +286,7 @@
       }
       if (where !== null) {
         saved = where || null;
-        message = t("export.done", { words: book.words.toLocaleString(), pages });
+        message = t("export.done", { words: num(book.words), pages });
       }
     } catch (e) {
       fail(e);

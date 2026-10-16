@@ -8,7 +8,7 @@
   import AuthorsInput from "./AuthorsInput.svelte";
   import { authorsOf } from "$lib/core/export/files";
   import { sampleProject } from "$lib/sample";
-  import { app, exportPreferences, forgetProject, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
+  import { app, exportPreferences, forgetProject, num, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
@@ -202,7 +202,7 @@
       <p class="summary">
         {t("import.found", { file: importedFrom })}
         {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
-        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: importedCounts.words.toLocaleString(app.settings.language) })}
+        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words) })}
       </p>
       <p class="note">{t("import.how")}</p>
       {#if levels.length}

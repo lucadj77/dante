@@ -1,3 +1,4 @@
+import { formatNumber } from "../numbers";
 import {
   AlignmentType,
   Document,
@@ -49,8 +50,8 @@ function plain(text: string, options: Partial<IRunOptions> = {}): TextRun[] {
 }
 
 /** Rounds to the nearest hundred, as is customary for manuscript word counts. */
-export function approxWords(n: number): string {
-  return (Math.round(n / 100) * 100 || n).toLocaleString("en-US");
+export function approxWords(n: number, language: string): string {
+  return formatNumber(Math.round(n / 100) * 100 || n, language);
 }
 
 /** Plain paragraphs of a paratext written as Markdown-free text. */
@@ -223,7 +224,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     } else {
       titlePage.push(
         new Paragraph({ style: "FirstParagraph", children: plain(book.author) }),
-        new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(`${approxWords(book.words)} ${labels.words}`) }),
+        new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(`${approxWords(book.words, book.language)} ${labels.words}`) }),
         new Paragraph({ style: "PartOpening", children: [] }),
         new Paragraph({ style: "Title", children: plain(title.toUpperCase()) }),
       );

@@ -1,4 +1,5 @@
 import { translate, type MessageKey } from "./i18n";
+import { formatNumber } from "./core/numbers";
 
 export interface AppSettings {
   language: string;
@@ -68,6 +69,11 @@ const FONT_MAX = 32;
 export function zoom(step: number) {
   const size = step === 0 ? defaults().fontSize : Math.min(FONT_MAX, Math.max(FONT_MIN, app.settings.fontSize + step));
   if (size !== app.settings.fontSize) saveAppSettings({ ...app.settings, fontSize: size });
+}
+
+/** A number in the interface language, thousands always grouped. */
+export function num(n: number, digits = 0): string {
+  return formatNumber(n, app.settings.language, digits);
 }
 
 export function t(key: MessageKey, values?: Record<string, string | number>): string {

@@ -3,7 +3,7 @@
   import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
-  import { app, saveAppSettings, t } from "$lib/state.svelte";
+  import { app, num, saveAppSettings, t } from "$lib/state.svelte";
   import { navigator } from "./navigation";
   import { flushSessions, writing } from "./sessions.svelte";
 
@@ -41,7 +41,7 @@
     })();
   });
 
-  const n = (x: number, digits = 0) => x.toLocaleString(app.settings.language, { maximumFractionDigits: digits });
+  const n = num;
 
   // Goals, kept in dante.yaml for everyone working on the novel.
   // svelte-ignore state_referenced_locally
