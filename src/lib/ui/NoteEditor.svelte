@@ -8,6 +8,7 @@
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
+  import { documents, sharing } from "./documents.svelte";
 
   interface Props {
     project: Project;
@@ -17,69 +18,65 @@
     diskRev: number;
     /** Shows the formatting buttons above the text. */
     toolbar?: boolean;
-    /** Narrow, for the side panel. */
+    /** Narrow, for the side panel or a pane. */
     compact?: boolean;
+    /** A preview, as in the search, not where the note is edited. */
+    preview?: boolean;
     /** Called after each save, with the saved body. */
     onSaved?: (body: string) => void;
+    /** Called when the text gets the cursor. */
+    onFocus?: () => void;
   }
   let props: Props = $props();
   // The parent keys this component by path.
   // svelte-ignore state_referenced_locally
   const path = props.path;
   const links = navigator()?.links(path);
-  // The small editor in the side panel is a preview, not where the note is edited.
   // svelte-ignore state_referenced_locally
-  const collab = props.compact ? null : collaboration(path);
+  const collab = props.preview ? null : collaboration(path);
+
+  // The same note can be open in a pane too: both editors write through one document.
+  // svelte-ignore state_referenced_locally
+  const doc = documents(props.project).get(path);
+  const shared = sharing(doc);
 
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
-  let lastSaved = "";
-  let pending: string | null = null;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let applyingRemote = false;
-  let conflict = $state(false);
+  let conflict = $state(doc.conflict);
   let ready = $state(false);
   // svelte-ignore state_referenced_locally
   let seenDiskRev = props.diskRev;
 
-  async function save() {
-    clearTimeout(timer);
-    if (pending === null) return;
-    const text = pending;
-    pending = null;
-    await props.project.writeBody(path, text);
-    lastSaved = text;
-    props.onSaved?.(text);
-  }
-
   /** Writes pending changes now; the parent calls it before renaming or moving the note. */
   export function flush(): Promise<void> {
-    return save();
+    return doc.flush();
   }
 
   onMount(() => {
     let destroyed = false;
-    props.project.readBody(path).then((text) => {
+    const unwatch = doc.watch(() => (conflict = doc.conflict));
+    const unsaved = doc.onSaved((text) => props.onSaved?.(text));
+    doc.text().then((text) => {
       if (destroyed) return;
-      lastSaved = text;
       editor = createSceneEditor({
         parent: host,
         text,
         preview: true,
         typography: props.project.settings.export.typography,
         placeholder: "…",
-        onChange(next) {
+        onChange() {
           collab?.changed();
-          if (applyingRemote) return;
-          pending = next;
-          clearTimeout(timer);
-          timer = setTimeout(save, 600);
         },
         formatLabels: formatLabels(),
         links,
         critic: collab ? criticHandlerFor(path) : undefined,
-        onFocus: () => collab?.focused(),
+        onFocus: () => {
+          collab?.focused();
+          props.onFocus?.();
+        },
+        extensions: [shared.extension],
       });
+      shared.attach(editor.view);
       collab?.ready(editor);
       ready = true;
     }, () => {
@@ -87,9 +84,10 @@
     });
     return () => {
       destroyed = true;
-      // Saving after the file was moved away would recreate it under its old name.
-      if (pending !== null) void props.project.fs.exists(path).then((exists) => (exists ? save() : undefined));
+      unwatch();
+      unsaved();
       collab?.destroy();
+      shared.detach();
       editor?.destroy();
     };
   });
@@ -97,29 +95,11 @@
   $effect(() => {
     if (props.diskRev === seenDiskRev) return;
     seenDiskRev = props.diskRev;
-    void refresh();
+    void doc.refresh();
   });
 
-  async function refresh(force = false) {
-    if (!editor) return;
-    let disk: string;
-    try {
-      disk = await props.project.readBody(path);
-    } catch {
-      return;
-    }
-    if (disk === lastSaved && !force) return;
-    if (pending !== null && !force) {
-      conflict = true;
-      return;
-    }
-    clearTimeout(timer);
-    pending = null;
-    applyingRemote = true;
-    editor.setText(disk);
-    applyingRemote = false;
-    lastSaved = disk;
-    conflict = false;
+  function refresh(force = false) {
+    void doc.refresh(force);
   }
 </script>
 

@@ -35,6 +35,8 @@
   import { isWithin } from "$lib/core/path";
   import { readableLinks } from "$lib/core/wikilinks";
   import PropertyField from "./PropertyField.svelte";
+  import { panes } from "./panes.svelte";
+  import { tick } from "svelte";
 
   interface Props {
     project: Project;
@@ -44,6 +46,8 @@
     open: string | null;
     onShow: (path: string | null) => void;
     onReload: () => Promise<void>;
+    /** Shown in a pane beside another section: the view alone, without the list of views. */
+    embedded?: boolean;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -228,9 +232,30 @@
       if (k && !hidden.has(k) && !keys.some((o) => o.toLowerCase() === k.toLowerCase())) keys.push(k);
     return keys;
   }
-  function inspect(row: ViewRow) {
+  /** A click on an item shows its card; with Alt (Option) it opens beside, in a pane. */
+  function inspect(row: ViewRow, e?: MouseEvent) {
+    if (e?.altKey) {
+      nav?.open(row.file ?? row.path, true);
+      return;
+    }
+    // In a pane there is no room for the card: the item opens in its section.
+    if (p.embedded) {
+      openRow(row);
+      return;
+    }
     inspecting = inspecting === row.path ? null : row.path;
   }
+
+  /** The item of the scene being written, marked so it can be found at a glance. */
+  const writes = (row: ViewRow) => !!panes.writing && (row.path === panes.writing || row.file === panes.writing);
+  let body = $state<HTMLDivElement | null>(null);
+  // Brings the scene being written into view when it changes.
+  $effect(() => {
+    const path = panes.writing;
+    void rows;
+    if (!path || !body) return;
+    void tick().then(() => body?.querySelector(".writing")?.scrollIntoView({ block: "nearest", inline: "nearest" }));
+  });
   function addProperty(row: ViewRow) {
     const key = newProperty.trim();
     newProperty = "";
@@ -437,12 +462,13 @@
   const typeIds = $derived(Object.keys(p.project.settings.types));
 </script>
 
-<div class="views" class:inspecting={!!inspected}>
+<div class="views" class:inspecting={!!inspected && !p.embedded} class:embedded={p.embedded}>
+  {#if !p.embedded}
   <aside>
     <ul>
       {#each views as path (path)}
         <li>
-          <button class="view-link" aria-current={path === selected ? "page" : undefined} onclick={() => p.onShow(path)}>{stripExt(basename(path))}</button>
+          <button class="view-link" aria-current={path === selected ? "page" : undefined} title={t("tip.openBeside")} onclick={(e) => (e.altKey ? nav?.open(path, true) : p.onShow(path))}>{stripExt(basename(path))}</button>
         </li>
       {/each}
     </ul>
@@ -461,6 +487,7 @@
       <button onclick={() => (creating = true)}>+ {t("views.new")}</button>
     {/if}
   </aside>
+  {/if}
 
   <main>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
@@ -471,7 +498,9 @@
       </div>
     {:else}
       <header>
-        {#if renaming}
+        {#if p.embedded}
+          <!-- The pane's header names the view. -->
+        {:else if renaming}
           <form
             onsubmit={(e) => {
               e.preventDefault();
@@ -503,11 +532,13 @@
             >
           {/each}
         </div>
-        <button aria-pressed={settingsOpen} aria-expanded={settingsOpen} data-tip={t("tip.views.settings")} onclick={() => (settingsOpen = !settingsOpen)}>⚙ {t("views.settings")}</button>
-        <button class="danger" onclick={remove}>{t("views.delete")}</button>
+        {#if !p.embedded}
+          <button aria-pressed={settingsOpen} aria-expanded={settingsOpen} data-tip={t("tip.views.settings")} onclick={() => (settingsOpen = !settingsOpen)}>⚙ {t("views.settings")}</button>
+          <button class="danger" onclick={remove}>{t("views.delete")}</button>
+        {/if}
       </header>
 
-      {#if settingsOpen}
+      {#if settingsOpen && !p.embedded}
         <section class="settings" aria-label={t("views.settings")}>
           <label>
             <span>{t("views.items")}</span>
@@ -600,7 +631,7 @@
         </section>
       {/if}
 
-      <div class="body">
+      <div class="body" bind:this={body}>
         {#if !index}
           …
         {:else if spec.type === "kanban" && !spec.group_by}
@@ -624,8 +655,8 @@
                   <tr class="group-row"><th colspan={fields.length + 1}>{groupName(g.key)} <span class="count">{g.rows.length}</span></th></tr>
                 {/if}
                 {#each g.rows as row, i (row.path)}
-                  <tr class:drop-before={dropsBefore(row, g.key)} {...item(row, g.rows[i + 1])}>
-                    <td><button class="link" onclick={() => inspect(row)}>{row.name}</button>{@render synopsisOf(row)}</td>
+                  <tr class:drop-before={dropsBefore(row, g.key)} class:writing={writes(row)} {...item(row, g.rows[i + 1])}>
+                    <td><button class="link" onclick={(e) => inspect(row, e)}>{row.name}</button>{@render synopsisOf(row)}</td>
                     {#each fields as f (f)}
                       <td class:number={f === "words"}>
                         {#if editing && editing.path === row.path && editing.field === f}
@@ -657,8 +688,8 @@
             {#if spec.group_by}<h3 class="group-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></h3>{/if}
             <ul class="list" class:over={isZone(g.key) && target?.before === null} {...zone({ key: g.key, reorder: true })}>
               {#each g.rows as row, i (row.path)}
-                <li class:drop-before={dropsBefore(row, g.key)} {...item(row, g.rows[i + 1])}>
-                  <button class="link" onclick={() => inspect(row)}>{row.name}</button>
+                <li class:drop-before={dropsBefore(row, g.key)} class:writing={writes(row)} {...item(row, g.rows[i + 1])}>
+                  <button class="link" onclick={(e) => inspect(row, e)}>{row.name}</button>
                   {@render details(row)}
                   {@render synopsisOf(row)}
                 </li>
@@ -702,7 +733,7 @@
       </div>
     {/if}
   </main>
-  {#if inspected}
+  {#if inspected && !p.embedded}
     {@const row = inspected}
     <section class="inspector" aria-label={row.name}>
       <header>
@@ -786,7 +817,7 @@
     <h3 class="group-title">{t("views.undated")} <span class="count">{tl.undated.length}</span></h3>
     <ul class="list">
       {#each tl.undated as row (row.path)}
-        <li><button class="link" onclick={() => inspect(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
+        <li class:writing={writes(row)}><button class="link" onclick={(e) => inspect(row, e)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
       {/each}
     </ul>
   {/if}
@@ -809,7 +840,7 @@
     <h3 class="group-title">{t("views.undated")} <span class="count">{tl.undated.length}</span></h3>
     <ul class="list">
       {#each tl.undated as row (row.path)}
-        <li><button class="link" onclick={() => inspect(row)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
+        <li class:writing={writes(row)}><button class="link" onclick={(e) => inspect(row, e)}>{row.name}</button> {@render details(row)}{@render synopsisOf(row)}</li>
       {/each}
     </ul>
   {/if}
@@ -826,8 +857,8 @@
 {/snippet}
 
 {#snippet card(row: ViewRow, long: boolean, key: string, next?: ViewRow, flow: "x" | "y" = "y")}
-  <article class="card" class:drop-before={dropsBefore(row, key)} class:flow-x={flow === "x"} {...item(row, next, flow)}>
-    <button class="link title" onclick={() => inspect(row)}>{row.name}</button>
+  <article class="card" class:drop-before={dropsBefore(row, key)} class:writing={writes(row)} class:flow-x={flow === "x"} {...item(row, next, flow)}>
+    <button class="link title" onclick={(e) => inspect(row, e)}>{row.name}</button>
     {#if long && row.chapter && spec.items === "scene"}<div class="muted small">{row.chapter}</div>{/if}
     {#if spec.synopsis && synopsisText(row)}
       {@render synopsisOf(row)}
@@ -852,6 +883,16 @@
     grid-template-columns: 200px minmax(0, 1fr);
     height: 100%;
     min-height: 0;
+  }
+  .views.embedded {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .writing {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  tr.writing td {
+    background: var(--bg-hover);
   }
   .views.inspecting {
     grid-template-columns: 200px minmax(0, 1fr) 300px;

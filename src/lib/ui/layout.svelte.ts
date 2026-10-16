@@ -64,11 +64,15 @@ export function setWidth(section: string, side: Side, value: number | null) {
   save();
 }
 
-/** The grid columns of a section: its left panel, the middle, its right panel; 0 leaves one out. */
-export function columns(section: string, left: number, right: number): string {
+/**
+ * The grid columns of a section: its left panel, the middle, the panes beside it when
+ * `beside`, its right panel; 0 leaves a panel out.
+ */
+export function columns(section: string, left: number, right: number, beside = false): string {
   return [
     layout.left && left ? `${width(section, "left", left)}px` : "",
     "minmax(0, 1fr)",
+    beside ? "auto" : "",
     layout.right && right ? `${width(section, "right", right)}px` : "",
   ]
     .filter(Boolean)

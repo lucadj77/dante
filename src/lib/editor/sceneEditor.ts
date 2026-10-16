@@ -33,6 +33,8 @@ export interface SceneEditorOptions {
   links?: LinkHandler;
   /** Starting comments and opening their threads. */
   critic?: CriticHandler;
+  /** More behaviour, such as sharing the text with other editors of the same file. */
+  extensions?: Extension[];
 }
 
 export interface SceneEditor {
@@ -98,6 +100,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     formatting(options.formatLabels),
     wikilinks(options.links),
     criticCommands(options.critic),
+    ...(options.extensions ?? []),
   ];
   if (options.preview) extensions.push(livePreview, criticPreview);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));

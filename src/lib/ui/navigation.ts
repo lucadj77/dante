@@ -3,8 +3,10 @@ import type { LinkHandler } from "$lib/editor/links";
 
 /** What every view can ask of the workspace: opening a path wherever it belongs. */
 export interface Navigator {
-  /** Opens a note or file of the project in its section. */
-  open(path: string): void;
+  /** Opens a note or file of the project in its section, or `beside` it in a pane. */
+  open(path: string, beside?: boolean): void;
+  /** Reads the project again after a change, so every section and pane shows it. */
+  reload(): Promise<void>;
   /** Link following and suggestions for an editor showing `from`. */
   links(from: string): LinkHandler;
 }

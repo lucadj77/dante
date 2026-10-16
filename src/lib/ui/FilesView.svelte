@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { noteTitle, noteType } from "$lib/core/notes";
   import { basename, dirname, isWithin, rebase } from "$lib/core/path";
   import type { Project } from "$lib/core/project";
@@ -13,6 +14,7 @@
   import { columns, layout, width } from "./layout.svelte";
   import Resizer from "./Resizer.svelte";
   import { markOnly } from "./folding.svelte";
+  import { navigator } from "./navigation";
 
   interface Props {
     project: Project;
@@ -25,8 +27,11 @@
     open: string | null;
     onShow: (path: string | null) => void;
     onReload: () => Promise<void>;
+    /** The panes beside the note, if any are open. */
+    beside?: Snippet | null;
   }
   let p: Props = $props();
+  const nav = navigator();
 
   let error = $state("");
   let renaming = $state<string | null>(null);
@@ -135,7 +140,7 @@
   }
 </script>
 
-<div class="files" style:grid-template-columns={columns(widthKey, 260, 280)}>
+<div class="files" style:grid-template-columns={columns(widthKey, 260, 280, !!p.beside)}>
   {#if layout.left}<Resizer section={widthKey} side="left" usual={260} other={layout.right ? width(widthKey, "right", 280) : 0} />{/if}
   {#if layout.right}<Resizer section={widthKey} side="right" usual={280} other={layout.left ? width(widthKey, "left", 260) : 0} />{/if}
   {#if layout.left}
@@ -182,6 +187,7 @@
         {#if canImport}<button role="menuitem" onclick={() => importFiles(m.path)}>{t("files.importHere")}</button>{/if}
       {:else}
         <button role="menuitem" onclick={() => { const path = m.path; menu = null; p.onShow(path); }}>{t("files.open")}</button>
+        <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = m.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
         {#if canImport}<button role="menuitem" onclick={() => openWithSystem(m.path)}>{t("files.openWithSystem")}</button>{/if}
       {/if}
       <button role="menuitem" onclick={() => { const path = m.path; menu = null; renaming = path; }}>{t("tree.rename")}</button>
@@ -207,6 +213,8 @@
       <p class="empty center-empty">{t("files.nothingOpen")}</p>
     {/if}
   </main>
+
+  {#if p.beside}{@render p.beside()}{/if}
 
   {#if layout.right}
   <SidePanel project={p.project} path={current} version={p.rev * 10000 + saves} diskRev={p.diskRev}>

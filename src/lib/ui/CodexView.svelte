@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { NoteInfo } from "$lib/core/notes";
   import { fold, noteTitle, noteType } from "$lib/core/notes";
   import { isWithin, rebase } from "$lib/core/path";
@@ -23,6 +24,8 @@
     open: string | null;
     onShow: (path: string | null) => void;
     onReload: () => Promise<void>;
+    /** The panes beside the note, if any are open. */
+    beside?: Snippet | null;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -240,7 +243,7 @@
   }
 </script>
 
-<div class="codex" style:grid-template-columns={columns("codex", 220, 280)}>
+<div class="codex" style:grid-template-columns={columns("codex", 220, 280, !!p.beside)}>
   {#if layout.left}<Resizer section="codex" side="left" usual={220} other={layout.right ? width("codex", "right", 280) : 0} />{/if}
   {#if layout.right}<Resizer section="codex" side="right" usual={280} other={layout.left ? width("codex", "left", 220) : 0} />{/if}
   {#if layout.left}
@@ -389,7 +392,7 @@
       {/if}
       <div class="cards">
         {#each shown as note (note.path)}
-          <button class="card" onclick={() => p.onShow(note.path)}>
+          <button class="card" onclick={(e) => (e.altKey ? nav?.open(note.path, true) : p.onShow(note.path))}>
             <span class="card-title">{noteTitle(note.path)}</span>
             {#if note.aliases.length}<span class="aliases">{note.aliases.join(", ")}</span>{/if}
             {#each details(note) as [key, value] (key)}
@@ -401,6 +404,8 @@
       </div>
     {/if}
   </main>
+
+  {#if p.beside}{@render p.beside()}{/if}
 
   {#if layout.right}
   <SidePanel project={p.project} path={current} version={p.rev * 10000 + saves} diskRev={p.diskRev}>
