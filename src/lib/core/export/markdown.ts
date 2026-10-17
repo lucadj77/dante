@@ -1,6 +1,6 @@
 import { stringify } from "yaml";
 import type { DocxSettings, Separator } from "../settings";
-import type { Block, Book, Run } from "./book";
+import type { Block, Book, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { setAlignment } from "../alignment";
 
@@ -18,7 +18,13 @@ function escapeStart(text: string): string {
   return text.replace(/^(\s*)([+-])(?=\s|$)/, "$1\\$2").replace(/^(\s*\d+)([.)])(?=\s|$)/, "$1\\$2");
 }
 
+/** The embed of an image; it stays where it is in the project, as the export folder is inside it. */
+function imageEmbed(image: BookImage): string {
+  return `![[${[image.path, image.alt, String(Math.round(image.width))].filter(Boolean).join("|")}]]`;
+}
+
 function inline(r: Run): string {
+  if (r.image) return imageEmbed(r.image);
   if (r.lineBreak) return "  \n";
   if (r.code) return `\`${r.text.replace(/`/g, "")}\``;
   const lead = r.text.match(/^\s*/)![0];
@@ -90,6 +96,15 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
       if (block.type === "heading") add(heading(sceneLevel + block.level, block.runs.map((r) => r.text).join("")));
       else if (block.type === "quote") add(`> ${runs(block.runs)}`.replace(/\n/g, "\n> "));
       else if (block.type === "break") add(separator("characters") ?? "---");
+      else if (block.type === "table") {
+        const row = (cells: Run[][]) => `| ${cells.map((c) => c.map(inline).join("").replace(/\n/g, " ")).join(" | ")} |`;
+        const rule = block.align.map((a) => (a === "center" ? ":---:" : a === "right" ? "---:" : a === "left" ? ":---" : "---"));
+        add([row(block.header), `| ${rule.join(" | ")} |`, ...block.rows.map(row)].join("\n"));
+        // The caption as Pandoc writes it, which Dante reads too.
+        if (block.caption) add(`: ${block.caption.map(inline).join("")}`);
+      } else if (block.type === "image") {
+        add(setAlignment(imageEmbed(block.image), block.align ?? null));
+      }
       else if (block.runs.length && block.runs.every((r) => r.code)) add("```\n" + block.runs.map((r) => r.text).join("").replace(/\n$/, "") + "\n```");
       else add(setAlignment(runs(block.runs), block.align ?? null));
     }

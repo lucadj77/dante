@@ -12,13 +12,60 @@ import {
   PageNumber,
   Paragraph,
   SectionType,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  WidthType,
   type IParagraphStyleOptions,
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
 import { PAGE_SIZES, surnames, type DocxSettings, type Separator } from "../settings";
-import type { Block, Book, BookEntry, Run } from "./book";
+import type { Block, Book, BookEntry, BookImage, Run } from "./book";
+import type { CellAlign } from "../tables";
+
+const CELL_ALIGN: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
+  left: AlignmentType.LEFT,
+  center: AlignmentType.CENTER,
+  right: AlignmentType.RIGHT,
+};
+
+/**
+ * An image run at its size, made smaller to fit `maxWidth` pixels. Inside a line of text
+ * of `fontSize` points, it is lowered so that its middle sits at the middle of the
+ * lowercase letters, as the editor shows it.
+ */
+function imageRun(image: BookImage, maxWidth: number, fontSize?: number): ImageRun {
+  const scale = Math.min(1, maxWidth / image.width);
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const type = image.mime === "image/jpeg" ? "jpg" : image.mime === "image/gif" ? "gif" : "png";
+  // In half points, as every word processor reads it; the library's type wants a unit.
+  const raise = fontSize ? Math.round((fontSize * 0.25 - (height * 0.75) / 2) * 2) : 0;
+  return new ImageRun({
+    type,
+    data: image.data,
+    transformation: { width, height },
+    altText: image.alt ? { name: image.alt, description: image.alt, title: image.alt } : undefined,
+    run: raise ? { position: String(raise) as `${number}pt` } : undefined,
+  });
+}
+
+/** A Markdown table as a Word table across the text width, header row repeated on each page. */
+function table(align: CellAlign[], header: Run[][], rows: Run[][][]): Table {
+  const row = (cells: Run[][], head: boolean) =>
+    new TableRow({
+      tableHeader: head,
+      children: cells.map(
+        (cell, i) =>
+          new TableCell({
+            children: [new Paragraph({ style: "TableText", alignment: CELL_ALIGN[align[i] ?? "left"], children: paragraphRuns(head ? cell.map((r) => ({ ...r, bold: true })) : cell) })],
+          }),
+      ),
+    });
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [row(header, true), ...rows.map((r) => row(r, false))] });
+}
 
 // Every paragraph uses a named Word style and carries no direct formatting, so that
 // changing a style in Word (Normal, Heading 1…) changes all the text that uses it.
@@ -37,9 +84,12 @@ export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgeme
   fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements" },
 };
 
-function runs(items: Run[]): TextRun[] {
+/** The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize` points. */
+function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun)[] {
   return items.map((r) =>
-    r.lineBreak
+    r.image
+      ? imageRun(r.image, maxWidth, fontSize)
+      : r.lineBreak
       ? new TextRun({ break: 1 })
       : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined }),
   );
@@ -94,6 +144,9 @@ function styles(opts: DocxSettings, typeset: boolean): IParagraphStyleOptions[] 
     // Paragraphs the author aligned, without the first-line indent.
     { id: "Centered", name: "Centered", basedOn: "Normal", next: "Normal", paragraph: { ...centered } },
     { id: "RightAligned", name: "Right Aligned", basedOn: "Normal", next: "Normal", paragraph: { alignment: AlignmentType.RIGHT, indent: { firstLine: 0 } } },
+    { id: "TableText", name: "Table Text", basedOn: "Normal", paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: 40, after: 40 } } },
+    { id: "Caption", name: "Caption", basedOn: "Normal", next: "Normal", quickFormat: true, run: { italics: true, size: Math.max(16, size - 2) }, paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: 60, after: line / 2 } } },
+    { id: "Figure", name: "Figure", basedOn: "Normal", next: "Normal", paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: line / 2, after: line / 2 } } },
     { id: "Code", name: "Code", basedOn: "Normal", paragraph: { indent: { firstLine: 0 } }, run: { font: "Courier New" } },
   ];
 }
@@ -126,7 +179,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   const sceneLevel = chapterLevel + 1;
   const paratextLabels = PARATEXT_LABELS[book.language.slice(0, 2)] ?? PARATEXT_LABELS.en;
 
-  const body: Paragraph[] = [];
+  const body: (Paragraph | Table)[] = [];
   // Nothing goes before the first opening, so it needs no break.
   let started = false;
 
@@ -145,6 +198,12 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     body.push(new Paragraph({ heading: HEADINGS[level], children }));
   };
 
+  const [pageWidth, pageHeight] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
+  // The width between the margins, in pixels: no image is wider.
+  const textWidth = Math.floor(((pageWidth - 2 * (Math.min(pageWidth, pageHeight) < 18 ? 2 : 2.54)) / 2.54) * 96);
+
+  const runs = (items: Run[]) => paragraphRuns(items, textWidth, opts.fontSize);
+
   const blocks = (items: Block[], level: number) => {
     // No indent after a heading, a separator or a quote: the usual typographic rule.
     let first = true;
@@ -155,6 +214,14 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         body.push(new Paragraph({ style: "BlockText", children: runs(block.runs) }));
       } else if (block.type === "break") {
         body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
+      } else if (block.type === "table") {
+        body.push(table(block.align, block.header, block.rows));
+        // Word needs a paragraph between two tables, or it joins them: the caption, if any.
+        body.push(new Paragraph(block.caption ? { style: "Caption", alignment: AlignmentType.CENTER, children: runs(block.caption) } : { style: "TableText", children: [] }));
+      } else if (block.type === "image") {
+        const alignment = block.align === "center" ? AlignmentType.CENTER : block.align === "right" ? AlignmentType.RIGHT : AlignmentType.LEFT;
+        body.push(new Paragraph({ style: "Figure", alignment, keepNext: !!block.caption, children: [imageRun(block.image, textWidth)] }));
+        if (block.caption) body.push(new Paragraph({ style: "Caption", alignment, children: runs(block.caption) }));
       } else {
         const code = block.runs.every((r) => r.code);
         const style = code ? "Code" : block.align === "center" ? "Centered" : block.align === "right" ? "RightAligned" : first ? "FirstParagraph" : "Normal";
@@ -212,10 +279,10 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   backPage(paratextLabels.acknowledgements, paratext.acknowledgements);
   if (paratext.colophon.trim()) back.push(textParagraphs(paratext.colophon, "Colophon"));
 
-  const onNewPage = (pages: Paragraph[][]): Paragraph[] =>
+  const onNewPage = (pages: (Paragraph | Table)[][]): (Paragraph | Table)[] =>
     pages.flatMap((page) => [new Paragraph({ pageBreakBefore: true, children: [] }), ...page]);
 
-  const titlePage: Paragraph[] = [];
+  const titlePage: (Paragraph | Table)[] = [];
   if (opts.titlePage) {
     if (typeset) {
       titlePage.push(

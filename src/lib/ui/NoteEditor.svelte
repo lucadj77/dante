@@ -4,7 +4,7 @@
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { ACTIONS, ICONS, applyFormat } from "$lib/editor/formatting";
   import { app, t } from "$lib/state.svelte";
-  import { formatLabels } from "./formatLabels";
+  import { formatLabels, tableLabels } from "./formatLabels";
   import Icon from "./Icon.svelte";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
@@ -69,6 +69,7 @@
           collab?.changed();
         },
         formatLabels: formatLabels(),
+        tableLabels: tableLabels(),
         links,
         critic: collab ? criticHandlerFor(path) : undefined,
         onFocus: () => {
