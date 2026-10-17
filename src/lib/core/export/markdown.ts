@@ -20,7 +20,6 @@ function escapeStart(text: string): string {
 
 function inline(r: Run): string {
   if (r.lineBreak) return "  \n";
-  if (r.image) return `![[${[r.image.path, r.image.alt, String(Math.round(r.image.width))].filter(Boolean).join("|")}]]`;
   if (r.code) return `\`${r.text.replace(/`/g, "")}\``;
   const lead = r.text.match(/^\s*/)![0];
   const tail = r.text.slice(lead.length).match(/\s*$/)![0];

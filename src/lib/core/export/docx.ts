@@ -17,7 +17,6 @@ import {
   TableRow,
   TextRun,
   WidthType,
-  type IImageOptions,
   type IParagraphStyleOptions,
   type IRunOptions,
   type ISectionOptions,
@@ -34,15 +33,11 @@ const CELL_ALIGN: Record<string, (typeof AlignmentType)[keyof typeof AlignmentTy
 
 /** An image run at its size, made smaller to fit `maxWidth` pixels. */
 function imageRun(image: BookImage, maxWidth: number): ImageRun {
-  return new ImageRun(imageOptions(image, maxWidth));
-}
-
-function imageOptions(image: BookImage, maxWidth: number): IImageOptions {
   const scale = Math.min(1, maxWidth / image.width);
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   const type = image.mime === "image/jpeg" ? "jpg" : image.mime === "image/gif" ? "gif" : "png";
-  return { type, data: image.data, transformation: { width, height }, altText: image.alt ? { name: image.alt, description: image.alt, title: image.alt } : undefined };
+  return new ImageRun({ type, data: image.data, transformation: { width, height }, altText: image.alt ? { name: image.alt, description: image.alt, title: image.alt } : undefined });
 }
 
 /** A Markdown table as a Word table across the text width, header row repeated on each page. */
@@ -77,35 +72,12 @@ export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgeme
   fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements" },
 };
 
-/**
- * An image inside a sentence, lowered so that its middle sits on the middle of the text,
- * as in the editor; Word would otherwise stand it on the baseline.
- */
-class InlineImageRun extends ImageRun {
-  constructor(
-    image: BookImage,
-    maxWidth: number,
-    private readonly lower: number,
-  ) {
-    super(imageOptions(image, maxWidth));
-  }
-  prepForXml(context: Parameters<ImageRun["prepForXml"]>[0]) {
-    const xml = super.prepForXml(context) as Record<string, unknown[]> | undefined;
-    // w:position counts half points; negative values lower the run.
-    if (xml && Array.isArray(xml["w:r"]) && this.lower > 0) xml["w:r"].unshift({ "w:rPr": [{ "w:position": { _attr: { "w:val": -this.lower } } }] });
-    return xml;
-  }
-}
-
-function runs(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun)[] {
-  return items.map((r) => {
-    if (r.lineBreak) return new TextRun({ break: 1 });
-    if (r.image) {
-      const height = r.image.height * Math.min(1, maxWidth / r.image.width) * 0.75;
-      return new InlineImageRun(r.image, maxWidth, Math.round((height / 2 - fontSize * 0.3) * 2));
-    }
-    return new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined });
-  });
+function runs(items: Run[]): TextRun[] {
+  return items.map((r) =>
+    r.lineBreak
+      ? new TextRun({ break: 1 })
+      : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined }),
+  );
 }
 
 function plain(text: string, options: Partial<IRunOptions> = {}): TextRun[] {
@@ -219,9 +191,9 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     let first = true;
     for (const block of items) {
       if (block.type === "heading") {
-        body.push(new Paragraph({ heading: HEADINGS[Math.min(5, level + block.level)], children: runs(block.runs, textWidth, opts.fontSize) }));
+        body.push(new Paragraph({ heading: HEADINGS[Math.min(5, level + block.level)], children: runs(block.runs) }));
       } else if (block.type === "quote") {
-        body.push(new Paragraph({ style: "BlockText", children: runs(block.runs, textWidth, opts.fontSize) }));
+        body.push(new Paragraph({ style: "BlockText", children: runs(block.runs) }));
       } else if (block.type === "break") {
         body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
       } else if (block.type === "table") {
@@ -236,7 +208,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         const style = code ? "Code" : block.align === "center" ? "Centered" : block.align === "right" ? "RightAligned" : first ? "FirstParagraph" : "Normal";
         // Left and justified differ from Normal only when the profile sets the other one.
         const alignment = block.align === "left" ? AlignmentType.LEFT : block.align === "justify" ? AlignmentType.JUSTIFIED : undefined;
-        body.push(new Paragraph({ style, alignment, children: runs(block.runs, textWidth, opts.fontSize) }));
+        body.push(new Paragraph({ style, alignment, children: runs(block.runs) }));
       }
       first = block.type !== "paragraph";
     }
