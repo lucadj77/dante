@@ -8,6 +8,10 @@ import type { Project } from "../project";
 import { byline, type ParatextSettings } from "../settings";
 import { applyTypography } from "../typography";
 import { extractAlignments, paragraphIndexer, type Align } from "../alignment";
+import { findImages, imageMime, imageSize, resolveImagePath } from "../images";
+import { expandEmbeds } from "../embeds";
+import { splitRow, parseTable, type CellAlign } from "../tables";
+import { resolveLink } from "../wikilinks";
 
 // The manuscript as a format-neutral document, built once and rendered by each
 // exporter (DOCX now; EPUB and PDF later).
@@ -22,11 +26,29 @@ export interface Run {
   lineBreak?: boolean;
 }
 
+/** An image of the text, with the size it shows at, in pixels (96 to the inch). */
+export interface BookImage {
+  /** The file in the project. */
+  path: string;
+  data: Uint8Array;
+  mime: string;
+  width: number;
+  height: number;
+  alt: string;
+}
+
 export type Block =
   | { type: "paragraph"; runs: Run[]; align?: Align }
   | { type: "heading"; level: number; runs: Run[] }
   | { type: "quote"; runs: Run[] }
+  | { type: "table"; align: CellAlign[]; header: Run[][]; rows: Run[][][] }
+  | { type: "image"; image: BookImage; align?: Align }
   | { type: "break" };
+
+// Where an image stood, inside the text that goes through typography and the parser: one
+// private-use character per image, its number counted from IMAGE_BASE.
+const IMAGE_BASE = 0xe000;
+const IMAGE_MARK = /[\ue000-\uf8ff]/g;
 
 export interface BookScene {
   /** Heading above the scene, possibly on two lines; empty when scenes have none. */
@@ -117,6 +139,41 @@ function inlineRuns(source: string, node: SyntaxNode, from: number, to: number, 
   return merge(runs);
 }
 
+/** The runs of a table cell's text. */
+function cellRuns(text: string): Run[] {
+  const clean = text.replace(IMAGE_MARK, "");
+  const tree = parser.parse(clean);
+  const paragraph = tree.topNode.firstChild;
+  if (!paragraph || paragraph.name !== "Paragraph") return clean.trim() ? [{ text: clean.trim() }] : [];
+  return inlineRuns(clean, paragraph as unknown as SyntaxNode, paragraph.from, paragraph.to);
+}
+
+/** A paragraph's runs, cut where images stand: text pieces and images in their order. */
+function splitAtImages(runs: Run[], images: (BookImage | null)[]): (Run[] | BookImage)[] {
+  const out: (Run[] | BookImage)[] = [];
+  let current: Run[] = [];
+  const flush = () => {
+    const kept = merge(current);
+    if (kept.some((r) => r.text.trim() || r.lineBreak)) out.push(kept.filter((r, i) => !(r.lineBreak && (i === 0 || i === kept.length - 1))));
+    current = [];
+  };
+  for (const run of runs) {
+    let last = 0;
+    for (const m of run.text.matchAll(IMAGE_MARK)) {
+      if (m.index! > last) current.push({ ...run, text: run.text.slice(last, m.index) });
+      last = m.index! + 1;
+      const image = images[m[0].charCodeAt(0) - IMAGE_BASE];
+      if (image) {
+        flush();
+        out.push(image);
+      }
+    }
+    if (last < run.text.length || run.lineBreak) current.push(last ? { ...run, text: run.text.slice(last) } : run);
+  }
+  flush();
+  return out;
+}
+
 function merge(runs: Run[]): Run[] {
   const out: Run[] = [];
   for (const run of runs) {
@@ -137,7 +194,7 @@ function merge(runs: Run[]): Run[] {
  * The blocks of a scene's Markdown. `aligns` gives the alignment of paragraphs, by their
  * number, as extractAlignments took it out of the text.
  */
-export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>): Block[] {
+export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, images: (BookImage | null)[] = []): Block[] {
   const source = markdown;
   const tree = parser.parse(source);
   const paragraphAt = aligns?.size ? paragraphIndexer(source) : null;
@@ -152,19 +209,33 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>):
         if (name === "Task") lead = /x/i.test(source.slice(child.from, child.from + 3)) ? "☑ " : "☐ ";
         if (lead && runs.length) runs.unshift({ text: lead });
         marker = "";
-        if (!runs.length) {
-          // Nothing to show.
-        } else if (inQuote) {
-          blocks.push({ type: "quote", runs });
-        } else {
-          const align = name === "Paragraph" && paragraphAt ? aligns!.get(paragraphAt(child.from)) : undefined;
-          blocks.push(align ? { type: "paragraph", runs, align } : { type: "paragraph", runs });
+        const align = name === "Paragraph" && paragraphAt ? aligns!.get(paragraphAt(child.from)) : undefined;
+        for (const piece of splitAtImages(runs, images)) {
+          if (!Array.isArray(piece)) blocks.push(align ? { type: "image", image: piece, align } : { type: "image", image: piece });
+          else if (!piece.length) continue;
+          else if (inQuote) blocks.push({ type: "quote", runs: piece });
+          else blocks.push(align ? { type: "paragraph", runs: piece, align } : { type: "paragraph", runs: piece });
         }
       } else if (/^(ATX|Setext)Heading(\d)$/.test(name)) {
         const level = Number(name.slice(-1));
         blocks.push({ type: "heading", level, runs: inlineRuns(source, child, child.from, child.to) });
       } else if (name === "Blockquote") {
         visit(child, true);
+      } else if (name === "Table") {
+        let from = child.from;
+        const lines = source.slice(child.from, child.to).split("\n").map((text) => {
+          const line = { text, from };
+          from += text.length + 1;
+          return line;
+        });
+        const table = parseTable(lines);
+        if (table) {
+          const columns = table.header.length;
+          const row = (cells: { text: string }[]) => Array.from({ length: columns }, (_, i) => cellRuns(cells[i]?.text ?? ""));
+          blocks.push({ type: "table", align: table.align.slice(0, columns), header: row(table.header), rows: table.rows.map(row) });
+        } else {
+          for (const line of lines) blocks.push({ type: "paragraph", runs: cellRuns(splitRow(line.text).map((c) => c.text).join(" ")) });
+        }
       } else if (name === "HorizontalRule") {
         blocks.push({ type: "break" });
       } else if (name === "BulletList" || name === "OrderedList") {
@@ -182,26 +253,87 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>):
   return blocks;
 }
 
+/** Every run of text in the blocks, table cells included. */
+function allRuns(blocks: Block[]): Run[] {
+  const out: Run[] = [];
+  for (const b of blocks) {
+    if (b.type === "table") for (const row of [b.header, ...b.rows]) for (const cell of row) out.push(...cell);
+    else if (b.type !== "break" && b.type !== "image") out.push(...b.runs);
+  }
+  return out;
+}
+
 function countWords(blocks: Block[]): number {
   let n = 0;
-  for (const b of blocks) {
-    if (b.type === "break") continue;
-    for (const r of b.runs) n += (r.text.match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu) ?? []).length;
-  }
+  for (const r of allRuns(blocks)) n += (r.text.match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu) ?? []).length;
   return n;
 }
 
 function countCharacters(blocks: Block[]): number {
   let n = 0;
-  for (const b of blocks) {
-    if (b.type !== "break") for (const r of b.runs) n += [...r.text].length;
-  }
+  for (const r of allRuns(blocks)) n += [...r.text].length;
   return n;
+}
+
+/** Turns an image a format cannot hold (WebP, SVG…) into PNG; null when it cannot. */
+export type ImageConverter = (data: Uint8Array, mime: string) => Promise<{ data: Uint8Array; width: number; height: number } | null>;
+
+// Formats every exporter can embed as they are.
+const PORTABLE = new Set(["image/png", "image/jpeg", "image/gif"]);
+
+/**
+ * Replaces the images of a scene with markers and reads their files. An image that cannot
+ * be found, read or converted is left out, as embedded notes are.
+ */
+async function takeImages(project: Project, notePath: string, text: string, convert?: ImageConverter): Promise<{ body: string; images: BookImage[] }> {
+  const found = findImages(text);
+  const images: BookImage[] = [];
+  let body = "";
+  let last = 0;
+  for (const embed of found) {
+    const path = embed.wiki ? resolveLink(embed.target.split("#")[0], notePath, project.files) : resolveImagePath(embed.target, notePath, project.files);
+    let image: BookImage | null = null;
+    if (path && images.length < 0x1900) {
+      try {
+        let data = await project.fs.readBytes(path);
+        let mime = imageMime(path);
+        let size = imageSize(data, mime);
+        if (!PORTABLE.has(mime)) {
+          const png = convert ? await convert(data, mime) : null;
+          if (png) {
+            data = png.data;
+            mime = "image/png";
+            size ??= { width: png.width, height: png.height };
+          } else {
+            size = null;
+          }
+        }
+        if (size && size.width > 0 && size.height > 0) {
+          const width = embed.width ?? size.width;
+          const height = embed.height ?? Math.round((width * size.height) / size.width);
+          image = { path, data, mime, width, height, alt: embed.alt };
+        }
+      } catch {
+        image = null;
+      }
+    }
+    const before = text.slice(last, embed.from);
+    last = embed.to;
+    if (!image) {
+      // No double space where the image was.
+      body += before;
+      if (/[ \t]$/.test(body) && /^[ \t]/.test(text.slice(last))) last++;
+      continue;
+    }
+    body += before + String.fromCharCode(IMAGE_BASE + images.length);
+    images.push(image);
+  }
+  return { body: body + text.slice(last), images };
 }
 
 export async function buildBook(
   project: Project,
-  options: { revisions?: "accept" | "reject"; root?: ManuscriptNode } = {},
+  options: { revisions?: "accept" | "reject"; root?: ManuscriptNode; convert?: ImageConverter } = {},
 ): Promise<Book> {
   const { settings } = project;
   const docx = settings.export.docx;
@@ -229,10 +361,13 @@ export async function buildBook(
   let sceneCount = 0;
 
   const readScene = async (node: ManuscriptNode): Promise<BookScene> => {
-    const body = splitNote(await project.fs.readText(node.path)).body;
+    const written = splitNote(await project.fs.readText(node.path)).body;
+    // Embedded notes bring their text in, then their images are read with the scene's.
+    const source = await expandEmbeds(written, node.path, project.files, (path) => project.fs.readText(path));
+    const { body, images } = await takeImages(project, node.path, source, options.convert);
     // Alignment tags come out before typography, which would change the quotes in them.
     const { text, aligns } = extractAlignments(cleanSource(body, options.revisions));
-    const blocks = markdownToBlocks(typeset(text), aligns);
+    const blocks = markdownToBlocks(typeset(text), aligns, images);
     words += countWords(blocks);
     characters += countCharacters(blocks);
     sceneCount++;

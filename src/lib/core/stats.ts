@@ -5,9 +5,15 @@ export function plainText(markdown: string): string {
     .replace(/<!--[\s\S]*?-->/g, "")
     // HTML tags, such as the ones that align a paragraph.
     .replace(/<\/?[a-zA-Z][^<>\n]*>/g, "")
-    .replace(/!?\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
+    // Embedded images and notes are not words of the text, as in the export.
+    .replace(/!\[\[[^\]]*\]\]/g, "")
+    .replace(/!\[[^\]\n]*\]\([^)\n]*\)/g, "")
+    // Tables: the delimiter row and the bars between cells.
+    .replace(/^[ \t]*\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)+\|?[ \t]*$/gm, "")
+    .replace(/!?\[\[([^\]|]+)\\?\|([^\]]+)\]\]/g, "$2")
     .replace(/!?\[\[([^\]]+)\]\]/g, "$1")
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/(?<!\\)\|/g, " ")
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+[.)])\s+/gm, "")
     .replace(/[*_~`=]+/g, "");
 }

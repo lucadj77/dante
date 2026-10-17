@@ -197,4 +197,25 @@ Mi ritrovai per una selva oscura.
         let err = compile("#image(\"../outside.png\")\n", &dir).unwrap_err();
         assert!(err.contains("line 1") && err.contains("escape"), "{err}");
     }
+
+    #[test]
+    fn compiles_tables_and_images_as_the_export_writes_them() {
+        // A 1×1 PNG in a folder of the "project".
+        const PNG: [u8; 70] = [
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41,
+            0x54, 0x78, 0xda, 0x63, 0xfc, 0xcf, 0xc0, 0x50, 0x0f, 0x00, 0x04, 0x85, 0x01, 0x80, 0x84, 0xa9, 0x8c, 0x21, 0x00, 0x00,
+            0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+        ];
+        let dir = std::env::temp_dir().join("dante-pdf-test-images");
+        fs::create_dir_all(dir.join("Allegati")).unwrap();
+        fs::write(dir.join("Allegati/casa blu.png"), PNG).unwrap();
+        let source = r#"#set text(font: "Libertinus Serif")
+#align(center, image("/Allegati/casa blu.png", width: 3.125in, alt: "Casa"))
+
+#align(center, block(width: 100%, table(columns: 2, align: (left, center,), inset: 0.4em, table.header(strong[#"Fase"], strong[#"Documento"]), [#"0"], [#emph("L’idea")])))
+"#;
+        let pdf = compile(source, &dir).expect("compiles");
+        assert!(pdf.starts_with(b"%PDF"));
+    }
 }
