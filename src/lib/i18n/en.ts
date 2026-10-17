@@ -587,6 +587,7 @@ export const en = {
   "property.shared": "Applies to “{name}” in every note of the project; saved in dante.yaml.",
   "property.defineTip": "Kind: {kind}. Click to change it",
   "property.wrongKind": "Not a valid value for the kind {kind}",
+  "property.aliasTaken": "“{alias}” already leads to {note}: two notes cannot share a name or an alias.",
   "property.notAllowed": "Not one of the allowed values",
   "property.defined": "Properties with a kind",
   "property.definedHint": "A property defined here is the same in every note: the same kind of field and the same choice of values. Kinds can also be set from the properties panel, with the sign before each name.",

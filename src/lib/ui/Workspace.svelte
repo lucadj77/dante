@@ -167,6 +167,17 @@
   provideNavigator({
     open,
     reload,
+    aliasOwner(alias, from) {
+      const wanted = alias.trim().toLowerCase();
+      if (!wanted) return null;
+      for (const path of project.files) {
+        if (path === from || !isMarkdown(path) || isWithin(path, project.settings.folders.templates)) continue;
+        const name = basename(path).replace(/\.md$/i, "");
+        const aliases = index?.notes.get(path)?.aliases ?? [];
+        if (name.toLowerCase() === wanted || aliases.some((a) => a.toLowerCase() === wanted)) return path;
+      }
+      return null;
+    },
     links: (from) => ({
       open(target, beside) {
         const path = linked(target, from);

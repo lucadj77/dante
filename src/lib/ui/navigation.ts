@@ -9,6 +9,11 @@ export interface Navigator {
   reload(): Promise<void>;
   /** Link following and suggestions for an editor showing `from`. */
   links(from: string): LinkHandler;
+  /**
+   * The other note that already answers to `alias`, by its name or its aliases, so that
+   * two notes never share one; null when it is free.
+   */
+  aliasOwner?(alias: string, from: string): string | null;
 }
 
 const KEY = Symbol("navigator");

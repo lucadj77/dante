@@ -587,6 +587,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "property.shared": "Vale per «{name}» in tutte le note del progetto; è salvato in dante.yaml.",
   "property.defineTip": "Tipo: {kind}. Clic per cambiarlo",
   "property.wrongKind": "Valore non valido per il tipo {kind}",
+  "property.aliasTaken": "«{alias}» porta già a {note}: due note non possono avere lo stesso nome o alias.",
   "property.notAllowed": "Non è tra i valori ammessi",
   "property.defined": "Proprietà con un tipo",
   "property.definedHint": "Una proprietà definita qui è uguale in tutte le note: stesso tipo di campo e stessa scelta di valori. Il tipo si può impostare anche dal pannello delle proprietà, con il segno prima di ogni nome.",
