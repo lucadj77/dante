@@ -65,7 +65,9 @@ La versione portatile non si installa: estrai lo zip dove vuoi (anche su una chi
 
 ## Aggiornamenti
 
-Quando esce una nuova versione, Dante lo dice all'avvio con un riquadro in basso a destra: premi **Aggiorna e riavvia**. Dante salva il testo, scarica la nuova versione, la installa e si riapre. Con **Più tardi** il riquadro torna all'avvio successivo.
+Quando esce una nuova versione, Dante lo dice all'avvio con un riquadro in basso a destra: premi **Novità** per leggere cosa cambia, poi **Aggiorna e riavvia**. Dante salva il testo, scarica la nuova versione, la installa e si riapre. Con **Più tardi** il riquadro torna all'avvio successivo.
+
+Tutte le novità, versione per versione, sono nella pagina [Novità](novita.md) ([What's new](whats-new.md) in inglese).
 
 Puoi controllare anche a mano: **Impostazioni** > **Aggiornamenti** > **Cerca aggiornamenti**. Lì trovi anche il numero della versione installata.
 

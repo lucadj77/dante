@@ -190,8 +190,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: src
+      # The notes waiting in docs/novita.md and docs/whats-new.md, as this commit has them,
+      # go under this version's heading on main (only those: later ones keep waiting).
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+      - name: Release notes
+        run: |
+          version="0.1.${{ github.run_number }}"
+          python3 src/.github/news.py pending src/docs > pending.json
+          cat pending.json
+          python3 src/.github/news.py stamp main/docs "$version" "$(cat pending.json)"
+          python3 src/.github/news.py history main/docs "$version" > news.json
+          python3 src/.github/news.py body "$(cat pending.json)" > notes.md
+          cd main
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "Novità di Dante $version [skip ci]"
+          # Someone may have pushed meanwhile: the notes go on top of it.
+          for attempt in 1 2 3; do
+            git push -q origin HEAD:main && exit 0
+            git pull -q --rebase origin main || break
+          done
+          echo "::warning::The release notes could not be written back to main."
       - name: Update manifest
-        run: python3 src/.github/latest-json.py out "0.1.${{ github.run_number }}" "${GITHUB_SHA::7}" "https://github.com/${{ github.repository }}/releases/download/preview"
+        run: python3 src/.github/latest-json.py out "0.1.${{ github.run_number }}" "${GITHUB_SHA::7}" "https://github.com/${{ github.repository }}/releases/download/preview" news.json
       - name: Replace the preview release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -202,7 +227,11 @@ jobs:
           gh release create preview out/* \
             --prerelease --target "$GITHUB_SHA" \
             --title "Dante 0.1.${{ github.run_number }} (anteprima)" \
-            --notes "Versione di prova compilata da ${GITHUB_REF_NAME} (${GITHUB_SHA::7}).
+            --notes "$(cat notes.md)
+
+          ---
+
+          Versione di prova compilata da ${GITHUB_REF_NAME} (${GITHUB_SHA::7}). Tutte le novità: https://github.com/${{ github.repository }}/blob/main/docs/novita.md (in English: https://github.com/${{ github.repository }}/blob/main/docs/whats-new.md)
 
           Windows: Dante-setup è l'installatore; Dante-portable è la versione portatile (estrai lo zip e avvia Dante.exe). Non sono firmati: Windows mostra un avviso di SmartScreen.
           Mac: scegli il .dmg giusto (apple-silicon per i Mac dal 2020 con chip M1 o successivi, intel per quelli precedenti), aprilo e trascina Dante in Applicazioni. Non è firmato da Apple: la prima volta macOS lo blocca, poi Impostazioni di Sistema > Privacy e sicurezza > Apri comunque.

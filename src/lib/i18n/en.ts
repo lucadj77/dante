@@ -263,6 +263,8 @@ export const en = {
   "update.available": "Dante {version} is available.",
   "update.install": "Update and restart",
   "update.later": "Later",
+  "update.news": "What's new",
+  "update.hideNews": "Hide what's new",
   "update.downloading": "Downloading the update…",
   "update.downloadingPercent": "Downloading the update: {percent}%",
   "update.failed": "Update failed: {message}",
