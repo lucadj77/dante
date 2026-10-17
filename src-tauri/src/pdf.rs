@@ -210,11 +210,13 @@ Mi ritrovai per una selva oscura.
         let dir = std::env::temp_dir().join("dante-pdf-test-images");
         fs::create_dir_all(dir.join("Allegati")).unwrap();
         fs::write(dir.join("Allegati/casa blu.png"), PNG).unwrap();
-        let source = r#"#set text(font: "Libertinus Serif")
+        let source = r##"#set text(font: "Libertinus Serif")
 #align(center, image("/Allegati/casa blu.png", width: 3.125in, alt: "Casa"))
 
+#"Come ci sei finito? "#box(baseline: 50% - 0.25em, image("/Allegati/casa blu.png", width: 0.208in))#" vi chiederete."
+
 #align(center, block(width: 100%, table(columns: 2, align: (left, center,), inset: 0.4em, table.header(strong[#"Fase"], strong[#"Documento"]), [#"0"], [#emph("L’idea")])))
-"#;
+"##;
         let pdf = compile(source, &dir).expect("compiles");
         assert!(pdf.starts_with(b"%PDF"));
     }

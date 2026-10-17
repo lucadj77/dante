@@ -13,9 +13,14 @@ export function escapeXml(text: string): string {
 
 const lines = (text: string) => text.split("\n").map(escapeXml).join("<br/>");
 
-function runs(items: Run[]): string {
+/** A paragraph's runs as XHTML; `imageFile` gives where an image inside the text is in the book. */
+function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
   return items
     .map((r) => {
+      if (r.image) {
+        if (!imageFile) return "";
+        return `<img class="inline" src="${imageFile(r.image)}" alt="${escapeXml(r.image.alt)}" style="width: ${Math.round(r.image.width)}px; max-width: 100%;"/>`;
+      }
       if (r.lineBreak) return "<br/>";
       let out = escapeXml(r.text);
       if (r.code) out = `<code>${out}</code>`;
@@ -53,6 +58,7 @@ th { font-weight: bold; }
 div.image { margin: 1em 0; text-indent: 0; }
 div.image.align-center { text-align: center; }
 div.image.align-right { text-align: right; }
+img.inline { vertical-align: middle; }
 .title { text-align: center; margin-top: 30%; }
 .title h1 { margin: 0 0 0.5em; font-size: 2em; }
 .subtitle { font-size: 1.3em; font-style: italic; text-indent: 0; text-align: center; }
@@ -153,12 +159,13 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
     if (kind === "pageBreak") return `<div class="pagebreak"></div>`;
     return "";
   };
+  const inline = (items: Run[]) => runs(items, imageFile);
   const blocks = (items: Block[], level: number): string => {
     let first = true;
     const out: string[] = [];
     for (const block of items) {
-      if (block.type === "heading") out.push(`<h${Math.min(6, level + block.level)}>${runs(block.runs)}</h${Math.min(6, level + block.level)}>`);
-      else if (block.type === "quote") out.push(`<blockquote><p>${runs(block.runs)}</p></blockquote>`);
+      if (block.type === "heading") out.push(`<h${Math.min(6, level + block.level)}>${inline(block.runs)}</h${Math.min(6, level + block.level)}>`);
+      else if (block.type === "quote") out.push(`<blockquote><p>${inline(block.runs)}</p></blockquote>`);
       else if (block.type === "break") out.push(`<p class="break">${lines(opts.sceneSeparator)}</p>`);
       else if (block.type === "table") {
         const style = (i: number) => (block.align[i] ? ` style="text-align: ${block.align[i]}"` : "");
@@ -171,7 +178,7 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       else if (block.runs.length && block.runs.every((r) => r.code)) out.push(`<pre>${escapeXml(block.runs.map((r) => r.text).join(""))}</pre>`);
       else {
         const classes = [first ? "first" : "", block.align ? `align-${block.align}` : ""].filter(Boolean).join(" ");
-        out.push(`<p${classes ? ` class="${classes}"` : ""}>${runs(block.runs)}</p>`);
+        out.push(`<p${classes ? ` class="${classes}"` : ""}>${inline(block.runs)}</p>`);
       }
       first = block.type !== "paragraph";
     }

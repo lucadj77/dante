@@ -18,7 +18,20 @@ function lines(text: string): string {
     .join("#linebreak()");
 }
 
-function run(r: Run): string {
+const TYPST_IMAGE = /\.(png|jpe?g|gif|svg|webp)$/i;
+
+/** An image on a line of text, its middle at the middle of the lowercase letters, as in the editor. */
+function inlineImage(r: Run, maxWidth: number): string {
+  const image = r.image!;
+  // Typst reads the file from the project folder; formats it cannot read are left out.
+  if (!TYPST_IMAGE.test(image.path)) return "";
+  const width = Math.min(image.width / 96, maxWidth);
+  return `#box(baseline: 50% - 0.25em, image(${str("/" + image.path)}, width: ${+width.toFixed(3)}in${image.alt ? `, alt: ${str(image.alt)}` : ""}))`;
+}
+
+/** A run of text; images are no wider than `maxWidth` inches. */
+function run(r: Run, maxWidth = 6.5): string {
+  if (r.image) return inlineImage(r, maxWidth);
   if (r.lineBreak) return "#linebreak()";
   if (r.code) return `#raw(${str(r.text)})`;
   let out = str(r.text);
@@ -28,7 +41,7 @@ function run(r: Run): string {
   return `#${out}`;
 }
 
-const runs = (items: Run[]) => items.map(run).join("");
+const runsOf = (items: Run[], maxWidth?: number) => items.map((r) => run(r, maxWidth)).join("");
 
 /** Fonts tried in order: the chosen one, then fonts shipped with the app. */
 function fonts(font: string): string {
@@ -38,7 +51,6 @@ function fonts(font: string): string {
 
 const cm = (n: number) => `${+n.toFixed(2)}cm`;
 
-const TYPST_IMAGE = /\.(png|jpe?g|gif|svg|webp)$/i;
 
 /** Renders the book with the same choices as the DOCX: manuscript or typeset book. */
 export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = ""): string {
@@ -149,6 +161,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     if (newPage) emit(`#v(${cm(part ? partOpening : opening)})`);
     emit(`#heading(level: ${level})[${lines(text)}]`);
   };
+  const runs = (items: Run[]) => runsOf(items, textWidth / 2.54);
   const blocks = (items: Block[], level: number) => {
     for (const block of items) {
       if (block.type === "heading") emit(`#heading(level: ${Math.min(6, level + block.level)})[${runs(block.runs)}]\n`);

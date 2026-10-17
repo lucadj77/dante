@@ -24,6 +24,8 @@ export interface Run {
   code?: boolean;
   /** A hard line break inside a paragraph. */
   lineBreak?: boolean;
+  /** An image inside the text, on the line with it; the run has no text. */
+  image?: BookImage;
 }
 
 /** An image of the text, with the size it shows at, in pixels (96 to the inch). */
@@ -148,13 +150,18 @@ function cellRuns(text: string): Run[] {
   return inlineRuns(clean, paragraph as unknown as SyntaxNode, paragraph.from, paragraph.to);
 }
 
-/** A paragraph's runs, cut where images stand: text pieces and images in their order. */
+/**
+ * A paragraph's runs with its images. A paragraph of images alone gives each image as a
+ * piece of its own, shown as a figure; a paragraph with text keeps them inside the text,
+ * on the line, as the editor shows them.
+ */
 function splitAtImages(runs: Run[], images: (BookImage | null)[]): (Run[] | BookImage)[] {
+  const hasText = runs.some((r) => r.text.replace(IMAGE_MARK, "").trim());
   const out: (Run[] | BookImage)[] = [];
   let current: Run[] = [];
   const flush = () => {
     const kept = merge(current);
-    if (kept.some((r) => r.text.trim() || r.lineBreak)) out.push(kept.filter((r, i) => !(r.lineBreak && (i === 0 || i === kept.length - 1))));
+    if (kept.some((r) => r.text.trim() || r.lineBreak || r.image)) out.push(kept.filter((r, i) => !(r.lineBreak && (i === 0 || i === kept.length - 1))));
     current = [];
   };
   for (const run of runs) {
@@ -163,7 +170,9 @@ function splitAtImages(runs: Run[], images: (BookImage | null)[]): (Run[] | Book
       if (m.index! > last) current.push({ ...run, text: run.text.slice(last, m.index) });
       last = m.index! + 1;
       const image = images[m[0].charCodeAt(0) - IMAGE_BASE];
-      if (image) {
+      if (!image) continue;
+      if (hasText) current.push({ text: "", image });
+      else {
         flush();
         out.push(image);
       }
@@ -178,7 +187,7 @@ function merge(runs: Run[]): Run[] {
   const out: Run[] = [];
   for (const run of runs) {
     const last = out[out.length - 1];
-    const same = last && !last.lineBreak && !run.lineBreak &&
+    const same = last && !last.lineBreak && !run.lineBreak && !last.image && !run.image &&
       !!last.italic === !!run.italic && !!last.bold === !!run.bold && !!last.strike === !!run.strike && !!last.code === !!run.code;
     if (same) last.text += run.text;
     else out.push({ ...run });
@@ -187,7 +196,7 @@ function merge(runs: Run[]): Run[] {
     out[0].text = out[0].text.trimStart();
     out[out.length - 1].text = out[out.length - 1].text.trimEnd();
   }
-  return out.filter((r) => r.text !== "" || r.lineBreak);
+  return out.filter((r) => r.text !== "" || r.lineBreak || r.image);
 }
 
 /**
