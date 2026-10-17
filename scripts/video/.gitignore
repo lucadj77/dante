@@ -1,0 +1,8 @@
+frames/
+out/
+timeline.json
+frames.txt
+t-*.png
+*.docx
+*.jpg
+rec.log

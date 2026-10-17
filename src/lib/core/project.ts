@@ -588,8 +588,25 @@ export class Project {
   async splitScene(path: string, before: string, after: string, title: string): Promise<string> {
     const parent = parentOf(this.manuscript, path)!;
     const index = parent.children.findIndex((c) => c.path === path);
-    await this.writeBody(path, before);
+    await this.writeKeptHalf(path, before, after);
     return this.createScene(parent.path, index + 1, title, after);
+  }
+
+  /**
+   * Writes the half of a split scene that stays. For the writing log the text that moves
+   * to the new scene is not deleted: only what was typed since the last save counts.
+   */
+  private async writeKeptHalf(path: string, before: string, after: string): Promise<void> {
+    const log = this.onSceneWritten;
+    const words = (body: string) => textStats(body).words;
+    const old = log && (await this.fs.exists(path)) ? words(splitNote(await this.fs.readText(path)).body) : 0;
+    this.onSceneWritten = null;
+    try {
+      await this.writeBody(path, before);
+    } finally {
+      this.onSceneWritten = log;
+    }
+    log?.(path, old, words(before) + words(after));
   }
 
   /**
@@ -606,7 +623,7 @@ export class Project {
     while (origin.children[sceneIndex + 1 + count]?.kind === "scene") count++;
     const chapterIndex = holder.children.findIndex((c) => c.path === (chapter ?? this.node(path)).path);
 
-    await this.writeBody(path, before);
+    await this.writeKeptHalf(path, before, after);
     // At the top of a manuscript with parts, a folder reads as a part unless it says otherwise.
     const kind = holder.kind === "manuscript" && this.settings.structure.parts ? "chapter" : undefined;
     const newChapter = await this.createContainer(holder.path, chapterIndex + 1, chapterTitle, kind);
