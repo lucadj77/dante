@@ -156,6 +156,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "format.link": "Link (⌘K)",
   "format.wikilink": "Wikilink a una nota",
   "format.separator": "Separatore di scena",
+  "format.table": "Tabella: Tab passa alla cella successiva, Invio aggiunge una riga",
   "format.image": "Immagine: scegli un file, oppure incollalo o trascinalo nel testo",
   "image.small": "Piccola (200 pixel)",
   "image.medium": "Media (400 pixel)",

@@ -4,11 +4,12 @@ import type { IconName } from "$lib/ui/Icon.svelte";
 import { criticHandler } from "./critic";
 import { toggleAlign } from "./alignment";
 import { chooseImages } from "./images";
+import { insertTable } from "./tables";
 
 export type Format = "bold" | "italic" | "strike" | "highlight";
 export type LineFormat = "quote" | "bullet" | "ordered" | "task";
 export type AlignAction = "alignCenter" | "alignRight";
-export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "image" | "comment";
+export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "table" | "image" | "comment";
 
 const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
@@ -201,6 +202,8 @@ function transaction(state: EditorState, action: Exclude<Action, "comment" | "im
       return insertWikilink(state);
     case "separator":
       return insertSeparator(state);
+    case "table":
+      return insertTable(state);
     case "alignCenter":
       return toggleAlign(state, "center");
     case "alignRight":
@@ -228,7 +231,7 @@ export const ACTIONS: (Action | null)[] = [
   "bold", "italic", "strike", "highlight", null,
   "heading", "quote", "bullet", "ordered", "task", null,
   "alignCenter", "alignRight", null,
-  "code", "link", "wikilink", "separator", "image", null,
+  "code", "link", "wikilink", "separator", "table", "image", null,
   "comment",
 ];
 
@@ -249,6 +252,7 @@ export const ICONS: Record<Action, { text: string; style?: string; icon?: IconNa
   link: { text: "🔗︎" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
   separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
+  table: { text: "▦", icon: "table" },
   image: { text: "🖼︎", icon: "image" },
   comment: { text: "💬︎" },
 };
