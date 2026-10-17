@@ -31,13 +31,25 @@ const CELL_ALIGN: Record<string, (typeof AlignmentType)[keyof typeof AlignmentTy
   right: AlignmentType.RIGHT,
 };
 
-/** An image run at its size, made smaller to fit `maxWidth` pixels. */
-function imageRun(image: BookImage, maxWidth: number): ImageRun {
+/**
+ * An image run at its size, made smaller to fit `maxWidth` pixels. Inside a line of text
+ * of `fontSize` points, it is lowered so that its middle sits at the middle of the
+ * lowercase letters, as the editor shows it.
+ */
+function imageRun(image: BookImage, maxWidth: number, fontSize?: number): ImageRun {
   const scale = Math.min(1, maxWidth / image.width);
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   const type = image.mime === "image/jpeg" ? "jpg" : image.mime === "image/gif" ? "gif" : "png";
-  return new ImageRun({ type, data: image.data, transformation: { width, height }, altText: image.alt ? { name: image.alt, description: image.alt, title: image.alt } : undefined });
+  // In half points, as every word processor reads it; the library's type wants a unit.
+  const raise = fontSize ? Math.round((fontSize * 0.25 - (height * 0.75) / 2) * 2) : 0;
+  return new ImageRun({
+    type,
+    data: image.data,
+    transformation: { width, height },
+    altText: image.alt ? { name: image.alt, description: image.alt, title: image.alt } : undefined,
+    run: raise ? { position: String(raise) as `${number}pt` } : undefined,
+  });
 }
 
 /** A Markdown table as a Word table across the text width, header row repeated on each page. */
@@ -48,7 +60,7 @@ function table(align: CellAlign[], header: Run[][], rows: Run[][][]): Table {
       children: cells.map(
         (cell, i) =>
           new TableCell({
-            children: [new Paragraph({ style: "TableText", alignment: CELL_ALIGN[align[i] ?? "left"], children: runs(head ? cell.map((r) => ({ ...r, bold: true })) : cell) })],
+            children: [new Paragraph({ style: "TableText", alignment: CELL_ALIGN[align[i] ?? "left"], children: paragraphRuns(head ? cell.map((r) => ({ ...r, bold: true })) : cell) })],
           }),
       ),
     });
@@ -72,9 +84,12 @@ export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgeme
   fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements" },
 };
 
-function runs(items: Run[]): TextRun[] {
+/** The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize` points. */
+function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun)[] {
   return items.map((r) =>
-    r.lineBreak
+    r.image
+      ? imageRun(r.image, maxWidth, fontSize)
+      : r.lineBreak
       ? new TextRun({ break: 1 })
       : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined }),
   );
@@ -185,6 +200,8 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   const [pageWidth, pageHeight] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
   // The width between the margins, in pixels: no image is wider.
   const textWidth = Math.floor(((pageWidth - 2 * (Math.min(pageWidth, pageHeight) < 18 ? 2 : 2.54)) / 2.54) * 96);
+
+  const runs = (items: Run[]) => paragraphRuns(items, textWidth, opts.fontSize);
 
   const blocks = (items: Block[], level: number) => {
     // No indent after a heading, a separator or a quote: the usual typographic rule.

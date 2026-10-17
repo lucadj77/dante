@@ -1,6 +1,6 @@
 import { stringify } from "yaml";
 import type { DocxSettings, Separator } from "../settings";
-import type { Block, Book, Run } from "./book";
+import type { Block, Book, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { setAlignment } from "../alignment";
 
@@ -18,7 +18,13 @@ function escapeStart(text: string): string {
   return text.replace(/^(\s*)([+-])(?=\s|$)/, "$1\\$2").replace(/^(\s*\d+)([.)])(?=\s|$)/, "$1\\$2");
 }
 
+/** The embed of an image; it stays where it is in the project, as the export folder is inside it. */
+function imageEmbed(image: BookImage): string {
+  return `![[${[image.path, image.alt, String(Math.round(image.width))].filter(Boolean).join("|")}]]`;
+}
+
 function inline(r: Run): string {
+  if (r.image) return imageEmbed(r.image);
   if (r.lineBreak) return "  \n";
   if (r.code) return `\`${r.text.replace(/`/g, "")}\``;
   const lead = r.text.match(/^\s*/)![0];
@@ -95,9 +101,7 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
         const rule = block.align.map((a) => (a === "center" ? ":---:" : a === "right" ? "---:" : a === "left" ? ":---" : "---"));
         add([row(block.header), `| ${rule.join(" | ")} |`, ...block.rows.map(row)].join("\n"));
       } else if (block.type === "image") {
-        // The image stays where it is in the project; the export folder is inside it.
-        const parts = [block.image.path, block.image.alt, String(Math.round(block.image.width))].filter(Boolean);
-        add(setAlignment(`![[${parts.join("|")}]]`, block.align ?? null));
+        add(setAlignment(imageEmbed(block.image), block.align ?? null));
       }
       else if (block.runs.length && block.runs.every((r) => r.code)) add("```\n" + block.runs.map((r) => r.text).join("").replace(/\n$/, "") + "\n```");
       else add(setAlignment(runs(block.runs), block.align ?? null));

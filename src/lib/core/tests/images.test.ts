@@ -142,4 +142,33 @@ describe("tables and images in the export", () => {
     expect(md).toContain('<span style="display:block;text-align:center">![[Allegati/casa.png|Casa|300]]</span>');
     expect(md).toContain("| Fase | Documento |\n| --- | :---: |\n| 0 | L’idea |");
   });
+
+  it("keeps an image inside its paragraph's text on the line", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nauthor: Ada Rossi\nlanguage: it\n",
+      "Manuscript/010 Uno/010 Scena.md": "Come ci sei finito? ![[casa.png|20]] vi chiederete.\n",
+    });
+    await fs.writeBytes("Allegati/casa.png", wide());
+    const book = await buildBook(await Project.open(fs));
+    const blocks = book.entries[0].scenes[0].blocks;
+    expect(blocks.length).toBe(1);
+    const runs = blocks[0].type === "paragraph" ? blocks[0].runs : [];
+    expect(runs.map((r) => (r.image ? `[${r.image.width}x${r.image.height}]` : r.text)).join("")).toBe("Come ci sei finito? [20x10] vi chiederete.");
+    expect(book.words).toBe(6);
+    const settings = defaultSettings("it").export.docx;
+
+    const xml = new TextDecoder().decode(await (await unzip(await docxBytes(bookToDocx(book, settings, { words: "parole" })))).get("word/document.xml")!());
+    // The image is a run of the paragraph, lowered to the middle of the letters.
+    expect(xml).toMatch(/finito\? <\/w:t><\/w:r><w:r><w:rPr><w:position w:val="-?\d+"\/><\/w:rPr><w:drawing>/);
+
+    const typst = bookToTypst(book, settings, { words: "parole" });
+    expect(typst).toContain('#"Come ci sei finito? "#box(baseline: 50% - 0.25em, image("/Allegati/casa.png", width: 0.208in))#" vi chiederete."');
+
+    const epub = await unzip(bookToEpub(book, settings, "id"));
+    let html = "";
+    for (const name of epub.keys()) if (name.endsWith(".xhtml")) html += new TextDecoder().decode(await epub.get(name)!());
+    expect(html).toContain('finito? <img class="inline" src="images/image1.png" alt="" style="width: 20px; max-width: 100%;"/> vi chiederete.');
+
+    expect(bookToMarkdown(book, settings)).toContain("Come ci sei finito? ![[Allegati/casa.png|20]] vi chiederete.");
+  });
 });
