@@ -46,6 +46,14 @@ fn opened_project(opened: State<Opened>) -> Option<String> {
     opened.0.lock().unwrap().take()
 }
 
+/// Whether this copy can update itself from the preview release. Not while developing (the
+/// program is not an installed bundle) nor in the portable copy, which the Windows installer
+/// would replace with an installed one.
+#[tauri::command]
+fn updates_supported() -> bool {
+    !cfg!(debug_assertions) && portable_data_dir().is_none()
+}
+
 /// The Mac menu bar, as Tauri makes it but for Cmd+W: the usual "Close Window" would leave
 /// the app without a window, so the shortcut closes the pane beside the text instead
 /// (the page receives it as the "close-pane" event). Elsewhere there is no menu bar and
@@ -122,6 +130,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(files::WatcherState(Mutex::new(None)))
         .manage(Opened(Mutex::new(path_argument(std::env::args()))))
         // The window is created here rather than from the configuration, to choose where
@@ -154,6 +164,7 @@ pub fn run() {
             pdf::compile_pdf,
             web::download_url,
             opened_project,
+            updates_supported,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

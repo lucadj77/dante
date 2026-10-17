@@ -18,6 +18,8 @@ export interface AppSettings {
   statsLevel: "scene" | "chapter" | "part";
   /** A light shade on the row the cursor is on. */
   lineHighlight: boolean;
+  /** Look for a newer version on the preview release at every start. */
+  checkUpdates: boolean;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -36,6 +38,7 @@ function defaults(): AppSettings {
     statsUnit: "words",
     statsLevel: "chapter",
     lineHighlight: false,
+    checkUpdates: true,
   };
 }
 
