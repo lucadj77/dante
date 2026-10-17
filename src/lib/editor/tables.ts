@@ -310,12 +310,13 @@ function newRow(view: EditorView): boolean {
   return true;
 }
 
-export type TableAction = "rowAbove" | "rowBelow" | "deleteRow" | "columnLeft" | "columnRight" | "deleteColumn" | "alignLeft" | "alignCenter" | "alignRight";
+export type TableAction = "caption" | "rowAbove" | "rowBelow" | "deleteRow" | "columnLeft" | "columnRight" | "deleteColumn" | "alignLeft" | "alignCenter" | "alignRight";
 
 /** Changes the table at the cursor; false when the cursor is not in a table or the change cannot be made. */
 export function tableCommand(view: EditorView, action: TableAction): boolean {
   const at = tableAt(view.state);
   if (!at) return false;
+  if (action === "caption") return editCaption(view, at);
   const model = copy(at.model);
   let { row, col } = at;
   let offset: number | "end" = at.offset;
@@ -361,6 +362,22 @@ export function tableCommand(view: EditorView, action: TableAction): boolean {
   return true;
 }
 
+/** Puts the cursor at the end of the table's caption, writing "Tabella: " under the table when it has none. */
+function editCaption(view: EditorView, at: TableAt): boolean {
+  const { state } = view;
+  const last = state.doc.line(at.last);
+  let table = syntaxTree(state).resolveInner(last.from, 1);
+  while (table.name !== "Table" && table.parent) table = table.parent;
+  const next = table.name === "Table" ? table.nextSibling : null;
+  if (next?.name === "Paragraph" && captionStart(state.sliceDoc(next.from, next.to))) {
+    view.dispatch({ selection: { anchor: next.to }, scrollIntoView: true });
+    return true;
+  }
+  const insert = `\n\n${state.facet(tableLabels).captionPrefix}: `;
+  view.dispatch({ changes: { from: last.to, insert }, selection: { anchor: last.to + insert.length }, scrollIntoView: true, userEvent: "input" });
+  return true;
+}
+
 /** Names of the table bar's buttons, in the interface language. */
 export interface TableLabels {
   row: string;
@@ -374,6 +391,9 @@ export interface TableLabels {
   alignLeft: string;
   alignCenter: string;
   alignRight: string;
+  caption: string;
+  /** The word that starts a table's caption: "Tabella" in "Tabella: …". */
+  captionPrefix: string;
 }
 
 const ENGLISH: TableLabels = {
@@ -388,6 +408,8 @@ const ENGLISH: TableLabels = {
   alignLeft: "Align left",
   alignCenter: "Center",
   alignRight: "Align right",
+  caption: "Caption",
+  captionPrefix: "Table",
 };
 
 export const tableLabels = Facet.define<TableLabels, TableLabels>({
@@ -409,7 +431,7 @@ class TableBar extends WidgetType {
       const label = document.createElement("span");
       label.className = "md-table-label";
       label.textContent = name;
-      g.append(label);
+      if (name) g.append(label);
       for (const [text, title, action] of buttons) {
         const b = document.createElement("button");
         b.type = "button";
@@ -435,6 +457,7 @@ class TableBar extends WidgetType {
       ["↔", labels.alignCenter, "alignCenter"],
       ["⇥", labels.alignRight, "alignRight"],
     ]);
+    group("", [[`+ ${labels.caption}`, labels.caption, "caption"]]);
     // The cursor stays in its cell: the buttons act on it.
     bar.addEventListener("mousedown", (event) => {
       event.preventDefault();

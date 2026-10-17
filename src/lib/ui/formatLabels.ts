@@ -11,6 +11,6 @@ export function formatLabels(): FormattingLabels {
 
 /** Names of the buttons over a table being edited, in the interface language. */
 export function tableLabels(): TableLabels {
-  const keys: (keyof TableLabels)[] = ["row", "column", "above", "below", "left", "right", "delete", "align", "alignLeft", "alignCenter", "alignRight"];
+  const keys: (keyof TableLabels)[] = ["row", "column", "above", "below", "left", "right", "delete", "align", "alignLeft", "alignCenter", "alignRight", "caption", "captionPrefix"];
   return Object.fromEntries(keys.map((k) => [k, t(`table.${k}` as MessageKey)])) as unknown as TableLabels;
 }

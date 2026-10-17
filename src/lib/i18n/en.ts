@@ -168,6 +168,8 @@ export const en = {
   "table.alignLeft": "Align left",
   "table.alignCenter": "Center",
   "table.alignRight": "Align right",
+  "table.caption": "Caption",
+  "table.captionPrefix": "Table",
   "format.image": "Image: choose a file, or paste or drop one in the text",
   "image.small": "Small (200 pixels)",
   "image.medium": "Medium (400 pixels)",
