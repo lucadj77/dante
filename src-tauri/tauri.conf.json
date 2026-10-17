@@ -77,7 +77,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZEQjc4MTFCRDM1MTMxM0UKUldRK01WSFRHNEczYlN1RFJ3U2VrU1daUEJpYUp5U3krSm1saVFCbjJNZnU3LzZVWUJFZ1RJRFQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMyMjBCMkY3OEIyNUJBM0QKUldROXVpV0w5N0lnTW1tamN0anh3cGlMeWlacFEzMCsrdGlSWnRYR2d0em9GWEZzcm85ZVF3OTcK",
       "endpoints": [
         "https://github.com/lucadj77/dante/releases/download/preview/latest.json"
       ],
