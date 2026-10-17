@@ -168,6 +168,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "table.alignLeft": "Allinea a sinistra",
   "table.alignCenter": "Al centro",
   "table.alignRight": "Allinea a destra",
+  "table.caption": "Didascalia",
+  "table.captionPrefix": "Tabella",
   "format.image": "Immagine: scegli un file, oppure incollalo o trascinalo nel testo",
   "image.small": "Piccola (200 pixel)",
   "image.medium": "Media (400 pixel)",
