@@ -1,10 +1,10 @@
 [
  {
   "n": 1,
-  "caption": "Dante",
-  "en": "Dante is a writing app for novelists. Your book stays a folder of plain text files on your computer.",
-  "it": "Dante è un'app di scrittura per romanzieri. Il tuo libro resta una cartella di semplici file di testo sul tuo computer.",
-  "min": 9
+  "caption": "Your novels",
+  "en": "Dante is a writing app for novelists. Start a new project or open a recent one: each book stays a folder of plain text files on your computer.",
+  "it": "Dante è un'app di scrittura per romanzieri. Inizia un nuovo progetto o aprine uno recente: ogni libro resta una cartella di semplici file di testo sul tuo computer.",
+  "min": 13
  },
  {
   "n": 2,

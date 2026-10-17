@@ -3,12 +3,26 @@ import { launch } from './common.mjs';
 import fs from 'node:fs';
 const SCENES = JSON.parse(fs.readFileSync('scenes.json', 'utf8'));
 const only = process.argv[2]; // a scene number, to try one scene (no video)
-const { b, page: p } = await launch();
-fs.rmSync('frames', { recursive: true, force: true }); fs.mkdirSync('frames');
+const ICON = fs.readFileSync('../../src-tauri/icons/icon.svg', 'utf8');
 
-// Overlay: a mouse pointer (headless Chromium draws none) and the caption card.
-await p.evaluate(() => {
-  const st = document.createElement('style'); st.textContent = 'p.note { display: none !important }'; document.head.append(st);
+// The first scene shows the desktop app's welcome, with recent projects: a pretend Tauri
+// answers its calls. The rest runs in the plain browser, after a reload.
+const fakeTauri = (recent) => {
+  if (sessionStorage.getItem('desktop') === '0') return;
+  localStorage.setItem('dante.recent-projects', JSON.stringify(recent.map(({ path, title, opened }) => ({ path, title, opened }))));
+  const yaml = Object.fromEntries(recent.map((r) => [r.path, `title: ${r.title}\nauthor: ${r.author}\nlanguage: en\n`]));
+  window.__TAURI_INTERNALS__ = { metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } }, transformCallback: () => 0,
+    invoke: async (cmd, args) => (cmd === 'read_text' ? yaml[args.root] ?? 'title: x\n' : cmd === 'path_exists' ? true : cmd === 'list_dir' ? [] : cmd === 'plugin:app|version' ? '0.1.29' : null) };
+};
+const RECENT = [
+  { path: '/Users/luca/Novels/The Lighthouse', title: 'The Lighthouse', author: 'Luca', opened: '2026-10-17T09:00:00Z' },
+  { path: '/Users/luca/Novels/Winter Roads', title: 'Winter Roads', author: 'Luca', opened: '2026-10-12T09:00:00Z' },
+  { path: '/Users/luca/Novels/The Salt House', title: 'The Salt House', author: 'Luca', opened: '2026-09-28T09:00:00Z' },
+  { path: '/Users/luca/Novels/Letters from Rome', title: 'Letters from Rome', author: 'Luca', opened: '2026-09-02T09:00:00Z' },
+];
+// Overlay: a mouse pointer (headless Chromium draws none) and the caption card, on every load.
+const overlay = () => addEventListener('DOMContentLoaded', () => {
+  const st = document.createElement('style'); st.textContent = '.actions + p.note { display: none !important }'; document.head.append(st);
   const cur = document.createElement('div');
   cur.id = 'rec-cursor';
   cur.innerHTML = '<svg width="22" height="30" viewBox="0 0 22 30"><path d="M2 2 L2 24 L8 18.5 L12 28 L16 26.3 L12 17 L20 17 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
@@ -24,6 +38,8 @@ await p.evaluate(() => {
   addEventListener('mousedown', (e) => { ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px'; ring.style.transition = 'none'; ring.style.opacity = 1; ring.style.transform = 'scale(.4)'; requestAnimationFrame(() => requestAnimationFrame(() => { ring.style.transition = 'opacity .45s, transform .45s'; ring.style.opacity = 0; ring.style.transform = 'scale(1.3)'; })); }, true);
   window.__caption = (t) => { if (!t) { cap.style.opacity = 0; cap.style.transform = 'translateY(12px)'; return; } cap.textContent = t; cap.style.opacity = 1; cap.style.transform = 'none'; };
 });
+const { b, page: p } = await launch([[fakeTauri, RECENT], [overlay]]);
+fs.rmSync('frames', { recursive: true, force: true }); fs.mkdirSync('frames');
 
 let mx = 720, my = 500;
 const wait = (ms) => p.waitForTimeout(ms);
@@ -58,12 +74,38 @@ async function scene(n, fn) {
 }
 
 await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1 });
-await wait(300); recording = true; const t0 = now();
+await card(true); await wait(900); recording = true; const t0 = now();
 await moveTo(900, 620, 2);
 
-await scene(1, async () => { await wait(1200); await point(text('Import from Word…')); await wait(1500); await point(text('Try the sample project')); await wait(1200); });
+// A title card: the app's icon, the name and the motto.
+async function card(show) {
+  await p.evaluate(({ icon, show }) => {
+    let d = document.getElementById('rec-card');
+    if (!d) {
+      d = document.createElement('div'); d.id = 'rec-card';
+      d.innerHTML = `<div style="width:220px;height:220px">${icon}</div><div style="margin-top:28px;font:400 120px/1 Georgia,serif;color:#1d232c">Dante</div><div style="margin-top:22px;font:500 34px/1.3 Inter,system-ui,sans-serif;color:#555">Write your novel.</div>`;
+      Object.assign(d.style, { position: 'fixed', inset: 0, zIndex: 2147483640, background: '#faf9f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: show ? 0 : 1, transition: 'opacity .8s' });
+      d.querySelector('svg').setAttribute('width', '220'); d.querySelector('svg').setAttribute('height', '220');
+      document.documentElement.append(d);
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => (d.style.opacity = show ? 1 : 0)));
+  }, { icon: ICON, show });
+}
 
+await wait(3000); await card(false); await wait(1000);
+
+await scene(1, async () => {
+  await wait(800);
+  await point(btn('New project')); await wait(1300);
+  await point(p.locator('.recent .item').first()); await wait(1100);
+  await point(p.locator('.recent .item').nth(2)); await wait(1000);
+  await point(text('Import from Word…')); await wait(900);
+});
 await scene(2, async () => {
+  await p.evaluate(() => sessionStorage.setItem('desktop', '0'));
+  await p.reload(); await p.waitForTimeout(1200);
+  await p.evaluate((t) => window.__caption(t), SCENES[1].caption);
+  await moveTo(mx + 1, my + 1, 1);
   await click(text('Import from Word…'), { after: 300 });
   await p.locator('input[type=file]').first().setInputFiles('The Lighthouse.docx'); await wait(1600);
   await point(p.getByText(/I found 2 parts/)); await wait(1800);
@@ -189,13 +231,8 @@ await scene(12, async () => {
   await point(p.locator('select:visible').first()); await p.locator('select:visible').first().selectOption({ index: 1 }).catch(() => {}); await wait(1000);
   await moveTo(700, 600); await p.mouse.wheel(0, 420); await wait(1400);
   await click(p.locator(':text-is("EPUB"):visible').first(), { after: 1200 });
-  await p.evaluate(() => {
-    const d = document.createElement('div');
-    d.innerHTML = '<div style="font:400 120px/1 Georgia,serif;color:#1d232c">Dante</div><div style="margin-top:22px;font:500 34px/1.3 Inter,system-ui,sans-serif;color:#555">Write your novel.</div>';
-    Object.assign(d.style, { position: 'fixed', inset: 0, zIndex: 2147483640, background: '#faf9f6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity .8s' });
-    document.documentElement.append(d); requestAnimationFrame(() => requestAnimationFrame(() => (d.style.opacity = 1)));
-    document.getElementById('rec-caption').style.opacity = 0;
-  });
+  await p.evaluate(() => (document.getElementById('rec-caption').style.opacity = 0));
+  await card(true);
   await moveTo(1500, 900); await wait(3500);
 });
 
