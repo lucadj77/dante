@@ -1,6 +1,6 @@
 import { syntaxTree } from "@codemirror/language";
-import { RangeSetBuilder, StateEffect, StateField, type EditorState, type Extension } from "@codemirror/state";
-import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
+import { EditorSelection, Prec, RangeSetBuilder, StateEffect, StateField, type EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
+import { Decoration, EditorView, WidgetType, keymap, type DecorationSet } from "@codemirror/view";
 import { linkHandler } from "./links";
 import { parseTable, type ParsedTable, type TableCell } from "../core/tables";
 
@@ -152,5 +152,105 @@ const tables = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 });
 
+/** A new table of three columns and two rows after the current line, the cursor in its first cell. */
+export function insertTable(state: EditorState): TransactionSpec {
+  const line = state.doc.lineAt(state.selection.main.to);
+  const before = line.text.trim() ? "\n\n" : "";
+  const row = "|     |     |     |";
+  const insert = `${before}${row}\n| --- | --- | --- |\n${row}\n${row}\n`;
+  const at = line.text.trim() ? line.to : line.from;
+  return {
+    changes: { from: at, to: line.text.trim() ? at : line.to, insert },
+    selection: EditorSelection.cursor(at + before.length + 2),
+  };
+}
+
+/** Where the cursor goes in each cell of a row: after the bar and one space. */
+function cellStops(text: string): number[] {
+  const bars: number[] = [];
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === "\\") i++;
+    else if (c === "[" && text[i + 1] === "[") (depth++, i++);
+    else if (c === "]" && text[i + 1] === "]" && depth > 0) (depth--, i++);
+    else if (c === "|" && depth === 0) bars.push(i);
+  }
+  const stops: number[] = [];
+  const closed = /\|\s*$/.test(text);
+  for (let k = 0; k < bars.length - (closed ? 1 : 0); k++) {
+    const pos = bars[k] + 1;
+    stops.push(text[pos] === " " ? pos + 1 : pos);
+  }
+  return stops;
+}
+
+/** The table around the cursor's line, as lines of the document; null outside a table. */
+function tableAround(state: EditorState): { first: number; last: number } | null {
+  const pos = state.selection.main.head;
+  for (let node: ReturnType<typeof syntaxTree>["topNode"] | null = syntaxTree(state).resolveInner(pos, -1); node; node = node.parent) {
+    if (node.name === "Table") return { first: state.doc.lineAt(node.from).number, last: state.doc.lineAt(node.to).number };
+  }
+  return null;
+}
+
+const isDelimiter = (text: string) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(text);
+
+/** Tab and Shift+Tab go from cell to cell; Tab after the last cell and Enter add a row. */
+function moveCell(forward: boolean) {
+  return (view: EditorView): boolean => {
+    const { state } = view;
+    const table = tableAround(state);
+    if (!table || !state.selection.main.empty) return false;
+    const head = state.selection.main.head;
+    const stops: number[] = [];
+    for (let n = table.first; n <= table.last; n++) {
+      const line = state.doc.line(n);
+      if (n === table.first + 1 && isDelimiter(line.text)) continue;
+      for (const s of cellStops(line.text)) stops.push(line.from + s);
+    }
+    if (forward) {
+      const next = stops.find((s) => s > head);
+      if (next !== undefined) view.dispatch({ selection: { anchor: next }, scrollIntoView: true });
+      else addRow(view, table.last);
+    } else {
+      const previous = [...stops].reverse().find((s) => s < head);
+      if (previous !== undefined) view.dispatch({ selection: { anchor: previous }, scrollIntoView: true });
+    }
+    return true;
+  };
+}
+
+function addRow(view: EditorView, after: number) {
+  const line = view.state.doc.line(after);
+  const columns = Math.max(1, cellStops(line.text).length);
+  const row = "\n|" + "     |".repeat(columns);
+  view.dispatch({ changes: { from: line.to, insert: row }, selection: { anchor: line.to + 3 }, scrollIntoView: true, userEvent: "input" });
+}
+
+function newRow(view: EditorView): boolean {
+  const table = tableAround(view.state);
+  if (!table || !view.state.selection.main.empty) return false;
+  const line = view.state.doc.lineAt(view.state.selection.main.head);
+  const n = line.number;
+  // Enter on an empty last row leaves the table, as in Obsidian: the row goes.
+  if (n === table.last && n > table.first + 1 && /^[\s|]*$/.test(line.text)) {
+    const from = view.state.doc.line(n - 1).to;
+    view.dispatch({ changes: { from, to: line.to, insert: "\n\n" }, selection: { anchor: from + 2 }, scrollIntoView: true, userEvent: "input" });
+    return true;
+  }
+  // In the header, the new row goes below the delimiter.
+  addRow(view, n === table.first ? Math.min(table.first + 1, table.last) : n);
+  return true;
+}
+
+const tableKeys = Prec.high(
+  keymap.of([
+    { key: "Tab", run: moveCell(true) },
+    { key: "Shift-Tab", run: moveCell(false) },
+    { key: "Enter", run: newRow },
+  ]),
+);
+
 /** Markdown tables drawn as tables, away from the cursor, as in Obsidian's live preview. */
-export const tablePreview: Extension = [focused, tables];
+export const tablePreview: Extension = [focused, tables, tableKeys];

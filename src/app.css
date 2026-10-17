@@ -121,7 +121,7 @@ select {
 .md-embed-h1 { font-size: 1.3em; }
 .md-embed-h2 { font-size: 1.15em; }
 .md-embed-missing .md-embed-body { color: var(--text-muted); }
-.md-image { display: inline-block; position: relative; max-width: 100%; line-height: 0; vertical-align: bottom; cursor: default; }
+.md-image { display: inline-block; position: relative; max-width: 100%; line-height: 0; vertical-align: middle; cursor: default; }
 .md-image.md-image-below { display: block; width: fit-content; margin: 6px 0 0; }
 .cm-line.md-align-center .md-image-below { margin-left: auto; margin-right: auto; }
 .cm-line.md-align-right .md-image-below { margin-left: auto; }

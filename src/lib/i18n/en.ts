@@ -156,6 +156,7 @@ export const en = {
   "format.link": "Link (⌘K)",
   "format.wikilink": "Wikilink to a note",
   "format.separator": "Scene separator",
+  "format.table": "Table: Tab goes to the next cell, Enter adds a row",
   "format.image": "Image: choose a file, or paste or drop one in the text",
   "image.small": "Small (200 pixels)",
   "image.medium": "Medium (400 pixels)",
