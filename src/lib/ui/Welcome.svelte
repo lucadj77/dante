@@ -179,7 +179,7 @@
   }
 
   async function openSample() {
-    onOpen(await Project.open(sampleProject()));
+    onOpen(await Project.open(sampleProject(app.settings.language), app.settings.language));
   }
 
   const dateFormat = $derived(new Intl.DateTimeFormat(app.settings.language, { dateStyle: "medium" }));
