@@ -6,6 +6,7 @@ import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/v
 import { formatting, type FormattingLabels } from "./formatting";
 import { cursorLine, focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
+import { tableLabels, type TableLabels } from "./tables";
 import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
 import { criticCommands, criticPreview, trackChanges, type CriticHandler } from "./critic";
@@ -29,6 +30,8 @@ export interface SceneEditorOptions {
   onFocus?: () => void;
   /** Names of the formatting buttons shown over a selection. */
   formatLabels: FormattingLabels;
+  /** Names of the buttons over a table being edited; English when absent. */
+  tableLabels?: TableLabels;
   /** Following and suggesting wikilinks; without it, links are plain text. */
   links?: LinkHandler;
   /** Starting comments and opening their threads. */
@@ -98,6 +101,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     revisions.of([]),
     locked.of([]),
     formatting(options.formatLabels),
+    options.tableLabels ? tableLabels.of(options.tableLabels) : [],
     wikilinks(options.links),
     criticCommands(options.critic),
     ...(options.extensions ?? []),

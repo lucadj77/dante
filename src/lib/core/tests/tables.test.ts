@@ -4,7 +4,7 @@ import { EditorView, type DecorationSet } from "@codemirror/view";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { ensureSyntaxTree } from "@codemirror/language";
 import { tablePreview } from "$lib/editor/tables";
-import { parseTable, splitRow } from "../tables";
+import { formatTable, parseTable, splitRow, tableModel } from "../tables";
 
 const lines = (text: string) => {
   let from = 0;
@@ -53,4 +53,18 @@ describe("tables in the live preview", () => {
     const table = doc.indexOf("| A");
     expect(replaced(make(0))).toEqual([[table, doc.indexOf("\n\nDopo")]]);
   });
+
+  it("lines the columns up, keeping escaped bars and missing cells", () => {
+    const model = tableModel(["| Fase | Documento |", "|:--|:-:|", "| 0 | [[Idea\\|L'idea]] |", "| 10 |"]);
+    expect(model).toEqual({ align: ["left", "center"], rows: [["Fase", "Documento"], ["0", "[[Idea\\|L'idea]]"], ["10", ""]] });
+    expect(formatTable(model!)).toEqual([
+      "| Fase | Documento        |",
+      "| :--- | :--------------: |",
+      "| 0    | [[Idea\\|L'idea]] |",
+      "| 10   |                  |",
+    ]);
+    expect(formatTable({ align: [null, "right"], rows: [["", ""]] })).toEqual(["|     |     |", "| --- | --: |"]);
+    expect(tableModel(["| a |", "| b |"])).toBeNull();
+  });
 });
+

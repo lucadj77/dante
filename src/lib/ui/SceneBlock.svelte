@@ -21,7 +21,7 @@
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
-  import { formatLabels } from "./formatLabels";
+  import { formatLabels, tableLabels } from "./formatLabels";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
@@ -122,6 +122,7 @@
           collab.focused();
         },
         formatLabels: formatLabels(),
+        tableLabels: tableLabels(),
         links,
         critic: criticHandlerFor(path),
         extensions: [shared.extension],
