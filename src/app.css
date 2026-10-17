@@ -112,6 +112,31 @@ select {
 .md-table th,
 .md-table td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; vertical-align: top; }
 .md-table th { font-weight: 600; background: var(--bg-panel); }
+.md-image { display: inline-block; position: relative; max-width: 100%; line-height: 0; vertical-align: bottom; cursor: default; }
+.md-image.md-image-below { display: block; width: fit-content; margin: 6px 0 0; }
+.cm-line.md-align-center .md-image-below { margin-left: auto; margin-right: auto; }
+.cm-line.md-align-right .md-image-below { margin-left: auto; }
+.md-image img { max-width: 100%; height: auto; border-radius: 2px; }
+.md-image-bar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: none;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  line-height: normal;
+  font-family: var(--ui-font, system-ui, sans-serif);
+}
+.md-image:hover .md-image-bar { display: flex; }
+.md-image-bar button { border: none; border-radius: 4px; background: transparent; color: var(--text); font-size: 12px; padding: 2px 6px; cursor: pointer; }
+.md-image-bar button:hover,
+.md-image-bar button.on { background: var(--bg-hover); }
+.md-image-gap { width: 1px; height: 14px; margin: 0 3px; background: var(--border); }
+.md-image-missing { display: inline-block; padding: 2px 8px; border: 1px dashed var(--border); border-radius: 4px; color: var(--text-muted); font-size: 0.85em; font-style: italic; line-height: 1.5; }
 .md-em { font-style: italic; }
 .md-strong { font-weight: 700; }
 .md-strike { text-decoration: line-through; }

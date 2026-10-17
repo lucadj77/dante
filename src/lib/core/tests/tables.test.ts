@@ -3,7 +3,8 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, type DecorationSet } from "@codemirror/view";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { ensureSyntaxTree } from "@codemirror/language";
-import { parseTable, splitRow, tablePreview } from "$lib/editor/tables";
+import { tablePreview } from "$lib/editor/tables";
+import { parseTable, splitRow } from "../tables";
 
 const lines = (text: string) => {
   let from = 0;

@@ -1,5 +1,5 @@
 import type { DocxSettings, Separator } from "../settings";
-import type { Block, Book, BookEntry, Run } from "./book";
+import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { zip } from "./zip";
 
@@ -47,6 +47,12 @@ p.align-right { text-align: right; }
 p.align-left { text-align: left; }
 p.align-justify { text-align: justify; }
 pre { white-space: pre-wrap; font-size: 0.9em; }
+table { border-collapse: collapse; margin: 1em auto; }
+th, td { border: 1px solid #999; padding: 0.2em 0.5em; text-align: left; vertical-align: top; }
+th { font-weight: bold; }
+div.image { margin: 1em 0; text-indent: 0; }
+div.image.align-center { text-align: center; }
+div.image.align-right { text-align: right; }
 .title { text-align: center; margin-top: 30%; }
 .title h1 { margin: 0 0 0.5em; font-size: 2em; }
 .subtitle { font-size: 1.3em; font-style: italic; text-indent: 0; text-align: center; }
@@ -105,6 +111,17 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       .join("\n");
 
   const chapters: Chapter[] = [];
+  // Each image file goes in once, however many times the text shows it.
+  const images = new Map<string, { file: string; data: Uint8Array; mime: string }>();
+  const imageFile = (image: BookImage): string => {
+    let entry = images.get(image.path);
+    if (!entry) {
+      const ext = image.mime === "image/jpeg" ? "jpg" : image.mime === "image/gif" ? "gif" : "png";
+      entry = { file: `images/image${images.size + 1}.${ext}`, data: image.data, mime: image.mime };
+      images.set(image.path, entry);
+    }
+    return entry.file;
+  };
   const add = (label: string, html: string, part = false, inPart = false) => {
     chapters.push({ file: `text${String(chapters.length + 1).padStart(3, "0")}.xhtml`, label, html, part, inPart });
   };
@@ -143,6 +160,14 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       if (block.type === "heading") out.push(`<h${Math.min(6, level + block.level)}>${runs(block.runs)}</h${Math.min(6, level + block.level)}>`);
       else if (block.type === "quote") out.push(`<blockquote><p>${runs(block.runs)}</p></blockquote>`);
       else if (block.type === "break") out.push(`<p class="break">${lines(opts.sceneSeparator)}</p>`);
+      else if (block.type === "table") {
+        const style = (i: number) => (block.align[i] ? ` style="text-align: ${block.align[i]}"` : "");
+        const row = (cells: Run[][], tag: string) => `<tr>${cells.map((c, i) => `<${tag}${style(i)}>${runs(c)}</${tag}>`).join("")}</tr>`;
+        out.push(`<table><thead>${row(block.header, "th")}</thead><tbody>${block.rows.map((r) => row(r, "td")).join("")}</tbody></table>`);
+      } else if (block.type === "image") {
+        const file = imageFile(block.image);
+        out.push(`<div class="image${block.align ? ` align-${block.align}` : ""}"><img src="${file}" alt="${escapeXml(block.image.alt)}" style="width: ${Math.round(block.image.width)}px; max-width: 100%;"/></div>`);
+      }
       else if (block.runs.length && block.runs.every((r) => r.code)) out.push(`<pre>${escapeXml(block.runs.map((r) => r.text).join(""))}</pre>`);
       else {
         const classes = [first ? "first" : "", block.align ? `align-${block.align}` : ""].filter(Boolean).join(" ");
@@ -230,7 +255,7 @@ ${(book.authors.length ? book.authors : [""]).map((a) => `<dc:creator>${escapeXm
 <manifest>
 <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
 <item id="css" href="style.css" media-type="text/css"/>${cover ? `\n<item id="cover-image" href="${coverFile}" media-type="${cover.mediaType}" properties="cover-image"/>` : ""}
-${chapters.map((c, i) => `<item id="c${i + 1}" href="${c.file}" media-type="application/xhtml+xml"/>`).join("\n")}
+${chapters.map((c, i) => `<item id="c${i + 1}" href="${c.file}" media-type="application/xhtml+xml"/>`).join("\n")}${[...images.values()].map((img, i) => `\n<item id="img${i + 1}" href="${img.file}" media-type="${img.mime}"/>`).join("")}
 </manifest>
 <spine>
 ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
@@ -251,6 +276,7 @@ ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
       { name: "OEBPS/style.css", data: css.trim() ? css : EPUB_CSS },
       ...(cover ? [{ name: `OEBPS/${coverFile}`, data: cover.data }] : []),
       ...chapters.map((c) => ({ name: `OEBPS/${c.file}`, data: c.html })),
+      ...[...images.values()].map((img) => ({ name: `OEBPS/${img.file}`, data: img.data })),
     ],
     now,
   );

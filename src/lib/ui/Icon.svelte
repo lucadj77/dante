@@ -15,6 +15,7 @@
     fullscreen: "M3 8V3h5 M21 8V3h-5 M3 16v5h5 M21 16v5h-5",
     alignCenter: "M4 5h16 M7 10h10 M4 15h16 M8 20h8",
     alignRight: "M4 5h16 M10 10h10 M4 15h16 M12 20h8",
+    image: "M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 8a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3z",
     revisions: "M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
     zoomOut: "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3 M8 11h6",
     zoomIn: "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3 M8 11h6 M11 8v6",

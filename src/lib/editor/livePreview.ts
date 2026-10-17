@@ -2,6 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
 import { tablePreview } from "./tables";
+import { ImageWidget, imageDecorations, imageInput } from "./images";
 import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
@@ -25,7 +26,8 @@ const marks: Record<string, Decoration> = {
 const wikiLink = Decoration.mark({ class: "md-wikilink" });
 const wikiMissing = Decoration.mark({ class: "md-wikilink md-unresolved" });
 const wikiHidden = Decoration.replace({});
-const WIKILINK = /\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
+// Not an embed: ![[…]] is an image, or a note the export leaves out.
+const WIKILINK = /(?<!!)\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
 // ==highlight==, but not CriticMarkup's {==highlight==}.
 const HIGHLIGHT = /(?<!\{)==(?=\S)([^=\n]+?)==(?!\})/g;
 const highlight = Decoration.mark({ class: "md-highlight" });
@@ -147,6 +149,12 @@ function build(view: EditorView, focused: boolean): DecorationSet {
       pos = end + 1;
     }
 
+    for (let pos = from; pos <= to; ) {
+      const line = state.doc.lineAt(pos);
+      if (line.text.includes("![")) found.push(...imageDecorations(line.text, line.from, active.has(line.number)));
+      pos = line.to + 1;
+    }
+
     const text = state.doc.sliceString(from, to);
     for (const m of text.matchAll(HIGHLIGHT)) {
       const start = from + m.index!;
@@ -182,7 +190,7 @@ function build(view: EditorView, focused: boolean): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   let lastHiddenEnd = -1;
   for (const { from, to, deco } of found) {
-    const isReplace = deco === hide || deco === wikiHidden || deco === bullet || deco.spec.widget instanceof TaskBox;
+    const isReplace = deco === hide || deco === wikiHidden || deco === bullet || deco.spec.widget instanceof TaskBox || (deco.spec.widget instanceof ImageWidget && to > from);
     // Overlapping replacements would throw; the first one wins.
     if (isReplace && from < lastHiddenEnd) continue;
     builder.add(from, to, deco);
@@ -220,4 +228,4 @@ const plugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview];
+export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, imageInput];

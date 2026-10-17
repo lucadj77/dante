@@ -7,7 +7,7 @@
   import { bookToMarkdown } from "$lib/core/export/markdown";
   import { EXPORT_FOLDER, exportBaseName } from "$lib/core/export/files";
   import { coverSvg, svgUrl } from "$lib/core/cover";
-  import { coverPng } from "./coverImage";
+  import { coverPng, imageToPng } from "./coverImage";
   import type { Project } from "$lib/core/project";
   import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
@@ -251,7 +251,7 @@
     try {
       if (format === "epub" && !epubId) epubId = crypto.randomUUID();
       await persist();
-      const book = await buildBook(project, { revisions });
+      const book = await buildBook(project, { revisions, convert: imageToPng });
       const layout = project.settings.export.docx;
       const labels = { words: t("export.words") };
       const pages = num(pageCount(book, project.settings.pages), 1);

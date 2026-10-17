@@ -3,11 +3,12 @@ import { EditorView, keymap, showTooltip, type Tooltip } from "@codemirror/view"
 import type { IconName } from "$lib/ui/Icon.svelte";
 import { criticHandler } from "./critic";
 import { toggleAlign } from "./alignment";
+import { chooseImages } from "./images";
 
 export type Format = "bold" | "italic" | "strike" | "highlight";
 export type LineFormat = "quote" | "bullet" | "ordered" | "task";
 export type AlignAction = "alignCenter" | "alignRight";
-export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "comment";
+export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "image" | "comment";
 
 const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
@@ -178,7 +179,7 @@ export function insertSeparator(state: EditorState): TransactionSpec {
   };
 }
 
-function transaction(state: EditorState, action: Exclude<Action, "comment">): TransactionSpec {
+function transaction(state: EditorState, action: Exclude<Action, "comment" | "image">): TransactionSpec {
   switch (action) {
     case "bold":
     case "italic":
@@ -214,6 +215,10 @@ export function applyFormat(view: EditorView, action: Action): boolean {
     view.state.facet(criticHandler)?.newComment(view, from, to);
     return true;
   }
+  if (action === "image") {
+    chooseImages(view);
+    return true;
+  }
   view.dispatch(view.state.update(transaction(view.state, action), { userEvent: "input.format", scrollIntoView: true }));
   return true;
 }
@@ -223,7 +228,7 @@ export const ACTIONS: (Action | null)[] = [
   "bold", "italic", "strike", "highlight", null,
   "heading", "quote", "bullet", "ordered", "task", null,
   "alignCenter", "alignRight", null,
-  "code", "link", "wikilink", "separator", null,
+  "code", "link", "wikilink", "separator", "image", null,
   "comment",
 ];
 
@@ -244,6 +249,7 @@ export const ICONS: Record<Action, { text: string; style?: string; icon?: IconNa
   link: { text: "🔗︎" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
   separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
+  image: { text: "🖼︎", icon: "image" },
   comment: { text: "💬︎" },
 };
 
