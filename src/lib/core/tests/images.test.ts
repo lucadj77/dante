@@ -143,3 +143,39 @@ describe("tables and images in the export", () => {
     expect(md).toContain("| Fase | Documento |\n| --- | :---: |\n| 0 | L’idea |");
   });
 });
+
+describe("images inside a sentence", () => {
+  const project = async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Prova\nlanguage: it\n",
+      "Manoscritto/010 Capitolo/010 Scena.md": "Come ci sei finito? vi ![[icona.png|24]] chiederete. In effetti.\n",
+    });
+    await fs.writeBytes("Allegati/icona.png", wide());
+    return Project.open(fs);
+  };
+
+  it("stay in their paragraph, in every format", async () => {
+    const book = await buildBook(await project());
+    const blocks = book.entries[0].scenes[0].blocks;
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    const runs = blocks[0].type === "paragraph" ? blocks[0].runs : [];
+    expect(runs.map((r) => (r.image ? `[${r.image.width}]` : r.text)).join("")).toBe("Come ci sei finito? vi [24] chiederete. In effetti.");
+    expect(book.words).toBe(8);
+
+    const settings = defaultSettings("it").export.docx;
+    const read = async (files: Map<string, () => Promise<Uint8Array>>, name: string) => new TextDecoder().decode(await files.get(name)!());
+    const docx = await unzip(await docxBytes(bookToDocx(book, settings, { words: "parole" })));
+    const xml = await read(docx, "word/document.xml");
+    // One paragraph holds the text and the drawing, lowered towards the middle of the line.
+    expect(xml).toMatch(/vi <\/w:t><\/w:r><w:r><w:rPr><w:position w:val="-?\d+"\/><\/w:rPr><w:drawing>/);
+
+    expect(bookToTypst(book, settings, { words: "parole" })).toContain('vi "#box(baseline: 50% - 0.3em, image("/Allegati/icona.png", width: 0.25in))#" chiederete');
+
+    const epub = await unzip(bookToEpub(book, settings, "id"));
+    let html = "";
+    for (const name of epub.keys()) if (name.endsWith(".xhtml")) html += await read(epub, name);
+    expect(html).toContain('vi <img class="inline" src="images/image1.png" alt="" style="width: 24px; max-width: 100%;"/> chiederete');
+
+    expect(bookToMarkdown(book, settings)).toContain("vi ![[Allegati/icona.png|24]] chiederete");
+  });
+});

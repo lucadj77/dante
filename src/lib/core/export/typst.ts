@@ -20,6 +20,11 @@ function lines(text: string): string {
 
 function run(r: Run): string {
   if (r.lineBreak) return "#linebreak()";
+  if (r.image) {
+    // Centred on the line, as in the editor: the box's middle sits a little above the baseline.
+    if (!TYPST_IMAGE.test(r.image.path)) return "";
+    return `#box(baseline: 50% - 0.3em, image(${str("/" + r.image.path)}, width: ${+(r.image.width / 96).toFixed(3)}in${r.image.alt ? `, alt: ${str(r.image.alt)}` : ""}))`;
+  }
   if (r.code) return `#raw(${str(r.text)})`;
   let out = str(r.text);
   if (r.italic) out = `emph(${out})`;
