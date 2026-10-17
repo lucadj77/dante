@@ -1,6 +1,7 @@
 import { acceptCompletion, autocompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { Facet, Prec, type Extension } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
+import type { ImageHandler } from "./images";
 
 export interface LinkSuggestion {
   /** What goes between [[ and ]]: the shortest name that reaches the note. */
@@ -19,6 +20,10 @@ export interface LinkHandler {
   open(target: string, beside?: boolean): void;
   resolves(target: string): boolean;
   suggestions(): LinkSuggestion[];
+  /** The body of an embedded note, for ![[Nota]]; null when there is no such note. */
+  note?(target: string): Promise<string | null>;
+  /** Showing and adding images, where the project allows it. */
+  images?: ImageHandler;
 }
 
 export const linkHandler = Facet.define<LinkHandler, LinkHandler | null>({

@@ -33,6 +33,7 @@ import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
+import { attachmentsFolderName, safeFileName } from "./images";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 // Exports are copies of the novel: kept out of links, searches and statistics.
@@ -231,6 +232,20 @@ export class Project {
     const path = await this.freeName(dir, name);
     await this.fs.writeText(path, text);
     await this.reload();
+    return path;
+  }
+
+  /**
+   * Saves an image added from the editor and returns its path: in the attachments folder
+   * inside Research, where the material gathered for the novel lives.
+   */
+  async addAttachment(name: string, data: Uint8Array): Promise<string> {
+    const dir = join(this.settings.folders.research, attachmentsFolderName(this.settings.language));
+    await this.fs.mkdir(dir);
+    const path = await this.freeName(dir, safeFileName(name));
+    await this.fs.writeBytes(path, data);
+    // The new file is known at once, so links to it resolve, without reading the project again.
+    this.files.push(path);
     return path;
   }
 

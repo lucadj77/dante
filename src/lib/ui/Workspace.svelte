@@ -22,6 +22,7 @@
   import { noteType } from "$lib/core/notes";
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
   import { linkTarget, resolveLink } from "$lib/core/wikilinks";
+  import { imageMime, nameFromUrl, resolveImagePath, sniffImage } from "$lib/core/images";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { folderNotePath } from "$lib/core/manuscript";
   import ConflictsDialog from "./ConflictsDialog.svelte";
@@ -154,6 +155,22 @@
     return out;
   }
 
+  // Images shown in the editors, read once per file; a file changed on disk shows after a reload.
+  const imageUrls = new Map<string, Promise<string | null>>();
+  function imageUrl(target: string, wiki: boolean, from: string): Promise<string | null> {
+    const path = wiki ? resolveLink(target.split("#")[0], from, project.files) : resolveImagePath(target, from, project.files);
+    if (!path) return Promise.resolve(!wiki && /^https?:\/\//i.test(target) ? target : null);
+    let url = imageUrls.get(path);
+    if (!url) {
+      url = project.fs
+        .readBytes(path)
+        .then((bytes) => URL.createObjectURL(new Blob([bytes as BlobPart], { type: imageMime(path) })))
+        .catch(() => null);
+      imageUrls.set(path, url);
+    }
+    return url;
+  }
+
   provideNavigator({
     open,
     reload,
@@ -164,6 +181,48 @@
       },
       resolves: (target) => resolveLink(target, from, project.files) !== null,
       suggestions: () => suggestions(from),
+      async note(target) {
+        const path = resolveLink(target, from, project.files.filter(isMarkdown));
+        return path ? project.readBody(path) : null;
+      },
+      images: {
+        url: (target, wiki) => imageUrl(target, wiki, from),
+        async add(data, name) {
+          const path = await project.addAttachment(name, data);
+          suggestionCache.clear();
+          return linkTarget(path, from, project.files);
+        },
+        async download(url) {
+          let bytes: Uint8Array;
+          if (project.fs instanceof TauriFs) {
+            const { invoke } = await import("@tauri-apps/api/core");
+            bytes = new Uint8Array(await invoke<ArrayBuffer>("download_url", { url }));
+          } else {
+            // A browser can fetch only from sites that allow it.
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            bytes = new Uint8Array(await response.arrayBuffer());
+          }
+          const kind = sniffImage(bytes);
+          if (!kind) throw new Error(t("image.notImage"));
+          const path = await project.addAttachment(nameFromUrl(url, kind.ext), bytes);
+          suggestionCache.clear();
+          return linkTarget(path, from, project.files);
+        },
+        labels: {
+          small: t("image.small"),
+          medium: t("image.medium"),
+          large: t("image.large"),
+          original: t("image.original"),
+          left: t("image.left"),
+          center: t("image.center"),
+          right: t("image.right"),
+          missing: t("image.missing"),
+          pasted: t("image.pasted"),
+          download: t("image.download"),
+          downloadFailed: t("image.downloadFailed"),
+        },
+      },
     }),
   });
 
@@ -301,6 +360,8 @@
 
   async function reload() {
     await project.reload();
+    for (const url of imageUrls.values()) void url.then((u) => u?.startsWith("blob:") && URL.revokeObjectURL(u));
+    imageUrls.clear();
     rev++;
   }
 

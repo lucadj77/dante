@@ -18,7 +18,20 @@ function lines(text: string): string {
     .join("#linebreak()");
 }
 
-function run(r: Run): string {
+const TYPST_IMAGE = /\.(png|jpe?g|gif|svg|webp)$/i;
+
+/** An image on a line of text, its middle at the middle of the lowercase letters, as in the editor. */
+function inlineImage(r: Run, maxWidth: number): string {
+  const image = r.image!;
+  // Typst reads the file from the project folder; formats it cannot read are left out.
+  if (!TYPST_IMAGE.test(image.path)) return "";
+  const width = Math.min(image.width / 96, maxWidth);
+  return `#box(baseline: 50% - 0.25em, image(${str("/" + image.path)}, width: ${+width.toFixed(3)}in${image.alt ? `, alt: ${str(image.alt)}` : ""}))`;
+}
+
+/** A run of text; images are no wider than `maxWidth` inches. */
+function run(r: Run, maxWidth = 6.5): string {
+  if (r.image) return inlineImage(r, maxWidth);
   if (r.lineBreak) return "#linebreak()";
   if (r.code) return `#raw(${str(r.text)})`;
   let out = str(r.text);
@@ -28,7 +41,7 @@ function run(r: Run): string {
   return `#${out}`;
 }
 
-const runs = (items: Run[]) => items.map(run).join("");
+const runsOf = (items: Run[], maxWidth?: number) => items.map((r) => run(r, maxWidth)).join("");
 
 /** Fonts tried in order: the chosen one, then fonts shipped with the app. */
 function fonts(font: string): string {
@@ -37,6 +50,7 @@ function fonts(font: string): string {
 }
 
 const cm = (n: number) => `${+n.toFixed(2)}cm`;
+
 
 /** Renders the book with the same choices as the DOCX: manuscript or typeset book. */
 export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = ""): string {
@@ -51,6 +65,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   // Book-sized pages have narrower margins than office paper, where the manuscript keeps an inch.
   const small = Math.min(width, height) < 18;
   const margin = small ? 2 : 2.54;
+  const textWidth = width - 2 * margin;
   // Lines measured from ascender to descender are about one font size apart; the leading adds the rest.
   const leading = Math.max(0, (opts.lineSpacing - 1) * 1.2);
   const size = opts.fontSize;
@@ -146,11 +161,28 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     if (newPage) emit(`#v(${cm(part ? partOpening : opening)})`);
     emit(`#heading(level: ${level})[${lines(text)}]`);
   };
+  const runs = (items: Run[]) => runsOf(items, textWidth / 2.54);
+  // A figure or a table with its caption under it, on the same page.
+  const withCaption = (content: string, items: Run[] | undefined, align: string) =>
+    items
+      ? `#block(breakable: false, width: 100%)[${content} #set par(first-line-indent: 0pt, justify: false); #align(${align}, text(size: 0.9em, style: "italic")[${runs(items)}])]\n`
+      : `${content}\n`;
   const blocks = (items: Block[], level: number) => {
     for (const block of items) {
       if (block.type === "heading") emit(`#heading(level: ${Math.min(6, level + block.level)})[${runs(block.runs)}]\n`);
       else if (block.type === "quote") emit(`#pad(x: ${cm(opts.indent || 1)})[${runs(block.runs)}]\n`);
       else if (block.type === "break") emit(`#separator[${lines(opts.sceneSeparator)}]\n`);
+      else if (block.type === "table") {
+        const cells = (row: Run[][], head: boolean) => row.map((c) => (head ? `strong[${runs(c)}]` : `[${runs(c)}]`)).join(", ");
+        const align = block.align.map((a) => a ?? "left").join(", ");
+        emit(withCaption(`#align(center, block(width: 100%, table(columns: ${block.header.length}, align: (${align},), inset: 0.4em, table.header(${cells(block.header, true)}), ${block.rows.map((r) => cells(r, false)).join(", ")})))`, block.caption, "center"));
+      } else if (block.type === "image") {
+        // Typst reads the file from the project folder; formats it cannot read are left out.
+        if (!TYPST_IMAGE.test(block.image.path)) continue;
+        const width = Math.min(block.image.width / 96, textWidth / 2.54);
+        const align = block.align === "center" || block.align === "right" ? block.align : "left";
+        emit(withCaption(`#align(${align}, image(${str("/" + block.image.path)}, width: ${+width.toFixed(3)}in${block.image.alt ? `, alt: ${str(block.image.alt)}` : ""}))`, block.caption, align));
+      }
       else if (block.runs.length && block.runs.every((r) => r.code)) emit(`#raw(block: true, ${str(block.runs.map((r) => r.text).join(""))})\n`);
       else if (block.align === "center" || block.align === "right") {
         // Set rules in a content block, not an align block, so the spacing stays a paragraph's.
