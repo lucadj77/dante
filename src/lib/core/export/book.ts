@@ -10,7 +10,7 @@ import { applyTypography } from "../typography";
 import { extractAlignments, paragraphIndexer, type Align } from "../alignment";
 import { findImages, imageMime, imageSize, resolveImagePath } from "../images";
 import { expandEmbeds } from "../embeds";
-import { splitRow, parseTable, type CellAlign } from "../tables";
+import { captionStart, splitRow, parseTable, type CellAlign } from "../tables";
 import { resolveLink } from "../wikilinks";
 
 // The manuscript as a format-neutral document, built once and rendered by each
@@ -43,8 +43,8 @@ export type Block =
   | { type: "paragraph"; runs: Run[]; align?: Align }
   | { type: "heading"; level: number; runs: Run[] }
   | { type: "quote"; runs: Run[] }
-  | { type: "table"; align: CellAlign[]; header: Run[][]; rows: Run[][][] }
-  | { type: "image"; image: BookImage; align?: Align }
+  | { type: "table"; align: CellAlign[]; header: Run[][]; rows: Run[][][]; caption?: Run[] }
+  | { type: "image"; image: BookImage; align?: Align; caption?: Run[] }
   | { type: "break" };
 
 // Where an image stood, inside the text that goes through typography and the parser: one
@@ -219,8 +219,21 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, 
         if (lead && runs.length) runs.unshift({ text: lead });
         marker = "";
         const align = name === "Paragraph" && paragraphAt ? aligns!.get(paragraphAt(child.from)) : undefined;
+        // A caption after a table belongs to it: "Tabella: …" or ": …", as Pandoc writes it.
+        const previous = blocks[blocks.length - 1];
+        const caption = name === "Paragraph" && child.prevSibling?.name === "Table" && previous?.type === "table" ? captionStart(source.slice(child.from, child.to)) : 0;
+        if (caption && previous.type === "table") {
+          previous.caption = inlineRuns(source, child, child.from + caption, child.to);
+          continue;
+        }
         for (const piece of splitAtImages(runs, images)) {
-          if (!Array.isArray(piece)) blocks.push(align ? { type: "image", image: piece, align } : { type: "image", image: piece });
+          if (!Array.isArray(piece)) {
+            // A figure's description is its caption, as Pandoc reads it.
+            const figure: Block = { type: "image", image: piece };
+            if (align) figure.align = align;
+            if (piece.alt) figure.caption = cellRuns(piece.alt);
+            blocks.push(figure);
+          }
           else if (!piece.length) continue;
           else if (inQuote) blocks.push({ type: "quote", runs: piece });
           else blocks.push(align ? { type: "paragraph", runs: piece, align } : { type: "paragraph", runs: piece });
@@ -267,7 +280,8 @@ function allRuns(blocks: Block[]): Run[] {
   const out: Run[] = [];
   for (const b of blocks) {
     if (b.type === "table") for (const row of [b.header, ...b.rows]) for (const cell of row) out.push(...cell);
-    else if (b.type !== "break" && b.type !== "image") out.push(...b.runs);
+    if (b.type === "table" || b.type === "image") out.push(...(b.caption ?? []));
+    else if (b.type !== "break") out.push(...b.runs);
   }
   return out;
 }
@@ -374,6 +388,7 @@ export async function buildBook(
     // Embedded notes bring their text in, then their images are read with the scene's.
     const source = await expandEmbeds(written, node.path, project.files, (path) => project.fs.readText(path));
     const { body, images } = await takeImages(project, node.path, source, options.convert);
+    for (const image of images) image.alt = typeset(image.alt);
     // Alignment tags come out before typography, which would change the quotes in them.
     const { text, aligns } = extractAlignments(cleanSource(body, options.revisions));
     const blocks = markdownToBlocks(typeset(text), aligns, images);

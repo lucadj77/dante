@@ -100,11 +100,13 @@ export class ImageWidget extends WidgetType {
     readonly alt: string,
     /** Shown under its Markdown, on a line being edited. */
     readonly below = false,
+    /** Shown under the image: the description of an image alone in its paragraph. */
+    readonly caption = "",
   ) {
     super();
   }
   eq(other: ImageWidget) {
-    return other.target === this.target && other.wiki === this.wiki && other.width === this.width && other.alt === this.alt && other.below === this.below;
+    return other.target === this.target && other.wiki === this.wiki && other.width === this.width && other.alt === this.alt && other.below === this.below && other.caption === this.caption;
   }
   toDOM(view: EditorView) {
     const handler = handlerOf(view.state);
@@ -114,6 +116,12 @@ export class ImageWidget extends WidgetType {
     img.alt = this.alt || this.target;
     if (this.width) img.style.width = `${this.width}px`;
     wrap.append(img);
+    if (this.caption) {
+      const caption = document.createElement("span");
+      caption.className = "md-image-caption";
+      caption.textContent = this.caption;
+      wrap.append(caption);
+    }
     const name = this.target.split("/").pop()!.split("#")[0];
     const missing = () => {
       img.remove();
@@ -181,8 +189,11 @@ export class ImageWidget extends WidgetType {
  */
 export function imageDecorations(text: string, offset: number, editing: boolean): { from: number; to: number; deco: Decoration }[] {
   const out: { from: number; to: number; deco: Decoration }[] = [];
-  for (const e of findImages(text)) {
-    const widget = new ImageWidget(e.target, e.wiki, e.width, e.alt, editing);
+  const images = findImages(text);
+  // An image alone in its paragraph, alignment tag aside, is a figure: its description is its caption.
+  const figure = images.length === 1 && !(text.slice(0, images[0].from) + text.slice(images[0].to)).replace(/<\/?span[^>]*>/g, "").trim();
+  for (const e of images) {
+    const widget = new ImageWidget(e.target, e.wiki, e.width, e.alt, editing, figure ? e.alt : "");
     if (editing) out.push({ from: offset + e.to, to: offset + e.to, deco: Decoration.widget({ widget, side: 1 }) });
     else out.push({ from: offset + e.from, to: offset + e.to, deco: Decoration.replace({ widget }) });
   }

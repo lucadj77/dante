@@ -59,6 +59,8 @@ div.image { margin: 1em 0; text-indent: 0; }
 div.image.align-center { text-align: center; }
 div.image.align-right { text-align: right; }
 img.inline { vertical-align: middle; }
+caption { caption-side: bottom; font-style: italic; font-size: 0.9em; padding-top: 0.3em; }
+div.image p.caption { text-indent: 0; font-style: italic; font-size: 0.9em; margin-top: 0.3em; }
 .title { text-align: center; margin-top: 30%; }
 .title h1 { margin: 0 0 0.5em; font-size: 2em; }
 .subtitle { font-size: 1.3em; font-style: italic; text-indent: 0; text-align: center; }
@@ -170,10 +172,11 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       else if (block.type === "table") {
         const style = (i: number) => (block.align[i] ? ` style="text-align: ${block.align[i]}"` : "");
         const row = (cells: Run[][], tag: string) => `<tr>${cells.map((c, i) => `<${tag}${style(i)}>${runs(c)}</${tag}>`).join("")}</tr>`;
-        out.push(`<table><thead>${row(block.header, "th")}</thead><tbody>${block.rows.map((r) => row(r, "td")).join("")}</tbody></table>`);
+        const caption = block.caption ? `<caption>${inline(block.caption)}</caption>` : "";
+        out.push(`<table>${caption}<thead>${row(block.header, "th")}</thead><tbody>${block.rows.map((r) => row(r, "td")).join("")}</tbody></table>`);
       } else if (block.type === "image") {
         const file = imageFile(block.image);
-        out.push(`<div class="image${block.align ? ` align-${block.align}` : ""}"><img src="${file}" alt="${escapeXml(block.image.alt)}" style="width: ${Math.round(block.image.width)}px; max-width: 100%;"/></div>`);
+        out.push(`<div class="image${block.align ? ` align-${block.align}` : ""}"><img src="${file}" alt="${escapeXml(block.image.alt)}" style="width: ${Math.round(block.image.width)}px; max-width: 100%;"/>${block.caption ? `<p class="caption">${inline(block.caption)}</p>` : ""}</div>`);
       }
       else if (block.runs.length && block.runs.every((r) => r.code)) out.push(`<pre>${escapeXml(block.runs.map((r) => r.text).join(""))}</pre>`);
       else {

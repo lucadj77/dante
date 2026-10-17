@@ -211,7 +211,7 @@ Mi ritrovai per una selva oscura.
         fs::create_dir_all(dir.join("Allegati")).unwrap();
         fs::write(dir.join("Allegati/casa blu.png"), PNG).unwrap();
         let source = r##"#set text(font: "Libertinus Serif")
-#align(center, image("/Allegati/casa blu.png", width: 3.125in, alt: "Casa"))
+#block(breakable: false, width: 100%)[#align(center, image("/Allegati/casa blu.png", width: 3.125in, alt: "Casa")) #set par(first-line-indent: 0pt, justify: false); #align(center, text(size: 0.9em, style: "italic")[#"La casa "#emph("blu")])]
 
 #"Come ci sei finito? "#box(baseline: 50% - 0.25em, image("/Allegati/casa blu.png", width: 0.208in))#" vi chiederete."
 
