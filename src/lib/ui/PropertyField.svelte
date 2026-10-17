@@ -3,6 +3,8 @@
   import { t } from "$lib/state.svelte";
   import PropertyInput from "./PropertyInput.svelte";
   import { displayValue, isList, parseValue } from "./propertyText";
+  import { navigator } from "./navigation";
+  import { noteTitle } from "$lib/core/notes";
 
   interface Props {
     name: string;
@@ -20,8 +22,36 @@
   const listed = $derived(Array.isArray(p.value) ? p.value.map(String) : text ? [text] : []);
   const has = (value: string) => listed.some((v) => v.toLowerCase() === value.toLowerCase());
 
+  const nav = navigator();
+  const isAliases = $derived(["aliases", "alias"].includes(p.name.toLowerCase()));
+  /** An alias another note already answers to, refused when typed. */
+  let refused = $state("");
+  /** Aliases written elsewhere (in Obsidian, say) that another note answers to as well. */
+  const shared = $derived.by(() => {
+    if (!isAliases || !nav?.aliasOwner) return "";
+    for (const alias of listed) {
+      const owner = nav.aliasOwner(alias, p.from);
+      if (owner) return t("property.aliasTaken", { alias, note: noteTitle(owner) });
+    }
+    return "";
+  });
+
   function fromText(input: string) {
-    p.onChange(p.def ? coerce(input, p.def) : parseValue(input, p.value, p.name));
+    let value = p.def ? coerce(input, p.def) : parseValue(input, p.value, p.name);
+    refused = "";
+    if (isAliases && nav?.aliasOwner) {
+      const before = new Set(listed.map((v) => v.toLowerCase()));
+      const values = Array.isArray(value) ? value.map(String) : value ? [String(value)] : [];
+      const kept = values.filter((alias) => {
+        // Aliases already there stay: the warning below tells about them.
+        if (before.has(alias.toLowerCase())) return true;
+        const owner = nav.aliasOwner!(alias, p.from);
+        if (owner) refused = t("property.aliasTaken", { alias, note: noteTitle(owner) });
+        return !owner;
+      });
+      if (kept.length !== values.length) value = Array.isArray(value) || kept.length !== 1 ? kept : kept[0];
+    }
+    p.onChange(value);
   }
 
   function blurOnEnter(e: KeyboardEvent) {
@@ -89,6 +119,9 @@
       placeholder={p.def?.kind === "list" || (!p.def && isList(p.name, p.value)) ? t("panel.listHint") : p.def?.kind === "date" ? "YYYY-MM-DD" : ""}
       onCommit={fromText}
     />
+  {/if}
+  {#if refused || shared}
+    <span class="issue" role="alert">{refused || shared}</span>
   {/if}
   {#if issue === "kind" && p.def}
     <span class="issue">{t("property.wrongKind", { kind: t(`property.kind.${p.def.kind}`) })}</span>

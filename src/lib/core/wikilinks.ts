@@ -105,3 +105,15 @@ export function rewriteLinks(
   if (!changed) return null;
   return out + text.slice(last);
 }
+
+/**
+ * The note that has `name` among its aliases (in any case), when no note is called `name`
+ * and exactly one note has that alias.
+ */
+export function resolveAlias(name: string, fromPath: string, notes: string[], aliases: (path: string) => string[]): string | null {
+  if (resolveLink(name, fromPath, notes) !== null) return null;
+  const wanted = name.trim().toLowerCase();
+  if (!wanted) return null;
+  const matches = notes.filter((p) => aliases(p).some((a) => a.toLowerCase() === wanted));
+  return matches.length === 1 ? matches[0] : null;
+}
