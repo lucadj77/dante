@@ -1,0 +1,45 @@
+"""Writes latest.json, the update manifest the installed copies of Dante read.
+
+Usage: latest-json.py <folder of release files> <version> <commit> <download address>
+
+Each signature (.sig) next to a release file becomes the entry of one system, named as
+Tauri's updater looks for it: {os}-{arch}-{bundle}. Without signatures (the signing key
+is not set) no manifest is written, and installed copies find no update.
+"""
+
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+folder, version, commit, base = sys.argv[1:5]
+
+# The end of each update file's name, as the Builds workflow writes it, and its target.
+TARGETS = {
+    "-setup-{commit}.exe": "windows-x86_64-nsis",
+    "-{commit}-mac-apple-silicon.app.tar.gz": "darwin-aarch64-app",
+    "-{commit}-mac-intel.app.tar.gz": "darwin-x86_64-app",
+    "-{commit}-x86_64.AppImage": "linux-x86_64-appimage",
+    "-{commit}-amd64.deb": "linux-x86_64-deb",
+    "-{commit}-x86_64.rpm": "linux-x86_64-rpm",
+}
+
+platforms = {}
+for sig in sorted(Path(folder).glob("*.sig")):
+    name = sig.name.removesuffix(".sig")
+    for ending, target in TARGETS.items():
+        if name == "Dante" + ending.format(commit=commit):
+            platforms[target] = {"signature": sig.read_text().strip(), "url": f"{base}/{name}"}
+
+if not platforms:
+    print("No signatures: no update manifest.")
+    sys.exit(0)
+
+manifest = {
+    "version": version,
+    "notes": f"Dante {version} ({commit})",
+    "pub_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "platforms": platforms,
+}
+Path(folder, "latest.json").write_text(json.dumps(manifest, indent=2))
+print(json.dumps(manifest, indent=2))

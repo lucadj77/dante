@@ -3,11 +3,13 @@
   import { projectFolder } from "$lib/core/launcher";
   import type { Project } from "$lib/core/project";
   import { openProjectAt } from "$lib/opening";
-  import { t } from "$lib/state.svelte";
+  import { app, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { flushAll } from "$lib/ui/documents.svelte";
+  import UpdateBanner from "$lib/ui/UpdateBanner.svelte";
   import Welcome from "$lib/ui/Welcome.svelte";
   import Workspace from "$lib/ui/Workspace.svelte";
+  import { checkForUpdates, loadUpdateInfo } from "$lib/updates.svelte";
 
   let project = $state.raw<Project | null>(null);
 
@@ -38,6 +40,8 @@
       }),
     );
     void openRequested();
+    if (app.settings.checkUpdates) void checkForUpdates(true);
+    else void loadUpdateInfo();
     return () => {
       stopped = true;
       unlisten?.();
@@ -53,3 +57,8 @@
 {:else}
   <Welcome onOpen={(p) => (project = p)} />
 {/if}
+<UpdateBanner
+  beforeInstall={async () => {
+    if (project) await flushAll(project);
+  }}
+/>

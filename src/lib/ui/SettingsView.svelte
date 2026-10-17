@@ -9,6 +9,8 @@
   import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
   import { app, saveAppSettings, t } from "$lib/state.svelte";
+  import { inTauri } from "$lib/tauriFs";
+  import { checkForUpdates, updates } from "$lib/updates.svelte";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
 
@@ -179,6 +181,25 @@
     <label class="check" title={t("tip.revisions")}
       ><input type="checkbox" bind:checked={appSettings.revisions} disabled={!appSettings.userName.trim()} /> {t("comments.revisionMode")}</label
     >
+
+    {#if inTauri()}
+      <h3>{t("update.title")}</h3>
+      {#if updates.version}<p class="hint">{t("update.version", { version: updates.version })}</p>{/if}
+      {#if updates.supported}
+        <label class="check"><input type="checkbox" bind:checked={appSettings.checkUpdates} /> {t("update.atStart")}</label>
+        <div class="clean">
+          <button type="button" disabled={updates.state === "checking" || updates.state === "downloading"} onclick={() => void checkForUpdates()}
+            >{t("update.check")}</button
+          >
+          {#if updates.state === "checking"}<span>{t("update.checking")}</span>
+          {:else if updates.state === "current"}<span>{t("update.current")}</span>
+          {:else if updates.available}<span>{t("update.available", { version: updates.available.version })}</span>
+          {:else if updates.state === "error"}<span class="error">{t("update.failed", { message: updates.error })}</span>{/if}
+        </div>
+      {:else if updates.version}
+        <p class="hint">{t("update.unsupported")}</p>
+      {/if}
+    {/if}
 
     <h3>{t("snap.cleanTitle")}</h3>
     <label

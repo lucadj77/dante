@@ -1,6 +1,6 @@
 # Dante, guida all'uso
 
-Aggiornata al 16 ottobre 2026.
+Aggiornata al 17 ottobre 2026.
 
 Ogni capitolo della guida ha due parti. **Come si fa** spiega in pochi passi come usare una funzione, senza termini tecnici. **Approfondimento** spiega cosa succede nei file del romanzo, per chi vuole capire meglio o lavorare anche fuori da Dante. Per iniziare basta leggere le prime parti dei capitoli 1-5.
 
@@ -22,6 +22,7 @@ Ogni capitolo della guida ha due parti. **Come si fa** spiega in pochi passi com
 14. [Aprire il progetto in Obsidian](#14-aprire-il-progetto-in-obsidian)
 15. [Scorciatoie da tastiera](#15-scorciatoie-da-tastiera)
 16. [Pannelli affiancati](#16-pannelli-affiancati)
+17. [Aggiornamenti](#17-aggiornamenti)
 
 ## 1. Cos'è Dante
 
@@ -45,7 +46,7 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
 
 ### Come si fa
 
-1. Installa Dante (vedi l'approfondimento per il tuo sistema).
+1. Installa Dante (vedi l'approfondimento per il tuo sistema). Chi prova Dante per la prima volta trova i passi uno per uno nella pagina [Provare Dante](beta.md).
 2. All'apertura scegli una di queste strade:
    - **Nuovo progetto**: scrivi il titolo, scegli dove salvarlo e premi Crea. Dante crea una cartella con il titolo del romanzo.
    - **Apri cartella…**: apre un progetto già esistente, anche creato su un altro computer.
@@ -61,7 +62,7 @@ Ogni progetto contiene anche un file con il titolo del romanzo e l'estensione **
 ### Approfondimento
 
 - **Windows**: l'installatore viene preparato automaticamente su GitHub ed è pubblicato nella versione di anteprima (insieme alla copia portatile, ai pacchetti Linux e al .dmg per Mac) *preview* del repository.
-- **macOS**: nella versione di anteprima *preview* ci sono due file: `Dante-<commit>-mac-apple-silicon.dmg` per i Mac con chip M1 o successivi (dal 2020) e `Dante-<commit>-mac-intel.dmg` per quelli precedenti. Per sapere quale hai, apri il menu Apple > Informazioni su questo Mac: se vedi "Chip Apple" scegli apple-silicon, se vedi "Intel" scegli intel. Apri il .dmg e trascina Dante nella cartella Applicazioni. L'app non è firmata da Apple (serve un Apple Developer account, 99 $ l'anno), quindi la prima volta macOS la blocca: chiudi l'avviso, poi vai in Impostazioni di Sistema > Privacy e sicurezza e premi **Apri comunque** accanto al messaggio su Dante. Sulle versioni di macOS precedenti a Sequoia basta anche tasto destro sull'app > Apri. Serve una volta sola; a ogni nuova versione scaricata può tornare a chiederlo. Con Dante in Applicazioni funziona il doppio clic sui file .dante. Per lavorare sul codice resta `npm run tauri dev`.
+- **macOS**: nella versione di anteprima *preview* ci sono due file: `Dante-<commit>-mac-apple-silicon.dmg` per i Mac con chip M1 o successivi (dal 2020) e `Dante-<commit>-mac-intel.dmg` per quelli precedenti. Per sapere quale hai, apri il menu Apple > Informazioni su questo Mac: se vedi "Chip Apple" scegli apple-silicon, se vedi "Intel" scegli intel. Apri il .dmg e trascina Dante nella cartella Applicazioni. L'app non è firmata da Apple (serve un Apple Developer account, 99 $ l'anno), quindi la prima volta macOS la blocca: chiudi l'avviso, poi vai in Impostazioni di Sistema > Privacy e sicurezza e premi **Apri comunque** accanto al messaggio su Dante. Sulle versioni di macOS precedenti a Sequoia basta anche tasto destro sull'app > Apri. Serve una volta sola per ogni .dmg scaricato; le versioni successive arrivano con l'aggiornamento automatico (capitolo 17). Con Dante in Applicazioni funziona il doppio clic sui file .dante. Per lavorare sul codice resta `npm run tauri dev`.
 - Le impostazioni si dividono in due gruppi. Quelle del **romanzo** (titolo, struttura, numerazione, tipi, obiettivi, esportazione) sono salvate in `dante.yaml` dentro il progetto e viaggiano con lui. Quelle dell'**applicazione** (lingua dell'interfaccia, tema, carattere dell'editor, il tuo nome) restano sul computer e valgono per tutti i progetti.
 - Un nuovo progetto nasce con le cartelle principali già pronte, chiamate nella lingua del romanzo (capitolo 6).
 - **File di avvio**: Dante scrive `Titolo.dante` nella cartella principale quando crea o apre un progetto che non ne ha uno (lo riconosce da qualunque nome con quell'estensione, quindi un file rinominato non viene duplicato). Il contenuto è solo una nota: conta la cartella in cui si trova. Gli installatori registrano l'estensione: tipo di documento sul Mac, registro su Windows, tipo MIME `application/x-dante-project` con i pacchetti .deb e .rpm su Linux. Con la copia portatile e l'AppImage l'associazione manca, ma *Apri con* sul file funziona. Una seconda copia di Dante avviata dal doppio clic passa il file a quella già aperta e si chiude. Obsidian non mostra il file, perché non è un formato che conosce.
@@ -501,3 +502,23 @@ La stessa scena può stare al centro e in un pannello: ciò che scrivi in uno co
 - La disposizione dei pannelli è salvata su questo computer, per ogni progetto, e non nella cartella del romanzo: lo schermo di un coautore non cambia.
 - Su Mac Cmd+W non chiude più la finestra: il menu dell'app lo usa per chiudere il pannello.
 - Fanno eccezione Esporta, Impostazioni e Statistiche, che usano tutta la larghezza: lì i pannelli sono nascosti, non chiusi.
+
+## 17. Aggiornamenti
+
+### Come si fa
+
+1. Quando c'è una nuova versione, all'avvio compare un riquadro in basso a destra: **È disponibile Dante 0.1.…**.
+2. Premi **Aggiorna e riavvia**. Dante salva il testo aperto, scarica la nuova versione, la installa e si riapre. Su Windows compare per qualche secondo la finestra dell'installatore.
+3. Con **Più tardi** il riquadro sparisce e torna al prossimo avvio.
+
+Per controllare a mano apri **Impostazioni** > **Aggiornamenti** e premi **Cerca aggiornamenti**. Lì c'è anche il numero della versione installata, utile quando segnali un problema, e la casella per non cercare aggiornamenti all'avvio.
+
+La copia portatile per Windows non si aggiorna da sola: scarica il nuovo zip e sostituisci la cartella, tenendo la sottocartella `dante-data`.
+
+### Approfondimento
+
+- Ogni versione pubblicata nell'anteprima *preview* ha un numero proprio, `0.1.<numero della compilazione su GitHub>`, che cresce a ogni modifica unita in main. La copia installata lo confronta con quello scritto in `latest.json`, un file della stessa pagina di anteprima.
+- I file dell'aggiornamento sono firmati con una chiave che solo il repository conosce (il segreto `TAURI_SIGNING_PRIVATE_KEY` di GitHub). Dante verifica la firma con la chiave pubblica scritta in `tauri.conf.json` e rifiuta un file non firmato o modificato. Se la chiave privata andasse persa, le copie installate non potrebbero più aggiornarsi da sole e andrebbero reinstallate a mano una volta.
+- Cosa viene sostituito: su Mac l'app in Applicazioni (con il file `.app.tar.gz`), su Windows il programma installato (con l'installatore, che mostra solo una barra di avanzamento), su Linux l'AppImage o il pacchetto .deb/.rpm (per i pacchetti il sistema chiede la password di amministratore). I progetti e le impostazioni non vengono toccati.
+- Dante non cerca aggiornamenti nella copia portatile né quando è avviato con `npm run tauri dev`, perché in quei casi non c'è un'installazione da sostituire.
+- Senza connessione la ricerca all'avvio fallisce in silenzio; quella dalle Impostazioni mostra l'errore.

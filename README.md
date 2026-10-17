@@ -4,7 +4,8 @@ A light writing app for novelists. A project is just a folder of Markdown files,
 same novel opens in Obsidian, in Claude Code or in any text editor, and can be shared
 through Google Drive or Dropbox.
 
-How to use it is explained in the [user guide](docs/guida.md) (Italian).
+How to use it is explained in the [user guide](docs/guida.md) (Italian). Beta testers start from
+[Provare Dante](docs/beta.md): download, installation, updates and how to report problems.
 
 The design is described in the [design document](https://claude.ai/code/artifact/6ae8607c-9d16-4657-a49c-c0faabf1db0a).
 This repository is at **phase 3: collaboration**.
