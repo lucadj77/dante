@@ -1,0 +1,86 @@
+[
+ {
+  "n": 1,
+  "caption": "Dante",
+  "en": "Dante is a writing app for novelists. Your book stays a folder of plain text files on your computer.",
+  "it": "Dante è un'app di scrittura per romanzieri. Il tuo libro resta una cartella di semplici file di testo sul tuo computer.",
+  "min": 9
+ },
+ {
+  "n": 2,
+  "caption": "Import from Word",
+  "en": "Already writing in Word? Import your manuscript: parts, chapters, scenes, comments and tracked changes come with it.",
+  "it": "Scrivi già in Word? Importa il manoscritto: parti, capitoli, scene, commenti e revisioni vengono con lui.",
+  "min": 13
+ },
+ {
+  "n": 3,
+  "caption": "Your workspace",
+  "en": "The manuscript is made of scenes, grouped into chapters and parts. Your notes and research sit beside it.",
+  "it": "Il manoscritto è fatto di scene, raccolte in capitoli e parti. Note e ricerche stanno accanto.",
+  "min": 11
+ },
+ {
+  "n": 4,
+  "caption": "Write",
+  "en": "Write as in any word processor. Formatting stays out of the way, and everything saves by itself.",
+  "it": "Scrivi come in un normale programma di videoscrittura. La formattazione non ti intralcia e tutto si salva da solo.",
+  "min": 12
+ },
+ {
+  "n": 5,
+  "caption": "Stay focused",
+  "en": "Focus, typewriter and full screen modes keep your attention on the page.",
+  "it": "Le modalità Focus, Macchina da scrivere e Schermo intero tengono l'attenzione sulla pagina.",
+  "min": 14
+ },
+ {
+  "n": 6,
+  "caption": "Shape the book",
+  "en": "Split a scene with one shortcut, and drag scenes and chapters to reorder the book.",
+  "it": "Dividi una scena con una scorciatoia e trascina scene e capitoli per riordinare il libro.",
+  "min": 13
+ },
+ {
+  "n": 7,
+  "caption": "Your properties",
+  "en": "Every scene has a synopsis and properties. Add your own, choose their type and allowed values, and use them everywhere.",
+  "it": "Ogni scena ha una sinossi e delle proprietà. Aggiungi le tue, scegli tipo e valori ammessi e usale ovunque.",
+  "min": 16
+ },
+ {
+  "n": 8,
+  "caption": "Story Bible",
+  "en": "The Story Bible holds characters, places and plotlines. Create your own types, with their own fields and templates.",
+  "it": "La Bibbia raccoglie personaggi, luoghi e trame. Crea i tuoi tipi, con i loro campi e i loro modelli.",
+  "min": 16
+ },
+ {
+  "n": 9,
+  "caption": "Linked notes",
+  "en": "Link scenes to your notes and read them in place, or side by side with the text.",
+  "it": "Collega le scene alle note e leggile sul posto, oppure affiancate al testo.",
+  "min": 15
+ },
+ {
+  "n": 10,
+  "caption": "Views",
+  "en": "Views show the book at a glance: a board by status, a table, cards, a timeline of story time.",
+  "it": "Le viste mostrano il libro a colpo d'occhio: una bacheca per stato, una tabella, schede, una linea del tempo della storia.",
+  "min": 14
+ },
+ {
+  "n": 11,
+  "caption": "Goals and co-authors",
+  "en": "Track words and goals, leave comments, and write with a co-author through Dropbox or Drive.",
+  "it": "Tieni d'occhio parole e obiettivi, lascia commenti e scrivi con un coautore via Dropbox o Drive.",
+  "min": 15
+ },
+ {
+  "n": 12,
+  "caption": "Export",
+  "en": "When the book is ready, export it to Word, PDF or EPUB, with a cover and your layout. Dante. Write your novel.",
+  "it": "Quando il libro è pronto, esportalo in Word, PDF o EPUB, con copertina e impaginazione. Dante. Scrivi il tuo romanzo.",
+  "min": 15
+ }
+]
