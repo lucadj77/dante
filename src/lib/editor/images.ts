@@ -2,7 +2,7 @@ import { EditorSelection, type EditorState, type Extension } from "@codemirror/s
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import { alignedAt, toggleAlign } from "./alignment";
 import { linkHandler } from "./links";
-import { embedFor, findImages, isImagePath, pastedName, withWidth, type ImageEmbed } from "../core/images";
+import { embedFor, findImages, isImagePath, isImageUrl, pastedName, withWidth, type ImageEmbed } from "../core/images";
 
 /** What the editor needs from the project to show and add images. */
 export interface ImageHandler {
@@ -10,6 +10,8 @@ export interface ImageHandler {
   url(target: string, wiki: boolean): Promise<string | null>;
   /** Saves an image in the project and returns the target to embed it with, or null. */
   add(data: Uint8Array, name: string): Promise<string | null>;
+  /** Downloads an image from the web into the project and returns the target to embed it with. */
+  download(url: string): Promise<string>;
   labels: ImageLabels;
 }
 
@@ -23,6 +25,8 @@ export interface ImageLabels {
   right: string;
   missing: string;
   pasted: string;
+  download: string;
+  downloadFailed: string;
 }
 
 // The widths offered over an image, in pixels as Obsidian writes them; null is the image's own.
@@ -63,6 +67,29 @@ function setAlign(view: EditorView, dom: HTMLElement, align: "left" | "center" |
   // Alignment works on the paragraph where the cursor is: left is the one without a tag.
   view.dispatch({ selection: EditorSelection.cursor(pos) });
   view.dispatch(view.state.update(toggleAlign(view.state, align === "left" ? (current as "center" | "right") : align), { userEvent: "input.format" }));
+}
+
+/** Replaces a web image with a copy downloaded into the project, keeping its width. */
+async function downloadEmbed(view: EditorView, dom: HTMLElement, button: HTMLButtonElement) {
+  const handler = handlerOf(view.state);
+  const found = embedNear(view, view.posAtDOM(dom));
+  if (!handler || !found) return;
+  const url = found.embed.target;
+  button.textContent = "…";
+  button.disabled = true;
+  try {
+    const target = await handler.download(url);
+    // The text may have changed while downloading: find the embed again.
+    const again = embedNear(view, view.posAtDOM(dom));
+    if (!again || again.embed.target !== url) return;
+    const { embed, offset } = again;
+    const local: ImageEmbed = { ...embed, target, wiki: true };
+    view.dispatch({ changes: { from: offset + embed.from, to: offset + embed.to, insert: withWidth(local, embed.width ?? null) }, userEvent: "input.image" });
+  } catch (e) {
+    button.textContent = "✕";
+    button.title = `${handler.labels.downloadFailed}: ${e instanceof Error ? e.message : String(e)}`;
+    button.disabled = false;
+  }
 }
 
 export class ImageWidget extends WidgetType {
@@ -123,6 +150,12 @@ export class ImageWidget extends WidgetType {
       button(handler.labels.left, "⇤", () => setAlign(view, wrap, "left"));
       button(handler.labels.center, "↔", () => setAlign(view, wrap, "center"));
       button(handler.labels.right, "⇥", () => setAlign(view, wrap, "right"));
+      if (!this.wiki && /^https?:\/\//i.test(this.target)) {
+        const gap2 = document.createElement("span");
+        gap2.className = "md-image-gap";
+        bar.append(gap2);
+        button(handler.labels.download, "⤓", () => void downloadEmbed(view, wrap, bar.lastElementChild as HTMLButtonElement));
+      }
       wrap.append(bar);
     }
 
@@ -158,12 +191,16 @@ export function imageDecorations(text: string, offset: number, editing: boolean)
 
 /** Puts embeds for the images at the cursor, each on a paragraph of its own. */
 function insertEmbeds(view: EditorView, targets: string[], at?: number) {
-  if (!targets.length) return;
+  insertBlocks(view, targets.map(embedFor), at);
+}
+
+function insertBlocks(view: EditorView, blocks: string[], at?: number) {
+  if (!blocks.length) return;
   const pos = at ?? view.state.selection.main.head;
   const line = view.state.doc.lineAt(pos);
   const before = line.text.slice(0, pos - line.from).trim() ? "\n\n" : "";
   const after = line.text.slice(pos - line.from).trim() ? "\n\n" : "";
-  const insert = before + targets.map(embedFor).join("\n\n") + after;
+  const insert = before + blocks.join("\n\n") + after;
   view.dispatch({ changes: { from: pos, insert }, selection: { anchor: pos + insert.length - after.length }, userEvent: "input.image", scrollIntoView: true });
 }
 
@@ -197,21 +234,57 @@ export function chooseImages(view: EditorView) {
   input.click();
 }
 
-/** Images pasted or dropped on the editor are saved in the project and embedded. */
+/** Downloads web images into the project and embeds them; an address that fails is embedded as it is. */
+async function addUrls(view: EditorView, urls: string[], at?: number) {
+  const handler = handlerOf(view.state);
+  if (!handler) return;
+  const targets: string[] = [];
+  for (const url of urls) {
+    try {
+      targets.push(embedFor(await handler.download(url)));
+    } catch {
+      targets.push(`![](${url})`);
+    }
+  }
+  insertBlocks(view, targets, at);
+}
+
+/** The web image addresses in pasted or dropped data, when that is all it holds. */
+function imageUrls(data: DataTransfer | null): string[] {
+  const text = (data?.getData("text/uri-list") || data?.getData("text/plain") || "").trim();
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  return lines.length && lines.every(isImageUrl) ? lines : [];
+}
+
+/** Images pasted or dropped on the editor, as files or web addresses, are saved in the project and embedded. */
 export const imageInput: Extension = EditorView.domEventHandlers({
   paste(event, view) {
+    if (!handlerOf(view.state)) return false;
     const files = [...(event.clipboardData?.files ?? [])];
-    if (!files.some((f) => f.type.startsWith("image/")) || !handlerOf(view.state)) return false;
+    if (files.some((f) => f.type.startsWith("image/"))) {
+      event.preventDefault();
+      void addFiles(view, files);
+      return true;
+    }
+    const urls = imageUrls(event.clipboardData);
+    if (!urls.length) return false;
     event.preventDefault();
-    void addFiles(view, files);
+    void addUrls(view, urls);
     return true;
   },
   drop(event, view) {
-    const files = [...(event.dataTransfer?.files ?? [])];
-    if (!files.some((f) => f.type.startsWith("image/") || isImagePath(f.name)) || !handlerOf(view.state)) return false;
-    event.preventDefault();
+    if (!handlerOf(view.state)) return false;
     const at = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? undefined;
-    void addFiles(view, files, at);
+    const files = [...(event.dataTransfer?.files ?? [])];
+    if (files.some((f) => f.type.startsWith("image/") || isImagePath(f.name))) {
+      event.preventDefault();
+      void addFiles(view, files, at);
+      return true;
+    }
+    const urls = imageUrls(event.dataTransfer);
+    if (!urls.length) return false;
+    event.preventDefault();
+    void addUrls(view, urls, at);
     return true;
   },
 });

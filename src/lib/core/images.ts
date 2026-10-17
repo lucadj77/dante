@@ -131,6 +131,42 @@ export function resolveImagePath(target: string, fromPath: string, files: string
   return null;
 }
 
+/** The image format of downloaded bytes, from their first bytes; null when not an image. */
+export function sniffImage(bytes: Uint8Array): { mime: string; ext: string } | null {
+  const starts = (...b: number[]) => b.every((x, i) => bytes[i] === x);
+  if (starts(0x89, 0x50, 0x4e, 0x47)) return { mime: "image/png", ext: ".png" };
+  if (starts(0xff, 0xd8, 0xff)) return { mime: "image/jpeg", ext: ".jpg" };
+  if (starts(0x47, 0x49, 0x46, 0x38)) return { mime: "image/gif", ext: ".gif" };
+  if (starts(0x52, 0x49, 0x46, 0x46) && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP") return { mime: "image/webp", ext: ".webp" };
+  if (starts(0x42, 0x4d)) return { mime: "image/bmp", ext: ".bmp" };
+  const head = new TextDecoder().decode(bytes.slice(0, 1024)).trimStart();
+  if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg\b/i.test(head)) return { mime: "image/svg+xml", ext: ".svg" };
+  return null;
+}
+
+/** A file name for an image downloaded from `url`, with the extension of its real format. */
+export function nameFromUrl(url: string, ext: string): string {
+  let name = "";
+  try {
+    name = decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "");
+  } catch {
+    name = "";
+  }
+  const stem = safeFileName(name).replace(/\.[^.]*$/, "").slice(0, 80) || "image";
+  return stem + ext;
+}
+
+/** True for a web address that ends like an image file. */
+export function isImageUrl(text: string): boolean {
+  const t = text.trim();
+  if (!/^https?:\/\/\S+$/i.test(t)) return false;
+  try {
+    return isImagePath(new URL(t).pathname);
+  } catch {
+    return false;
+  }
+}
+
 /** Width and height in pixels, read from the file's header; null when unknown. */
 export function imageSize(bytes: Uint8Array, mime: string): { width: number; height: number } | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);

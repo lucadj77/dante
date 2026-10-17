@@ -3,6 +3,7 @@ import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
 import { tablePreview } from "./tables";
 import { ImageWidget, imageDecorations, imageInput } from "./images";
+import { isImagePath } from "../core/images";
 import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
@@ -26,8 +27,7 @@ const marks: Record<string, Decoration> = {
 const wikiLink = Decoration.mark({ class: "md-wikilink" });
 const wikiMissing = Decoration.mark({ class: "md-wikilink md-unresolved" });
 const wikiHidden = Decoration.replace({});
-// Not an embed: ![[…]] is an image, or a note the export leaves out.
-const WIKILINK = /(?<!!)\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
+const WIKILINK = /\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
 // ==highlight==, but not CriticMarkup's {==highlight==}.
 const HIGHLIGHT = /(?<!\{)==(?=\S)([^=\n]+?)==(?!\})/g;
 const highlight = Decoration.mark({ class: "md-highlight" });
@@ -168,6 +168,8 @@ function build(view: EditorView, focused: boolean): DecorationSet {
       }
     }
     for (const m of text.matchAll(WIKILINK)) {
+      // An embedded image draws itself.
+      if (text[m.index! - 1] === "!" && isImagePath(m[1].split("#")[0].trim())) continue;
       const start = from + m.index!;
       const end = start + m[0].length;
       const lineActive = active.has(state.doc.lineAt(start).number);

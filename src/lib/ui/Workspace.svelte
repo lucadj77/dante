@@ -22,7 +22,7 @@
   import { noteType } from "$lib/core/notes";
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
   import { linkTarget, resolveLink } from "$lib/core/wikilinks";
-  import { imageMime, resolveImagePath } from "$lib/core/images";
+  import { imageMime, nameFromUrl, resolveImagePath, sniffImage } from "$lib/core/images";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { folderNotePath } from "$lib/core/manuscript";
   import ConflictsDialog from "./ConflictsDialog.svelte";
@@ -188,6 +188,23 @@
           suggestionCache.clear();
           return linkTarget(path, from, project.files);
         },
+        async download(url) {
+          let bytes: Uint8Array;
+          if (project.fs instanceof TauriFs) {
+            const { invoke } = await import("@tauri-apps/api/core");
+            bytes = new Uint8Array(await invoke<ArrayBuffer>("download_url", { url }));
+          } else {
+            // A browser can fetch only from sites that allow it.
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            bytes = new Uint8Array(await response.arrayBuffer());
+          }
+          const kind = sniffImage(bytes);
+          if (!kind) throw new Error(t("image.notImage"));
+          const path = await project.addAttachment(nameFromUrl(url, kind.ext), bytes);
+          suggestionCache.clear();
+          return linkTarget(path, from, project.files);
+        },
         labels: {
           small: t("image.small"),
           medium: t("image.medium"),
@@ -198,6 +215,8 @@
           right: t("image.right"),
           missing: t("image.missing"),
           pasted: t("image.pasted"),
+          download: t("image.download"),
+          downloadFailed: t("image.downloadFailed"),
         },
       },
     }),

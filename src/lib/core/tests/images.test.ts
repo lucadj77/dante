@@ -4,7 +4,7 @@ import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
 import { bookToTypst } from "../export/typst";
 import { bookToMarkdown } from "../export/markdown";
-import { findImages, imageSize, resolveImagePath, withWidth } from "../images";
+import { isImageUrl, nameFromUrl, sniffImage, findImages, imageSize, resolveImagePath, withWidth } from "../images";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings } from "../settings";
@@ -50,6 +50,17 @@ describe("images in the text", () => {
     expect(imageSize(wide(), "image/png")).toEqual({ width: 400, height: 200 });
     expect(imageSize(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"></svg>'), "image/svg+xml")).toEqual({ width: 120, height: 60 });
     expect(imageSize(new Uint8Array([1, 2, 3]), "image/png")).toBeNull();
+  });
+
+  it("recognizes downloaded images and names them", () => {
+    expect(sniffImage(PNG)?.ext).toBe(".png");
+    expect(sniffImage(new TextEncoder().encode('<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg"/>'))?.mime).toBe("image/svg+xml");
+    expect(sniffImage(new TextEncoder().encode("<!doctype html><html>"))).toBeNull();
+    expect(nameFromUrl("https://example.org/foto/Casa%20blu.jpeg?x=1", ".jpg")).toBe("Casa blu.jpg");
+    expect(nameFromUrl("https://example.org/", ".png")).toBe("image.png");
+    expect(isImageUrl("https://example.org/a/b.webp?w=300")).toBe(true);
+    expect(isImageUrl("https://example.org/pagina")).toBe(false);
+    expect(isImageUrl("vedi https://example.org/a.png")).toBe(false);
   });
 
   it("leaves images and table bars out of the counts", () => {

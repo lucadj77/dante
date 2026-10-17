@@ -1,5 +1,6 @@
 mod files;
 mod pdf;
+mod web;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -151,6 +152,7 @@ pub fn run() {
             files::import_files,
             files::watch_project,
             pdf::compile_pdf,
+            web::download_url,
             opened_project,
         ])
         .build(tauri::generate_context!())
