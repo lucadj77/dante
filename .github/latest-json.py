@@ -1,6 +1,9 @@
 """Writes latest.json, the update manifest the installed copies of Dante read.
 
-Usage: latest-json.py <folder of release files> <version> <commit> <download address>
+Usage: latest-json.py <folder of release files> <version> <commit> <download address> [news.json]
+
+news.json, written by news.py history, lists the notes of every version in Italian and
+English; Dante's update banner shows those newer than the installed version.
 
 Each signature (.sig) next to a release file becomes the entry of one system, named as
 Tauri's updater looks for it: {os}-{arch}-{bundle}. Without signatures (the signing key
@@ -13,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 folder, version, commit, base = sys.argv[1:5]
+news = json.loads(Path(sys.argv[5]).read_text(encoding="utf-8")) if len(sys.argv) > 5 else {}
 
 # The end of each update file's name, as the Builds workflow writes it, and its target.
 TARGETS = {
@@ -41,5 +45,7 @@ manifest = {
     "pub_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "platforms": platforms,
 }
-Path(folder, "latest.json").write_text(json.dumps(manifest, indent=2))
+if news:
+    manifest["news"] = news
+Path(folder, "latest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 print(json.dumps(manifest, indent=2))

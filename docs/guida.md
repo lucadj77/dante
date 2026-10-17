@@ -618,8 +618,9 @@ La stessa scena può stare al centro e in un pannello: ciò che scrivi in uno co
 1. Quando c'è una nuova versione, all'avvio compare un riquadro in basso a destra: **È disponibile Dante 0.1.…**.
 
    ![Il riquadro dell'aggiornamento](img/aggiornamento.png)
-2. Premi **Aggiorna e riavvia**. Dante salva il testo aperto, scarica la nuova versione, la installa e si riapre. Su Windows compare per qualche secondo la finestra dell'installatore.
-3. Con **Più tardi** il riquadro sparisce e torna al prossimo avvio.
+2. Per sapere cosa cambia premi **Novità**: il riquadro elenca le novità di ogni versione uscita dopo quella installata, in italiano o in inglese secondo la lingua di Dante. Lo stesso elenco è nella pagina [Novità](novita.md) e nella pagina della versione su GitHub.
+3. Premi **Aggiorna e riavvia**. Dante salva il testo aperto, scarica la nuova versione, la installa e si riapre. Su Windows compare per qualche secondo la finestra dell'installatore.
+4. Con **Più tardi** il riquadro sparisce e torna al prossimo avvio.
 
 Per controllare a mano apri **Impostazioni** > **Aggiornamenti** e premi **Cerca aggiornamenti**. Lì c'è anche il numero della versione installata, utile quando segnali un problema, e la casella per non cercare aggiornamenti all'avvio.
 
@@ -632,3 +633,4 @@ La copia portatile per Windows non si aggiorna da sola: scarica il nuovo zip e s
 - Cosa viene sostituito: su Mac l'app in Applicazioni (con il file `.app.tar.gz`), su Windows il programma installato (con l'installatore, che mostra solo una barra di avanzamento), su Linux l'AppImage o il pacchetto .deb/.rpm (per i pacchetti il sistema chiede la password di amministratore). I progetti e le impostazioni non vengono toccati.
 - Dante non cerca aggiornamenti nella copia portatile né quando è avviato con `npm run tauri dev`, perché in quei casi non c'è un'installazione da sostituire.
 - Senza connessione la ricerca all'avvio fallisce in silenzio; quella dalle Impostazioni mostra l'errore.
+- Le novità si scrivono a mano in `docs/novita.md` e `docs/whats-new.md`, sotto **Prossima versione** / **Next version**, nella stessa modifica che introduce la funzione. Quando la compilazione su main pubblica una versione, `.github/news.py` sposta quelle righe sotto il titolo `0.1.N · data` (con un commit su main), le mette nella pagina della versione e le scrive in `latest.json`, da cui le legge il riquadro dell'aggiornamento.

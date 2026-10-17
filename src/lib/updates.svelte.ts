@@ -78,3 +78,29 @@ export async function installUpdate(beforeInstall: () => Promise<void>): Promise
     updates.error = String(e);
   }
 }
+
+export interface VersionNews {
+  version: string;
+  notes: string[];
+}
+
+const versionKey = (v: string) => v.split(".").map((n) => Number(n) || 0);
+
+/** True when version `a` comes after `b`. */
+export function newerVersion(a: string, b: string): boolean {
+  const [x, y] = [versionKey(a), versionKey(b)];
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
+  return false;
+}
+
+/**
+ * What changes from the installed version to the available one, newest first, from the
+ * "news" the release's latest.json carries (docs/novita.md and docs/whats-new.md). English
+ * for every language but Italian.
+ */
+export function newsSince(raw: unknown, installed: string, language: string): VersionNews[] {
+  const news = (raw as { news?: Record<string, VersionNews[]> } | null)?.news;
+  const list = news?.[language === "it" ? "it" : "en"] ?? news?.en ?? [];
+  if (!Array.isArray(list)) return [];
+  return list.filter((v) => typeof v?.version === "string" && Array.isArray(v.notes) && (!installed || newerVersion(v.version, installed)));
+}

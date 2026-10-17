@@ -263,6 +263,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "update.available": "È disponibile Dante {version}.",
   "update.install": "Aggiorna e riavvia",
   "update.later": "Più tardi",
+  "update.news": "Novità",
+  "update.hideNews": "Nascondi novità",
   "update.downloading": "Scaricamento dell'aggiornamento…",
   "update.downloadingPercent": "Scaricamento dell'aggiornamento: {percent}%",
   "update.failed": "Aggiornamento non riuscito: {message}",
