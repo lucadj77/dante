@@ -171,6 +171,12 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     for (const block of items) {
       if (block.type === "heading") emit(`#heading(level: ${Math.min(6, level + block.level)})[${runs(block.runs)}]\n`);
       else if (block.type === "quote") emit(`#pad(x: ${cm(opts.indent || 1)})[${runs(block.runs)}]\n`);
+      else if (block.type === "item") {
+        // The bullet hangs out by 1.5em; each level goes in by as much. The blank line
+        // makes the text a paragraph, or Typst would not hang it.
+        const lead = block.marker ? `#box(width: 1.5em)[#${str(block.marker)}]` : "";
+        emit(`#pad(left: ${(block.level + (block.marker ? 0 : 1)) * 1.5}em)[#set par(first-line-indent: 0pt, hanging-indent: ${block.marker ? "1.5em" : "0pt"}, justify: false)\n\n${lead}${runs(block.runs)}\n]\n`);
+      }
       else if (block.type === "break") emit(`#separator[${lines(opts.sceneSeparator)}]\n`);
       else if (block.type === "table") {
         const cells = (row: Run[][], head: boolean) => row.map((c) => (head ? `strong[${runs(c)}]` : `[${runs(c)}]`)).join(", ");

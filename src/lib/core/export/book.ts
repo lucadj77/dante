@@ -43,6 +43,11 @@ export type Block =
   | { type: "paragraph"; runs: Run[]; align?: Align }
   | { type: "heading"; level: number; runs: Run[] }
   | { type: "quote"; runs: Run[] }
+  /**
+   * A paragraph of a list item: `marker` is its bullet ("•"), number ("1.") or box ("☐",
+   * "☑"), empty for the item's later paragraphs; `level` is 0 outside any other list.
+   */
+  | { type: "item"; runs: Run[]; marker: string; level: number }
   | { type: "table"; align: CellAlign[]; header: Run[][]; rows: Run[][][]; caption?: Run[] }
   | { type: "image"; image: BookImage; align?: Align; caption?: Run[] }
   | { type: "break" };
@@ -208,15 +213,16 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, 
   const tree = parser.parse(source);
   const paragraphAt = aligns?.size ? paragraphIndexer(source) : null;
   const blocks: Block[] = [];
-  const visit = (node: SyntaxNode, inQuote: boolean, marker = "") => {
+  const visit = (node: SyntaxNode, inQuote: boolean, marker = "", level = -1) => {
     for (let child = node.firstChild; child; child = child.nextSibling) {
       const name = child.name;
       if (name === "Paragraph" || name === "Task") {
         const runs = inlineRuns(source, child, child.from, child.to);
         // A list item keeps its bullet or number, a task its box.
         let lead = marker;
-        if (name === "Task") lead = /x/i.test(source.slice(child.from, child.from + 3)) ? "☑ " : "☐ ";
-        if (lead && runs.length) runs.unshift({ text: lead });
+        if (name === "Task") lead = /x/i.test(source.slice(child.from, child.from + 3)) ? "☑" : "☐";
+        // Inside a quote the item is a line of the quote, its marker at the start.
+        if (lead && inQuote && runs.length) runs.unshift({ text: `${lead} ` });
         marker = "";
         const align = name === "Paragraph" && paragraphAt ? aligns!.get(paragraphAt(child.from)) : undefined;
         // A caption after a table belongs to it: "Tabella: …" or ": …", as Pandoc writes it.
@@ -236,6 +242,10 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, 
           }
           else if (!piece.length) continue;
           else if (inQuote) blocks.push({ type: "quote", runs: piece });
+          else if (level >= 0) {
+            blocks.push({ type: "item", runs: piece, marker: lead, level });
+            lead = "";
+          }
           else blocks.push(align ? { type: "paragraph", runs: piece, align } : { type: "paragraph", runs: piece });
         }
       } else if (/^(ATX|Setext)Heading(\d)$/.test(name)) {
@@ -261,10 +271,10 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, 
       } else if (name === "HorizontalRule") {
         blocks.push({ type: "break" });
       } else if (name === "BulletList" || name === "OrderedList") {
-        visit(child, inQuote);
+        visit(child, inQuote, "", level);
       } else if (name === "ListItem") {
         const mark = child.firstChild?.name === "ListMark" ? source.slice(child.firstChild.from, child.firstChild.to) : "";
-        visit(child, inQuote, /\d/.test(mark) ? `${mark} ` : "• ");
+        visit(child, inQuote, /\d/.test(mark) ? mark : "•", level + 1);
       } else if (name === "FencedCode" || name === "CodeBlock") {
         const text = source.slice(child.from, child.to).replace(/^```.*\n?|```$/gm, "");
         blocks.push({ type: "paragraph", runs: [{ text, code: true }] });

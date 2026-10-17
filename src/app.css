@@ -125,6 +125,8 @@ select {
 .md-embed-title:hover { text-decoration: underline; }
 .md-embed-body p { margin: 0 0 0.4em; }
 .md-embed-body blockquote { margin: 0 0 0.4em; padding-left: 10px; border-left: 3px solid var(--border); color: var(--text-muted); }
+.md-embed-body p.md-embed-item { margin-bottom: 0.15em; text-indent: -1.5em; }
+.md-embed-marker { display: inline-block; width: 1.5em; text-indent: 0; }
 .md-embed-h { font-weight: 600; margin: 0.3em 0; }
 .md-embed-h1 { font-size: 1.3em; }
 .md-embed-h2 { font-size: 1.15em; }
@@ -161,6 +163,8 @@ select {
 .md-wikilink { color: var(--wikilink); }
 .md-highlight { background: rgba(245, 214, 70, 0.45); border-radius: 2px; }
 .md-bullet { display: inline-block; width: 0.7em; }
+/* The marker of a list item, in a box as wide as the item's indent: the text hangs after it. */
+.md-list-prefix { display: inline-block; box-sizing: border-box; text-indent: 0; white-space: pre; vertical-align: top; }
 .md-task { margin: 0 4px 0 0; vertical-align: -1px; cursor: pointer; }
 .cm-format-bar button,
 .format-row button {

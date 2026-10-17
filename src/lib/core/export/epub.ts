@@ -46,6 +46,9 @@ h3 { font-size: 1.1em; font-style: italic; }
 .pagebreak { page-break-before: always; }
 blockquote { margin: 0.5em 2em; }
 blockquote p { text-indent: 0; }
+p.item { text-indent: -1.5em; text-align: left; }
+p.item.more { text-indent: 0; }
+p.item .marker { display: inline-block; width: 1.5em; text-indent: 0; }
 p.align-center, p.align-right { text-indent: 0; }
 p.align-center { text-align: center; }
 p.align-right { text-align: right; }
@@ -168,6 +171,12 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
     for (const block of items) {
       if (block.type === "heading") out.push(`<h${Math.min(6, level + block.level)}>${inline(block.runs)}</h${Math.min(6, level + block.level)}>`);
       else if (block.type === "quote") out.push(`<blockquote><p>${inline(block.runs)}</p></blockquote>`);
+      else if (block.type === "item") {
+        // The bullet hangs out by 1.5em; each level goes in by as much.
+        const left = `margin-left: ${(block.level + 1) * 1.5}em`;
+        if (block.marker) out.push(`<p class="item" style="${left}"><span class="marker">${escapeXml(block.marker)}</span>${inline(block.runs)}</p>`);
+        else out.push(`<p class="item more" style="${left}">${inline(block.runs)}</p>`);
+      }
       else if (block.type === "break") out.push(`<p class="break">${lines(opts.sceneSeparator)}</p>`);
       else if (block.type === "table") {
         const style = (i: number) => (block.align[i] ? ` style="text-align: ${block.align[i]}"` : "");

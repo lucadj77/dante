@@ -92,9 +92,20 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
     return "---";
   };
   const blocks = (items: Block[]) => {
+    let previous: Block | undefined;
     for (const block of items) {
       if (block.type === "heading") add(heading(sceneLevel + block.level, block.runs.map((r) => r.text).join("")));
       else if (block.type === "quote") add(`> ${runs(block.runs)}`.replace(/\n/g, "\n> "));
+      else if (block.type === "item") {
+        // Back to Markdown's own list, each level in by four spaces; the items of a list
+        // stay together, without a blank line between them.
+        const pad = "    ".repeat(block.marker ? block.level : block.level + 1);
+        const mark = block.marker === "•" ? "- " : block.marker === "☐" ? "- [ ] " : block.marker === "☑" ? "- [x] " : block.marker ? `${block.marker} ` : "";
+        const text = pad + mark + runs(block.runs).replace(/\n/g, `\n${pad}${" ".repeat(mark.length)}`);
+        const ordered = (marker: string) => /\d/.test(marker);
+        if (block.marker && previous?.type === "item" && previous.marker && ordered(previous.marker) === ordered(block.marker)) out[out.length - 1] += `\n${text}`;
+        else add(text);
+      }
       else if (block.type === "break") add(separator("characters") ?? "---");
       else if (block.type === "table") {
         const row = (cells: Run[][]) => `| ${cells.map((c) => c.map(inline).join("").replace(/\n/g, " ")).join(" | ")} |`;
@@ -107,6 +118,7 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
       }
       else if (block.runs.length && block.runs.every((r) => r.code)) add("```\n" + block.runs.map((r) => r.text).join("").replace(/\n$/, "") + "\n```");
       else add(setAlignment(runs(block.runs), block.align ?? null));
+      previous = block;
     }
   };
 
