@@ -12,6 +12,8 @@ import {
   PageNumber,
   Paragraph,
   SectionType,
+  Tab,
+  TabStopType,
   Table,
   TableCell,
   TableRow,
@@ -71,6 +73,8 @@ function table(align: CellAlign[], header: Run[][], rows: Run[][][]): Table {
 // changing a style in Word (Normal, Heading 1…) changes all the text that uses it.
 
 const TWIPS_PER_CM = 566.93;
+/** How far each level of a list goes in, and how far its text from its bullet: Word's 0.63 cm. */
+const LIST_INDENT = 357;
 const HEADINGS = [
   HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3,
   HeadingLevel.HEADING_4, HeadingLevel.HEADING_5, HeadingLevel.HEADING_6,
@@ -147,6 +151,8 @@ function styles(opts: DocxSettings, typeset: boolean): IParagraphStyleOptions[] 
     { id: "TableText", name: "Table Text", basedOn: "Normal", paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: 40, after: 40 } } },
     { id: "Caption", name: "Caption", basedOn: "Normal", next: "Normal", quickFormat: true, run: { italics: true, size: Math.max(16, size - 2) }, paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: 60, after: line / 2 } } },
     { id: "Figure", name: "Figure", basedOn: "Normal", next: "Normal", paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: line / 2, after: line / 2 } } },
+    // Lists hang: the bullet or number sits out, the lines of the text under one another.
+    { id: "ListParagraph", name: "List Paragraph", basedOn: "Normal", quickFormat: true, paragraph: { indent: { firstLine: 0 } } },
     { id: "Code", name: "Code", basedOn: "Normal", paragraph: { indent: { firstLine: 0 } }, run: { font: "Courier New" } },
   ];
 }
@@ -212,6 +218,17 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         body.push(new Paragraph({ heading: HEADINGS[Math.min(5, level + block.level)], children: runs(block.runs) }));
       } else if (block.type === "quote") {
         body.push(new Paragraph({ style: "BlockText", children: runs(block.runs) }));
+      } else if (block.type === "item") {
+        const left = (block.level + 1) * LIST_INDENT;
+        const lead = block.marker ? [new TextRun({ text: block.marker }), new TextRun({ children: [new Tab()] })] : [];
+        body.push(
+          new Paragraph({
+            style: "ListParagraph",
+            indent: { left, hanging: block.marker ? LIST_INDENT : 0 },
+            tabStops: [{ type: TabStopType.LEFT, position: left }],
+            children: [...lead, ...runs(block.runs)],
+          }),
+        );
       } else if (block.type === "break") {
         body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
       } else if (block.type === "table") {

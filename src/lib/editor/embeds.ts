@@ -57,6 +57,17 @@ function render(parent: HTMLElement, markdown: string) {
       el.append(row(block.header, "th"), ...block.rows.map((r) => row(r, "td")));
     } else if (block.type === "image") {
       continue;
+    } else if (block.type === "item") {
+      el = document.createElement("p");
+      el.className = "md-embed-item";
+      el.style.marginLeft = `${(block.level + 1) * 1.5}em`;
+      if (block.marker) {
+        const marker = document.createElement("span");
+        marker.className = "md-embed-marker";
+        marker.textContent = block.marker;
+        el.append(marker);
+      } else el.style.textIndent = "0";
+      runsTo(el, block.runs);
     } else {
       el = document.createElement("p");
       if (block.align) el.style.textAlign = block.align;

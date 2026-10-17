@@ -1,4 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
+import type { SyntaxNode } from "@lezer/common";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
 import { tablePreview } from "./tables";
@@ -39,39 +40,53 @@ const alignLines = {
   justify: Decoration.line({ class: "md-align-justify" }),
 };
 
-/** A list's "-", drawn as a bullet away from the cursor. */
-class Bullet extends WidgetType {
-  eq() {
-    return true;
-  }
-  toDOM() {
-    const dot = document.createElement("span");
-    dot.className = "md-bullet";
-    dot.textContent = "•";
-    return dot;
-  }
-}
-const bullet = Decoration.replace({ widget: new Bullet() });
-
-/** The [ ] or [x] of a task, drawn as a checkbox that can be clicked. */
-class TaskBox extends WidgetType {
-  constructor(readonly checked: boolean) {
+/**
+ * The start of a list item's first line, up to its text: drawn as its bullet, number or
+ * checkbox away from the cursor, in a box as wide as the indent, so that the text of every
+ * line of the item starts at the same place.
+ */
+class ListPrefix extends WidgetType {
+  constructor(
+    readonly marker: string,
+    /** Where the marker starts: the indent of the parent items. */
+    readonly offset: number,
+    readonly width: number,
+    readonly checked: boolean | null,
+  ) {
     super();
   }
-  eq(other: TaskBox) {
-    return other.checked === this.checked;
+  eq(other: ListPrefix) {
+    return other.marker === this.marker && other.offset === this.offset && other.width === this.width && other.checked === this.checked;
   }
   toDOM() {
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.checked = this.checked;
-    box.className = "md-task";
+    const box = document.createElement("span");
+    box.className = "md-list-prefix";
+    box.style.width = `${this.width}em`;
+    box.style.paddingLeft = `${this.offset}em`;
+    if (this.checked === null) {
+      const mark = document.createElement("span");
+      mark.className = /\d/.test(this.marker) ? "md-list-number" : "md-bullet";
+      mark.textContent = /\d/.test(this.marker) ? this.marker : "•";
+      box.append(mark);
+    } else {
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = this.checked;
+      input.className = "md-task";
+      box.append(input);
+    }
     return box;
   }
   ignoreEvent() {
     return false;
   }
 }
+
+// How far a list goes in, in em: the room of its bullet, number or checkbox.
+const BULLET_WIDTH = 1.5;
+const numberWidth = (mark: string) => Math.max(BULLET_WIDTH, 0.55 * mark.length + 0.6);
+// CodeMirror's own padding of a line, kept under the indent.
+const LINE_PADDING = "6px";
 
 /** Lines touched by the selection show their Markdown as typed. */
 function activeLines(state: EditorState): Set<number> {
@@ -90,6 +105,52 @@ function build(view: EditorView, focused: boolean): DecorationSet {
   const found: { from: number; to: number; deco: Decoration }[] = [];
   const links = state.facet(linkHandler);
   const quoted = new Set<number>();
+  // The lines of lists, by where they start: the deepest item a line belongs to decides.
+  const listLines = new Map<number, Decoration>();
+  const prefixes = new Set<number>();
+
+  /** The room an item's marker takes, in em: in a numbered list, the longest number's. */
+  const itemWidth = (item: SyntaxNode): number => {
+    if (item.parent?.name !== "OrderedList") return BULLET_WIDTH;
+    let longest = "";
+    for (let sibling = item.parent.firstChild; sibling; sibling = sibling.nextSibling) {
+      const mark = sibling.firstChild;
+      if (mark?.name === "ListMark" && mark.to - mark.from > longest.length) longest = state.doc.sliceString(mark.from, mark.to);
+    }
+    return numberWidth(longest);
+  };
+
+  /**
+   * A list item hangs: its first line starts with the marker, and its text, on every
+   * line, starts after it. Items inside other items go in as far as their parents' text.
+   */
+  const listItem = (item: SyntaxNode) => {
+    const mark = item.firstChild;
+    if (mark?.name !== "ListMark") return;
+    let offset = 0;
+    for (let parent = item.parent; parent; parent = parent.parent) if (parent.name === "ListItem") offset += itemWidth(parent);
+    const width = itemWidth(item);
+    const indent = +(offset + width).toFixed(2);
+    const first = state.doc.lineAt(item.from);
+    listLines.set(first.from, Decoration.line({ attributes: { style: `padding-left: calc(${LINE_PADDING} + ${indent}em); text-indent: -${indent}em` } }));
+    const last = state.doc.lineAt(item.to).number;
+    for (let n = first.number + 1; n <= last; n++) {
+      listLines.set(state.doc.line(n).from, Decoration.line({ attributes: { style: `padding-left: calc(${LINE_PADDING} + ${indent}em)` } }));
+    }
+    if (prefixes.has(first.from)) return;
+    prefixes.add(first.from);
+    const task = mark.nextSibling?.name === "Task" ? mark.nextSibling.firstChild : null;
+    let end = task?.name === "TaskMarker" ? task.to : mark.to;
+    while (end < first.to && state.doc.sliceString(end, end + 1) === " ") end++;
+    if (active.has(first.number)) {
+      // As typed, in a box as wide as the marker's, so that the text stays where it was.
+      found.push({ from: first.from, to: end, deco: Decoration.mark({ class: "md-list-prefix", attributes: { style: `min-width: ${indent}em` } }) });
+    } else {
+      const checked = task?.name === "TaskMarker" ? /x/i.test(state.doc.sliceString(task.from, task.to)) : null;
+      const marker = state.doc.sliceString(mark.from, mark.to);
+      found.push({ from: first.from, to: end, deco: Decoration.replace({ widget: new ListPrefix(marker, offset, indent, checked) }) });
+    }
+  };
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -110,16 +171,7 @@ function build(view: EditorView, focused: boolean): DecorationSet {
             found.push({ from: line.from, to: line.from, deco: quoteLine });
           }
         }
-        if (node.name === "ListMark" && /^[-*+]$/.test(state.doc.sliceString(node.from, node.to)) && !active.has(state.doc.lineAt(node.from).number)) {
-          // Before a checkbox the dash goes away; otherwise it becomes a bullet.
-          const task = node.node.nextSibling?.name === "Task";
-          const end = task && state.doc.sliceString(node.to, node.to + 1) === " " ? node.to + 1 : node.to;
-          found.push({ from: node.from, to: end, deco: task ? hide : bullet });
-        }
-        if (node.name === "TaskMarker") {
-          const checked = /x/i.test(state.doc.sliceString(node.from, node.to));
-          found.push({ from: node.from, to: node.to, deco: Decoration.replace({ widget: new TaskBox(checked) }) });
-        }
+        if (node.name === "ListItem") listItem(node.node);
         const mark = marks[node.name];
         if (mark && node.to > node.from) found.push({ from: node.from, to: node.to, deco: mark });
         if (HIDDEN.has(node.name) && !active.has(state.doc.lineAt(node.from).number)) {
@@ -189,11 +241,13 @@ function build(view: EditorView, focused: boolean): DecorationSet {
     }
   }
 
+  for (const [from, deco] of listLines) found.push({ from, to: from, deco });
+
   found.sort((a, b) => a.from - b.from || a.deco.startSide - b.deco.startSide || a.to - b.to);
   const builder = new RangeSetBuilder<Decoration>();
   let lastHiddenEnd = -1;
   for (const { from, to, deco } of found) {
-    const isReplace = deco === hide || deco === wikiHidden || deco === bullet || deco.spec.widget instanceof TaskBox || (deco.spec.widget instanceof ImageWidget && to > from);
+    const isReplace = deco === hide || deco === wikiHidden || deco.spec.widget instanceof ListPrefix || (deco.spec.widget instanceof ImageWidget && to > from);
     // Overlapping replacements would throw; the first one wins.
     if (isReplace && from < lastHiddenEnd) continue;
     builder.add(from, to, deco);
@@ -208,10 +262,12 @@ const taskClicks = EditorView.domEventHandlers({
     const target = event.target as HTMLElement;
     if (!target.classList?.contains("md-task")) return false;
     event.preventDefault();
-    const pos = view.posAtDOM(target);
-    const marker = view.state.doc.sliceString(pos, pos + 3);
-    if (!/^\[[ xX]\]$/.test(marker)) return true;
-    view.dispatch({ changes: { from: pos + 1, to: pos + 2, insert: marker[1] === " " ? "x" : " " }, userEvent: "input.task" });
+    // The checkbox stands for the start of the line, up to the item's text.
+    const line = view.state.doc.lineAt(view.posAtDOM(target));
+    const m = /^(\s*(?:[-*+]|\d+[.)])\s+)\[([ xX])\]/.exec(line.text);
+    if (!m) return true;
+    const at = line.from + m[1].length + 1;
+    view.dispatch({ changes: { from: at, to: at + 1, insert: m[2] === " " ? "x" : " " }, userEvent: "input.task" });
     return true;
   },
 });

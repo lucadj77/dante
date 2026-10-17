@@ -120,8 +120,27 @@ async function documentXml(bytes: Uint8Array): Promise<string> {
 describe("lists, tasks and highlights", () => {
   it("keeps bullets, numbers and boxes, and drops highlight marks", () => {
     const blocks = markdownToBlocks(cleanSource("- uno\n- due\n\n1. primo\n2. secondo\n\n- [ ] da fare\n- [x] fatto\n\nUn ==punto== chiave."));
-    const text = blocks.map((b) => (b.type === "break" || b.type === "table" || b.type === "image" ? "---" : b.runs.map((r) => r.text).join("")));
+    const text = blocks.map((b) => (b.type === "item" ? `${b.marker} ` : "") + (b.type === "break" || b.type === "table" || b.type === "image" ? "---" : b.runs.map((r) => r.text).join("")));
     expect(text).toEqual(["• uno", "• due", "1. primo", "2. secondo", "☐ da fare", "☑ fatto", "Un punto chiave."]);
+  });
+
+  it("gives each item its level, and later paragraphs of an item no marker", () => {
+    const blocks = markdownToBlocks("- uno\n    1. dentro\n\n    ancora uno\n- due");
+    expect(blocks.map((b) => (b.type === "item" ? [b.marker, b.level] : b.type))).toEqual([["•", 0], ["1.", 1], ["", 0], ["•", 0]]);
+  });
+
+  it("writes lists back as Markdown lists, and hangs them in the other formats", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\n",
+      "Manuscript/010 Uno/010 Scena.md": "Prima.\n\n- uno\n  - dentro\n- [x] fatto\n\n1. primo\n\nDopo.",
+    });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    const md = bookToMarkdown(book, project.settings.export.docx);
+    expect(md).toContain("Prima.\n\n- uno\n    - dentro\n- [x] fatto\n\n1. primo\n\nDopo.");
+    const xml = await documentXml(await docxBytes(bookToDocx(book, project.settings.export.docx, { words: "words" })));
+    expect(xml).toContain('<w:pStyle w:val="ListParagraph"/>');
+    expect(xml).toMatch(/<w:ind w:left="714" w:hanging="357"\/>/);
   });
 });
 
@@ -202,7 +221,7 @@ describe("markdown export", () => {
         "*A Bruno*",
         "## Capitolo 1: Return",
         "The *train* left.",
-        "• not a list",
+        "- not a list",
         "\\#",
         "#### 1 house",
         "The house.",
