@@ -9,6 +9,7 @@ import { byline, type ParatextSettings } from "../settings";
 import { applyTypography } from "../typography";
 import { extractAlignments, paragraphIndexer, type Align } from "../alignment";
 import { findImages, imageMime, imageSize, resolveImagePath } from "../images";
+import { expandEmbeds } from "../embeds";
 import { splitRow, parseTable, type CellAlign } from "../tables";
 import { resolveLink } from "../wikilinks";
 
@@ -360,7 +361,9 @@ export async function buildBook(
   let sceneCount = 0;
 
   const readScene = async (node: ManuscriptNode): Promise<BookScene> => {
-    const source = splitNote(await project.fs.readText(node.path)).body;
+    const written = splitNote(await project.fs.readText(node.path)).body;
+    // Embedded notes bring their text in, then their images are read with the scene's.
+    const source = await expandEmbeds(written, node.path, project.files, (path) => project.fs.readText(path));
     const { body, images } = await takeImages(project, node.path, source, options.convert);
     // Alignment tags come out before typography, which would change the quotes in them.
     const { text, aligns } = extractAlignments(cleanSource(body, options.revisions));

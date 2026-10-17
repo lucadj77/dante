@@ -181,6 +181,10 @@
       },
       resolves: (target) => resolveLink(target, from, project.files) !== null,
       suggestions: () => suggestions(from),
+      async note(target) {
+        const path = resolveLink(target, from, project.files.filter(isMarkdown));
+        return path ? project.readBody(path) : null;
+      },
       images: {
         url: (target, wiki) => imageUrl(target, wiki, from),
         async add(data, name) {

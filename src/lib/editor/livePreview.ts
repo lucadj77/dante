@@ -2,6 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
 import { tablePreview } from "./tables";
+import { embedPreview } from "./embeds";
 import { ImageWidget, imageDecorations, imageInput } from "./images";
 import { isImagePath } from "../core/images";
 import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
@@ -230,4 +231,4 @@ const plugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, imageInput];
+export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, embedPreview, imageInput];

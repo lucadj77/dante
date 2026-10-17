@@ -104,8 +104,9 @@ class TableWidget extends WidgetType {
   }
 }
 
-const setFocus = StateEffect.define<boolean>();
-const focused = StateField.define<boolean>({
+/** Whether the editor has the focus, kept in the state for decorations built there. */
+export const setFocus = StateEffect.define<boolean>();
+export const focused = StateField.define<boolean>({
   create: () => false,
   update(value, tr) {
     for (const e of tr.effects) if (e.is(setFocus)) value = e.value;

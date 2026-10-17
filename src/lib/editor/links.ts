@@ -20,6 +20,8 @@ export interface LinkHandler {
   open(target: string, beside?: boolean): void;
   resolves(target: string): boolean;
   suggestions(): LinkSuggestion[];
+  /** The body of an embedded note, for ![[Nota]]; null when there is no such note. */
+  note?(target: string): Promise<string | null>;
   /** Showing and adding images, where the project allows it. */
   images?: ImageHandler;
 }
