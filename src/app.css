@@ -107,6 +107,12 @@ select {
 .cm-line.md-h3 { font-size: 1.15em; font-weight: 600; }
 .cm-line.md-h4 { font-weight: 600; }
 .cm-line.md-quote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--text-muted); }
+.md-table-raw { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85em; }
+.md-table-bar { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 4px 0 6px; font-family: var(--ui-font); font-size: 12px; user-select: none; }
+.md-table-group { display: inline-flex; align-items: center; gap: 3px; }
+.md-table-label { color: var(--text-muted); margin-right: 2px; }
+.md-table-bar button { border: 1px solid var(--border); background: var(--bg-panel); color: inherit; border-radius: 4px; padding: 1px 7px; font: inherit; cursor: pointer; }
+.md-table-bar button:hover { background: var(--bg-hover); }
 .md-table-wrap { overflow-x: auto; padding: 4px 0; cursor: text; }
 .md-table { border-collapse: collapse; font-size: 0.95em; line-height: 1.5; }
 .md-table th,
