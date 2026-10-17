@@ -162,6 +162,11 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     emit(`#heading(level: ${level})[${lines(text)}]`);
   };
   const runs = (items: Run[]) => runsOf(items, textWidth / 2.54);
+  // A figure or a table with its caption under it, on the same page.
+  const withCaption = (content: string, items: Run[] | undefined, align: string) =>
+    items
+      ? `#block(breakable: false, width: 100%)[${content} #set par(first-line-indent: 0pt, justify: false); #align(${align}, text(size: 0.9em, style: "italic")[${runs(items)}])]\n`
+      : `${content}\n`;
   const blocks = (items: Block[], level: number) => {
     for (const block of items) {
       if (block.type === "heading") emit(`#heading(level: ${Math.min(6, level + block.level)})[${runs(block.runs)}]\n`);
@@ -170,12 +175,13 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       else if (block.type === "table") {
         const cells = (row: Run[][], head: boolean) => row.map((c) => (head ? `strong[${runs(c)}]` : `[${runs(c)}]`)).join(", ");
         const align = block.align.map((a) => a ?? "left").join(", ");
-        emit(`#align(center, block(width: 100%, table(columns: ${block.header.length}, align: (${align},), inset: 0.4em, table.header(${cells(block.header, true)}), ${block.rows.map((r) => cells(r, false)).join(", ")})))\n`);
+        emit(withCaption(`#align(center, block(width: 100%, table(columns: ${block.header.length}, align: (${align},), inset: 0.4em, table.header(${cells(block.header, true)}), ${block.rows.map((r) => cells(r, false)).join(", ")})))`, block.caption, "center"));
       } else if (block.type === "image") {
         // Typst reads the file from the project folder; formats it cannot read are left out.
         if (!TYPST_IMAGE.test(block.image.path)) continue;
         const width = Math.min(block.image.width / 96, textWidth / 2.54);
-        emit(`#align(${block.align === "center" || block.align === "right" ? block.align : "left"}, image(${str("/" + block.image.path)}, width: ${+width.toFixed(3)}in${block.image.alt ? `, alt: ${str(block.image.alt)}` : ""}))\n`);
+        const align = block.align === "center" || block.align === "right" ? block.align : "left";
+        emit(withCaption(`#align(${align}, image(${str("/" + block.image.path)}, width: ${+width.toFixed(3)}in${block.image.alt ? `, alt: ${str(block.image.alt)}` : ""}))`, block.caption, align));
       }
       else if (block.runs.length && block.runs.every((r) => r.code)) emit(`#raw(block: true, ${str(block.runs.map((r) => r.text).join(""))})\n`);
       else if (block.align === "center" || block.align === "right") {

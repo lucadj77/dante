@@ -95,7 +95,7 @@ describe("tables and images in the export", () => {
     const fs = new MemoryFs({
       "dante.yaml": "title: Test\nauthor: Ada Rossi\nlanguage: it\n",
       "Manuscript/010 Uno/010 Scena.md":
-        'Prima.\n\n<span style="display:block;text-align:center">![[casa.png|Casa|300]]</span>\n\n| Fase | Documento |\n|---|:---:|\n| 0 | [[Idea\\|L\'idea]] |\n\nTesto ![[manca.png]] dopo.\n',
+        'Prima.\n\n<span style="display:block;text-align:center">![[casa.png|Casa|300]]</span>\n\n| Fase | Documento |\n|---|:---:|\n| 0 | [[Idea\\|L\'idea]] |\n\nTabella: Le *fasi*\n\nTesto ![[manca.png]] dopo.\n',
     });
     await fs.writeBytes("Allegati/casa.png", wide());
     return Project.open(fs);
@@ -109,9 +109,12 @@ describe("tables and images in the export", () => {
     expect(image.type === "image" && [image.image.path, image.image.width, image.image.height, image.image.alt, image.align]).toEqual(["Allegati/casa.png", 300, 150, "Casa", "center"]);
     const table = blocks[2];
     expect(table.type === "table" && table.rows[0][1]).toEqual([{ text: "L’idea" }]);
+    // The table's caption and the figure's description are captions, and count as words.
+    expect(table.type === "table" && table.caption).toEqual([{ text: "Le " }, { text: "fasi", italic: true }]);
+    expect(image.type === "image" && image.caption).toEqual([{ text: "Casa" }]);
     // A missing image goes, its text stays.
     expect(blocks[3].type === "paragraph" && blocks[3].runs.map((r) => r.text).join("")).toBe("Testo dopo.");
-    expect(book.words).toBe(7);
+    expect(book.words).toBe(10);
   });
 
   it("writes them in every format", async () => {
@@ -123,24 +126,27 @@ describe("tables and images in the export", () => {
     const xml = await read(docx, "word/document.xml");
     expect(xml).toContain("<w:tbl>");
     expect(xml).toContain("Documento");
+    expect(xml).toContain('<w:pStyle w:val="Caption"/>');
     expect([...docx.keys()].some((k) => k.startsWith("word/media/"))).toBe(true);
 
     const typst = bookToTypst(book, settings, { words: "parole" });
     expect(typst).toContain('image("/Allegati/casa.png", width: 3.125in, alt: "Casa")');
     expect(typst).toContain("#align(center, image(");
+    expect(typst).toContain('#align(center, text(size: 0.9em, style: "italic")[#"Casa"])]');
     expect(typst).toContain("table(columns: 2, align: (left, center,)");
 
     const epub = await unzip(bookToEpub(book, settings, "id"));
     expect(epub.has("OEBPS/images/image1.png")).toBe(true);
     let html = "";
     for (const name of epub.keys()) if (name.endsWith(".xhtml")) html += await read(epub, name);
-    expect(html).toContain('<div class="image align-center"><img src="images/image1.png" alt="Casa" style="width: 300px; max-width: 100%;"/></div>');
+    expect(html).toContain('<div class="image align-center"><img src="images/image1.png" alt="Casa" style="width: 300px; max-width: 100%;"/><p class="caption">Casa</p></div>');
+    expect(html).toContain("<table><caption>Le <em>fasi</em></caption>");
     expect(html).toContain('<th style="text-align: center">Documento</th>');
     expect(await read(epub, "OEBPS/content.opf")).toContain('href="images/image1.png" media-type="image/png"');
 
     const md = bookToMarkdown(book, settings);
     expect(md).toContain('<span style="display:block;text-align:center">![[Allegati/casa.png|Casa|300]]</span>');
-    expect(md).toContain("| Fase | Documento |\n| --- | :---: |\n| 0 | L’idea |");
+    expect(md).toContain("| Fase | Documento |\n| --- | :---: |\n| 0 | L’idea |\n\n: Le *fasi*");
   });
 
   it("keeps an image inside its paragraph's text on the line", async () => {

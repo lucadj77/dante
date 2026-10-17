@@ -101,3 +101,13 @@ export function formatTable(model: TableModel): string[] {
   const [header, ...body] = model.rows;
   return [row(header), `| ${model.align.map((a, i) => rule(a, widths[i])).join(" | ")} |`, ...body.map(row)];
 }
+
+// A table's caption, in the paragraph after it, as Pandoc writes it: "Table: …" or ": …";
+// "Tabella:" and the like in the languages Dante knows. Typography may have put a space
+// before the colon.
+const CAPTION = /^(?:(?:table|tabella|tabla|tableau)[ \t  ]*)?:[ \t]+(?=\S)/i;
+
+/** Where the caption's text starts in a paragraph that is a table caption; 0 when it is not one. */
+export function captionStart(paragraph: string): number {
+  return CAPTION.exec(paragraph)?.[0].length ?? 0;
+}

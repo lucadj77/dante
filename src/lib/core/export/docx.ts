@@ -145,6 +145,7 @@ function styles(opts: DocxSettings, typeset: boolean): IParagraphStyleOptions[] 
     { id: "Centered", name: "Centered", basedOn: "Normal", next: "Normal", paragraph: { ...centered } },
     { id: "RightAligned", name: "Right Aligned", basedOn: "Normal", next: "Normal", paragraph: { alignment: AlignmentType.RIGHT, indent: { firstLine: 0 } } },
     { id: "TableText", name: "Table Text", basedOn: "Normal", paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: 40, after: 40 } } },
+    { id: "Caption", name: "Caption", basedOn: "Normal", next: "Normal", quickFormat: true, run: { italics: true, size: Math.max(16, size - 2) }, paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: 60, after: line / 2 } } },
     { id: "Figure", name: "Figure", basedOn: "Normal", next: "Normal", paragraph: { indent: { firstLine: 0 }, spacing: { line: 240, before: line / 2, after: line / 2 } } },
     { id: "Code", name: "Code", basedOn: "Normal", paragraph: { indent: { firstLine: 0 } }, run: { font: "Courier New" } },
   ];
@@ -215,11 +216,12 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
       } else if (block.type === "table") {
         body.push(table(block.align, block.header, block.rows));
-        // Word needs a paragraph between two tables, or it joins them.
-        body.push(new Paragraph({ style: "TableText", children: [] }));
+        // Word needs a paragraph between two tables, or it joins them: the caption, if any.
+        body.push(new Paragraph(block.caption ? { style: "Caption", alignment: AlignmentType.CENTER, children: runs(block.caption) } : { style: "TableText", children: [] }));
       } else if (block.type === "image") {
         const alignment = block.align === "center" ? AlignmentType.CENTER : block.align === "right" ? AlignmentType.RIGHT : AlignmentType.LEFT;
-        body.push(new Paragraph({ style: "Figure", alignment, children: [imageRun(block.image, textWidth)] }));
+        body.push(new Paragraph({ style: "Figure", alignment, keepNext: !!block.caption, children: [imageRun(block.image, textWidth)] }));
+        if (block.caption) body.push(new Paragraph({ style: "Caption", alignment, children: runs(block.caption) }));
       } else {
         const code = block.runs.every((r) => r.code);
         const style = code ? "Code" : block.align === "center" ? "Centered" : block.align === "right" ? "RightAligned" : first ? "FirstParagraph" : "Normal";

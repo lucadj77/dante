@@ -100,6 +100,8 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
         const row = (cells: Run[][]) => `| ${cells.map((c) => c.map(inline).join("").replace(/\n/g, " ")).join(" | ")} |`;
         const rule = block.align.map((a) => (a === "center" ? ":---:" : a === "right" ? "---:" : a === "left" ? ":---" : "---"));
         add([row(block.header), `| ${rule.join(" | ")} |`, ...block.rows.map(row)].join("\n"));
+        // The caption as Pandoc writes it, which Dante reads too.
+        if (block.caption) add(`: ${block.caption.map(inline).join("")}`);
       } else if (block.type === "image") {
         add(setAlignment(imageEmbed(block.image), block.align ?? null));
       }

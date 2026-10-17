@@ -2,7 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { EditorSelection, EditorState, Facet, Prec, StateEffect, type Range, StateField, type Extension, type TransactionSpec } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, keymap, type DecorationSet } from "@codemirror/view";
 import { linkHandler } from "./links";
-import { formatTable, parseTable, splitRow, tableModel, type ParsedTable, type TableCell, type TableModel } from "../core/tables";
+import { captionStart, formatTable, parseTable, splitRow, tableModel, type ParsedTable, type TableCell, type TableModel } from "../core/tables";
 
 // The inline Markdown a cell can hold: wikilinks, bold, italics, highlight, strikethrough, code.
 const INLINE = /\[\[([^\[\]|\n]+)(?:\|([^\[\]\n]+))?\]\]|\*\*(.+?)\*\*|__(.+?)__|\*(.+?)\*|_(.+?)_|==(.+?)==|~~(.+?)~~|`([^`]+)`/g;
@@ -116,6 +116,7 @@ export const focused = StateField.define<boolean>({
 });
 
 const rawLine = Decoration.line({ class: "md-table-raw" });
+const captionLine = Decoration.line({ class: "md-caption" });
 
 function build(state: EditorState): DecorationSet {
   const hasFocus = state.field(focused);
@@ -125,6 +126,15 @@ function build(state: EditorState): DecorationSet {
       if (node.name !== "Table") return;
       const first = state.doc.lineAt(node.from);
       const last = state.doc.lineAt(node.to);
+      // The caption after the table, "Tabella: …", shows as a caption, its label hidden
+      // away from the cursor.
+      const next = node.node.nextSibling;
+      const start = next?.name === "Paragraph" ? captionStart(state.doc.sliceString(next.from, next.to)) : 0;
+      if (next && start) {
+        ranges.push(captionLine.range(state.doc.lineAt(next.from).from));
+        const editing = hasFocus && state.selection.ranges.some((r) => r.to >= next.from && r.from <= next.to);
+        if (!editing) ranges.push(Decoration.replace({}).range(next.from, next.from + start));
+      }
       // While the cursor is in the table, it shows as typed, in even letters so that its
       // columns line up, with the bar to change it above.
       if (hasFocus && state.selection.ranges.some((r) => r.to >= first.from && r.from <= last.to)) {
