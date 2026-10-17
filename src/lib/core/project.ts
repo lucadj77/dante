@@ -33,7 +33,7 @@ import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
-import { attachmentFolder, attachmentsFolderName, safeFileName } from "./images";
+import { attachmentsFolderName, safeFileName } from "./images";
 
 /** Folders never scanned: app data, other tools' data, version control. */
 // Exports are copies of the novel: kept out of links, searches and statistics.
@@ -236,18 +236,12 @@ export class Project {
   }
 
   /**
-   * Saves an image added from the editor of `notePath` and returns its path: in Obsidian's
-   * attachment folder when the project sets one, otherwise in the attachments folder.
+   * Saves an image added from the editor and returns its path: in the attachments folder
+   * inside Research, where the material gathered for the novel lives.
    */
-  async addAttachment(notePath: string, name: string, data: Uint8Array): Promise<string> {
-    let setting: string | undefined;
-    try {
-      if (await this.fs.exists(".obsidian/app.json")) setting = JSON.parse(await this.fs.readText(".obsidian/app.json")).attachmentFolderPath;
-    } catch {
-      setting = undefined;
-    }
-    const dir = attachmentFolder(typeof setting === "string" ? setting : undefined, notePath, attachmentsFolderName(this.settings.language));
-    if (dir) await this.fs.mkdir(dir);
+  async addAttachment(name: string, data: Uint8Array): Promise<string> {
+    const dir = join(this.settings.folders.research, attachmentsFolderName(this.settings.language));
+    await this.fs.mkdir(dir);
     const path = await this.freeName(dir, safeFileName(name));
     await this.fs.writeBytes(path, data);
     // The new file is known at once, so links to it resolve, without reading the project again.

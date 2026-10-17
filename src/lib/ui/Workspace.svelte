@@ -184,7 +184,7 @@
       images: {
         url: (target, wiki) => imageUrl(target, wiki, from),
         async add(data, name) {
-          const path = await project.addAttachment(from, name, data);
+          const path = await project.addAttachment(name, data);
           suggestionCache.clear();
           return linkTarget(path, from, project.files);
         },

@@ -4,7 +4,7 @@ import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
 import { bookToTypst } from "../export/typst";
 import { bookToMarkdown } from "../export/markdown";
-import { attachmentFolder, findImages, imageSize, resolveImagePath, withWidth } from "../images";
+import { findImages, imageSize, resolveImagePath, withWidth } from "../images";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings } from "../settings";
@@ -56,12 +56,11 @@ describe("images in the text", () => {
     expect(textStats("Testo ![[a.png|300]] ![x](b.png)\n\n| A | [[n\\|B]] |\n|---|:-:|\n| uno | due |").words).toBe(5);
   });
 
-  it("follows Obsidian's attachment folder setting", () => {
-    expect(attachmentFolder(undefined, "M/c/s.md", "Allegati")).toBe("Allegati");
-    expect(attachmentFolder("/", "M/c/s.md", "Allegati")).toBe("");
-    expect(attachmentFolder("./", "M/c/s.md", "Allegati")).toBe("M/c");
-    expect(attachmentFolder("./img", "M/c/s.md", "Allegati")).toBe("M/c/img");
-    expect(attachmentFolder("Media", "M/c/s.md", "Allegati")).toBe("Media");
+  it("saves added images in Research", async () => {
+    const project = await Project.open(new MemoryFs({ "dante.yaml": "title: T\nlanguage: it\nfolders:\n  research: Ricerca\n" }));
+    expect(await project.addAttachment("foto.png", PNG)).toBe("Ricerca/Allegati/foto.png");
+    expect(await project.addAttachment("foto.png", PNG)).toBe("Ricerca/Allegati/foto 2.png");
+    expect(project.files).toContain("Ricerca/Allegati/foto 2.png");
   });
 });
 

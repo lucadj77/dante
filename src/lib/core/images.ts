@@ -185,23 +185,9 @@ export function imageSize(bytes: Uint8Array, mime: string): { width: number; hei
   return null;
 }
 
-/**
- * The folder for images added from Dante: Obsidian's attachment folder when the project
- * has one ("/" the project, "./" the note's folder, "./x" a folder inside it), otherwise
- * `fallback`.
- */
-export function attachmentFolder(obsidianSetting: string | null | undefined, notePath: string, fallback: string): string {
-  const setting = obsidianSetting?.trim();
-  if (setting === undefined || setting === "") return fallback;
-  if (setting === "/") return "";
-  if (setting === "." || setting === "./") return dirname(notePath);
-  if (setting.startsWith("./")) return join(dirname(notePath), setting.slice(2));
-  return join(setting);
-}
-
 const ATTACHMENTS: Record<string, string> = { en: "Attachments", it: "Allegati", es: "Adjuntos", fr: "Pièces jointes" };
 
-/** The folder for added images in a project without Obsidian's setting, in the novel's language. */
+/** The name of the folder, inside Research, for images added from Dante, in the novel's language. */
 export function attachmentsFolderName(language: string): string {
   return ATTACHMENTS[language.slice(0, 2)] ?? ATTACHMENTS.en;
 }
