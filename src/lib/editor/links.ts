@@ -1,5 +1,5 @@
 import { acceptCompletion, autocompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
-import { Facet, Prec, type Extension } from "@codemirror/state";
+import { ChangeSet, EditorSelection, EditorState, Facet, Prec, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
 export interface LinkSuggestion {
@@ -19,6 +19,16 @@ export interface LinkHandler {
   open(target: string, beside?: boolean): void;
   resolves(target: string): boolean;
   suggestions(): LinkSuggestion[];
+  /**
+   * The target to write for `name` when no note is called that but exactly one note has
+   * it among its aliases; null otherwise.
+   */
+  aliasOf?(name: string): string | null;
+  /**
+   * Asks what to do with the link clicked at `at` (open it, preview it, create its note);
+   * `edit` puts the cursor inside the link instead.
+   */
+  choose?(target: string, at: { x: number; y: number }, edit: () => void): void;
 }
 
 export const linkHandler = Facet.define<LinkHandler, LinkHandler | null>({
@@ -39,31 +49,90 @@ export function linkAt(view: EditorView, pos: number): string | null {
   return null;
 }
 
+/** The wikilink around `pos`: where it starts and ends, and where its text is. */
+function linkRangeAt(state: EditorState, pos: number): { from: number; to: number } | null {
+  const line = state.doc.lineAt(pos);
+  for (const m of line.text.matchAll(LINK)) {
+    const start = line.from + m.index!;
+    if (pos >= start && pos <= start + m[0].length) return { from: start, to: start + m[0].length };
+  }
+  return null;
+}
+
 /**
- * A click on a link drawn by the live preview opens its note; on a line being edited,
- * where the brackets show, it takes Cmd or Ctrl as well.
+ * A click on a link asks what to do with it. Cmd or Ctrl opens it at once, Alt (Option)
+ * opens it in a pane. A click on a link the cursor is already in only moves the cursor, to edit it.
  */
 const clicks = EditorView.domEventHandlers({
   mousedown(event, view) {
     const handler = view.state.facet(linkHandler);
-    if (!handler || event.button !== 0) return false;
+    if (!handler || event.button !== 0 || event.shiftKey) return false;
     const modified = event.metaKey || event.ctrlKey;
     const onLink = (event.target as HTMLElement).closest?.(".md-wikilink");
     if (!modified && !onLink) return false;
     const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
     if (pos === null) return false;
     const target = linkAt(view, pos);
-    if (!target) return false;
-    const line = view.state.doc.lineAt(pos).number;
-    const editing = view.hasFocus && view.state.selection.ranges.some((r) => {
-      const first = view.state.doc.lineAt(r.from).number;
-      return line >= first && line <= view.state.doc.lineAt(r.to).number;
-    });
-    if (editing && !modified) return false;
+    const range = linkRangeAt(view.state, pos);
+    if (!target || !range) return false;
+    if (modified || event.altKey || !handler.choose) {
+      event.preventDefault();
+      handler.open(target, event.altKey);
+      return true;
+    }
+    const inside = view.hasFocus && view.state.selection.ranges.some((r) => r.from > range.from && r.to < range.to);
+    if (inside) return false;
     event.preventDefault();
-    handler.open(target, event.altKey);
+    handler.choose(target, { x: event.clientX, y: event.clientY }, () => {
+      view.focus();
+      view.dispatch({ selection: { anchor: range.to - 2 }, scrollIntoView: true });
+    });
     return true;
   },
+});
+
+/**
+ * A link closed by typing "]]" or by wrapping a selection in brackets, whose name is an
+ * alias of a note, is written as [[note|alias]]: it reaches the note, here and in Obsidian,
+ * and still reads as typed.
+ */
+const aliasLinks = EditorState.transactionFilter.of((tr) => {
+  if (!tr.docChanged || !(tr.isUserEvent("input.type") || tr.isUserEvent("input.format"))) return tr;
+  const handler = tr.startState.facet(linkHandler);
+  if (!handler?.aliasOf) return tr;
+  const doc = tr.newDoc;
+  const edits: { from: number; to: number; insert: string; linkFrom: number; linkTo: number }[] = [];
+  const seen = new Set<number>();
+  tr.changes.iterChangedRanges((_fromA, _toA, fromB, toB) => {
+    for (let n = doc.lineAt(fromB).number; n <= doc.lineAt(toB).number; n++) {
+      const line = doc.line(n);
+      for (const m of line.text.matchAll(LINK)) {
+        const start = line.from + m.index!;
+        const end = start + m[0].length;
+        // Only the change that closes the link counts: typing inside its name does not.
+        if (seen.has(start) || !(fromB < end && toB > end - 2) || m[2] !== undefined) continue;
+        seen.add(start);
+        const inner = m[1];
+        const hash = inner.indexOf("#");
+        const name = (hash < 0 ? inner : inner.slice(0, hash)).trim();
+        const subpath = hash < 0 ? "" : inner.slice(hash);
+        const target = name ? handler.aliasOf!(name) : null;
+        if (!target) continue;
+        const innerFrom = start + m[0].indexOf("[[") + 2;
+        edits.push({ from: innerFrom, to: innerFrom + inner.length, insert: `${target}${subpath}|${name}`, linkFrom: start, linkTo: end });
+      }
+    }
+  });
+  if (edits.length === 0) return tr;
+  const changes = ChangeSet.of(edits.map(({ from, to, insert }) => ({ from, to, insert })), doc.length);
+  // A cursor in or at the end of a rewritten link goes after it; the others follow the text.
+  const ranges = tr.newSelection.ranges.map((r) => {
+    const edit = edits.find((e) => r.from >= e.linkFrom && r.to <= e.linkTo);
+    if (!edit) return r.map(changes);
+    return EditorSelection.cursor(changes.mapPos(edit.linkTo, 1));
+  });
+  const spec: TransactionSpec = { changes, selection: EditorSelection.create(ranges, tr.newSelection.mainIndex), sequential: true };
+  return [tr, spec];
 });
 
 /** Suggests notes after "[[", by name and by alias. */
@@ -100,6 +169,7 @@ export function wikilinks(handler: LinkHandler | undefined): Extension {
   return [
     linkHandler.of(handler),
     Prec.high(clicks),
+    aliasLinks,
     autocompletion({ override: [complete], icons: false, activateOnTyping: true }),
     // Tab takes the highlighted suggestion too, as Enter does.
     Prec.highest(keymap.of([{ key: "Tab", run: acceptCompletion }])),

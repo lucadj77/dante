@@ -21,7 +21,8 @@
   import type { NoteIndex } from "$lib/core/notes";
   import { noteType } from "$lib/core/notes";
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
-  import { linkTarget, resolveLink } from "$lib/core/wikilinks";
+  import { linkTarget, resolveAlias, resolveLink } from "$lib/core/wikilinks";
+  import LinkMenu, { type LinkMenuRequest } from "./LinkMenu.svelte";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { folderNotePath } from "$lib/core/manuscript";
   import ConflictsDialog from "./ConflictsDialog.svelte";
@@ -154,16 +155,32 @@
     return out;
   }
 
+  /** The note a link reaches: by name, or by an alias only that note has. */
+  function linked(target: string, from: string): string | null {
+    const files = project.files;
+    return resolveLink(target, from, files) ?? resolveAlias(target, from, files, (p) => index?.notes.get(p)?.aliases ?? []);
+  }
+
+  /** The menu of the link last clicked, with its preview. */
+  let linkMenu = $state<LinkMenuRequest | null>(null);
+
   provideNavigator({
     open,
     reload,
     links: (from) => ({
       open(target, beside) {
-        const path = resolveLink(target, from, project.files);
+        const path = linked(target, from);
         if (path) open(path, beside);
       },
-      resolves: (target) => resolveLink(target, from, project.files) !== null,
+      resolves: (target) => linked(target, from) !== null,
       suggestions: () => suggestions(from),
+      aliasOf(name) {
+        const path = resolveAlias(name, from, project.files, (p) => index?.notes.get(p)?.aliases ?? []);
+        return path ? linkTarget(path, from, project.files) : null;
+      },
+      choose(target, at, edit) {
+        linkMenu = { target, from, path: linked(target, from), x: at.x, y: at.y, edit };
+      },
     }),
   });
 
@@ -540,6 +557,26 @@
     {/if}
   </div>
 </div>
+
+{#if linkMenu}
+  {#key linkMenu}
+    <LinkMenu
+      {project}
+      {diskRev}
+      request={linkMenu}
+      onOpen={(path, beside) => {
+        linkMenu = null;
+        open(path, beside);
+      }}
+      onCreated={async (path) => {
+        linkMenu = null;
+        await reload();
+        open(path, true);
+      }}
+      onClose={() => (linkMenu = null)}
+    />
+  {/key}
+{/if}
 
 {#snippet besidePanes()}
   <PaneArea {project} {rev} {diskRev} onReload={reload} onOpenMain={(path) => open(path)} onSwap={swap} />
