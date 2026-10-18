@@ -28,7 +28,12 @@ export function findLinks(text: string): WikiLink[] {
 
 /** Text with each link written as a reader sees it: its alias, or the linked note's name. */
 export function readableLinks(text: string): string {
-  return text.replace(LINK, (_m, _embed, target: string, _sub, alias?: string) => (alias ? alias.slice(1) : basename(stripExt(target.trim()))));
+  return text.replace(LINK, (_m, _embed, target: string, _sub, alias?: string) => (alias ? alias.slice(1) : basename(dropMd(target.trim()))));
+}
+
+/** "Mrs. Bennet" is a name, not a file with the extension ". Bennet": only ".md" goes. */
+function dropMd(target: string): string {
+  return isMarkdown(target) ? stripExt(target) : target;
 }
 
 function normalize(target: string): string {

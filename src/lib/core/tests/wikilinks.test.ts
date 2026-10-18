@@ -41,5 +41,6 @@ describe("readableLinks", () => {
     expect(readableLinks("[[Marco Rossi]]")).toBe("Marco Rossi");
     expect(readableLinks("[[People/Anna.md#Past|Annie]] and [[Notes/Rome]]")).toBe("Annie and Rome");
     expect(readableLinks("plain")).toBe("plain");
+    expect(readableLinks("[[Mrs. Bennet]] and [[Notes/Rome.md]]")).toBe("Mrs. Bennet and Rome");
   });
 });
