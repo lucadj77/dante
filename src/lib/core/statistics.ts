@@ -209,7 +209,8 @@ function bible(index: NoteIndex, settings: NovelSettings): { note: NoteInfo; typ
     const names = [...new Set([title, ...note.aliases])].filter((n) => n.trim()).sort((a, b) => b.length - a.length);
     // Whole words, as written: "Marta" is not found in "Martina", and a place called
     // "Casa" is not every "casa" in the text.
-    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])(?:${names.map(escape).join("|")})(?![\\p{L}\\p{N}])`, "gu");
+    // The character before is matched rather than looked behind, which macOS 10.15 does not know.
+    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])(?:${names.map(escape).join("|")})(?![\\p{L}\\p{N}])`, "gu");
     out.push({ note, type, title, pattern });
   }
   return out;
@@ -245,7 +246,9 @@ export function sceneSheets(text: string, linked: string[], index: NoteIndex, se
   const found: (SceneSheet & { at: number })[] = [];
   for (const { note, type, title, pattern } of bible(index, settings)) {
     pattern.lastIndex = 0;
-    const at = pattern.exec(text)?.index ?? (linked.includes(note.path) ? Infinity : -1);
+    const match = pattern.exec(text);
+    // The name starts after the character matched before it.
+    const at = match ? match.index + match[1].length : linked.includes(note.path) ? Infinity : -1;
     if (at >= 0) found.push({ path: note.path, title, type, at });
   }
   return found.sort((a, b) => a.at - b.at || a.title.localeCompare(b.title)).map(({ path, title, type }) => ({ path, title, type }));

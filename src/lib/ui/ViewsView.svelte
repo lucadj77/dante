@@ -984,6 +984,7 @@
     border-radius: 4px;
   }
   .view-link[aria-current] {
+    background: rgba(47, 95, 158, 0.15);
     background: color-mix(in srgb, var(--accent) 15%, transparent);
     font-weight: 600;
   }
@@ -1037,6 +1038,7 @@
   }
   .kinds button[aria-pressed="true"],
   header > button[aria-pressed="true"] {
+    background: rgba(47, 95, 158, 0.15);
     background: color-mix(in srgb, var(--accent) 15%, transparent);
     color: var(--accent);
   }

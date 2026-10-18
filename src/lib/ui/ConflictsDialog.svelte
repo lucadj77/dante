@@ -183,10 +183,12 @@
     padding: 8px 12px;
   }
   ins {
+    background: rgba(58, 154, 91, 0.22);
     background: color-mix(in srgb, #3a9a5b 22%, transparent);
     text-decoration: none;
   }
   del {
+    background: rgba(163, 59, 43, 0.2);
     background: color-mix(in srgb, var(--danger) 20%, transparent);
   }
   .actions {
