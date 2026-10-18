@@ -11,3 +11,5 @@ mkdir -p out && python3 build.py out               # out/dante.mp4, out/dante-en
 ```
 
 The first scene shows the desktop welcome, with recent projects and their covers, through a pretend Tauri; the page then reloads as the plain browser app. `rec.mjs` draws a mouse pointer and the caption of each scene over the page, since headless Chromium shows neither. Frames come from the browser's screencast and `build.py` turns them into a 1920×1080, 30 fps video with ffmpeg; the subtitles follow the scene times. Set `PLAYWRIGHT` to the path of an installed `playwright/index.mjs` if the import fails.
+
+With a read voice-over and a music file, `python3 mix.py voice.wav music.m4a cuts.json` writes `out/dante-audio.mp4`: `cuts.json` lists where each paragraph of the reading ends, in seconds, and each paragraph starts at its scene. The music loops with a crossfade and drops while the voice speaks; the Italian and English subtitles go in as tracks.
