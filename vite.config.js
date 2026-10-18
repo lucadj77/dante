@@ -7,6 +7,12 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [sveltekit()],
 
+  // macOS 10.15 (Catalina) stops at Safari 15.6, whose WebKit draws the Mac window:
+  // newer syntax is rewritten for it. Windows (WebView2) and Linux are newer anyway.
+  build: {
+    target: ["safari15", "chrome111", "edge111", "firefox114"],
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

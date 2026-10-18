@@ -451,6 +451,7 @@
     padding: 0 1px;
   }
   .col:hover {
+    background: rgba(47, 95, 158, 0.06);
     background: color-mix(in srgb, var(--accent) 6%, transparent);
   }
   .mark {
@@ -545,6 +546,7 @@
     border-left: 1px solid var(--border);
   }
   .segmented button[aria-pressed="true"] {
+    background: rgba(47, 95, 158, 0.16);
     background: color-mix(in srgb, var(--accent) 16%, transparent);
     color: var(--accent);
   }

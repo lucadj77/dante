@@ -13,7 +13,7 @@ export function plainText(markdown: string): string {
     .replace(/!?\[\[([^\]|]+)\\?\|([^\]]+)\]\]/g, "$2")
     .replace(/!?\[\[([^\]]+)\]\]/g, "$1")
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/(?<!\\)\|/g, " ")
+    .replace(/\\?\|/g, (bar) => (bar === "|" ? " " : bar))
     .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+[.)])\s+/gm, "")
     .replace(/[*_~`=]+/g, "");
 }

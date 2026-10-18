@@ -30,8 +30,9 @@ const wikiLink = Decoration.mark({ class: "md-wikilink" });
 const wikiMissing = Decoration.mark({ class: "md-wikilink md-unresolved" });
 const wikiHidden = Decoration.replace({});
 const WIKILINK = /\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
-// ==highlight==, but not CriticMarkup's {==highlight==}.
-const HIGHLIGHT = /(?<!\{)==(?=\S)([^=\n]+?)==(?!\})/g;
+// ==highlight==, but not CriticMarkup's {==highlight==} (the "{" before is checked where
+// it is used: no lookbehind, which macOS 10.15 does not know).
+const HIGHLIGHT = /==(?=\S)([^=\n]+?)==(?!\})/g;
 const highlight = Decoration.mark({ class: "md-highlight" });
 const alignLines = {
   left: Decoration.line({ class: "md-align-left" }),
@@ -209,8 +210,14 @@ function build(view: EditorView, focused: boolean): DecorationSet {
     }
 
     const text = state.doc.sliceString(from, to);
-    for (const m of text.matchAll(HIGHLIGHT)) {
-      const start = from + m.index!;
+    HIGHLIGHT.lastIndex = 0;
+    for (let m; (m = HIGHLIGHT.exec(text)); ) {
+      // After a "{" the search goes on from the next character, as a lookbehind would.
+      if (text[m.index - 1] === "{") {
+        HIGHLIGHT.lastIndex = m.index + 1;
+        continue;
+      }
+      const start = from + m.index;
       const end = start + m[0].length;
       if (active.has(state.doc.lineAt(start).number)) {
         found.push({ from: start, to: end, deco: highlight });

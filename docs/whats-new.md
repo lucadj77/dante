@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **macOS 10.15 Catalina**: Dante now opens on Intel Macs with Catalina, as long as Safari is updated to version 15.6. Before, the window stayed blank. Nothing changes on newer systems.
+
 ## 0.1.32 · October 17, 2026
 
 - **Lists**: the text of bulleted, numbered and checkbox list items now hangs after the bullet, number or box, and wrapped lines line up under the text. Nested items go in by one level. Word, PDF and EPUB exports have the same indent; the Markdown export writes Markdown lists.

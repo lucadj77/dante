@@ -1081,6 +1081,14 @@
       display: none;
     }
   }
+  /* WebKit without container queries (macOS 10.15): the window width stands in for the bar's. */
+  @supports not (container-type: inline-size) {
+    @media (max-width: 900px) {
+      .label {
+        display: none;
+      }
+    }
+  }
   .page {
     flex: 1;
     overflow: auto;

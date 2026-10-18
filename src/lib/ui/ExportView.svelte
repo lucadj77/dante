@@ -575,6 +575,7 @@
   }
   .format.chosen {
     border-color: var(--accent);
+    background: rgba(47, 95, 158, 0.1);
     background: color-mix(in srgb, var(--accent) 10%, transparent);
   }
   .format input {
