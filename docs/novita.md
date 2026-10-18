@@ -4,6 +4,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+## 0.1.34 · 18 ottobre 2026
+
 - **macOS 10.15 Catalina**: Dante si apre anche sui Mac Intel con Catalina, purché Safari sia aggiornato alla versione 15.6. Prima la finestra restava bianca. Sui sistemi più recenti non cambia nulla.
 
 ## 0.1.32 · 17 ottobre 2026

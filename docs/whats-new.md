@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.34 · October 18, 2026
+
 - **macOS 10.15 Catalina**: Dante now opens on Intel Macs with Catalina, as long as Safari is updated to version 15.6. Before, the window stayed blank. Nothing changes on newer systems.
 
 ## 0.1.32 · October 17, 2026
