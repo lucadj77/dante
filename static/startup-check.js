@@ -9,6 +9,7 @@
   var started = false;
   var shown = false;
   var version = "";
+  var webkit = "";
   var italian = /^it/i.test(navigator.language || "");
 
   function text(it, en) {
@@ -42,7 +43,17 @@
       }
     }
     var css = window.CSS && CSS.supports ? CSS.supports.bind(CSS) : function () { return false; };
+    function parses(code) {
+      return function () {
+        new Function(code);
+        return true;
+      };
+    }
     return [
+      "optional chaining (Safari 13.1): " + has(parses("var a = {}; return a?.b;")),
+      "class fields (Safari 14): " + has(parses("return class { a = 1 };")),
+      "static class fields (Safari 14.1): " + has(parses("return class { static a = 1 };")),
+      "WeakRef (Safari 14.1): " + has(function () { return window.WeakRef; }),
       "Array.at (Safari 15.4): " + has(function () { return [].at; }),
       "structuredClone (Safari 15.4): " + has(function () { return window.structuredClone; }),
       "regex lookbehind (Safari 16.4): " + has(function () { return new RegExp("(?<=a)b").test("ab"); }),
@@ -59,6 +70,7 @@
       "Dante – " + text("rapporto di avvio", "start-up report"),
       text("Data", "Date") + ": " + new Date().toISOString(),
       text("Versione di Dante", "Dante version") + ": " + (version || "?"),
+      "WebKit: " + (webkit || "?"),
       text("Avviato", "Started") + ": " + (started ? "yes" : "no"),
       "User agent: " + navigator.userAgent,
       text("Lingua", "Language") + ": " + navigator.language,
@@ -123,6 +135,7 @@
     var internals = window.__TAURI_INTERNALS__;
     if (internals && internals.invoke) {
       internals.invoke("plugin:app|version").then(function (v) { version = String(v); }, function () {});
+      internals.invoke("webkit_info").then(function (v) { webkit = String(v); }, function () {});
     }
   } catch (e) {
     // No version in the report.

@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **macOS 10.15 Catalina**: Dante uses the engine of the updated Safari instead of the Safari 13 one that Catalina gives to apps, with which the window did not open. It is still being tried: if Dante does not start, the start-up report tells what is missing.
+
 ## 0.1.35 · October 20, 2026
 
 - **Importing from Word on macOS Catalina**: importing a .docx file now works with Safari 15 too; before, it failed with an error.
