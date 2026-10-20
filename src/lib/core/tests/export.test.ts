@@ -250,3 +250,9 @@ describe("cover in exports", () => {
     expect(typst).toContain('#page(margin: 0pt, header: none, footer: none, image(bytes("<svg ');
   });
 });
+
+describe("addresses written between angle brackets", () => {
+  it("keep the address in the text", () => {
+    expect(markdownToBlocks("See <https://example.com> now.")).toEqual([{ type: "paragraph", runs: [{ text: "See https://example.com now." }] }]);
+  });
+});

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChangeSet, Text } from "@codemirror/state";
-import { DocumentStore, SAVE_DELAY, type DocumentFiles, type Peer } from "../../editor/documents";
+import { DocumentStore, RETRY_DELAY, SAVE_DELAY, type DocumentFiles, type Peer } from "../../editor/documents";
 
 /** An editor reduced to its text. */
 class FakeEditor implements Peer {
@@ -50,6 +50,34 @@ function files(initial: Record<string, string>) {
 describe("files open in several editors", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
+
+  it("keeps the text when a write fails, says so and writes it again", async () => {
+    const f = files({ "a.md": "One" });
+    const doc = new DocumentStore(f.io).get("a.md");
+    const one = new FakeEditor(await doc.text());
+    doc.join(one);
+    const write = f.io.write;
+    f.io.write = async () => {
+      throw new Error("EACCES");
+    };
+    doc.edited(one, one.type(3, "!"), one.text);
+    await vi.advanceTimersByTimeAsync(SAVE_DELAY);
+    expect(doc.failed).toBe(true);
+    expect(f.disk.get("a.md")).toBe("One");
+    f.io.write = write;
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY);
+    expect(doc.failed).toBe(false);
+    expect(f.disk.get("a.md")).toBe("One!");
+  });
+
+  it("reads the file again for an editor that comes after one closed before joining", async () => {
+    const f = files({ "a.md": "v1" });
+    const store = new DocumentStore(f.io);
+    await store.get("a.md").text();
+    f.disk.set("a.md", "v2");
+    await store.refreshAll();
+    expect(await store.get("a.md").text()).toBe("v2");
+  });
 
   it("shares what is typed and writes it once", async () => {
     const f = files({ "a.md": "Hello" });

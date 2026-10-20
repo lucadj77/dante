@@ -4,7 +4,8 @@ mod web;
 pub mod webkit;
 
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{App, AppHandle, Emitter, Manager, State, WebviewWindowBuilder};
@@ -24,11 +25,20 @@ fn portable_data_dir() -> Option<PathBuf> {
 struct Opened(Mutex<Option<String>>);
 
 /// The first argument naming something on disk: Windows and Linux pass the file that was
-/// double-clicked this way.
-fn path_argument(args: impl IntoIterator<Item = String>) -> Option<String> {
+/// double-clicked this way. A relative path is read from `cwd`, the folder of the copy that
+/// received it (a second copy hands over its arguments and its own folder).
+fn path_argument(args: impl IntoIterator<Item = String>, cwd: &std::path::Path) -> Option<String> {
     args.into_iter()
         .skip(1)
-        .find(|a| !a.starts_with('-') && std::path::Path::new(a).exists())
+        .filter(|a| !a.starts_with('-'))
+        .map(|a| cwd.join(a))
+        .find(|p| p.exists())
+        .map(|p| p.to_string_lossy().into_owned())
+}
+
+/// This copy's arguments, also when one is not valid Unicode.
+fn own_arguments() -> Vec<String> {
+    std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect()
 }
 
 /// Keeps `path` for the page and tells it, bringing the window to the front.
@@ -45,6 +55,40 @@ fn open_from_system(app: &AppHandle, path: String) {
 #[tauri::command]
 fn opened_project(opened: State<Opened>) -> Option<String> {
     opened.0.lock().unwrap().take()
+}
+
+/// How long the page has to write what is not saved yet before Dante quits anyway.
+const QUIT_GRACE: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// Closing the window or choosing Quit: the page writes the text typed in the last moment
+/// (autosave waits for a pause in typing), then calls `quit`. If the page does not answer,
+/// as when it never started, Dante quits after a moment all the same.
+fn quit_requested(app: &AppHandle) {
+    let answered = app.state::<QuitAnswered>().0.clone();
+    answered.store(false, Ordering::SeqCst);
+    let _ = app.emit("quit-requested", ());
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(QUIT_GRACE);
+        if !answered.load(Ordering::SeqCst) {
+            app.exit(0);
+        }
+    });
+}
+
+/// Whether the page took the last request to quit, and so decides when to.
+struct QuitAnswered(Arc<AtomicBool>);
+
+/// The page is saving: Dante waits for `quit` (or for the writer to stay, if saving fails).
+#[tauri::command]
+fn quit_answered(answered: State<QuitAnswered>) {
+    answered.0.store(true, Ordering::SeqCst);
+}
+
+/// The page has saved everything: Dante can quit.
+#[tauri::command]
+fn quit(app: AppHandle) {
+    app.exit(0);
 }
 
 /// Whether this copy can update itself from the preview release. Not while developing (the
@@ -75,7 +119,8 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
             &PredefinedMenuItem::hide_others(h, None)?,
             &PredefinedMenuItem::show_all(h, None)?,
             &PredefinedMenuItem::separator(h)?,
-            &PredefinedMenuItem::quit(h, None)?,
+            // Not the predefined Quit, which ends Dante before the page saves.
+            &MenuItem::with_id(h, "quit", "Quit Dante", true, Some("CmdOrCtrl+Q"))?,
         ],
     )?;
     let edit = Submenu::with_items(
@@ -108,6 +153,8 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
     app.on_menu_event(|app, event| {
         if event.id() == "close-pane" {
             let _ = app.emit("close-pane", ());
+        } else if event.id() == "quit" {
+            quit_requested(app);
         }
     });
     Ok(())
@@ -118,8 +165,8 @@ pub fn run() {
     let app = tauri::Builder::default()
         // A second copy started by a double-click hands its file to the running one and
         // quits, so a project opens in the window already there.
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            match path_argument(args) {
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            match path_argument(args, std::path::Path::new(&cwd)) {
                 Some(path) => open_from_system(app, path),
                 None => {
                     if let Some(window) = app.get_webview_window("main") {
@@ -133,8 +180,15 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                quit_requested(window.app_handle());
+            }
+        })
+        .manage(QuitAnswered(Arc::new(AtomicBool::new(false))))
         .manage(files::WatcherState(Mutex::new(None)))
-        .manage(Opened(Mutex::new(path_argument(std::env::args()))))
+        .manage(Opened(Mutex::new(path_argument(own_arguments(), &std::env::current_dir().unwrap_or_default()))))
         // The window is created here rather than from the configuration, to choose where
         // the web view keeps its data.
         .setup(|app| {
@@ -167,6 +221,8 @@ pub fn run() {
             webkit::webkit_info,
             opened_project,
             updates_supported,
+            quit,
+            quit_answered,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

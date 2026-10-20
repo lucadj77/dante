@@ -60,6 +60,7 @@
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
   let conflict = $state(doc.conflict);
+  let failed = $state(doc.failed);
   let renaming = $state(false);
   let draft = $state("");
 
@@ -99,7 +100,10 @@
 
   onMount(() => {
     let destroyed = false;
-    const unwatch = doc.watch(() => (conflict = doc.conflict));
+    const unwatch = doc.watch(() => {
+      conflict = doc.conflict;
+      failed = doc.failed;
+    });
     doc.text().then((text) => {
       if (destroyed) return;
       props.onText(path, text);
@@ -187,6 +191,9 @@
       {t("presence.editing", { user: collab.holder.user })}
       <button onclick={() => collab.force()}>{t("presence.editAnyway")}</button>
     </div>
+  {/if}
+  {#if failed}
+    <div class="conflict" role="alert">{t("editor.saveFailed")}</div>
   {/if}
   {#if conflict}
     <div class="conflict" role="alert">

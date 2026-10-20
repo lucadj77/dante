@@ -228,14 +228,15 @@
     }
   }
 
+  // The scene's editor still holds the whole text: it takes the first part from the disk.
   function splitScene(path: string, before: string, after: string) {
     editors.get(path)?.cancel();
-    void run(() => project.splitScene(path, before, after, t("untitledScene")), "start");
+    void run(() => project.splitScene(path, before, after, t("untitledScene")), "start").then(onDiskChange);
   }
 
   function splitChapter(path: string, before: string, after: string) {
     editors.get(path)?.cancel();
-    void run(() => project.splitChapter(path, before, after, t("untitled"), t("untitledScene")), "start");
+    void run(() => project.splitChapter(path, before, after, t("untitled"), t("untitledScene")), "start").then(onDiskChange);
   }
 
   function leave(path: string, direction: "up" | "down"): boolean {
@@ -385,7 +386,7 @@
       error = t("tree.mergeConflict", { title: findNode(conflicted.original)?.title ?? conflicted.original });
       return;
     }
-    for (const p of paths) editors.get(p)?.cancel();
+    // run() writes what is typed in them first, so the joined text has it.
     chosen = [];
     await run(() => project.mergeScenes(paths));
     // The first scene's editor may be open: it takes the joined text.

@@ -98,3 +98,29 @@ describe("presence", () => {
     expect(holder([anna], "other.md", null)).toBeNull();
   });
 });
+
+describe("conflict copies when their file moves", () => {
+  const files = () =>
+    new MemoryFs({
+      "Manuscript/010 One/010 Arrival.md": "original text",
+      "Manuscript/010 One/010 Arrival (Anna's conflicted copy 2026-10-14).md": "anna's text",
+      "Manuscript/010 One/020 Dinner.md": "dinner",
+    });
+
+  it("take the new name of their file", async () => {
+    const fs = files();
+    const project = await Project.open(fs);
+    await project.rename("Manuscript/010 One/010 Arrival.md", "Landing");
+    expect(project.conflicts.map((c) => [c.path, c.original])).toEqual([
+      ["Manuscript/010 One/010 Landing (Anna's conflicted copy 2026-10-14).md", "Manuscript/010 One/010 Landing.md"],
+    ]);
+  });
+
+  it("go to the trash with their file", async () => {
+    const fs = files();
+    const project = await Project.open(fs);
+    await project.trash("Manuscript/010 One/010 Arrival.md");
+    expect(project.conflicts).toEqual([]);
+    expect(project.files.filter((f) => f.startsWith("Manuscript/"))).toEqual(["Manuscript/010 One/020 Dinner.md"]);
+  });
+});

@@ -6,6 +6,7 @@
   import { app, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { flushAll } from "$lib/ui/documents.svelte";
+  import { flushSessions } from "$lib/ui/sessions.svelte";
   import UpdateBanner from "$lib/ui/UpdateBanner.svelte";
   import Welcome from "$lib/ui/Welcome.svelte";
   import Workspace from "$lib/ui/Workspace.svelte";
@@ -29,24 +30,40 @@
     }
   }
 
+  /** The window is closing: what was typed in the last moment is written first. */
+  async function quit() {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("quit_answered");
+    try {
+      if (project) await flushAll(project);
+      await flushSessions();
+    } catch (e) {
+      const { ask } = await import("@tauri-apps/plugin-dialog");
+      const anyway = await ask(t("quit.unsaved", { message: String(e) }), { title: t("app.name"), kind: "warning", okLabel: t("quit.anyway"), cancelLabel: t("quit.stay") });
+      if (!anyway) return;
+    }
+    await invoke("quit");
+  }
+
   onMount(() => {
     // The first screen is on: static/startup-check.js no longer shows its report by itself.
     (window as { danteStarted?: () => void }).danteStarted?.();
     if (!inTauri()) return;
-    let unlisten: (() => void) | undefined;
     let stopped = false;
-    void import("@tauri-apps/api/event").then(({ listen }) =>
-      listen("open-project", () => void openRequested()).then((u) => {
-        if (stopped) u();
-        else unlisten = u;
-      }),
-    );
+    const unlistens: (() => void)[] = [];
+    void import("@tauri-apps/api/event").then(({ listen }) => {
+      for (const listening of [listen("open-project", () => void openRequested()), listen("quit-requested", () => void quit())])
+        void listening.then((u) => {
+          if (stopped) u();
+          else unlistens.push(u);
+        });
+    });
     void openRequested();
     if (app.settings.checkUpdates) void checkForUpdates(true);
     else void loadUpdateInfo();
     return () => {
       stopped = true;
-      unlisten?.();
+      for (const u of unlistens) u();
     };
   });
 </script>

@@ -1,0 +1,48 @@
+name: Release
+
+# Turns the current "preview" release into an official one, v0.1.N: the same files, already
+# tried, under names with the version instead of the commit, in a release that is not a
+# prerelease and shows as GitHub's latest. Nothing is built again. The files of the
+# automatic update (.sig, .app.tar.gz, latest.json) stay on the preview release, which the
+# installed copies keep checking.
+#
+# Started by hand (Actions > Release > Run workflow).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Read the preview release
+        run: |
+          gh release view preview --json name,targetCommitish,body > preview.json
+          version=$(jq -r .name preview.json | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          commit=$(jq -r .targetCommitish preview.json)
+          if [ -z "$version" ]; then echo "::error::No version in the preview's title"; exit 1; fi
+          if gh release view "v$version" > /dev/null 2>&1; then echo "::error::v$version is already released"; exit 1; fi
+          echo "version=$version" >> "$GITHUB_ENV"
+          echo "commit=$commit" >> "$GITHUB_ENV"
+      - name: Download its files
+        run: |
+          mkdir out
+          gh release download preview --dir out --pattern '*.dmg' --pattern '*.exe' --pattern '*.zip' \
+            --pattern '*.AppImage' --pattern '*.deb' --pattern '*.rpm'
+          short=${commit::7}
+          cd out
+          for f in *; do mv "$f" "${f/$short/$version}"; done
+          ls -l
+      - name: Publish v${{ env.version }}
+        run: |
+          # The preview's notes, without the line saying it is a trial build.
+          jq -r .body preview.json | grep -v '^Versione di prova compilata da' > notes.md
+          gh release create "v$version" out/* \
+            --target "$commit" --latest \
+            --title "Dante $version" \
+            --notes-file notes.md
