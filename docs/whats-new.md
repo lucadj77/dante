@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.35 · October 20, 2026
+
 - **Importing from Word on macOS Catalina**: importing a .docx file now works with Safari 15 too; before, it failed with an error.
 - **Report for a problem**: if Dante cannot start, it shows a report to copy instead of an empty window; the same report can be copied from Settings > Report a problem.
 
