@@ -1,9 +1,12 @@
 // Reads the files of a zip archive, such as a .docx: stored and deflated entries, found
 // through the central directory at the end of the archive.
 
+import { inflateSync } from "fflate";
+
+// The browser's own DecompressionStream("deflate-raw") needs Safari 16.4, newer than the
+// WebKit of macOS 10.15, so the deflated entries are read in JavaScript.
 async function inflate(data: Uint8Array): Promise<Uint8Array> {
-  const stream = new Blob([data as BlobPart]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
+  return inflateSync(data);
 }
 
 /** The archive's files by name, read on demand. */

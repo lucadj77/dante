@@ -30,6 +30,8 @@
   }
 
   onMount(() => {
+    // The first screen is on: static/startup-check.js no longer shows its report by itself.
+    (window as { danteStarted?: () => void }).danteStarted?.();
     if (!inTauri()) return;
     let unlisten: (() => void) | undefined;
     let stopped = false;

@@ -78,6 +78,7 @@ La versione portatile per Windows non si aggiorna da sola: scarica il nuovo zip 
 Scrivi a Luca, all'indirizzo email con cui ti ha invitato a provare Dante. Per ogni problema sono utili:
 
 - il sistema (Mac, Windows o Linux) e la **versione di Dante** (Impostazioni > Aggiornamenti);
+- il **rapporto di Dante**: in Impostazioni > Segnalare un problema premi **Copia il rapporto** e incollalo nel messaggio. Contiene la versione, le funzioni del motore che disegna la finestra e gli errori avvenuti, niente dei tuoi testi. Se Dante non riesce ad avviarsi, dopo qualche secondo mostra lui stesso il rapporto con lo stesso pulsante;
 - cosa stavi facendo, passo per passo, e cosa ti aspettavi che succedesse;
 - cosa è successo invece, con una schermata se possibile;
 - se il problema riguarda un romanzo in particolare e puoi condividerlo, la cartella del progetto compressa in uno zip (o il file Word, se il problema è nell'importazione).
