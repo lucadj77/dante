@@ -33,6 +33,18 @@
 
   let cleanBefore = $state(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
   let cleaned = $state("");
+  let reportCopied = $state("");
+
+  /** Copies the report of static/startup-check.js: the engine's features and the errors so far. */
+  async function copyReport() {
+    const make = (window as { danteReport?: () => string }).danteReport;
+    try {
+      await navigator.clipboard.writeText(make ? make() : navigator.userAgent);
+      reportCopied = t("support.copied");
+    } catch (e) {
+      reportCopied = t("error.generic", { message: String(e) });
+    }
+  }
 
   async function clean() {
     error = "";
@@ -200,6 +212,13 @@
         <p class="hint">{t("update.unsupported")}</p>
       {/if}
     {/if}
+
+    <h3>{t("support.title")}</h3>
+    <p class="hint">{t("support.hint")}</p>
+    <div class="clean">
+      <button type="button" onclick={copyReport}>{t("support.copy")}</button>
+      {#if reportCopied}<span>{reportCopied}</span>{/if}
+    </div>
 
     <h3>{t("snap.cleanTitle")}</h3>
     <label
