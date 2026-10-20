@@ -1,6 +1,7 @@
 mod files;
 mod pdf;
 mod web;
+pub mod webkit;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -163,6 +164,7 @@ pub fn run() {
             files::watch_project,
             pdf::compile_pdf,
             web::download_url,
+            webkit::webkit_info,
             opened_project,
             updates_supported,
         ])
