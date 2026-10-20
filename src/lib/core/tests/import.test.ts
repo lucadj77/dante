@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CommentRangeEnd, CommentRangeStart, CommentReference, Document, FootnoteReferenceRun, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import { AlignmentType, CommentRangeEnd, CommentRangeStart, CommentReference, Document, FootnoteReferenceRun, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { readDocument, readDocx } from "../import/docx";
 import { counts, defaultBlankLines, defaultRoles, headingLevels, ownTitle, structure } from "../import/structure";
 import { MemoryFs } from "../fs";
@@ -85,6 +85,43 @@ describe("reading Word documents", () => {
     const content = await readDocx(await docx([new Paragraph("Capitolo primo"), new Paragraph("Testo."), new Paragraph("Capitolo secondo"), new Paragraph("Altro.")]));
     expect(content.blocks.map((b) => (b.kind === "heading" ? b.level : null))).toEqual([2, null, 2, null]);
   });
+
+  it("finds chapters by their centred numbers, with the title below", async () => {
+    const centre = (...lines: string[]) =>
+      new Paragraph({ alignment: AlignmentType.CENTER, children: lines.map((l, i) => new TextRun({ text: l, break: i > 0 ? 2 : 0 })) });
+    const content = await readDocx(
+      await docx([
+        centre("1", "Un cimitero di bambini"),
+        new Paragraph("Testo."),
+        centre("2"),
+        new Paragraph(""),
+        centre("La casa"),
+        new Paragraph("Altro."),
+        centre("III"),
+        new Paragraph("Fine."),
+      ]),
+    );
+    expect(content.blocks).toEqual([
+      { kind: "heading", level: 2, text: "Un cimitero di bambini" },
+      { kind: "paragraph", text: "Testo." },
+      { kind: "heading", level: 2, text: "La casa" },
+      { kind: "paragraph", text: "Altro." },
+      { kind: "heading", level: 2, text: "III" },
+      { kind: "paragraph", text: "Fine." },
+    ]);
+  });
+
+  it("keeps a Word paragraph whole when it has empty lines inside", async () => {
+    const content = await readDocx(
+      await docx([new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("Fine"), new TextRun({ text: "del libro", break: 2 })] })]),
+    );
+    expect(content.blocks).toEqual([{ kind: "paragraph", text: '<span style="display:block;text-align:center">Fine\ndel libro</span>' }]);
+  });
+
+  it("leaves a single centred number in the text", async () => {
+    const content = await readDocx(await docx([new Paragraph({ alignment: AlignmentType.CENTER, text: "1943" }), new Paragraph("Testo.")]));
+    expect(content.blocks.every((b) => b.kind === "paragraph")).toBe(true);
+  });
 });
 
 describe("the structure of an imported book", () => {
@@ -124,6 +161,8 @@ describe("the structure of an imported book", () => {
     expect(defaultBlankLines(spaced)).toBe(2);
     expect(structure(spaced, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.\n\nC.", "D.\n\nE."]);
     expect(defaultBlankLines([p("A."), p("B.")])).toBe(0);
+    // With "***" between scenes, empty paragraphs are only spacing.
+    expect(defaultBlankLines([h(1, "Chapter 1"), p("A."), p(""), p("B."), p("C."), p("D."), p("* * *"), p("E.")])).toBe(0);
   });
 
   it("lets the writer choose what each heading level becomes", () => {

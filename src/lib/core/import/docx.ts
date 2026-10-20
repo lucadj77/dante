@@ -6,7 +6,7 @@
 // an outline level; the "Title" style gives the book's title. Of the layout only centred and
 // right-aligned paragraphs are kept, as Dante aligns them.
 
-import { setAlignment, type Align } from "../alignment";
+import { readAlignment, setAlignment, type Align } from "../alignment";
 import { SCENE_BREAK } from "./structure";
 import { unzip } from "./unzip";
 import { child, descendants, isElement, parseXml, textOf, type XmlElement } from "./xml";
@@ -424,7 +424,8 @@ export function readDocument(documentXml: string, parts: DocumentParts = {}): Do
     } else if (SCENE_BREAK.test(plain)) {
       blocks.push({ kind: "paragraph", text: plain });
     } else {
-      const text = escapeStart(render(list, ctx).replace(/[ \t]+\n/g, "\n"));
+      // Empty lines inside a Word paragraph would split it in two in Markdown.
+      const text = escapeStart(render(list, ctx).replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n"));
       blocks.push({ kind: "paragraph", text: text ? setAlignment(text, alignment(ctx.styles, pPr)) : text });
     }
   }
@@ -439,6 +440,18 @@ export function readDocument(documentXml: string, parts: DocumentParts = {}): Do
       const level = PART_LINE.test(text) ? 1 : CHAPTER_LINE.test(text) ? 2 : null;
       if (level !== null) blocks[i] = { kind: "heading", level, text: text.replace(/\\/g, "") };
     });
+  }
+  // Nor by their words: centred numbers, alone or above the title, as in "1" and "The call".
+  if (!blocks.some((b) => b.kind === "heading" && b.level > 0)) {
+    const found = numberedHeadings(blocks);
+    if (found.length >= 2) {
+      const drop = new Set<number>();
+      for (const { at, title, upTo } of found) {
+        blocks[at] = { kind: "heading", level: 2, text: title };
+        for (let j = at + 1; j <= upTo; j++) drop.add(j);
+      }
+      return blocks.filter((_, i) => !drop.has(i));
+    }
   }
   return blocks;
 }
@@ -472,3 +485,40 @@ const NUMBER_WORD =
   "(?:\\d+|[ivxlcdm]+|(?:prim|second|terz|quart|quint|sest|settim|ottav|non|decim)[oa]|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|uno|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|one|two|three|four|five|six|seven|eight|nine|ten)";
 const PART_LINE = new RegExp(`^${PART_WORD}\\s+${NUMBER_WORD}(?![\\p{L}\\d])`, "iu");
 const CHAPTER_LINE = new RegExp(`^(?:${CHAPTER_WORD}\\s+${NUMBER_WORD}(?![\\p{L}\\d])|${FRAME_WORD}$)`, "iu");
+
+const NUMBER_ALONE = /^(?:\d{1,3}|[IVXLCDM]{1,7})\\?\.?$/;
+
+/** The text of a centred paragraph, without the tags, Markdown marks and escapes; null otherwise. */
+function centred(block: DocBlock | undefined): string[] | null {
+  if (!block || block.kind !== "paragraph" || readAlignment(block.text)?.align !== "center") return null;
+  const lines = setAlignment(block.text, null)
+    .replace(/(\*{1,2}|_{1,2})(.+?)\1/g, "$2")
+    .replace(/\\/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return lines.length && lines.length <= 3 && lines.every((l) => l.length <= 80) ? lines : null;
+}
+
+/**
+ * Centred paragraphs that start with a chapter number, with the title below it in the same
+ * paragraph or in the next centred one; the number goes, since Dante numbers chapters.
+ */
+function numberedHeadings(blocks: DocBlock[]): { at: number; title: string; upTo: number }[] {
+  const found: { at: number; title: string; upTo: number }[] = [];
+  blocks.forEach((b, i) => {
+    const lines = centred(b);
+    if (!lines || !NUMBER_ALONE.test(lines[0])) return;
+    if (lines.length > 1) {
+      found.push({ at: i, title: lines.slice(1).join(" "), upTo: i });
+      return;
+    }
+    // The title may follow after empty paragraphs.
+    let j = i + 1;
+    while (j < blocks.length && blocks[j].kind === "paragraph" && !blocks[j].text) j++;
+    const after = centred(blocks[j]);
+    if (after && after.length === 1 && !NUMBER_ALONE.test(after[0])) found.push({ at: i, title: after[0], upTo: j });
+    else found.push({ at: i, title: lines[0].replace(/\.$/, ""), upTo: i });
+  });
+  return found;
+}
