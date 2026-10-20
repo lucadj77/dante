@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.38 · October 20, 2026
+
 - **Safer saving**: closing the window or quitting with Cmd+Q right after typing saves the last words before quitting. If a file cannot be written, Dante says so and tries again instead of losing the text.
 - **Fixes**: smart quotes no longer double in revision mode nor break centred paragraphs; splitting a scene no longer leaves the whole text in the first one; merging scenes right after typing no longer loses the last words; Dropbox or Drive conflict copies follow a renamed or trashed scene; a folder called "export" inside Research or the Story Bible no longer disappears; links written as `<https://…>` stay in the export; the EPUB stylesheet saves itself; Esc while renaming a Codex note really cancels.
 
