@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.37 · October 20, 2026
+
 - **Importing from Word**: chapters written as a centred number with the title below become chapters with their title. Empty lines inside a paragraph no longer show code such as `<span style=…>`, and when scenes are separated by `***` empty lines no longer split them.
 
 ## 0.1.36 · October 20, 2026
