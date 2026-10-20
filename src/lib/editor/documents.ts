@@ -25,6 +25,8 @@ export interface DocumentFiles {
 
 /** How long typing has to stop before the text is written. */
 export const SAVE_DELAY = 600;
+/** How long to wait before writing again after a write failed. */
+export const RETRY_DELAY = 5000;
 
 /**
  * A file open in one or more editors. It keeps the text that is not written yet, writes it
@@ -47,6 +49,8 @@ export class OpenDocument {
   snapshots = false;
   /** The text on disk changed while this one had unsaved changes. */
   conflict = false;
+  /** The last write failed, as when the folder is gone or read-only: the text is kept and written again. */
+  failed = false;
 
   constructor(
     private store: DocumentStore,
@@ -61,6 +65,8 @@ export class OpenDocument {
     this.loading ??= (this.closing ?? Promise.resolve()).then(() => this.store.files.read(this.path, this.raw)).then(
       (text) => {
         this.lastSaved = text;
+        // An editor closed before joining must not leave this text for the next one.
+        queueMicrotask(() => (this.loading = null));
         return text;
       },
       (e) => {
@@ -101,7 +107,7 @@ export class OpenDocument {
     if (this.snapshots) this.snapshotting ??= this.store.files.snapshot(this.path).catch(() => {});
     this.pending = text;
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => void this.save(), SAVE_DELAY);
+    this.timer = setTimeout(() => void this.save().catch(() => {}), SAVE_DELAY);
   }
 
   /** Writes the text not saved yet, now. */
@@ -123,7 +129,17 @@ export class OpenDocument {
     const text = this.pending;
     if (text === null) return;
     this.pending = null;
-    await this.store.files.write(this.path, this.raw, text);
+    try {
+      await this.store.files.write(this.path, this.raw, text);
+    } catch (e) {
+      // Kept, unless newer text came meanwhile, and tried again in a while.
+      this.pending ??= text;
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => void this.save().catch(() => {}), RETRY_DELAY);
+      this.setFailed(true);
+      throw e;
+    }
+    this.setFailed(false);
     this.lastSaved = text;
     for (const listener of this.savedListeners) listener(text);
   }
@@ -154,13 +170,19 @@ export class OpenDocument {
     this.setConflict(false);
   }
 
+  private setFailed(value: boolean) {
+    if (this.failed === value) return;
+    this.failed = value;
+    for (const listener of this.listeners) listener();
+  }
+
   private setConflict(value: boolean) {
     if (this.conflict === value) return;
     this.conflict = value;
     for (const listener of this.listeners) listener();
   }
 
-  /** Called when `conflict` changes; returns the function that stops it. */
+  /** Called when `conflict` or `failed` changes; returns the function that stops it. */
   watch(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

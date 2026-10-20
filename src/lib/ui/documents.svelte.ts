@@ -50,7 +50,8 @@ export function sharing(doc: OpenDocument): { extension: Extension; attach(view:
         },
         reset(text) {
           if (text === view.state.doc.toString()) return;
-          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text }, annotations: synced.of(true) });
+          // Not undoable: undo would bring back text the file no longer has.
+          view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text }, annotations: [synced.of(true), Transaction.addToHistory.of(false)] });
         },
       };
       doc.join(peer);

@@ -151,7 +151,8 @@ export class Project {
     const out: string[] = [];
     for (const entry of await this.fs.list(dir)) {
       if (entry.isDir) {
-        if (SKIPPED.has(entry.name)) continue;
+        // Only in the project's own folder: a folder of notes may be called "export" too.
+        if (dir === "" && SKIPPED.has(entry.name)) continue;
         folders.push(entry.path);
         out.push(...(await this.scan(entry.path, folders)));
       } else if (!entry.name.includes(".dante-tmp") && !entry.name.startsWith(".dante-move-") && entry.name !== ".DS_Store") {
@@ -269,7 +270,7 @@ export class Project {
     if (await this.fs.exists(template)) {
       const clean = sanitizeTitle(title) || "Untitled";
       const date = new Date().toISOString().slice(0, 10);
-      text = (await this.fs.readText(template)).replace(/\{\{\s*title\s*\}\}/g, clean).replace(/\{\{\s*date\s*\}\}/g, date);
+      text = (await this.fs.readText(template)).replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
     } else {
       text = this.typeSkeleton(typeId);
     }
@@ -459,6 +460,8 @@ export class Project {
   async trash(path: string): Promise<string> {
     const target = await this.freeName(TRASH, basename(path));
     await this.fs.mkdir(TRASH);
+    // Its conflict copies go with it, or they would show as files of their own.
+    for (const copy of this.conflictCopies(path)) await this.fs.rename(copy, await this.freeName(TRASH, basename(copy)));
     await this.fs.rename(path, target);
     await this.reload();
     return target;
@@ -690,6 +693,12 @@ export class Project {
     return moves;
   }
 
+  /** The conflict copies of a file, by the names sync services give them. */
+  private conflictCopies(path: string): string[] {
+    if (!this.files.includes(path)) return [];
+    return this.conflicts.filter((c) => c.original === path).map((c) => c.path);
+  }
+
   private movedPath(moves: Move[], path: string): string {
     return moves.find((m) => m.from === path)?.to ?? path;
   }
@@ -699,6 +708,14 @@ export class Project {
     if (moves.length === 0) return;
     await this.beforeMove?.();
     const before = [...this.files];
+    // A file's conflict copies take its new name, or they would show as files of their own.
+    moves = moves.concat(
+      moves.flatMap((m) => {
+        const from = stripExt(basename(m.from));
+        const to = stripExt(basename(m.to));
+        return this.conflictCopies(m.from).map((copy) => ({ from: copy, to: join(dirname(m.to), to + basename(copy).slice(from.length)) }));
+      }),
+    );
 
     // Two passes through temporary names, so that swapping two names never collides.
     const temps = moves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));

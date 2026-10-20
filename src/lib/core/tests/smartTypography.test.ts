@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { smartReplacement } from "$lib/editor/smartTypography";
+import { EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
+import { smartReplacement, typeSmartly } from "$lib/editor/smartTypography";
+import { trackChanges } from "$lib/editor/critic";
+import { alignedEditing } from "$lib/editor/alignment";
+import { ALIGN_CLOSE, alignOpen } from "$lib/core/alignment";
 import type { TypographySettings } from "../settings";
 
 const it_: TypographySettings = { quotes: "guillemets", apostrophes: true, ellipsis: true, spaces: true, dialogueDash: "em", whileTyping: true };
@@ -53,5 +57,36 @@ describe("typing dialogue of other countries", () => {
     expect(smartReplacement("—Ven", '"', es)).toEqual({ back: 0, insert: " —" });
     expect(smartReplacement("—Ven —dijo él", '"', es)).toEqual({ back: 0, insert: "—" });
     expect(smartReplacement("-", " ", es)).toEqual({ back: 1, insert: "—" });
+  });
+});
+
+describe("typing with the conventions inside the editor", () => {
+  const typing = (doc: string, extensions: Extension[] = []) => {
+    let state = EditorState.create({ doc, extensions });
+    return {
+      get state() {
+        return state;
+      },
+      dispatch(spec: TransactionSpec) {
+        state = state.update(spec).state;
+      },
+    };
+  };
+  const curly: TypographySettings = { ...it_, quotes: "curly" };
+
+  it("corrects the character once in revision mode", () => {
+    const view = typing("Disse ", [trackChanges("anna")]);
+    expect(typeSmartly(view, 6, 6, '"', curly)).toBe(true);
+    expect(view.state.doc.toString()).toMatch(/^Disse \{\+\+“\+\+\}\{>>@anna [-\d]+<<\}$/);
+  });
+
+  it("keeps the tags of an aligned paragraph whole", () => {
+    const start = typing(`${alignOpen("center")}Fine${ALIGN_CLOSE}`, [alignedEditing]);
+    typeSmartly(start, 0, 0, '"', curly);
+    expect(start.state.doc.toString()).toBe(`${alignOpen("center")}“Fine${ALIGN_CLOSE}`);
+    const doc = `${alignOpen("center")}Fine${ALIGN_CLOSE}\n\nNext`;
+    const end = typing(doc, [alignedEditing]);
+    typeSmartly(end, doc.indexOf("\n"), doc.indexOf("\n"), '"', curly);
+    expect(end.state.doc.toString()).toBe(`${alignOpen("center")}Fine”${ALIGN_CLOSE}\n\nNext`);
   });
 });

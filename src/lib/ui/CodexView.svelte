@@ -314,9 +314,10 @@
             bind:value={titleDraft}
             use:focusOnMount
             aria-label={t("tree.rename")}
-            onblur={() => rename(current, titleDraft)}
+            onblur={() => renaming && rename(current, titleDraft)}
             onkeydown={(e) => {
               if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+              // Removing the field moves the focus away from it: the blur must not rename.
               if (e.key === "Escape") renaming = false;
             }}
           />

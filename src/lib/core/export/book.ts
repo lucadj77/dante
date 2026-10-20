@@ -131,6 +131,9 @@ function inlineRuns(source: string, node: SyntaxNode, from: number, to: number, 
     text(pos, child.from);
     if (MARKS.has(child.name)) {
       // Markup characters are not text.
+    } else if (child.name === "Autolink") {
+      // <https://…> is written as the address alone.
+      text(child.from + 1, child.to - 1);
     } else if (child.name === "HardBreak") {
       runs.push({ ...style, text: "", lineBreak: true });
     } else if (child.name === "Escape") {

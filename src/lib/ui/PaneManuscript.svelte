@@ -5,7 +5,7 @@
   import { rebase } from "$lib/core/path";
   import { t } from "$lib/state.svelte";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
-  import { flushAll } from "./documents.svelte";
+  import { documents, flushAll } from "./documents.svelte";
   import { panes } from "./panes.svelte";
 
   interface Props {
@@ -124,11 +124,12 @@
           {register}
           onSplitScene={(path, before, after) => {
             editors.get(path)?.cancel();
-            void run(() => p.project.splitScene(path, before, after, t("untitledScene")));
+            // The scene's editor still holds the whole text: it takes the first part from the disk.
+            void run(() => p.project.splitScene(path, before, after, t("untitledScene"))).then(() => documents(p.project).refreshAll());
           }}
           onSplitChapter={(path, before, after) => {
             editors.get(path)?.cancel();
-            void run(() => p.project.splitChapter(path, before, after, t("untitled"), t("untitledScene")));
+            void run(() => p.project.splitChapter(path, before, after, t("untitled"), t("untitledScene"))).then(() => documents(p.project).refreshAll());
           }}
           onLeave={leave}
           onFocus={(path) => (panes.writing = path)}

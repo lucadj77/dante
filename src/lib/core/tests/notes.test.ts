@@ -124,6 +124,15 @@ describe("notes outside the manuscript", () => {
     await fs.writeText("Templates/Character.md", "---\nrole:\n---\n# {{title}}\n");
     const typed = await p.createTyped("character", "Anna");
     expect(await fs.readText(typed)).toBe("---\nrole:\ntype: character\n---\n# Anna\n");
+    // A title is written as it is, "$" included.
+    expect(await fs.readText(await p.createTyped("character", "Mr $& Big $$"))).toContain("# Mr $& Big $$\n");
+  });
+
+  it("scans folders called like the skipped ones inside the project's folders", async () => {
+    const fs = sample();
+    await fs.writeText("Research/export/notes.md", "hello");
+    const p = await Project.open(fs);
+    expect(p.files).toContain("Research/export/notes.md");
   });
 
   it("renames and moves files and folders, fixing links", async () => {

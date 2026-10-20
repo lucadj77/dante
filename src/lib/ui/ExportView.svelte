@@ -106,7 +106,7 @@
     return saving;
   }
   $effect(() => {
-    JSON.stringify([options, typography, paratext, structure, revisions, format, useCover]);
+    JSON.stringify([options, typography, paratext, structure, revisions, format, useCover, epubCss]);
     const timer = setTimeout(() => void persist().catch((e) => (error = t("error.generic", { message: String(e) }))), 500);
     return () => clearTimeout(timer);
   });

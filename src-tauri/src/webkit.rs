@@ -16,6 +16,9 @@ const STAGED: [&str; 2] = ["/Library/Apple/System/Library/StagedFrameworks/Safar
 /// Set to skip the staged WebKit, should it ever stop Dante from starting.
 #[cfg(target_os = "macos")]
 const OPT_OUT: &str = "DANTE_SYSTEM_WEBKIT";
+/// Set on the restarted copy, so that it never restarts again.
+#[cfg(target_os = "macos")]
+const RESTARTED: &str = "DANTE_WEBKIT_RESTARTED";
 
 /// The folder of a newer WebKit installed by a Safari update, on macOS 10.x only.
 #[cfg(target_os = "macos")]
@@ -47,7 +50,9 @@ fn macos_10() -> bool {
 #[cfg(target_os = "macos")]
 pub fn use_staged_webkit() {
     use std::os::unix::process::CommandExt;
-    if std::env::var_os(VARIABLE).is_some() || std::env::var_os(OPT_OUT).is_some() {
+    // The marker stops a second restart: macOS removes the DYLD_ variable from programs not
+    // allowed to take it (a copy signed without Entitlements.plist), which would loop forever.
+    if std::env::var_os(VARIABLE).is_some() || std::env::var_os(OPT_OUT).is_some() || std::env::var_os(RESTARTED).is_some() {
         return;
     }
     let Some(dir) = staged_folder() else {
@@ -56,7 +61,7 @@ pub fn use_staged_webkit() {
     let Ok(exe) = std::env::current_exe() else {
         return;
     };
-    let error = std::process::Command::new(exe).args(std::env::args_os().skip(1)).env(VARIABLE, dir).exec();
+    let error = std::process::Command::new(exe).args(std::env::args_os().skip(1)).env(VARIABLE, dir).env(RESTARTED, "1").exec();
     // exec returns only when it fails: Dante goes on with the system's WebKit.
     eprintln!("Dante: could not restart with the WebKit in {dir}: {error}");
 }
