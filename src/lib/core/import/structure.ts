@@ -99,11 +99,14 @@ export function defaultRoles(blocks: DocBlock[]): Record<number, HeadingRole> {
 export type BlankLines = 0 | 1 | 2;
 
 /**
- * Empty paragraphs separate scenes unless the writer uses them for spacing: when more than
+ * Empty paragraphs separate scenes unless the writer uses them for spacing or marks scenes
+ * with a line such as "***": when more than
  * a third of the gaps between paragraphs hold one, only two in a row count, and not even
  * those when they are as common.
  */
 export function defaultBlankLines(blocks: DocBlock[]): BlankLines {
+  // Scenes marked with "***" and the like leave the empty paragraphs to spacing.
+  if (blocks.some((b) => b.kind === "paragraph" && SCENE_BREAK.test(b.text))) return 0;
   const gaps: number[] = [];
   let run = -1;
   for (const b of blocks) {

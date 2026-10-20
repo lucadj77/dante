@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Importing from Word**: chapters written as a centred number with the title below become chapters with their title. Empty lines inside a paragraph no longer show code such as `<span style=…>`, and when scenes are separated by `***` empty lines no longer split them.
+
 ## 0.1.36 · October 20, 2026
 
 - **macOS 10.15 Catalina**: Dante uses the engine of the updated Safari instead of the Safari 13 one that Catalina gives to apps, with which the window did not open. It is still being tried: if Dante does not start, the start-up report tells what is missing.

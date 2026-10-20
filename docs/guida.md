@@ -84,7 +84,7 @@ Ogni progetto contiene anche un file con il titolo del romanzo e l'estensione **
 1. Nella schermata iniziale scegli **Importa da Word…** e seleziona il file `.docx`.
 2. Dante mostra cosa ha trovato: quante parti, capitoli, scene e parole.
 3. Sotto **Cosa diventa ogni livello di titolo**, controlla che ogni livello di titolo del documento diventi la cosa giusta: parti, capitoli, scene con titolo, oppure titoli lasciati nel testo.
-4. Sotto **Righe vuote**, scegli se una riga vuota (o due di fila) separa le scene. Se nel documento le scene sono separate da `***` non serve cambiare niente.
+4. Sotto **Righe vuote**, scegli se una riga vuota (o due di fila) separa le scene. Se nel documento le scene sono separate da `***` non serve cambiare niente: le righe vuote restano spazi. Se Dante divide in scene paragrafi che stanno insieme, scegli **Non aprono scene**.
 5. Scegli dove creare il progetto e premi **Importa**.
 
 Il file Word non viene modificato: Dante ne legge una copia.
@@ -95,8 +95,9 @@ Il file Word non viene modificato: Dante ne legge una copia.
 
 ### Approfondimento
 
-- La struttura viene dagli stili Titolo 1, Titolo 2, Titolo 3 di Word. Dante propone da solo una divisione: con tre livelli, parti, capitoli e scene; con due, parti e capitoli se il primo livello si chiama "Parte…", altrimenti capitoli e scene; con uno, capitoli. Riconosce anche capitoli scritti senza stile, come "Capitolo primo".
+- La struttura viene dagli stili Titolo 1, Titolo 2, Titolo 3 di Word. Dante propone da solo una divisione: con tre livelli, parti, capitoli e scene; con due, parti e capitoli se il primo livello si chiama "Parte…", altrimenti capitoli e scene; con uno, capitoli. Riconosce anche capitoli scritti senza stile, come "Capitolo primo", oppure un numero centrato ("1", "IV") con il titolo sotto: in quel caso il numero si toglie, perché lo aggiunge Dante.
 - Dentro un capitolo, una riga con soli simboli (`***`, `* * *`, `#`, `§` e simili) apre una nuova scena.
+- Le righe vuote dentro uno stesso paragrafo di Word (due a capo di fila) non lo dividono: il paragrafo resta uno, anche quando è centrato.
 - "Capitolo 3: Casa" diventa un capitolo con titolo "Casa", perché i numeri li aggiunge Dante (capitolo 6).
 - Grassetto, corsivo, barrato ed evidenziato restano. I commenti di Word diventano commenti di Dante e le revisioni diventano revisioni da accettare o rifiutare, firmate col nome di chi le aveva fatte (capitolo 10). Le note a piè di pagina diventano commenti.
 - Lo stile Titolo e le proprietà del documento danno titolo e autore del romanzo.
