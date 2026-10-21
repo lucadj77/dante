@@ -4,6 +4,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+- **Importare da Word con anteprima**: prima di importare vedi il documento accanto al risultato e puoi dire riga per riga cos'è (titolo di parte, capitolo o scena, separatore, testo, da omettere), anche per tutte le righe simili in un colpo. Le sezioni divise solo da un numero su una riga ("1", "2", "3"…) diventano capitoli invece di scene con il solo numero. Con il pulsante **Word** nel manoscritto puoi aggiungere un file Word a un progetto già iniziato, per esempio un romanzo diviso in più file.
+
 ## 0.1.38 · 20 ottobre 2026
 
 - **Salvataggio più sicuro**: chiudendo la finestra o uscendo con Cmd+Q subito dopo aver scritto, le ultime parole vengono salvate prima di uscire. Se un file non si può scrivere, Dante lo dice e riprova invece di perdere il testo.

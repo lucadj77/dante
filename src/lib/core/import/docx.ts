@@ -418,7 +418,10 @@ export function readDocument(documentXml: string, parts: DocumentParts = {}): Do
     if (level === "skip") continue;
     const list = tokens(p, ctx, level === null ? styleFormat(ctx.styles, paragraphStyle(ctx.styles, pPr)) : {});
     const plain = plainOf(list);
-    if (level !== null) {
+    if (level === null && !plain && descendants(p, "v:rect").some((r) => r.attrs["o:hr"] === "t")) {
+      // A horizontal line, as Word and Pandoc draw one, separates scenes.
+      blocks.push({ kind: "paragraph", text: "* * *" });
+    } else if (level !== null) {
       // Headings keep their words, not their formatting.
       if (plain) blocks.push({ kind: "heading", level, text: plain });
     } else if (SCENE_BREAK.test(plain)) {
@@ -441,9 +444,11 @@ export function readDocument(documentXml: string, parts: DocumentParts = {}): Do
       if (level !== null) blocks[i] = { kind: "heading", level, text: text.replace(/\\/g, "") };
     });
   }
-  // Nor by their words: centred numbers, alone or above the title, as in "1" and "The call".
+  // Nor by their words: centred numbers, alone or above the title, as in "1" and "The call",
+  // or numbers counting up alone on their lines, however they are aligned.
   if (!blocks.some((b) => b.kind === "heading" && b.level > 0)) {
-    const found = numberedHeadings(blocks);
+    let found = numberedHeadings(blocks);
+    if (found.length < 2) found = countingNumbers(blocks);
     if (found.length >= 2) {
       const drop = new Set<number>();
       for (const { at, title, upTo } of found) {
@@ -521,4 +526,42 @@ function numberedHeadings(blocks: DocBlock[]): { at: number; title: string; upTo
     else found.push({ at: i, title: lines[0].replace(/\.$/, ""), upTo: i });
   });
   return found;
+}
+
+/** The value of a number written in figures or Roman numerals. */
+function numberValue(text: string): number {
+  if (/^\d+$/.test(text)) return Number(text);
+  const values: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+  let total = 0;
+  for (let i = 0; i < text.length; i++) {
+    const v = values[text[i]];
+    const next = values[text[i + 1]] ?? 0;
+    total += v < next ? -v : v;
+  }
+  return total;
+}
+
+/**
+ * Paragraphs holding only a number, such as "1", "2." or "IV", when they count up: each one
+ * follows the one before or starts again from 1, as sections do in a book whose text runs
+ * on without headings. The count may start anywhere, since a book can come in many files.
+ */
+function countingNumbers(blocks: DocBlock[]): { at: number; title: string; upTo: number }[] {
+  const found: { at: number; title: string; value: number }[] = [];
+  blocks.forEach((b, i) => {
+    if (b.kind !== "paragraph" || b.text.includes("\n")) return;
+    const text = setAlignment(b.text, null)
+      .replace(/(\*{1,2}|_{1,2})(.+?)\1/g, "$2")
+      .replace(/\\/g, "")
+      .trim();
+    if (!NUMBER_ALONE.test(text)) return;
+    const number = text.replace(/\.$/, "");
+    found.push({ at: i, title: number, value: numberValue(number) });
+  });
+  if (found.length < 2) return [];
+  let steps = 0;
+  for (let k = 1; k < found.length; k++) if (found[k].value === found[k - 1].value + 1 || found[k].value === 1) steps++;
+  // A stray number in the text may break the count once in a while, not more.
+  if (steps < (found.length - 1) * 0.8) return [];
+  return found.map(({ at, title }) => ({ at, title, upTo: at }));
 }
