@@ -5,6 +5,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 ## Next version
 
 - **Importing from Word with a preview**: before importing you see the document next to the result and can say line by line what it is (part, chapter or scene title, scene break, text, leave out), for all similar lines at once too. Sections divided only by a number on its own line ("1", "2", "3"…) become chapters instead of scenes holding just the number. With the **Word** button in the manuscript you can add a Word file to a project already under way, such as a novel split into several files.
+- **Skill for AI agents**: an instruction file in English, in the repository's `skills/dante` folder, teaches an AI assistant how to read and change a Dante project without breaking it (scene order, folder notes, links, comments and revisions).
 
 ## 0.1.38 · October 20, 2026
 
