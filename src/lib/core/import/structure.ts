@@ -6,6 +6,7 @@
 
 import { setAlignment } from "../alignment";
 import type { DocBlock } from "./docx";
+import { BLANK_LINE } from "../blankLines";
 
 export interface ImportedScene {
   title: string;
@@ -38,7 +39,7 @@ export interface ImportedBook {
  * What a block of the document became: the book's title, the title of a part, chapter or
  * scene, a scene break, text, a heading kept in the text, an empty line, or nothing.
  */
-export type BlockRole = "title" | "part" | "chapter" | "scene" | "break" | "text" | "heading" | "blank" | "skip";
+export type BlockRole = "title" | "part" | "chapter" | "scene" | "break" | "text" | "heading" | "blank" | "space" | "skip";
 
 /** A scene break as writers type it: "***", "* * *", "#", "§", "~"… alone on a line. */
 export const SCENE_BREAK = /^\s*(?:[*#~§•·⁂✻❦]\s*){1,5}$|^\s*[-–—]{3,}\s*$/;
@@ -111,8 +112,10 @@ export function defaultRoles(blocks: DocBlock[]): Record<number, HeadingRole> {
 
 /**
  * How many empty paragraphs in a row separate scenes: 0 when they never do, 1 or 2.
+ * "keep" starts no scene either, and keeps each empty paragraph between two paragraphs as a
+ * blank line of the text.
  */
-export type BlankLines = 0 | 1 | 2;
+export type BlankLines = 0 | 1 | 2 | "keep";
 
 /**
  * Empty paragraphs separate scenes unless the writer uses them for spacing or marks scenes
@@ -216,6 +219,8 @@ export function structure(
   const result: BlockRole[] = blocks.map(() => "skip");
   let current = -1;
   let lastBlank = -1;
+  /** Empty paragraphs kept as blank lines once text follows them in the same scene. */
+  let spaces: number[] = [];
 
   const closeScene = () => {
     const text = lines.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -258,13 +263,21 @@ export function structure(
       blank++;
       result[current] = "blank";
       lastBlank = current;
+      if (blanks === "keep") spaces.push(current);
       return;
     }
-    if (blanks > 0 && blank >= blanks && lines.length > 0) {
+    if (typeof blanks === "number" && blanks > 0 && blank >= blanks && lines.length > 0) {
       closeScene();
       result[lastBlank] = "break";
     }
+    if (lines.length > 0) {
+      for (const i of spaces) {
+        result[i] = "space";
+        lines.push(BLANK_LINE);
+      }
+    }
     blank = 0;
+    spaces = [];
     if (first === undefined && !scene) first = current;
     result[current] = "text";
     lines.push(text);
@@ -282,16 +295,21 @@ export function structure(
       closeScene();
       result[i] = "break";
       blank = 0;
+      spaces = [];
       return;
     }
     if (mark === "text") {
-      // An empty line said to be text is only spacing: it starts no scene.
-      if (!b.text) result[i] = "blank";
-      else paragraph(b.text);
+      // An empty line said to be text stays as a blank line: it starts no scene.
+      if (!b.text) {
+        result[i] = "space";
+        lines.push(BLANK_LINE);
+        if (first === undefined && !scene) first = i;
+      } else paragraph(b.text);
       return;
     }
     if (mark) {
       blank = 0;
+      spaces = [];
       open(mark, b.kind === "heading" ? b.text : plainText(b.text));
       return;
     }
@@ -300,12 +318,14 @@ export function structure(
         closeScene();
         result[i] = "break";
         blank = 0;
+        spaces = [];
         return;
       }
       paragraph(b.text);
       return;
     }
     blank = 0;
+    spaces = [];
     const r = role(b.level);
     if (r === null) {
       // A deeper heading than the structure uses stays in the text as a heading.

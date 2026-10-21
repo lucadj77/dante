@@ -3,6 +3,8 @@ export function plainText(markdown: string): string {
   return markdown
     .replace(/\{>>[\s\S]*?<<\}/g, "") // CriticMarkup comments
     .replace(/<!--[\s\S]*?-->/g, "")
+    // A blank line's non-breaking space is no word.
+    .replace(/&(?:nbsp|#160|#x0*a0);/gi, " ")
     // HTML tags, such as the ones that align a paragraph.
     .replace(/<\/?[a-zA-Z][^<>\n]*>/g, "")
     // Embedded images and notes are not words of the text, as in the export.

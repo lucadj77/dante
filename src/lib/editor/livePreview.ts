@@ -6,6 +6,7 @@ import { tablePreview } from "./tables";
 import { embedPreview } from "./embeds";
 import { ImageWidget, imageDecorations, imageInput } from "./images";
 import { isImagePath } from "../core/images";
+import { isBlankLine } from "../core/blankLines";
 import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
@@ -82,6 +83,23 @@ class ListPrefix extends WidgetType {
     return false;
   }
 }
+
+/** A blank line kept in the text (&nbsp;), drawn as a faint pilcrow away from the cursor. */
+class BlankLineWidget extends WidgetType {
+  eq() {
+    return true;
+  }
+  toDOM() {
+    const mark = document.createElement("span");
+    mark.className = "md-blank-line";
+    mark.textContent = "¶";
+    return mark;
+  }
+  ignoreEvent() {
+    return false;
+  }
+}
+const blankLine = Decoration.replace({ widget: new BlankLineWidget() });
 
 // How far a list goes in, in em: the room of its bullet, number or checkbox.
 const BULLET_WIDTH = 1.5;
@@ -206,6 +224,7 @@ function build(view: EditorView, focused: boolean): DecorationSet {
     for (let pos = from; pos <= to; ) {
       const line = state.doc.lineAt(pos);
       if (line.text.includes("![")) found.push(...imageDecorations(line.text, line.from, active.has(line.number)));
+      if (line.length && !active.has(line.number) && isBlankLine(line.text)) found.push({ from: line.from, to: line.to, deco: blankLine });
       pos = line.to + 1;
     }
 
@@ -254,7 +273,7 @@ function build(view: EditorView, focused: boolean): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   let lastHiddenEnd = -1;
   for (const { from, to, deco } of found) {
-    const isReplace = deco === hide || deco === wikiHidden || deco.spec.widget instanceof ListPrefix || (deco.spec.widget instanceof ImageWidget && to > from);
+    const isReplace = deco === hide || deco === wikiHidden || deco === blankLine || deco.spec.widget instanceof ListPrefix || (deco.spec.widget instanceof ImageWidget && to > from);
     // Overlapping replacements would throw; the first one wins.
     if (isReplace && from < lastHiddenEnd) continue;
     builder.add(from, to, deco);

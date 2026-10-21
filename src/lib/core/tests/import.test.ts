@@ -205,6 +205,16 @@ describe("the structure of an imported book", () => {
     expect(defaultBlankLines([h(1, "Chapter 1"), p("A."), p(""), p("B."), p("C."), p("D."), p("* * *"), p("E.")])).toBe(0);
   });
 
+  it("keeps empty paragraphs as blank lines when asked, without new scenes", () => {
+    const blocks = [h(1, "Chapter 1"), p(""), p("A."), p(""), p(""), p("B."), p(""), h(1, "Chapter 2"), p("C.")];
+    const kept = structure(blocks, names, "", undefined, "keep");
+    expect(kept.parts[0].chapters.map((c) => c.scenes.map((s) => s.text))).toEqual([["A.\n\n&nbsp;\n\n&nbsp;\n\nB."], ["C."]]);
+    expect(kept.blocks?.slice(0, 7)).toEqual(["chapter", "blank", "text", "space", "space", "text", "blank"]);
+    // One empty line marked as text stays, the others are spacing or scene breaks.
+    const marked = structure(blocks, names, "", undefined, 0, { 3: "text" });
+    expect(marked.parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\n&nbsp;\n\nB."]);
+  });
+
   it("lets the writer choose what each heading level becomes", () => {
     const blocks = [h(1, "Return"), h(2, "Arrival"), p("A."), h(2, "The house"), p("B.")];
     expect(headingLevels(blocks)).toEqual([

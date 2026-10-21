@@ -89,6 +89,7 @@
     break: "import.badge.break",
     heading: "import.badge.heading",
     skip: "import.badge.skip",
+    space: "import.badge.space",
   };
 </script>
 
@@ -122,6 +123,7 @@
               <option value={1}>{t("import.blanks.one")}</option>
               <option value={2}>{t("import.blanks.two")}</option>
               <option value={0}>{t("import.blanks.none")}</option>
+              <option value="keep">{t("import.blanks.keep")}</option>
             </select>
           </label>
         {/if}
@@ -150,8 +152,9 @@
         <ol class="blocks">
           {#each content.blocks as block, i (i)}
             {@const role = blockRoles[i] ?? "text"}
-            {#if role === "blank" && !marks[i]}
-              <li class="blank" aria-hidden="true"></li>
+            {#if role === "blank" && !marks[i] && selected !== i}
+              <!-- An empty line, thin; a click selects it, to keep it as a blank line. -->
+              <li class="blank" id="import-block-{i}"><button class="gap" aria-label={t("import.emptyLine")} onclick={() => (selected = i)}></button></li>
             {:else}
               <li id="import-block-{i}">
                 <button
@@ -405,7 +408,20 @@
     color: var(--text-muted);
   }
   .blank {
-    height: 4px;
+    height: 6px;
+  }
+  .gap {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: none;
+    cursor: pointer;
+  }
+  .gap:hover {
+    background: var(--bg-hover);
   }
   .outline button {
     display: grid;

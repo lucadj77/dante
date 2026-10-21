@@ -5,11 +5,12 @@ import { criticHandler } from "./critic";
 import { toggleAlign } from "./alignment";
 import { chooseImages } from "./images";
 import { insertTable } from "./tables";
+import { BLANK_LINE } from "../core/blankLines";
 
 export type Format = "bold" | "italic" | "strike" | "highlight";
 export type LineFormat = "quote" | "bullet" | "ordered" | "task";
 export type AlignAction = "alignCenter" | "alignRight";
-export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "table" | "image" | "comment";
+export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "blankLine" | "table" | "image" | "comment";
 
 const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
@@ -180,6 +181,28 @@ export function insertSeparator(state: EditorState): TransactionSpec {
   };
 }
 
+/**
+ * A blank line that stays in the text, after the current line: a paragraph of its own, so
+ * Markdown keeps it, that starts no scene. The cursor goes on to the paragraph after it.
+ */
+export function insertBlankLine(state: EditorState): TransactionSpec {
+  const line = state.doc.lineAt(state.selection.main.to);
+  const next = line.number < state.doc.lines ? state.doc.line(line.number + 1) : null;
+  // On an empty line between paragraphs, the blank line takes its place.
+  if (!line.text.trim()) {
+    const before = line.number > 1 && state.doc.line(line.number - 1).text.trim() ? "\n" : "";
+    const after = !next ? "\n\n" : next.text.trim() ? "\n" : "";
+    const insert = before + BLANK_LINE + after;
+    // The cursor goes past the line break that followed the empty line, if there was one.
+    return { changes: { from: line.from, to: line.to, insert }, selection: EditorSelection.cursor(line.from + insert.length + (next ? 1 : 0)) };
+  }
+  const insert = "\n\n" + BLANK_LINE + "\n\n";
+  return {
+    changes: { from: line.to, insert },
+    selection: EditorSelection.cursor(line.to + insert.length),
+  };
+}
+
 function transaction(state: EditorState, action: Exclude<Action, "comment" | "image">): TransactionSpec {
   switch (action) {
     case "bold":
@@ -202,6 +225,8 @@ function transaction(state: EditorState, action: Exclude<Action, "comment" | "im
       return insertWikilink(state);
     case "separator":
       return insertSeparator(state);
+    case "blankLine":
+      return insertBlankLine(state);
     case "table":
       return insertTable(state);
     case "alignCenter":
@@ -231,7 +256,7 @@ export const ACTIONS: (Action | null)[] = [
   "bold", "italic", "strike", "highlight", null,
   "heading", "quote", "bullet", "ordered", "task", null,
   "alignCenter", "alignRight", null,
-  "code", "link", "wikilink", "separator", "table", "image", null,
+  "code", "link", "wikilink", "separator", "blankLine", "table", "image", null,
   "comment",
 ];
 
@@ -252,6 +277,7 @@ export const ICONS: Record<Action, { text: string; style?: string; icon?: IconNa
   link: { text: "🔗︎" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
   separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
+  blankLine: { text: "¶", style: "font-family: Georgia, serif; opacity: .75" },
   table: { text: "▦", icon: "table" },
   image: { text: "🖼︎", icon: "image" },
   comment: { text: "💬︎" },
@@ -336,6 +362,7 @@ export function formatting(labels: FormattingLabels): Extension {
         { key: "Mod-Shift-.", run: run_("quote") },
         { key: "Mod-Shift-e", run: run_("alignCenter") },
         { key: "Mod-Shift-r", run: run_("alignRight") },
+        { key: "Alt-Enter", run: run_("blankLine") },
       ]),
     ),
     selectionBar(labels),

@@ -41,6 +41,9 @@ function render(parent: HTMLElement, markdown: string) {
       runsTo(el, block.runs);
     } else if (block.type === "break") {
       el = document.createElement("hr");
+    } else if (block.type === "blank") {
+      el = document.createElement("div");
+      el.className = "md-embed-blank";
     } else if (block.type === "table") {
       el = document.createElement("table");
       el.className = "md-table";
