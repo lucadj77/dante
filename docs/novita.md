@@ -4,6 +4,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+## 0.1.44 · 21 ottobre 2026
+
 - **Correzione**: la versione 0.1.43 (e la 0.1.42) si apriva con la finestra vuota dopo l'aggiornamento. Chi l'ha installata deve scaricare una volta a mano la nuova versione, perché quella rotta non può aggiornarsi da sola.
 
 ## 0.1.43 · 21 ottobre 2026

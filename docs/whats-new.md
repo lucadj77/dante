@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.44 · October 21, 2026
+
 - **Fix**: version 0.1.43 (and 0.1.42) opened with a blank window after updating. If you installed it, download the new version by hand once: the broken one cannot update itself.
 
 ## 0.1.43 · October 21, 2026
