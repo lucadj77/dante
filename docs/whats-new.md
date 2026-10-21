@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Visible update check**: at start Dante says for a few seconds that it is up to date, or that it could not check, instead of staying silent. If it stays open it checks again every six hours, and on the Mac there is **Dante > Check for Updates…**.
+- **Dialogue in exports**: lines of dialogue typed with dashes or hyphens at the start of the paragraph take the marks of the chosen style (— Come in — she said becomes “Come in” she said). New projects leave dialogue as typed until you pick a style in Export > Typography.
 - **Skill for AI agents**: an instruction file in English, in the repository's `skills/dante` folder, teaches an AI assistant how to read and change a Dante project without breaking it (scene order, folder notes, links, comments and revisions).
 
 ## 0.1.38 · October 20, 2026

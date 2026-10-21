@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app, num, t } from "$lib/state.svelte";
-  import { installUpdate, newsSince, updates } from "$lib/updates.svelte";
+  import { closeNotice, installUpdate, newsSince, updates } from "$lib/updates.svelte";
 
   /** Saves the open project before the update restarts Dante. */
   let { beforeInstall }: { beforeInstall: () => Promise<void> } = $props();
@@ -48,6 +48,15 @@
       <button onclick={() => (updates.dismissed = true)}>{t("update.later")}</button>
     {/if}
   </div>
+{:else if updates.notice}
+  <div class="update notice" role="status">
+    <span>
+      {#if updates.notice === "current"}{t("update.currentVersion", { version: updates.version })}
+      {:else if updates.notice === "unsupported"}{t("update.unsupported")}
+      {:else}{t("update.checkFailed")}<span class="error">{updates.error}</span>{/if}
+    </span>
+    <button class="close" aria-label={t("update.closeNotice")} onclick={closeNotice}>×</button>
+  </div>
 {/if}
 
 <style>
@@ -78,6 +87,17 @@
   button {
     white-space: nowrap;
     align-self: flex-start;
+  }
+  .notice {
+    font-size: 13px;
+  }
+  button.close {
+    border: none;
+    background: none;
+    padding: 0 4px;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
   }
   button.link {
     border: none;

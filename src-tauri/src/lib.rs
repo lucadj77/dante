@@ -112,6 +112,7 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
         true,
         &[
             &PredefinedMenuItem::about(h, None, None)?,
+            &MenuItem::with_id(h, "check-updates", "Check for Updates…", true, None::<&str>)?,
             &PredefinedMenuItem::separator(h)?,
             &PredefinedMenuItem::services(h, None)?,
             &PredefinedMenuItem::separator(h)?,
@@ -153,6 +154,8 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
     app.on_menu_event(|app, event| {
         if event.id() == "close-pane" {
             let _ = app.emit("close-pane", ());
+        } else if event.id() == "check-updates" {
+            let _ = app.emit("check-updates", ());
         } else if event.id() == "quit" {
             quit_requested(app);
         }
