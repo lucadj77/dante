@@ -15,7 +15,9 @@
   import { allow, chooseFolder, forgetFolder, isWebPath, rememberFolder, webFolders, webFs } from "$lib/webFolders";
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
-  import { counts, defaultBlankLines, defaultRoles, headingLevels, structure, type BlankLines, type HeadingRole } from "$lib/core/import/structure";
+  import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
+  import WordImport from "./WordImport.svelte";
+  import { pickWordFile } from "./wordFile";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
   let error = $state("");
@@ -63,17 +65,16 @@
   let content = $state<DocxContent | null>(null);
   /** What each heading level of the Word file becomes; the writer can change it. */
   let roles = $state<Record<number, HeadingRole>>({});
-  const levels = $derived(content ? headingLevels(content.blocks) : []);
   /** How many empty paragraphs in a row start a new scene; 0 when they never do. */
   let blanks = $state<BlankLines>(0);
-  const hasBlanks = $derived(!!content?.blocks.some((b) => b.kind === "paragraph" && b.text === ""));
-  const imported = $derived(
-    content ? structure(content.blocks, { start: t("untitled"), scene: (n) => t("import.scene", { n }) }, content.title, roles, blanks) : null,
-  );
-  const ROLES: HeadingRole[] = ["part", "chapter", "scene", "text"];
+  /** What the writer said single lines of the Word file are, in the preview. */
+  let marks = $state<Record<number, Mark>>({});
+  /** The preview of the Word file is open. */
+  let previewing = $state(false);
+  /** The book as the preview left it. */
+  let imported = $state<ImportedBook | null>(null);
   let importedFrom = $state("");
   const importedCounts = $derived(imported ? counts(imported) : null);
-  let filePicker = $state<HTMLInputElement>();
   const novelLanguages = [
     { code: "en", name: "English" },
     { code: "it", name: "Italiano" },
@@ -161,31 +162,41 @@
       const read = await readDocx(bytes, { note: t("import.note") });
       roles = defaultRoles(read.blocks);
       blanks = defaultBlankLines(read.blocks);
+      marks = {};
       content = read;
       importedFrom = fileName;
-      title = imported?.title || fileName.replace(/\.docx$/i, "");
+      imported = null;
+      title = "";
       if (read.author) authors = authorsOf(read.author);
-      creating = true;
+      previewing = true;
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
     }
   }
 
   async function chooseWord() {
-    if (!desktop) {
-      filePicker?.click();
-      return;
+    error = "";
+    try {
+      const file = await pickWordFile();
+      if (file) await importWord(file.bytes, file.name);
+    } catch (e) {
+      error = t("error.generic", { message: String(e) });
     }
-    const file = await open({ multiple: false, filters: [{ name: "Word", extensions: ["docx"] }] });
-    if (typeof file !== "string") return;
-    const name = file.split(/[\\/]/).pop() ?? file;
-    const dir = file.slice(0, file.length - name.length).replace(/[\\/]+$/, "") || "/";
-    await importWord(await new TauriFs(dir).readBytes(name), name);
+  }
+
+  /** Goes on from the preview to the new project's form. */
+  function previewed(book: ImportedBook) {
+    imported = book;
+    previewing = false;
+    if (!title.trim()) title = book.title || importedFrom.replace(/\.docx$/i, "");
+    creating = true;
   }
 
   function cancel() {
     creating = false;
+    previewing = false;
     content = null;
+    imported = null;
   }
 
   async function create() {
@@ -243,6 +254,19 @@
   const dateFormat = $derived(new Intl.DateTimeFormat(app.settings.language, { dateStyle: "medium" }));
 </script>
 
+{#if previewing && content}
+  <WordImport
+    {content}
+    fileName={importedFrom}
+    bind:roles
+    bind:blanks
+    bind:marks
+    action={t("import.continue")}
+    onDone={previewed}
+    onCancel={cancel}
+  />
+{/if}
+
 <main>
   <h1>{t("app.name")}</h1>
 
@@ -253,35 +277,8 @@
         {t("import.found", { file: importedFrom })}
         {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
         {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words) })}
+        <button type="button" class="link" onclick={() => { creating = false; previewing = true; }}>{t("import.review")}</button>
       </p>
-      <p class="note">{t("import.how")}</p>
-      {#if levels.length}
-        <div class="levels">
-          <span class="label">{t("import.levels")}</span>
-          {#each levels as level (level.level)}
-            <label class="level">
-              <span class="examples" title={level.examples.join(" · ")}>
-                {t("import.level", { n: level.level, count: level.count })}: {level.examples.join(" · ")}
-              </span>
-              <select bind:value={roles[level.level]}>
-                {#each ROLES as role (role)}
-                  <option value={role}>{t(`import.role.${role}`)}</option>
-                {/each}
-              </select>
-            </label>
-          {/each}
-        </div>
-      {/if}
-      {#if hasBlanks}
-        <label class="level blanks">
-          <span class="examples">{t("import.blanks")}</span>
-          <select bind:value={blanks}>
-            <option value={1}>{t("import.blanks.one")}</option>
-            <option value={2}>{t("import.blanks.two")}</option>
-            <option value={0}>{t("import.blanks.none")}</option>
-          </select>
-        </label>
-      {/if}
     {/if}
     <form
       onsubmit={(e) => {
@@ -324,18 +321,6 @@
         <button onclick={openFolder}>{t("welcome.open")}</button>
       {/if}
       <button onclick={chooseWord}>{t("import.word")}</button>
-      <input
-        bind:this={filePicker}
-        type="file"
-        accept=".docx"
-        hidden
-        onchange={async (e) => {
-          const input = e.currentTarget;
-          const file = input.files?.[0];
-          input.value = "";
-          if (file) await importWord(new Uint8Array(await file.arrayBuffer()), file.name);
-        }}
-      />
       <button onclick={openSample}>{t("welcome.sample")}</button>
     </div>
     {#if !folders}
@@ -395,30 +380,13 @@
   .summary {
     color: var(--text);
   }
-  .levels {
-    display: grid;
-    gap: 6px;
-    margin-bottom: 16px;
-    font-size: 13px;
-  }
-  .levels .label {
-    color: var(--text-muted);
-  }
-  .blanks {
-    margin-bottom: 16px;
-    font-size: 13px;
-  }
-  .level {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .examples {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
   }
   form {
     display: grid;

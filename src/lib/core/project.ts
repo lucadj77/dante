@@ -476,11 +476,14 @@ export class Project {
   }
 
   /**
-   * Adds a book read from another program at the end of the manuscript, writing its files
+   * Adds a book read from another program after what the manuscript holds: at its end, or
+   * at the end of the part `into` names. When `continueChapter` names a chapter, the text
+   * before the book's first heading becomes further scenes of it, for a novel kept in
+   * several files whose chapter runs on from one file to the next. Files are written
    * directly (a reload per scene would be slow on a long novel). A title that cannot be a
    * file name as it is, or that repeats another, is kept as the `title` property.
    */
-  async importBook(book: ImportedBook): Promise<void> {
+  async importBook(book: ImportedBook, options: { into?: string; continueChapter?: string } = {}): Promise<void> {
     const step = 10;
     const nextOrder = (node: ManuscriptNode) => Math.max(0, ...node.children.map((c) => c.order ?? 0)) + step;
     const fileName = (title: string, taken: Set<string>) => {
@@ -495,10 +498,32 @@ export class Project {
       return clean && clean !== file ? writeProperties(body, { [TITLE]: clean }) : body;
     };
     if (book.hasParts && !this.settings.structure.parts) {
+      // With parts on, a folder at the top reads as a part: the chapters already there say they are not.
+      for (const c of this.manuscript.children) {
+        if (c.kind !== "chapter") continue;
+        const note = folderNotePath(c.path);
+        const text = (await this.fs.exists(note)) ? await this.fs.readText(note) : "";
+        await this.fs.writeText(note, writeProperties(text, { kind: "chapter" }));
+      }
       await this.saveSettings({ ...this.settings, structure: { ...this.settings.structure, parts: true } });
     }
-    const root = this.manuscript;
-    const rootTaken = new Set(root.children.map((c) => c.fileTitle.toLowerCase()));
+    const continued = options.continueChapter ? findNode(this.manuscript, options.continueChapter) : null;
+    const opening = book.parts[0]?.chapters[0];
+    if (continued && opening?.untitled) {
+      const taken = new Set([continued.fileTitle.toLowerCase(), ...continued.children.map((c) => c.fileTitle.toLowerCase())]);
+      let order = nextOrder(continued);
+      for (const scene of opening.scenes) {
+        const file = fileName(scene.title, taken);
+        await this.fs.writeText(join(continued.path, formatName(order, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        order += step;
+      }
+      book = { ...book, parts: [{ ...book.parts[0], chapters: book.parts[0].chapters.slice(1) }, ...book.parts.slice(1)] };
+      await this.reload();
+    }
+    // Chapters go into a part only when the book has none of its own.
+    const into = options.into && !book.hasParts ? findNode(this.manuscript, options.into) : null;
+    const root = into && into.kind === "part" ? into : this.manuscript;
+    const rootTaken = new Set([...(root === this.manuscript ? [] : [root.fileTitle.toLowerCase()]), ...root.children.map((c) => c.fileTitle.toLowerCase())]);
     let rootOrder = nextOrder(root);
     const writeChapter = async (dir: string, order: number, chapter: ImportedBook["parts"][number]["chapters"][number], taken: Set<string>) => {
       const name = fileName(chapter.title, taken);
@@ -509,7 +534,7 @@ export class Project {
         ? "prologue"
         : /^(epilog(?:ue|o)?|epílogo)$/i.test(chapter.title.trim())
           ? "epilogue"
-          : dir === root.path && book.hasParts
+          : dir === this.manuscript.path && this.settings.structure.parts
             ? "chapter"
             : null;
       const note = withTitle(chapter.title, name);

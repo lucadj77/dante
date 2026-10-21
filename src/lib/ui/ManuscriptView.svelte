@@ -21,6 +21,10 @@
   import { flushAll } from "./documents.svelte";
   import { panes, SCENE_SHEETS, toggleSceneSheets } from "./panes.svelte";
   import { navigator } from "./navigation";
+  import WordImport from "./WordImport.svelte";
+  import { pickWordFile } from "./wordFile";
+  import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
   interface Props {
     project: Project;
@@ -261,6 +265,57 @@
     if (node && node.kind === "scene") return addAfter(node.path);
     const holder = node && node.kind !== "part" ? node : (node?.children.find((c) => c.kind !== "scene") ?? node ?? tree);
     void run(() => project.createScene(holder.path, holder.children.length, t("untitledScene")), "start");
+  }
+
+  // A Word file added to the manuscript, with what the writer chose in its preview.
+  let word = $state<{ content: DocxContent; fileName: string } | null>(null);
+  let wordRoles = $state<Record<number, HeadingRole>>({});
+  let wordBlanks = $state<BlankLines>(0);
+  let wordMarks = $state<Record<number, Mark>>({});
+  /** The part the book goes at the end of; "" for the end of the manuscript. */
+  let wordInto = $state("");
+  let wordContinues = $state(false);
+  let wordBusy = $state(false);
+  let wordError = $state("");
+  const topParts = $derived(tree.children.filter((c) => c.kind === "part"));
+  /** The last chapter of the manuscript, which the book's opening text can continue. */
+  const lastChapter = $derived.by(() => {
+    const all = (node: ManuscriptNode): ManuscriptNode[] => node.children.flatMap((c) => (c.kind === "scene" ? [] : [...(c.kind === "part" ? [] : [c]), ...all(c)]));
+    return all(tree).at(-1) ?? null;
+  });
+
+  async function chooseWord() {
+    error = "";
+    try {
+      const file = await pickWordFile();
+      if (!file) return;
+      const content = await readDocx(file.bytes, { note: t("import.note") });
+      wordRoles = defaultRoles(content.blocks);
+      wordBlanks = defaultBlankLines(content.blocks);
+      wordMarks = {};
+      wordInto = "";
+      wordContinues = false;
+      wordError = "";
+      word = { content, fileName: file.name };
+    } catch (e) {
+      error = t("import.failed", { name: "Word", message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  async function importWord(book: ImportedBook) {
+    wordBusy = true;
+    wordError = "";
+    try {
+      await flushAll(project);
+      await project.importBook(book, { into: wordInto || undefined, continueChapter: wordContinues && lastChapter ? lastChapter.path : undefined });
+      localRev++;
+      await onReload();
+      word = null;
+    } catch (e) {
+      wordError = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      wordBusy = false;
+    }
   }
 
   function newContainer(kind: "chapter" | "part") {
@@ -596,6 +651,7 @@
             {#if project.settings.structure.parts}
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
+            <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
           </div>
         </div>
         <div class="tree-group" role="group" aria-labelledby="tree-fold">
@@ -645,6 +701,43 @@
         {/each}
       </ul>
     </aside>
+  {/if}
+
+  {#if word}
+    <WordImport
+      content={word.content}
+      fileName={word.fileName}
+      bind:roles={wordRoles}
+      bind:blanks={wordBlanks}
+      bind:marks={wordMarks}
+      action={t("import.into")}
+      busy={wordBusy}
+      error={wordError}
+      onDone={importWord}
+      onCancel={() => (word = null)}
+    >
+      {#snippet footer(book: ImportedBook)}
+        <div class="word-where">
+          {#if topParts.length && !book.hasParts}
+            <label
+              >{t("import.where")}
+              <select bind:value={wordInto}>
+                <option value="">{t("import.where.end")}</option>
+                {#each topParts as part (part.path)}
+                  <option value={part.path}>{t("import.where.part", { part: part.title })}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+          {#if lastChapter && book.parts[0]?.chapters[0]?.untitled}
+            <label class="check"><input type="checkbox" bind:checked={wordContinues} /> {t("import.continueChapter", { chapter: headingMap.get(lastChapter.path)?.replace(/\n/g, " · ") ?? lastChapter.title })}</label>
+          {/if}
+          {#if book.hasParts && !project.settings.structure.parts}
+            <p class="note">{t("import.partsOn")}</p>
+          {/if}
+        </div>
+      {/snippet}
+    </WordImport>
   {/if}
 
   {#if menu}
@@ -948,6 +1041,21 @@
   }
   .chosen span {
     flex: 1;
+  }
+  .word-where {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .word-where label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+  }
+  .word-where .note {
+    margin: 0;
+    color: var(--text-muted);
   }
   .menu-backdrop {
     position: fixed;

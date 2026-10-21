@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AlignmentType, CommentRangeEnd, CommentRangeStart, CommentReference, Document, FootnoteReferenceRun, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { readDocument, readDocx } from "../import/docx";
-import { counts, defaultBlankLines, defaultRoles, headingLevels, ownTitle, structure } from "../import/structure";
+import { counts, defaultBlankLines, defaultRoles, headingLevels, ownTitle, plainText, similar, structure } from "../import/structure";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 
@@ -118,6 +118,46 @@ describe("reading Word documents", () => {
     expect(content.blocks).toEqual([{ kind: "paragraph", text: '<span style="display:block;text-align:center">Fine\ndel libro</span>' }]);
   });
 
+  it("finds sections by numbers counting up alone on their lines, however aligned", async () => {
+    const content = await readDocx(
+      await docx([
+        new Paragraph("12"),
+        new Paragraph(""),
+        new Paragraph(""),
+        new Paragraph("Testo."),
+        new Paragraph("Ancora."),
+        new Paragraph(""),
+        new Paragraph(""),
+        new Paragraph({ children: [new TextRun({ text: "13.", bold: true })] }),
+        new Paragraph(""),
+        new Paragraph("Altro."),
+      ]),
+    );
+    expect(content.blocks.filter((b) => b.kind === "heading")).toEqual([
+      { kind: "heading", level: 2, text: "12" },
+      { kind: "heading", level: 2, text: "13" },
+    ]);
+    const book = structure(content.blocks, names);
+    expect(book.parts[0].chapters.map((c) => [c.title, c.scenes.map((s) => s.text)])).toEqual([
+      ["12", ["Testo.\n\nAncora."]],
+      ["13", ["Altro."]],
+    ]);
+  });
+
+  it("reads a horizontal line as a scene break", () => {
+    const xml = `<w:body><w:p><w:r><w:t>A.</w:t></w:r></w:p><w:p><w:r><w:pict><v:rect style="width:0;height:1.5pt" o:hralign="center" o:hrstd="t" o:hr="t"/></w:pict></w:r></w:p><w:p><w:r><w:t>B.</w:t></w:r></w:p></w:body>`;
+    expect(readDocument(xml)).toEqual([
+      { kind: "paragraph", text: "A." },
+      { kind: "paragraph", text: "* * *" },
+      { kind: "paragraph", text: "B." },
+    ]);
+  });
+
+  it("leaves numbers that do not count up in the text", async () => {
+    const content = await readDocx(await docx([new Paragraph("7"), new Paragraph("Testo."), new Paragraph("3"), new Paragraph("Altro."), new Paragraph("40")]));
+    expect(content.blocks.every((b) => b.kind === "paragraph")).toBe(true);
+  });
+
   it("leaves a single centred number in the text", async () => {
     const content = await readDocx(await docx([new Paragraph({ alignment: AlignmentType.CENTER, text: "1943" }), new Paragraph("Testo.")]));
     expect(content.blocks.every((b) => b.kind === "paragraph")).toBe(true);
@@ -179,6 +219,31 @@ describe("the structure of an imported book", () => {
     expect(flat.parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["## Arrival\n\nA.\n\n## The house\n\nB."]);
   });
 
+  it("follows what the writer says single paragraphs are", () => {
+    const blocks = [h(0, "The Book"), p("Opening."), p("1"), p("One."), p("~ ~"), p("Two."), p("**2**"), p("Three."), h(1, "Notes"), p("Skip me.")];
+    const book = structure(blocks, names, "", {}, 0, { 2: "chapter", 4: "text", 6: "chapter", 7: "break", 8: "text", 9: "skip" });
+    expect(book.title).toBe("The Book");
+    expect(book.parts[0].chapters.map((c) => [c.title, c.untitled ?? false, c.scenes.map((s) => s.text)])).toEqual([
+      ["Start", true, ["Opening."]],
+      ["1", false, ["One.\n\n~ ~\n\nTwo."]],
+      ["2", false, ["Notes"]],
+    ]);
+    expect(book.blocks).toEqual(["title", "text", "chapter", "text", "text", "text", "chapter", "break", "text", "skip"]);
+    expect(structure([h(1, "C"), p("A."), p(""), p("B.")], names, "", undefined, 1).blocks).toEqual(["chapter", "text", "break", "text"]);
+    // A paragraph marked as a part makes a book with parts; a heading can become a scene.
+    const parted = structure([p("Libro primo"), h(1, "Chapter 1"), p("A."), h(1, "Arrival"), p("B.")], names, "", { 1: "chapter" }, 0, { 0: "part", 3: "scene" });
+    expect(parted.hasParts).toBe(true);
+    expect(parted.parts.map((x) => [x.title, x.chapters.map((c) => [c.title, c.scenes.map((s) => s.title)])])).toEqual([["Libro primo", [["Chapter 1", ["Scene 1", "Arrival"]]]]]);
+  });
+
+  it("finds the lines like a chosen one", () => {
+    const blocks = [p("Capitolo 3"), p("Text with 3 in it, long enough to be prose and not a heading at all."), p("Capitolo IV: La casa"), p("12"), p("*13*"), h(1, "Capitolo 5"), p("Capitolo di prova")];
+    expect(similar(blocks, 0)).toEqual([0, 2]);
+    expect(similar(blocks, 3)).toEqual([3, 4]);
+    expect(similar(blocks, 5)).toEqual([5]);
+    expect(plainText('<span style="display:block;text-align:center">**Uno** \\- due</span>')).toBe("Uno - due");
+  });
+
   it("keeps a chapter's own title without its label and number", () => {
     expect(ownTitle("Capitolo 3: Il ritorno")).toBe("Il ritorno");
     expect(ownTitle("Chapter IV - Home")).toBe("Home");
@@ -219,5 +284,47 @@ describe("importing into a project", () => {
     await project.importBook(structure([{ kind: "heading", level: 1, text: "Part One" }, { kind: "heading", level: 2, text: "Chapter 1" }, { kind: "paragraph", text: "A." }], names));
     expect(project.settings.structure.parts).toBe(true);
     expect(project.manuscript.children.map((c) => [c.kind, c.title, c.children.map((x) => [x.kind, x.title])])).toEqual([["part", "Part One", [["chapter", "Chapter 1"]]]]);
+  });
+
+  it("adds a book to a project already under way", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: T\nlanguage: en\n",
+      "Manuscript/010 One/010 First.md": "A.\n",
+      "Manuscript/020 Two/010 Second.md": "B.\n",
+    });
+    const project = await Project.open(fs);
+    const book = structure([{ kind: "paragraph", text: "Still chapter two." }, { kind: "heading", level: 1, text: "Chapter 3" }, { kind: "paragraph", text: "C." }], names);
+    const two = project.manuscript.children[1].path;
+    await project.importBook(book, { continueChapter: two });
+    const titles = (n: typeof project.manuscript): unknown[] => n.children.map((c) => (c.children.length ? [c.kind, c.title, titles(c)] : [c.kind, c.title]));
+    expect(titles(project.manuscript)).toEqual([
+      ["chapter", "One", [["scene", "First"]]],
+      ["chapter", "Two", [["scene", "Second"], ["scene", "Scene 1"]]],
+      ["chapter", "Chapter 3", [["scene", "Scene 1"]]],
+    ]);
+    expect(await fs.readText(project.manuscript.children[1].children[1].path)).toBe("Still chapter two.\n");
+  });
+
+  it("puts the chapters in a chosen part, and keeps chapters chapters when parts come", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: T\nlanguage: en\nstructure:\n  parts: true\n",
+      "Manuscript/010 Away/010 Away.md": "---\nkind: part\n---\n",
+      "Manuscript/010 Away/010 One/010 First.md": "A.\n",
+      "Manuscript/020 Home/020 Home.md": "---\nkind: part\n---\n",
+    });
+    const project = await Project.open(fs);
+    await project.importBook(structure([{ kind: "heading", level: 1, text: "Chapter 2" }, { kind: "paragraph", text: "B." }], names), { into: project.manuscript.children[0].path });
+    expect(project.manuscript.children.map((c) => [c.title, c.children.map((x) => x.title)])).toEqual([
+      ["Away", ["One", "Chapter 2"]],
+      ["Home", []],
+    ]);
+
+    const flat = new MemoryFs({ "dante.yaml": "title: T\nlanguage: en\n", "Manuscript/010 One/010 First.md": "A.\n" });
+    const other = await Project.open(flat);
+    await other.importBook(structure([{ kind: "heading", level: 1, text: "Part Two" }, { kind: "heading", level: 2, text: "Chapter 2" }, { kind: "paragraph", text: "B." }], names));
+    expect(other.manuscript.children.map((c) => [c.kind, c.title])).toEqual([
+      ["chapter", "One"],
+      ["part", "Part Two"],
+    ]);
   });
 });
