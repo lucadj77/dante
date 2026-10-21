@@ -261,6 +261,14 @@ its title, since Dante numbers chapters itself. The Word file is only read.
   `author:` text is read and split on commas and "e"/"and"). Exports join them as the
   novel's language joins a list ("Ada Rossi e Bruno Neri"), the EPUB lists each creator.
 
+## Working on a project with an AI agent
+
+[`skills/dante`](skills/dante/SKILL.md) is an agent skill (in English) that explains the
+project format to an AI coding agent such as Claude Code, so it can read, write and
+reorganize a novel without breaking it for Dante or Obsidian. `skills/dante/scripts/outline.py`
+prints the manuscript in reading order with word counts and structural warnings. For Claude
+Code, copy the folder to `.claude/skills/` in the novel's folder or in your home folder.
+
 ## Development
 
 Requirements: Node 22, Rust, and the [Tauri system dependencies](https://v2.tauri.app/start/prerequisites/).
