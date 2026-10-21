@@ -473,6 +473,9 @@
         {/each}
       </select>
     </label>
+    {#if typography.quotes !== "keep" && typography.quotes !== "dash" && typography.quotes !== "dashAttached"}
+      <p class="hint">{t("export.quotesMarksHint")}</p>
+    {/if}
     {#if typography.quotes === "dash" || typography.quotes === "dashAttached"}
       <p class="hint">{t(typography.quotes === "dash" ? "export.quotesDashHint" : "export.quotesDashAttachedHint")}</p>
       <div class="row">

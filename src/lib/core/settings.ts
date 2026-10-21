@@ -32,7 +32,8 @@ export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
  * - dash: — Vieni — disse (Italy), dashAttached: —Ven —dijo él— (Spain, Latin America,
  *   Portugal, Brazil).
  * Straight quotes become the chosen marks; with a dash, guillemets and straight quotes
- * become dashes, while curly quotes stay as quotation marks inside dialogue.
+ * become dashes, while curly quotes stay as quotation marks inside dialogue. Dialogue typed
+ * with dashes takes the chosen marks too. New projects keep dialogue as typed.
  */
 export const QUOTE_STYLES = [
   "keep",
@@ -415,7 +416,8 @@ export function defaultSettings(language = "en"): NovelSettings {
         omitSingleSceneHeading: true,
       },
       typography: {
-        quotes: defaultQuotes(language),
+        // Dialogue leaves as it was typed until the author picks a convention.
+        quotes: "keep",
         apostrophes: true,
         ellipsis: true,
         spaces: true,
@@ -470,7 +472,7 @@ export function parseSettings(text: string): NovelSettings {
   if (!EXPORT_FORMATS.includes(settings.export.format)) settings.export.format = "docx";
   if (!(COVER_TEMPLATES as readonly string[]).includes(settings.cover.template)) settings.cover.template = "";
   if (!(settings.cover.palette in COVER_PALETTES)) settings.cover.palette = "";
-  if (!(QUOTE_STYLES as readonly string[]).includes(settings.export.typography.quotes)) settings.export.typography.quotes = defaultQuotes(language);
+  if (!(QUOTE_STYLES as readonly string[]).includes(settings.export.typography.quotes)) settings.export.typography.quotes = "keep";
   const days: unknown = settings.goals.days;
   settings.goals.days = Array.isArray(days)
     ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort()

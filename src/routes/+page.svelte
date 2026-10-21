@@ -13,7 +13,7 @@
   import UpdateBanner from "$lib/ui/UpdateBanner.svelte";
   import Welcome from "$lib/ui/Welcome.svelte";
   import Workspace from "$lib/ui/Workspace.svelte";
-  import { checkForUpdates, loadUpdateInfo } from "$lib/updates.svelte";
+  import { checkAtStart, checkForUpdates, loadUpdateInfo } from "$lib/updates.svelte";
 
   let project = $state.raw<Project | null>(null);
 
@@ -92,7 +92,8 @@
     (window as { danteStarted?: () => void }).danteStarted?.();
     startWeb((file) => void openLauncher(file));
     if (!inTauri()) {
-      if (app.settings.checkUpdates) void checkForUpdates(true);
+      let stopChecks = () => {};
+      if (app.settings.checkUpdates) stopChecks = checkAtStart();
       else void loadUpdateInfo();
       // A tab closed a moment after typing: the browser asks to stay while the text is written.
       const leaving = (event: BeforeUnloadEvent) => {
@@ -102,22 +103,33 @@
         event.returnValue = "";
       };
       window.addEventListener("beforeunload", leaving);
-      return () => window.removeEventListener("beforeunload", leaving);
+      return () => {
+        stopChecks();
+        window.removeEventListener("beforeunload", leaving);
+      };
     }
     let stopped = false;
     const unlistens: (() => void)[] = [];
     void import("@tauri-apps/api/event").then(({ listen }) => {
-      for (const listening of [listen("open-project", () => void openRequested()), listen("quit-requested", () => void quit())])
+      const listenings = [
+        listen("open-project", () => void openRequested()),
+        listen("quit-requested", () => void quit()),
+        // Dante > Check for Updates… in the Mac menu bar.
+        listen("check-updates", () => void checkForUpdates(false, true)),
+      ];
+      for (const listening of listenings)
         void listening.then((u) => {
           if (stopped) u();
           else unlistens.push(u);
         });
     });
     void openRequested();
-    if (app.settings.checkUpdates) void checkForUpdates(true);
+    let stopChecks = () => {};
+    if (app.settings.checkUpdates) stopChecks = checkAtStart();
     else void loadUpdateInfo();
     return () => {
       stopped = true;
+      stopChecks();
       for (const u of unlistens) u();
     };
   });

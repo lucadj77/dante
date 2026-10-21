@@ -303,7 +303,7 @@ end: until              # timeline only, optional
 roman, words, ordinal or none; `label`; `showLabel`; `showTitle`; `separator`;
 `restartEachPart`), goals (`goals: {words, deadline, daily, days}`), pages
 (`pages: {unit, size}`), the cover, and export choices (`export.docx`, `export.typography`
-with `quotes`, `dialogueDash`, `apostrophes`, `ellipsis`, `spaces`; `export.paratext` with
+with `quotes` (`keep` in new projects: dialogue as typed), `dialogueDash`, `apostrophes`, `ellipsis`, `spaces`; `export.paratext` with
 dedication, epigraph and so on; `export.revisions: accept | reject`). Edit only the keys you
 are asked about and keep the rest of the file, comments included, exactly as it is.
 

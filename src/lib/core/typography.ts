@@ -74,6 +74,62 @@ function dialogueWithDashes(text: string, attached = false): string {
   return result.replace(new RegExp(`\\s*${DIALOGUE_MARK}\\s*$`), "");
 }
 
+// The dash opening a line of dialogue and the spaces after it.
+const DIALOGUE_LINE = /^([ \t]*)(--|-|–|—)[ \t]*(?=[^\s\-–—])/;
+const DASHES = "-–—";
+const AFTER_SPEECH = /^[\s.,;:!?…)\]]*$/;
+
+/**
+ * Turns dialogue opened by a dash into guillemets, which the caller then sets in the
+ * chosen style: — Vieni — disse lui — è tardi. becomes «Vieni» disse lui «è tardi.»
+ * Only lines that start with a dash are dialogue. In them, the dashes of the same kind
+ * as the first take turns closing and reopening the speech; other dashes stay as typed.
+ * Hyphens and en dashes count only with a space on one side, so "socio-economico" and
+ * "1990–2000" stay. A line still open at its end is closed there. Spanish dialogue, with
+ * the dash against the words (—Ven —dijo él— es tarde.), works the same way.
+ */
+function dialogueWithQuotes(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const start = DIALOGUE_LINE.exec(line);
+      if (!start) return line;
+      const dash = start[2];
+      const rest = line.slice(start[0].length);
+      const isDash = (i: number) => {
+        if (!rest.startsWith(dash, i)) return false;
+        const before = rest[i - 1] ?? " ";
+        const after = rest[i + dash.length] ?? " ";
+        if (DASHES.includes(before) || DASHES.includes(after)) return false;
+        return dash === "—" || /\s/.test(before) || /\s/.test(after);
+      };
+      let result = "«";
+      let open = true;
+      for (let i = 0; i < rest.length; i++) {
+        if (!isDash(i)) {
+          result += rest[i];
+          continue;
+        }
+        i += dash.length;
+        while (rest[i] === " " || rest[i] === "\t") i++;
+        const following = rest.slice(i);
+        result = result.trimEnd();
+        if (open) {
+          result += "»";
+          if (following && !/^[.,;:!?…)\]]/.test(following)) result += " ";
+          open = false;
+        } else if (!AFTER_SPEECH.test(following)) {
+          // A dash that ends the narration, with nothing said after it, is only dropped.
+          result += " «";
+          open = true;
+        }
+        i--;
+      }
+      return start[1] + (open ? result.trimEnd() + "»" : result);
+    })
+    .join("\n");
+}
+
 /** Applies the conventions to one paragraph: quotes alternate opening and closing within it. */
 function paragraph(text: string, rules: TypographySettings): string {
   let out = text;
@@ -83,6 +139,8 @@ function paragraph(text: string, rules: TypographySettings): string {
     out = dialogueWithDashes(out, rules.quotes === "dashAttached");
   } else if (rules.quotes !== "keep") {
     const [open, close] = QUOTE_MARKS[rules.quotes] ?? ["“", "”"];
+    // Dialogue typed with dashes becomes guillemets first, then takes the chosen marks.
+    out = dialogueWithQuotes(out);
     // Guillemets typed in another style become the chosen marks too.
     if (rules.quotes !== "guillemets") out = out.replace(/«[ \t\u00A0\u202F]*|[ \t\u00A0\u202F]*»/g, (m) => (m.includes("«") ? open : close));
     let opening = true;

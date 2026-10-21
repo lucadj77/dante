@@ -62,7 +62,7 @@ describe("book", () => {
 
   it("uses published titles, scene headings and typography", async () => {
     const fs = new MemoryFs({
-      "dante.yaml": "title: L'eredità\nauthor: Ada Rossi\nlanguage: it\nstructure:\n  chapter:\n    separator: \"\\n\"\nexport:\n  docx:\n    scene:\n      numbering: arabic\n      showTitle: true\n    omitSingleSceneHeading: true\n",
+      "dante.yaml": "title: L'eredità\nauthor: Ada Rossi\nlanguage: it\nstructure:\n  chapter:\n    separator: \"\\n\"\nexport:\n  typography:\n    quotes: guillemets\n  docx:\n    scene:\n      numbering: arabic\n      showTitle: true\n    omitSingleSceneHeading: true\n",
       "Manuscript/010 Ritorno/010 Ritorno.md": "---\npublished_title: Il ritorno a casa\n---\n",
       "Manuscript/010 Ritorno/010 Arrivo.md": "---\npublished_title: Il treno\n---\n\"Sei tu...\" disse l'uomo.",
       "Manuscript/010 Ritorno/020 Casa.md": "La casa.",
@@ -160,7 +160,7 @@ describe("scenes outside chapters", () => {
 describe("PDF and EPUB", () => {
   const sample = () =>
     new MemoryFs({
-      "dante.yaml": "title: Test \"quoted\"\nauthor: Ada Rossi\nlanguage: it\nstructure:\n  parts: true\n",
+      "dante.yaml": "title: Test \"quoted\"\nauthor: Ada Rossi\nlanguage: it\nstructure:\n  parts: true\nexport:\n  typography:\n    quotes: guillemets\n",
       "Manuscript/010 One/010 One.md": "---\nkind: part\n---\n",
       "Manuscript/010 One/010 Start/010 A.md": "Uno *due* #tre = \\ $4 // <b>.",
       "Manuscript/010 One/010 Start/020 B.md": "Quattro.",

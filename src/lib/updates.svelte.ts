@@ -31,7 +31,23 @@ export const updates = $state<{
   /** Share of the download received, from 0 to 1, when the size is known. */
   progress: number | null;
   error: string;
-}>({ version: "", supported: false, available: null, dismissed: false, state: "idle", progress: null, error: "" });
+  /** A short message in the corner after a check that found nothing to install. */
+  notice: "" | "current" | "error" | "unsupported";
+}>({ version: "", supported: false, available: null, dismissed: false, state: "idle", progress: null, error: "", notice: "" });
+
+let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Shows `notice` in the corner for a few seconds; errors stay a little longer. */
+function announce(notice: typeof updates.notice) {
+  clearTimeout(noticeTimer);
+  updates.notice = notice;
+  noticeTimer = setTimeout(() => (updates.notice = ""), notice === "current" ? 4000 : 10000);
+}
+
+export function closeNotice() {
+  clearTimeout(noticeTimer);
+  updates.notice = "";
+}
 
 let ready: Promise<void> | null = null;
 
@@ -50,10 +66,18 @@ export function loadUpdateInfo(): Promise<void> {
   return ready;
 }
 
-/** Asks the release for a newer version; `quiet` keeps network errors to itself (the check at start). */
-export async function checkForUpdates(quiet = false): Promise<void> {
+/**
+ * Asks the release for a newer version. `quiet` keeps network errors out of the settings
+ * (the checks made by themselves); `announce` says the outcome in the corner even when
+ * there is nothing to install (the check at start and the one from the menu).
+ */
+export async function checkForUpdates(quiet = false, announced = false): Promise<void> {
   await loadUpdateInfo();
-  if (!updates.supported || updates.state === "checking" || updates.state === "downloading") return;
+  if (!updates.supported) {
+    if (announced && !quiet && updates.version) announce("unsupported");
+    return;
+  }
+  if (updates.state === "checking" || updates.state === "downloading") return;
   updates.state = "checking";
   updates.error = "";
   try {
@@ -68,13 +92,28 @@ export async function checkForUpdates(quiet = false): Promise<void> {
       const version = typeof json.version === "string" ? json.version : "";
       found = version && newerVersion(version, updates.version) ? { version, rawJson: json } : null;
     }
+    // A version already announced and put off stays put off until the next start.
+    if (!found || found.version !== updates.available?.version) updates.dismissed = false;
     updates.available = found;
-    updates.dismissed = false;
     updates.state = found ? "idle" : "current";
+    if (!found && announced) announce("current");
   } catch (e) {
     updates.state = quiet ? "idle" : "error";
     updates.error = String(e);
+    if (announced) announce("error");
   }
+}
+
+const SIX_HOURS = 6 * 60 * 60 * 1000;
+
+/**
+ * The check at start, said in the corner, then one every six hours while Dante stays
+ * open. Returns the function that stops the later checks.
+ */
+export function checkAtStart(): () => void {
+  void checkForUpdates(true, true);
+  const timer = setInterval(() => void checkForUpdates(true), SIX_HOURS);
+  return () => clearInterval(timer);
 }
 
 /** Saves what `beforeInstall` saves, downloads and installs the update, then restarts Dante. */
