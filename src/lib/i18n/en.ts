@@ -62,7 +62,7 @@ export const en = {
   "import.where.part": "At the end of the part “{part}”",
   "import.continueChapter": "The text before the first heading continues the chapter “{chapter}”",
   "import.partsOn": "The book has parts: parts are turned on for this project, and the chapters already written stay chapters.",
-  "import.wordShort": "Word",
+  "import.wordShort": "Import",
   "tip.importWord": "Adds a Word file to this manuscript, after what is already there, with a preview",
   "welcome.title": "Open a novel",
   "welcome.open": "Open folder…",

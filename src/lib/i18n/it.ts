@@ -62,7 +62,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "import.where.part": "In fondo alla parte «{part}»",
   "import.continueChapter": "Il testo prima del primo titolo continua il capitolo «{chapter}»",
   "import.partsOn": "Il libro ha delle parti: in questo progetto le parti vengono attivate, e i capitoli già scritti restano capitoli.",
-  "import.wordShort": "Word",
+  "import.wordShort": "Importa",
   "tip.importWord": "Aggiunge un file Word a questo manoscritto, dopo quello che c'è già, con un'anteprima",
   "welcome.title": "Apri un romanzo",
   "welcome.open": "Apri cartella…",
