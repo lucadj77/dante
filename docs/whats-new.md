@@ -4,7 +4,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
-- **Blank lines between paragraphs**: the **¶** button on the formatting bar, or Alt+Enter, leaves a blank line after the paragraph without starting a new scene. The editor shows it as a faint **¶**; in Word, PDF, EPUB and Obsidian it is an empty line. In the file it is a paragraph holding only `&nbsp;`. When importing from Word you can keep empty lines as they are, or keep a single one by clicking it in the preview and marking it as text.
+- **Blank lines between paragraphs**: the **¶** button on the formatting bar, or Alt+Enter, leaves a blank line after the paragraph without starting a new scene. The editor shows it as a faint **¶**; in Word, PDF, EPUB and Obsidian it is an empty line. In the file it is a paragraph holding only `&nbsp;`. When importing from Word you can keep empty lines as they are, or keep a single one by clicking it in the preview and marking it as text. An empty line that would leave a scene of one or two paragraphs stays a blank line instead of starting a scene.
 
 ## 0.1.42 · October 21, 2026
 

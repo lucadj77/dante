@@ -191,6 +191,91 @@ export function similar(blocks: DocBlock[], index: number): number[] {
   return out;
 }
 
+/** Fewer paragraphs than this between two empty lines make no scene of their own. */
+const SHORT_SCENE = 3;
+
+/**
+ * Which runs of empty paragraphs open a new scene, by the index of their last empty
+ * paragraph; the others in `kept` stay as one blank line. A run that would leave a scene of
+ * one or two paragraphs, before or after it, is most likely spacing: it is kept, and the
+ * shortest such scenes are joined first.
+ */
+function blankBreaks(
+  blocks: DocBlock[],
+  blanks: BlankLines,
+  marks: Record<number, Mark>,
+  isTitle: (b: DocBlock, i: number) => boolean,
+  role: (level: number) => "part" | "chapter" | "scene" | null,
+): { breaks: Set<number>; kept: Set<number> } {
+  const breaks = new Set<number>();
+  const kept = new Set<number>();
+  if (typeof blanks !== "number" || blanks === 0) return { breaks, kept };
+  // Paragraphs in each stretch of text, and what ends each stretch: an empty-line run that
+  // may open a scene (its index), or anything else that always does (null).
+  const sizes: number[] = [0];
+  const ends: (number | null)[] = [];
+  let run = 0;
+  let last = -1;
+  const hard = () => {
+    ends.push(null);
+    sizes.push(0);
+    run = 0;
+  };
+  const text = () => {
+    if (run >= blanks && sizes[sizes.length - 1] > 0) {
+      ends.push(last);
+      sizes.push(0);
+    }
+    run = 0;
+    sizes[sizes.length - 1]++;
+  };
+  blocks.forEach((b, i) => {
+    if (isTitle(b, i)) return;
+    const mark = marks[i];
+    if (mark === "skip") return;
+    if (mark === "text") {
+      if (b.text) text();
+      return;
+    }
+    if (mark) return hard();
+    if (b.kind === "paragraph") {
+      if (SCENE_BREAK.test(b.text)) return hard();
+      if (!b.text) {
+        run++;
+        last = i;
+        return;
+      }
+      return text();
+    }
+    if (role(b.level) === null) {
+      // A heading kept in the text belongs to its scene; empty lines before it open none.
+      run = 0;
+      sizes[sizes.length - 1]++;
+      return;
+    }
+    hard();
+  });
+  // Joins the shortest scene to its neighbour, one empty-line run at a time.
+  for (;;) {
+    let best = -1;
+    let smallest = SHORT_SCENE;
+    ends.forEach((end, k) => {
+      if (end === null) return;
+      const size = Math.min(sizes[k], sizes[k + 1]);
+      if (size < smallest) {
+        smallest = size;
+        best = k;
+      }
+    });
+    if (best < 0) break;
+    kept.add(ends[best]!);
+    sizes.splice(best, 2, sizes[best] + sizes[best + 1]);
+    ends.splice(best, 1);
+  }
+  for (const end of ends) if (end !== null) breaks.add(end);
+  return { breaks, kept };
+}
+
 export function structure(
   blocks: DocBlock[],
   names: ImportNames,
@@ -221,6 +306,7 @@ export function structure(
   let lastBlank = -1;
   /** Empty paragraphs kept as blank lines once text follows them in the same scene. */
   let spaces: number[] = [];
+  const auto = blankBreaks(blocks, blanks, marks, isTitle, role);
 
   const closeScene = () => {
     const text = lines.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -266,9 +352,13 @@ export function structure(
       if (blanks === "keep") spaces.push(current);
       return;
     }
-    if (typeof blanks === "number" && blanks > 0 && blank >= blanks && lines.length > 0) {
+    if (blank > 0 && auto.breaks.has(lastBlank) && lines.length > 0) {
       closeScene();
       result[lastBlank] = "break";
+    } else if (blank > 0 && auto.kept.has(lastBlank) && lines.length > 0) {
+      // Too short a scene: the empty lines are spacing, kept as one blank line.
+      result[lastBlank] = "space";
+      lines.push(BLANK_LINE);
     }
     if (lines.length > 0) {
       for (const i of spaces) {
