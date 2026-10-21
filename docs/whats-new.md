@@ -4,6 +4,9 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Visible update check**: at start Dante says for a few seconds that it is up to date, or that it could not check, instead of staying silent. If it stays open it checks again every six hours, and on the Mac there is **Dante > Check for Updates…**.
+- **Dialogue in exports**: lines of dialogue typed with dashes or hyphens at the start of the paragraph take the marks of the chosen style (— Come in — she said becomes “Come in” she said). New projects leave dialogue as typed until you pick a style in Export > Typography.
+
 ## 0.1.38 · October 20, 2026
 
 - **Safer saving**: closing the window or quitting with Cmd+Q right after typing saves the last words before quitting. If a file cannot be written, Dante says so and tries again instead of losing the text.
