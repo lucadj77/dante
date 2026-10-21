@@ -5,6 +5,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 ## Next version
 
 - **Dante in the browser**: Dante can also be used from Chrome, Edge or Brave, with nothing to install, at https://lucadj77.github.io/dante/. It works on the files of the novel's folder, works offline after the first visit and never sends your writing online. No PDF yet, and a few other limits described in chapter 18 of the guide.
+- **Skill for AI agents**: an instruction file in English, in the repository's `skills/dante` folder, teaches an AI assistant how to read and change a Dante project without breaking it (scene order, folder notes, links, comments and revisions).
 
 ## 0.1.38 · October 20, 2026
 
