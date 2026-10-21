@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Skill for AI agents**: an instruction file in English, in the repository's `skills/dante` folder, teaches an AI assistant how to read and change a Dante project without breaking it (scene order, folder notes, links, comments and revisions).
+
 ## 0.1.38 · October 20, 2026
 
 - **Safer saving**: closing the window or quitting with Cmd+Q right after typing saves the last words before quitting. If a file cannot be written, Dante says so and tries again instead of losing the text.
