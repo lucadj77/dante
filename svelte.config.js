@@ -15,8 +15,11 @@ const config = {
     }),
     // The web version may live in a folder of a site, such as /dante (DANTE_BASE=/dante).
     paths: { base: process.env.DANTE_BASE ?? "" },
-    // The version names the cache of the web version; builds without one get the time.
-    version: { name: process.env.DANTE_VERSION || `0.0.${Date.now()}` },
+    // The version names the cache of the web version and SvelteKit's global in index.html.
+    // Builds without one get the time, kept in the environment: the page is rendered in a
+    // child process that reads this file again, and a second Date.now() would name another
+    // global than the one the scripts look for, leaving Dante blank (0.1.43).
+    version: { name: (process.env.DANTE_VERSION ||= `0.0.${Date.now()}`) },
     // Only the web version registers its service worker (src/lib/web.ts); the app has none.
     serviceWorker: { register: false },
   },

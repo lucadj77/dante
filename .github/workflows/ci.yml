@@ -21,6 +21,10 @@ jobs:
       - run: npm run build:web
         env:
           DANTE_BASE: /dante
+      - run: bash .github/check-build.sh
+      # The app's build, as tauri build makes it, with no version given.
+      - run: npm run build
+      - run: bash .github/check-build.sh
 
   rust:
     runs-on: ubuntu-latest

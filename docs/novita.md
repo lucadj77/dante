@@ -4,6 +4,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+- **Correzione**: la versione 0.1.43 (e la 0.1.42) si apriva con la finestra vuota dopo l'aggiornamento. Chi l'ha installata deve scaricare una volta a mano la nuova versione, perché quella rotta non può aggiornarsi da sola.
+
 ## 0.1.43 · 21 ottobre 2026
 
 - **Righe vuote tra i paragrafi**: il pulsante **¶** della barra di formattazione, o Alt+Invio, lascia una riga vuota dopo il paragrafo senza aprire una nuova scena. Nell'editor si vede come un **¶** chiaro; in Word, PDF, EPUB e in Obsidian è una riga vuota. Nel file è un paragrafo con solo `&nbsp;`. Importando da Word puoi scegliere che le righe vuote restino tali, oppure tenerne una sola facendo clic su di essa nell'anteprima e segnandola come testo. Una riga vuota che lascerebbe una scena di uno o due paragrafi resta una riga vuota invece di aprire una scena.
