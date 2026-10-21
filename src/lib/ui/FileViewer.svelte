@@ -41,6 +41,8 @@
   import { basename } from "$lib/core/path";
   import { t } from "$lib/state.svelte";
   import { TauriFs } from "$lib/tauriFs";
+  import { BrowserFs } from "$lib/browserFs";
+  import { whereIs } from "$lib/platform";
 
   let { project, path, compact = false }: { project: Project; path: string; compact?: boolean } = $props();
 
@@ -79,6 +81,22 @@
   });
 
   const canOpen = $derived(project.fs instanceof TauriFs);
+  /** A browser cannot hand the file to another program: it says where it is, or gives a copy. */
+  const inBrowser = $derived(project.fs instanceof BrowserFs);
+
+  async function download() {
+    error = "";
+    try {
+      const bytes = await project.fs.readBytes(path);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mimeType(path) }));
+      link.download = basename(path);
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+  }
 
   async function openWithSystem() {
     error = "";
@@ -96,6 +114,8 @@
       <span class="name">{basename(path)}</span>
       {#if canOpen}
         <button onclick={openWithSystem}>{t("files.openWithSystem")}</button>
+      {:else if inBrowser}
+        <button onclick={download}>{t("files.download")}</button>
       {/if}
     </div>
   {/if}
@@ -114,6 +134,10 @@
     <div class="message">
       <p>{t("files.noPreview")}</p>
       {#if canOpen}<button onclick={openWithSystem}>{t("files.openWithSystem")}</button>{/if}
+      {#if inBrowser}
+        <p class="where">{t("files.whereIs", { path: whereIs(project.fs, path) })}</p>
+        <button onclick={download}>{t("files.download")}</button>
+      {/if}
     </div>
   {/if}
 </div>

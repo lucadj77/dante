@@ -10,6 +10,7 @@
   import { LANGUAGES } from "$lib/i18n";
   import { app, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
+  import { WEB_BUILD } from "$lib/build";
   import { checkForUpdates, updates } from "$lib/updates.svelte";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
@@ -194,7 +195,7 @@
       ><input type="checkbox" bind:checked={appSettings.revisions} disabled={!appSettings.userName.trim()} /> {t("comments.revisionMode")}</label
     >
 
-    {#if inTauri()}
+    {#if inTauri() || WEB_BUILD}
       <h3>{t("update.title")}</h3>
       {#if updates.version}<p class="hint">{t("update.version", { version: updates.version })}</p>{/if}
       {#if updates.supported}

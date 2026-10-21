@@ -17,6 +17,10 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      # The web version builds too, with its service worker.
+      - run: npm run build:web
+        env:
+          DANTE_BASE: /dante
 
   rust:
     runs-on: ubuntu-latest

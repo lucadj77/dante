@@ -236,6 +236,14 @@ export class Project {
     return path;
   }
 
+  /** Copies a file from the computer into `dir`, keeping its name unless taken; returns its path. */
+  async importFile(dir: string, name: string, data: Uint8Array): Promise<string> {
+    await this.fs.mkdir(dir);
+    const path = await this.freeName(dir, safeFileName(name));
+    await this.fs.writeBytes(path, data);
+    return path;
+  }
+
   /**
    * Saves an image added from the editor and returns its path: in the attachments folder
    * inside Research, where the material gathered for the novel lives.

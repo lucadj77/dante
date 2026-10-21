@@ -57,6 +57,10 @@ La versione portatile non si installa: estrai lo zip dove vuoi (anche su una chi
 - **AppImage**: rendi il file eseguibile (tasto destro > Proprietà > Permessi, oppure `chmod +x` nel terminale) e aprilo.
 - **.deb** e **.rpm**: aprili con il gestore dei pacchetti della tua distribuzione.
 
+## Senza installare
+
+Se non puoi installare Dante (per esempio su un Mac con Catalina), aprilo con Chrome, Edge o Brave all'indirizzo https://lucadj77.github.io/dante/. È lo stesso programma, senza PDF e con alcuni limiti descritti nel capitolo 18 della [guida](guida.md#18-dante-nel-browser).
+
 ## Primo avvio
 
 1. Nella schermata iniziale scegli **Prova il progetto di esempio**, oppure crea un nuovo progetto, apri una cartella o importa un romanzo da Word (sempre una copia).

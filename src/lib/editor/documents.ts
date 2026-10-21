@@ -37,6 +37,8 @@ export class OpenDocument {
   private peers = new Set<Peer>();
   private lastSaved = "";
   private pending: string | null = null;
+  /** Writes started and not finished yet. */
+  private writing = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private snapshotting: Promise<void> | null = null;
   private loading: Promise<string> | null = null;
@@ -115,6 +117,11 @@ export class OpenDocument {
     return this.save();
   }
 
+  /** Typed text is not on disk yet. */
+  get unsaved(): boolean {
+    return this.pending !== null || this.writing > 0;
+  }
+
   /** Drops the text not saved yet, for operations that rewrite the file themselves. */
   cancel() {
     clearTimeout(this.timer);
@@ -129,6 +136,7 @@ export class OpenDocument {
     const text = this.pending;
     if (text === null) return;
     this.pending = null;
+    this.writing++;
     try {
       await this.store.files.write(this.path, this.raw, text);
     } catch (e) {
@@ -138,6 +146,8 @@ export class OpenDocument {
       this.timer = setTimeout(() => void this.save().catch(() => {}), RETRY_DELAY);
       this.setFailed(true);
       throw e;
+    } finally {
+      this.writing--;
     }
     this.setFailed(false);
     this.lastSaved = text;
@@ -223,6 +233,11 @@ export class DocumentStore {
   /** Writes every unsaved change, before files are moved or renamed. */
   async flushAll(): Promise<void> {
     await Promise.all([...this.open.values()].map((d) => d.flush()));
+  }
+
+  /** Some typed text is not on disk yet. */
+  get unsaved(): boolean {
+    return [...this.open.values()].some((d) => d.unsaved);
   }
 
   /** Every open document reads its file again. */

@@ -1,10 +1,22 @@
 import type { Update } from "@tauri-apps/plugin-updater";
+import { base } from "$app/paths";
+import { version as builtVersion } from "$app/environment";
+import { WEB_BUILD } from "./build";
 import { inTauri } from "./tauriFs";
 
+/** A newer web version, announced by the site's version.json. */
+export interface WebUpdate {
+  version: string;
+  rawJson: Record<string, unknown>;
+}
+
 /**
- * Updates come from the "preview" release on GitHub, whose latest.json names the newest
- * version for each system. Checking and installing go through Tauri's updater plugin,
- * which verifies the download against the public key in tauri.conf.json.
+ * Updates of the app come from the "preview" release on GitHub, whose latest.json names
+ * the newest version for each system. Checking and installing go through Tauri's updater
+ * plugin, which verifies the download against the public key in tauri.conf.json.
+ *
+ * The web version asks its own site: version.json names the newest version and its news,
+ * and the service worker downloads the new files, which take over when Dante restarts.
  */
 export const updates = $state<{
   /** The installed version, once known. */
@@ -12,7 +24,7 @@ export const updates = $state<{
   /** False in development and in the portable copy, which update by hand. */
   supported: boolean;
   /** A newer version announced by the release, not yet installed. */
-  available: Update | null;
+  available: Update | WebUpdate | null;
   /** The banner was closed with "Later": it comes back at the next start. */
   dismissed: boolean;
   state: "idle" | "checking" | "current" | "downloading" | "error";
@@ -26,7 +38,11 @@ let ready: Promise<void> | null = null;
 /** Learns the installed version and whether this copy can update itself. */
 export function loadUpdateInfo(): Promise<void> {
   ready ??= (async () => {
-    if (!inTauri()) return;
+    if (!inTauri()) {
+      updates.version = builtVersion;
+      updates.supported = WEB_BUILD && "serviceWorker" in navigator;
+      return;
+    }
     const [{ getVersion }, { invoke }] = await Promise.all([import("@tauri-apps/api/app"), import("@tauri-apps/api/core")]);
     updates.version = await getVersion();
     updates.supported = await invoke<boolean>("updates_supported");
@@ -41,8 +57,17 @@ export async function checkForUpdates(quiet = false): Promise<void> {
   updates.state = "checking";
   updates.error = "";
   try {
-    const { check } = await import("@tauri-apps/plugin-updater");
-    const found = await check();
+    let found: Update | WebUpdate | null;
+    if (inTauri()) {
+      const { check } = await import("@tauri-apps/plugin-updater");
+      found = await check();
+    } else {
+      const response = await fetch(`${base}/version.json`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const json = (await response.json()) as Record<string, unknown>;
+      const version = typeof json.version === "string" ? json.version : "";
+      found = version && newerVersion(version, updates.version) ? { version, rawJson: json } : null;
+    }
     updates.available = found;
     updates.dismissed = false;
     updates.state = found ? "idle" : "current";
@@ -61,6 +86,10 @@ export async function installUpdate(beforeInstall: () => Promise<void>): Promise
   updates.error = "";
   try {
     await beforeInstall();
+    if (!("downloadAndInstall" in update)) {
+      await takeWebUpdate();
+      return;
+    }
     let total = 0;
     let received = 0;
     await update.downloadAndInstall((event) => {
@@ -77,6 +106,34 @@ export async function installUpdate(beforeInstall: () => Promise<void>): Promise
     updates.state = "error";
     updates.error = String(e);
   }
+}
+
+/**
+ * Has the service worker download the new version and take over, then reloads the page.
+ * The browser may have fetched it already; without a service worker a reload is enough.
+ */
+async function takeWebUpdate(): Promise<void> {
+  const registration = await navigator.serviceWorker?.getRegistration();
+  if (!registration) {
+    location.reload();
+    return;
+  }
+  await registration.update();
+  const waiting = await new Promise<ServiceWorker | null>((resolve) => {
+    if (registration.waiting) return resolve(registration.waiting);
+    const installing = registration.installing;
+    if (!installing) return resolve(null);
+    installing.addEventListener("statechange", () => {
+      if (installing.state === "installed") resolve(registration.waiting ?? installing);
+      else if (installing.state === "redundant") resolve(null);
+    });
+  });
+  if (!waiting) {
+    // Nothing newer to take: the site is not updated yet, or the worker failed.
+    throw new Error("the new version could not be downloaded");
+  }
+  navigator.serviceWorker.addEventListener("controllerchange", () => location.reload(), { once: true });
+  waiting.postMessage("take-over");
 }
 
 export interface VersionNews {

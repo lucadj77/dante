@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectKey } from "$lib/platform";
   import { tick, type Snippet } from "svelte";
   import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
@@ -14,7 +15,7 @@
   import { columns, layout, width } from "./layout.svelte";
   import Resizer from "./Resizer.svelte";
   import { markOnly } from "./folding.svelte";
-  import { TauriFs } from "$lib/tauriFs";
+  import { inTauri, TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
   import { flushAll } from "./documents.svelte";
@@ -115,7 +116,7 @@
     if (active && findNode(active)?.kind === "scene") panes.writing = active;
   });
 
-  const foldScope = $derived(`${project.fs instanceof TauriFs ? project.fs.root : "sample"}|manuscript`);
+  const foldScope = $derived(`${projectKey(project.fs)}|manuscript`);
 
   function containers(node: ManuscriptNode): string[] {
     return node.children.filter((c) => c.kind !== "scene").flatMap((c) => [c.path, ...containers(c)]);
@@ -452,12 +453,31 @@
     edge = null;
     hovering = false;
     try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().setFullscreen(fullscreen);
+      if (inTauri()) {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        await getCurrentWindow().setFullscreen(fullscreen);
+      } else if (fullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else if (!fullscreen && document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
     } catch {
-      // In a browser, panels are hidden but the window stays as it is.
+      // Refused by the browser: panels are hidden but the window stays as it is.
     }
   }
+
+  // In a browser Esc leaves full screen by itself, before the page sees it.
+  $effect(() => {
+    if (!fullscreen || inTauri()) return;
+    const onChange = () => {
+      if (!document.fullscreenElement) {
+        fullscreen = false;
+        edge = null;
+      }
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  });
 
   function onKey(event: KeyboardEvent) {
     // Esc that closed something else first, such as the suggestions, stays there.

@@ -10,7 +10,9 @@
   import { sampleProject } from "$lib/sample";
   import { app, exportPreferences, forgetProject, num, recent, rememberProject, saveAppSettings, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
-  import { addLauncher, openProjectAt } from "$lib/opening";
+  import { BrowserFs } from "$lib/browserFs";
+  import { addLauncher, folderFs, OpenElsewhere, openProjectAt, openProjectIn } from "$lib/opening";
+  import { allow, chooseFolder, forgetFolder, isWebPath, rememberFolder, webFolders, webFs } from "$lib/webFolders";
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
   import { counts, defaultBlankLines, defaultRoles, headingLevels, structure, type BlankLines, type HeadingRole } from "$lib/core/import/structure";
@@ -19,6 +21,10 @@
   let error = $state("");
   let notice = $state("");
   const desktop = inTauri();
+  /** A Chromium browser, which can work on a folder of the computer. */
+  const web = webFolders();
+  /** Projects are folders of the computer, in the app or in such a browser. */
+  const folders = desktop || web;
 
   // New project form.
   let creating = $state(false);
@@ -26,6 +32,8 @@
   let authors = $state<string[]>(app.settings.userName ? [app.settings.userName] : []);
   let language = $state(app.settings.language);
   let parent = $state("");
+  /** In a browser, the folder chosen as `parent`. */
+  let parentHandle: FileSystemDirectoryHandle | null = null;
   let busy = $state(false);
   /** Follows the title until the writer picks shapes or colours. */
   let cover = $state<CoverSettings>({ template: "", palette: "" });
@@ -37,9 +45,10 @@
       if (covers[r.path]) continue;
       const fallback = svgUrl(coverSvg({ title: r.title, authors: [] }, { template: "", palette: "" }));
       covers[r.path] = fallback;
-      if (!desktop) continue;
-      void new TauriFs(r.path)
-        .readText(SETTINGS_FILE)
+      if (!folders) continue;
+      // A browser shows the real cover only of folders it may read without asking.
+      void (isWebPath(r.path) ? webFs(r.path, false) : folderFs(r.path))
+        .then((fs) => fs?.readText(SETTINGS_FILE) ?? Promise.reject())
         .then((text) => {
           const settings = parseSettings(text);
           covers[r.path] = svgUrl(coverSvg({ ...settings, title: settings.title || r.title }, settings.cover));
@@ -79,10 +88,21 @@
   async function openFolder() {
     error = "";
     try {
+      if (web) {
+        const handle = await chooseFolder();
+        if (!handle) return;
+        if (!(await allow(handle))) {
+          error = t("welcome.denied");
+          return;
+        }
+        const path = await rememberFolder(handle);
+        onOpen(await openProjectIn(new BrowserFs(handle, path), path));
+        return;
+      }
       const folder = await open({ directory: true, multiple: false });
       if (typeof folder === "string") await openPath(folder);
     } catch (e) {
-      error = t("error.generic", { message: String(e) });
+      error = e instanceof OpenElsewhere ? e.message : t("error.generic", { message: String(e) });
     }
   }
 
@@ -90,6 +110,21 @@
     error = "";
     notice = "";
     try {
+      if (isWebPath(path)) {
+        const fs = await webFs(path).catch(() => null);
+        const name = recent.projects.find((r) => r.path === path)?.folder ?? "";
+        if (!fs) {
+          error = t("welcome.denied");
+          return;
+        }
+        if (!(await fs.list("").then(() => true, () => false))) {
+          forget(path);
+          notice = t("welcome.missing", { path: name });
+          return;
+        }
+        onOpen(await openProjectIn(fs, path));
+        return;
+      }
       if (!(await new TauriFs(path).exists(""))) {
         forgetProject(path);
         notice = t("welcome.missing", { path });
@@ -97,11 +132,24 @@
       }
       await openPath(path);
     } catch (e) {
-      error = t("error.generic", { message: String(e) });
+      error = e instanceof OpenElsewhere ? e.message : t("error.generic", { message: String(e) });
     }
   }
 
+  function forget(path: string) {
+    forgetProject(path);
+    if (isWebPath(path)) void forgetFolder(path).catch(() => {});
+  }
+
   async function chooseParent() {
+    if (web) {
+      const handle = await chooseFolder().catch(() => null);
+      if (handle && (await allow(handle))) {
+        parentHandle = handle;
+        parent = handle.name;
+      }
+      return;
+    }
     const folder = await open({ directory: true, multiple: false });
     if (typeof folder === "string") parent = folder;
   }
@@ -142,9 +190,15 @@
 
   async function create() {
     error = "";
-    if (!folderName || (desktop && !parent)) return;
+    if (!folderName || (folders && !parent)) return;
     busy = true;
     try {
+      if (web && parentHandle) {
+        const dir = await parentHandle.getDirectoryHandle(folderName, { create: true });
+        const path = await rememberFolder(dir);
+        await made(new BrowserFs(dir, path), path, `${parent}/${folderName}`);
+        return;
+      }
       if (!desktop) {
         // In a browser an imported book can be tried, kept only while the page is open.
         const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences());
@@ -153,29 +207,33 @@
         return;
       }
       const path = `${parent.replace(/[\\/]+$/, "")}/${folderName}`;
-      const fs = new TauriFs(path);
-      if ((await fs.exists("")) && (await fs.list("")).length > 0) {
-        error = t("welcome.notEmpty", { path });
-        return;
-      }
-      const { project } = await Project.create(
-        fs,
-        { title: title.trim(), authors, language, cover: resolveCover(cover, title) },
-        imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
-        exportPreferences(),
-      );
-      if (imported) await project.importBook(imported);
-      await addLauncher(project);
-      // The first author's name is offered again next time.
-      const first = authors.find((a) => a.trim())?.trim();
-      if (first && !app.settings.userName) saveAppSettings({ ...app.settings, userName: first });
-      rememberProject(path, project.settings.title);
-      onOpen(project);
+      await made(new TauriFs(path), path, path);
     } catch (e) {
       error = t("error.generic", { message: String(e) });
     } finally {
       busy = false;
     }
+  }
+
+  /** Makes the new project in `fs`, an empty folder, and opens it. */
+  async function made(fs: TauriFs | BrowserFs, path: string, shown: string) {
+    if ((await fs.exists("")) && (await fs.list("")).length > 0) {
+      error = t("welcome.notEmpty", { path: shown });
+      return;
+    }
+    const { project } = await Project.create(
+      fs,
+      { title: title.trim(), authors, language, cover: resolveCover(cover, title) },
+      imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
+      exportPreferences(),
+    );
+    if (imported) await project.importBook(imported);
+    await addLauncher(project);
+    // The first author's name is offered again next time.
+    const first = authors.find((a) => a.trim())?.trim();
+    if (first && !app.settings.userName) saveAppSettings({ ...app.settings, userName: first });
+    rememberProject(path, project.settings.title, fs instanceof BrowserFs ? fs.name : undefined);
+    onOpen(project);
   }
 
   async function openSample() {
@@ -245,7 +303,7 @@
         <span class="label">{t("cover.title")}</span>
         <CoverPicker bind:cover text={{ title, authors }} />
       </div>
-      {#if desktop}
+      {#if folders}
       <div class="where">
         <span class="label">{t("welcome.where")}</span>
         <button type="button" onclick={chooseParent}>{t("welcome.choose")}</button>
@@ -255,13 +313,13 @@
       </div>
       {/if}
       <div class="actions">
-        <button class="primary" type="submit" disabled={busy || !folderName || (desktop && !parent)}>{imported ? t("import.create") : t("welcome.create")}</button>
+        <button class="primary" type="submit" disabled={busy || !folderName || (folders && !parent)}>{imported ? t("import.create") : t("welcome.create")}</button>
         <button type="button" onclick={cancel}>{t("welcome.cancel")}</button>
       </div>
     </form>
   {:else}
     <div class="actions">
-      {#if desktop}
+      {#if folders}
         <button class="primary" onclick={() => (creating = true)}>{t("welcome.new")}</button>
         <button onclick={openFolder}>{t("welcome.open")}</button>
       {/if}
@@ -280,21 +338,21 @@
       />
       <button onclick={openSample}>{t("welcome.sample")}</button>
     </div>
-    {#if !desktop}
+    {#if !folders}
       <p class="note">{t("welcome.browser")}</p>
     {/if}
 
-    {#if desktop && recent.projects.length > 0}
+    {#if folders && recent.projects.length > 0}
       <h2>{t("welcome.recent")}</h2>
       <ul class="recent">
         {#each recent.projects as r (r.path)}
           <li>
-            <button class="item" title={r.path} onclick={() => openRecent(r.path)}>
+            <button class="item" title={r.folder ?? r.path} onclick={() => openRecent(r.path)}>
               <img class="cover" src={covers[r.path]} alt="" />
               <span class="name">{r.title}</span>
               <span class="date">{dateFormat.format(new Date(r.opened))}</span>
             </button>
-            <button class="remove" aria-label={t("welcome.forget", { name: r.title })} title={t("welcome.forget", { name: r.title })} onclick={() => forgetProject(r.path)}>×</button>
+            <button class="remove" aria-label={t("welcome.forget", { name: r.title })} title={t("welcome.forget", { name: r.title })} onclick={() => forget(r.path)}>×</button>
           </li>
         {/each}
       </ul>
