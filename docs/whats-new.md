@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Fix**: version 0.1.43 (and 0.1.42) opened with a blank window after updating. If you installed it, download the new version by hand once: the broken one cannot update itself.
+
 ## 0.1.43 · October 21, 2026
 
 - **Blank lines between paragraphs**: the **¶** button on the formatting bar, or Alt+Enter, leaves a blank line after the paragraph without starting a new scene. The editor shows it as a faint **¶**; in Word, PDF, EPUB and Obsidian it is an empty line. In the file it is a paragraph holding only `&nbsp;`. When importing from Word you can keep empty lines as they are, or keep a single one by clicking it in the preview and marking it as text. An empty line that would leave a scene of one or two paragraphs stays a blank line instead of starting a scene.

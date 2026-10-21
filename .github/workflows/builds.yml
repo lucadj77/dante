@@ -46,6 +46,7 @@ jobs:
       - run: npm test
       # The Rust crate embeds the built frontend, so it has to exist first.
       - run: npm run build
+      - run: bash .github/check-build.sh
       - run: cargo test
         working-directory: src-tauri
 
