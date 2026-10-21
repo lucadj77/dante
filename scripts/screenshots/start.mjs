@@ -19,9 +19,10 @@ if (run('aggiornamento')) { const { b, page } = await start({ fakeTauri: true, u
   await b.close(); }
 
 if (run('word')) { const { b, page } = await start({ sample: false });
-  await page.locator('input[type=file]').setInputFiles('shots/Il faro.docx'); await page.waitForTimeout(1500);
-  const box = await page.locator('main').first().boundingBox();
-  await page.screenshot({ path: S+'importa-word.png', clip: { x: box.x - 10, y: box.y, width: box.width + 120, height: 420 } });
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByText('Importa da Word…').click()]);
+  await chooser.setFiles('shots/Il faro.docx'); await page.waitForTimeout(1500);
+  await page.locator('.blocks button', { hasText: 'Il guardiano del faro' }).click(); await page.waitForTimeout(400);
+  await page.locator('[role=dialog]').screenshot({ path: S+'importa-word.png' });
   await b.close(); }
 
 if (run('area')) { const { b, page } = await start();

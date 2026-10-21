@@ -39,6 +39,7 @@
     toMain: "M15 3h6v6 M21 3l-7 7 M9 21H3v-6 M3 21l7-7",
     swap: "M7 7h13 M16 3l4 4-4 4 M17 17H4 M8 13l-4 4 4 4",
     cross: "M6 6l12 12 M18 6L6 18",
+    word: "M6 2h7l5 5v15H6z M13 2v5h5 M8.5 11l1.5 6 2-4 2 4 1.5-6",
     sheets: "M3 5h18v14H3z M8 9.5a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M5 17a3 3 0 0 1 6 0 M14 10h4 M14 14h4",
   } as const;
   export type IconName = keyof typeof PATHS;

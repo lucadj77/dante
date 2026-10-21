@@ -1,28 +1,44 @@
 // Turns a document read from another program into Dante's structure: parts, chapters and
 // scenes. Each heading level becomes one of them, as `defaultRoles` guesses or as the
 // writer chooses. Inside a chapter, a line of only asterisks, hashes or similar marks
-// starts a new scene, and so do empty paragraphs when the writer used them that way.
+// starts a new scene, and so do empty paragraphs when the writer used them that way. In the
+// preview the writer can also say what any single paragraph is, and these choices win.
 
+import { setAlignment } from "../alignment";
 import type { DocBlock } from "./docx";
 
 export interface ImportedScene {
   title: string;
   text: string;
+  /** The block the scene starts at, for the preview. */
+  at?: number;
 }
 export interface ImportedChapter {
   title: string;
   scenes: ImportedScene[];
+  /** Holds the text that comes before any heading: it can continue a chapter already written. */
+  untitled?: boolean;
+  at?: number;
 }
 export interface ImportedPart {
   title: string;
   chapters: ImportedChapter[];
+  at?: number;
 }
 export interface ImportedBook {
   title: string;
   /** Parts, or a single part with an empty title when the book has none. */
   parts: ImportedPart[];
   hasParts: boolean;
+  /** What each block of the document became, in order, for the preview. */
+  blocks?: BlockRole[];
 }
+
+/**
+ * What a block of the document became: the book's title, the title of a part, chapter or
+ * scene, a scene break, text, a heading kept in the text, an empty line, or nothing.
+ */
+export type BlockRole = "title" | "part" | "chapter" | "scene" | "break" | "text" | "heading" | "blank" | "skip";
 
 /** A scene break as writers type it: "***", "* * *", "#", "§", "~"… alone on a line. */
 export const SCENE_BREAK = /^\s*(?:[*#~§•·⁂✻❦]\s*){1,5}$|^\s*[-–—]{3,}\s*$/;
@@ -125,17 +141,66 @@ export function defaultBlankLines(blocks: DocBlock[]): BlankLines {
   return share(2) > 0 && share(2) <= 1 / 3 ? 2 : 0;
 }
 
+/**
+ * What the writer said a single paragraph or heading is, in the preview: the title of a
+ * part, chapter or scene, a scene break, plain text, or something to leave out.
+ */
+export type Mark = "part" | "chapter" | "scene" | "break" | "text" | "skip";
+
+/** A paragraph's words without alignment, Markdown marks and escapes, as a title shows them. */
+export function plainText(text: string): string {
+  return setAlignment(text, null)
+    .replace(/\{(?:\+\+|--|==|~~|>>)[\s\S]*?(?:\+\+|--|==|~~|<<)\}/g, (m) => (m.startsWith("{++") || m.startsWith("{==") ? m.slice(3, -3) : ""))
+    .replace(/(\*{1,2}|_{1,2}|~~|==)(.+?)\1/g, "$2")
+    .replace(/\\(.)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Numbers as chapters and sections are numbered: figures, Roman numerals, words.
+const FIGURES = /\d+|\b[IVXLCDM]+\b/g;
+const NUMBER_WORDS =
+  /\b(?:(?:prim|second|terz|quart|quint|sest|settim|ottav|non|decim)[oa]|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|uno|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|one|two|three|four|five|six|seven|eight|nine|ten)\b/gi;
+
+/**
+ * A short line's shape, with its numbers and any title after them left out: "Capitolo 3"
+ * and "Capitolo IV: La casa" share it.
+ */
+function shape(block: DocBlock): string | null {
+  const text = plainText(block.text);
+  if (!text || text.length > 80) return null;
+  const numbered = text.replace(FIGURES, "#").replace(NUMBER_WORDS, "#").toLowerCase();
+  // A title after the number, as in "Capitolo 3: Il ritorno", differs from line to line.
+  return block.kind + ":" + numbered.replace(/^([^#]*#)\s*[:.)\-–—]\s.*$/, "$1").replace(/[.:)]+$/, "");
+}
+
+/**
+ * The paragraphs and headings like the one at `index`: the same words around a number,
+ * such as "Capitolo 3" and "Capitolo 4", or "12" and "13". Long paragraphs have no likes.
+ */
+export function similar(blocks: DocBlock[], index: number): number[] {
+  const wanted = blocks[index] ? shape(blocks[index]) : null;
+  if (!wanted) return [];
+  const out: number[] = [];
+  blocks.forEach((b, i) => {
+    if (shape(b) === wanted) out.push(i);
+  });
+  return out;
+}
+
 export function structure(
   blocks: DocBlock[],
   names: ImportNames,
   title = "",
   roles: Record<number, HeadingRole> = defaultRoles(blocks),
   blanks: BlankLines = defaultBlankLines(blocks),
+  marks: Record<number, Mark> = {},
 ): ImportedBook {
   // The title style names the book; it is not part of the text.
-  const titled = blocks.find((b) => b.kind === "heading" && b.level === 0);
-  const body = blocks.filter((b) => !(b.kind === "heading" && b.level === 0));
-  const partsFirst = Object.values(roles).includes("part");
+  const isTitle = (b: DocBlock, i: number) => b.kind === "heading" && b.level === 0 && !marks[i];
+  const titled = blocks.find(isTitle);
+  const markedParts = Object.values(marks).includes("part");
+  const partsFirst = markedParts || blocks.some((b) => b.kind === "heading" && b.level > 0 && roles[b.level] === "part");
   const role = (level: number): "part" | "chapter" | "scene" | null => {
     const r = roles[level];
     return r && r !== "text" ? r : null;
@@ -146,66 +211,118 @@ export function structure(
   let scene: ImportedScene | null = null;
   let lines: string[] = [];
   let blank = 0;
+  /** The first block of the scene being read, when it has no heading. */
+  let first: number | undefined;
+  const result: BlockRole[] = blocks.map(() => "skip");
+  let current = -1;
+  let lastBlank = -1;
 
   const closeScene = () => {
     const text = lines.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
     lines = [];
+    const at = first;
+    first = undefined;
     if (!scene && !text) return;
     if (!chapter) {
-      chapter = { title: names.start, scenes: [] };
+      chapter = { title: names.start, scenes: [], untitled: true, at };
       parts[parts.length - 1].chapters.push(chapter);
     }
-    const s: ImportedScene = scene ?? { title: names.scene(chapter.scenes.length + 1), text: "" };
+    const s: ImportedScene = scene ?? { title: names.scene(chapter.scenes.length + 1), text: "", at };
     s.text = text;
     chapter.scenes.push(s);
     scene = null;
   };
 
-  for (const b of body) {
+  const open = (r: "part" | "chapter" | "scene", heading: string) => {
+    closeScene();
+    const at = current;
+    result[at] = r;
+    if (r === "part" && FRAME.test(heading)) {
+      // Outside any part: an untitled part holds it, written at the top of the manuscript.
+      chapter = { title: heading, scenes: [], at };
+      parts.push({ title: "", chapters: [chapter] });
+      result[at] = "chapter";
+    } else if (r === "part") {
+      parts.push({ title: ownTitle(heading), chapters: [], at });
+      chapter = null;
+    } else if (r === "chapter") {
+      chapter = { title: ownTitle(heading), scenes: [], at };
+      parts[parts.length - 1].chapters.push(chapter);
+    } else {
+      scene = { title: heading, text: "", at };
+    }
+  };
+
+  const paragraph = (text: string) => {
+    if (!text) {
+      blank++;
+      result[current] = "blank";
+      lastBlank = current;
+      return;
+    }
+    if (blanks > 0 && blank >= blanks && lines.length > 0) {
+      closeScene();
+      result[lastBlank] = "break";
+    }
+    blank = 0;
+    if (first === undefined && !scene) first = current;
+    result[current] = "text";
+    lines.push(text);
+  };
+
+  blocks.forEach((b, i) => {
+    current = i;
+    if (isTitle(b, i)) {
+      if (b === titled) result[i] = "title";
+      return;
+    }
+    const mark = marks[i];
+    if (mark === "skip") return;
+    if (mark === "break") {
+      closeScene();
+      result[i] = "break";
+      blank = 0;
+      return;
+    }
+    if (mark === "text") {
+      // An empty line said to be text is only spacing: it starts no scene.
+      if (!b.text) result[i] = "blank";
+      else paragraph(b.text);
+      return;
+    }
+    if (mark) {
+      blank = 0;
+      open(mark, b.kind === "heading" ? b.text : plainText(b.text));
+      return;
+    }
     if (b.kind === "paragraph") {
       if (SCENE_BREAK.test(b.text)) {
         closeScene();
+        result[i] = "break";
         blank = 0;
-        continue;
+        return;
       }
-      if (!b.text) {
-        blank++;
-        continue;
-      }
-      if (blanks > 0 && blank >= blanks && lines.length > 0) closeScene();
-      blank = 0;
-      lines.push(b.text);
-      continue;
+      paragraph(b.text);
+      return;
     }
     blank = 0;
     const r = role(b.level);
     if (r === null) {
       // A deeper heading than the structure uses stays in the text as a heading.
-      lines.push(`${"#".repeat(Math.min(6, b.level))} ${b.text}`);
-      continue;
+      if (first === undefined && !scene) first = i;
+      result[i] = "heading";
+      lines.push(`${"#".repeat(Math.min(6, Math.max(1, b.level)))} ${b.text}`);
+      return;
     }
-    closeScene();
-    if (r === "part" && FRAME.test(b.text)) {
-      // Outside any part: an untitled part holds it, written at the top of the manuscript.
-      chapter = { title: b.text, scenes: [] };
-      parts.push({ title: "", chapters: [chapter] });
-    } else if (r === "part") {
-      parts.push({ title: ownTitle(b.text), chapters: [] });
-      chapter = null;
-    } else if (r === "chapter") {
-      chapter = { title: ownTitle(b.text), scenes: [] };
-      parts[parts.length - 1].chapters.push(chapter);
-    } else {
-      scene = { title: b.text, text: "" };
-    }
-  }
+    open(r, b.text);
+  });
   closeScene();
 
   // Text before the first part, or a book without parts, sits in the untitled first part.
   const kept = parts.filter((p, i) => i > 0 || p.chapters.length > 0);
   // Chapters left without scenes get an empty one, so each can be written in.
   for (const p of kept) for (const c of p.chapters) if (!c.scenes.length) c.scenes.push({ title: names.scene(1), text: "" });
-  return { title: titled?.text || title, parts: kept, hasParts: partsFirst };
+  return { title: titled?.text || title, parts: kept, hasParts: partsFirst, blocks: result };
 }
 
 /** How much the import holds, for the preview. */
