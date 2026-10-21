@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDisk, projectKey } from "$lib/platform";
   import type { Snippet } from "svelte";
   import { noteTitle, noteType } from "$lib/core/notes";
   import { basename, dirname, isWithin, rebase } from "$lib/core/path";
@@ -48,8 +49,12 @@
     return p.open && p.project.files.includes(p.open) ? p.open : null;
   });
   const types = $derived(p.project.settings.types);
-  const canImport = $derived(p.project.fs instanceof TauriFs);
-  const foldScope = $derived(`${p.project.fs instanceof TauriFs ? p.project.fs.root : "sample"}|${p.root}`);
+  const canImport = $derived(onDisk(p.project.fs));
+  const desktop = $derived(p.project.fs instanceof TauriFs);
+  /** In a browser, files are imported through the page's own file picker. */
+  let picker = $state<HTMLInputElement>();
+  let pickerDir = "";
+  const foldScope = $derived(`${projectKey(p.project.fs)}|${p.root}`);
   /** Research and Laboratory keep their own panel widths. */
   const widthKey = $derived(`files|${p.root}`);
   const folders = $derived(p.project.folders.filter((f) => isWithin(f, p.root) && f !== p.root));
@@ -97,13 +102,27 @@
 
   async function importFiles(dir?: string) {
     menu = null;
-    if (!(p.project.fs instanceof TauriFs)) return;
+    if (!(p.project.fs instanceof TauriFs)) {
+      pickerDir = targetDir(dir);
+      picker?.click();
+      return;
+    }
     const fs = p.project.fs;
     const { open } = await import("@tauri-apps/plugin-dialog");
     const chosen = await open({ multiple: true, directory: false, title: t("files.import") });
     if (!chosen || chosen.length === 0) return;
     const sources = Array.isArray(chosen) ? chosen : [chosen];
     const imported = await run(() => fs.importFiles(targetDir(dir), sources));
+    if (imported?.length) p.onShow(imported[0]);
+  }
+
+  async function importPicked(files: File[]) {
+    const dir = pickerDir;
+    const imported = await run(async () => {
+      const paths: string[] = [];
+      for (const file of files) paths.push(await p.project.importFile(dir, file.name, new Uint8Array(await file.arrayBuffer())));
+      return paths;
+    });
     if (imported?.length) p.onShow(imported[0]);
   }
 
@@ -150,6 +169,18 @@
       <button title={t("tip.newFolder")} onclick={() => newFolder()}>{t("files.newFolder")}</button>
       {#if canImport}
         <button title={t("tip.import")} onclick={() => importFiles()}>{t("files.import")}</button>
+        <input
+          bind:this={picker}
+          type="file"
+          multiple
+          hidden
+          onchange={(e) => {
+            const input = e.currentTarget;
+            const files = [...(input.files ?? [])];
+            input.value = "";
+            if (files.length) void importPicked(files);
+          }}
+        />
       {/if}
       <span class="fold">
         <button title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, [])}>⊟</button>
@@ -188,7 +219,7 @@
       {:else}
         <button role="menuitem" onclick={() => { const path = m.path; menu = null; p.onShow(path); }}>{t("files.open")}</button>
         <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = m.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
-        {#if canImport}<button role="menuitem" onclick={() => openWithSystem(m.path)}>{t("files.openWithSystem")}</button>{/if}
+        {#if desktop}<button role="menuitem" onclick={() => openWithSystem(m.path)}>{t("files.openWithSystem")}</button>{/if}
       {/if}
       <button role="menuitem" onclick={() => { const path = m.path; menu = null; renaming = path; }}>{t("tree.rename")}</button>
       <hr />

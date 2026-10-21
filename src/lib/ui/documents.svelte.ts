@@ -28,6 +28,11 @@ export function flushAll(project: Project): Promise<void> {
   return documents(project).flushAll();
 }
 
+/** Some typed text of `project` is not on disk yet. */
+export function unsaved(project: Project): boolean {
+  return documents(project).unsaved;
+}
+
 /**
  * Ties an editor to its document: the extension goes into the editor, `attach` is called
  * once the editor exists and `detach` when it closes.

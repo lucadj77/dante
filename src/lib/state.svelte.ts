@@ -109,6 +109,8 @@ export interface RecentProject {
   title: string;
   /** ISO date of the last opening. */
   opened: string;
+  /** In a browser, the folder's name: the browser does not tell where it is. */
+  folder?: string;
 }
 
 const RECENT_KEY = "dante.recent-projects";
@@ -135,9 +137,9 @@ function saveRecent(projects: RecentProject[]) {
   }
 }
 
-export function rememberProject(path: string, title: string) {
+export function rememberProject(path: string, title: string, folder?: string) {
   const others = recent.projects.filter((r) => r.path !== path);
-  saveRecent([{ path, title, opened: new Date().toISOString() }, ...others].slice(0, RECENT_MAX));
+  saveRecent([{ path, title, opened: new Date().toISOString(), ...(folder ? { folder } : {}) }, ...others].slice(0, RECENT_MAX));
 }
 
 export function forgetProject(path: string) {

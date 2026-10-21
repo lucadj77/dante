@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { projectKey } from "$lib/platform";
   import type { Snippet } from "svelte";
   import type { NoteInfo } from "$lib/core/notes";
   import { fold, noteTitle, noteType } from "$lib/core/notes";
@@ -49,7 +50,7 @@
     const current = p.project.settings.folders.codex;
     return current !== wanted && !p.project.folders.includes(wanted) && p.project.folders.includes(current) ? wanted : null;
   });
-  const keepKey = $derived(`dante.keep-folder|${p.project.fs instanceof TauriFs ? p.project.fs.root : "sample"}`);
+  const keepKey = $derived(`dante.keep-folder|${projectKey(p.project.fs)}`);
   let kept = $state(false);
   $effect(() => {
     try {

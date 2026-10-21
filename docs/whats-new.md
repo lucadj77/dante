@@ -4,6 +4,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Dante in the browser**: Dante can also be used from Chrome, Edge or Brave, with nothing to install, at https://lucadj77.github.io/dante/. It works on the files of the novel's folder, works offline after the first visit and never sends your writing online. No PDF yet, and a few other limits described in chapter 18 of the guide.
 - **Importing from Word with a preview**: before importing you see the document next to the result and can say line by line what it is (part, chapter or scene title, scene break, text, leave out), for all similar lines at once too. Sections divided only by a number on its own line ("1", "2", "3"…) become chapters instead of scenes holding just the number. With the **Import** button in the manuscript you can add a Word file to a project already under way, such as a novel split into several files.
 - **Visible update check**: at start Dante says for a few seconds that it is up to date, or that it could not check, instead of staying silent. If it stays open it checks again every six hours, and on the Mac there is **Dante > Check for Updates…**.
 - **Dialogue in exports**: lines of dialogue typed with dashes or hyphens at the start of the paragraph take the marks of the chosen style (— Come in — she said becomes “Come in” she said). New projects leave dialogue as typed until you pick a style in Export > Typography.

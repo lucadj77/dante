@@ -215,6 +215,10 @@ jobs:
             git pull -q --rebase origin main || break
           done
           echo "::warning::The release notes could not be written back to main."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: news
+          path: news.json
       - name: Update manifest
         run: python3 src/.github/latest-json.py out "0.1.${{ github.run_number }}" "${GITHUB_SHA::7}" "https://github.com/${{ github.repository }}/releases/download/preview" news.json
       - name: Replace the preview release
@@ -239,3 +243,38 @@ jobs:
 
           Istruzioni complete per chi prova Dante: https://github.com/${{ github.repository }}/blob/main/docs/beta.md
           I file .sig, .app.tar.gz e latest.json servono all'aggiornamento automatico: non vanno scaricati."
+
+  # The web version, for Chrome, Edge and Brave, on GitHub Pages (Settings > Pages >
+  # Source: GitHub Actions, once). Same version number and news as the release.
+  web:
+    if: github.ref == 'refs/heads/main'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+        env:
+          DANTE_BASE: /${{ github.event.repository.name }}
+          DANTE_VERSION: 0.1.${{ github.run_number }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: news
+      # What the web version reads to learn of a newer one, as installed copies read latest.json.
+      - run: python3 .github/web-version.py "0.1.${{ github.run_number }}" news.json build/version.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+      - id: deploy
+        uses: actions/deploy-pages@v4

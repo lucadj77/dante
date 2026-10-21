@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { projectKey } from "$lib/platform";
   import { onMount } from "svelte";
   import type { Project } from "$lib/core/project";
   import { t, zoom } from "$lib/state.svelte";
   import { TauriFs } from "$lib/tauriFs";
+  import { BrowserFs } from "$lib/browserFs";
   import type { MessageKey } from "$lib/i18n";
   import ManuscriptView from "./ManuscriptView.svelte";
   import ExportView from "./ExportView.svelte";
@@ -354,7 +356,8 @@
       return true;
     }
     // Cmd+W closes the pane with the cursor (on the Mac it comes from the menu, see onMount).
-    if (!e.altKey && !e.shiftKey && e.key.toLowerCase() === "w") {
+    // A browser keeps Cmd+W for itself, so Alt+Cmd+W does the same everywhere.
+    if (!e.shiftKey && (e.code === "KeyW" || e.key.toLowerCase() === "w")) {
       closeFocused();
       return true;
     }
@@ -398,7 +401,7 @@
   // The panes of this project, as they were left; they follow renamed items and close with
   // deleted ones, and what is typed in them is written before files move.
   onMount(() => {
-    loadPanes(project.fs instanceof TauriFs ? project.fs.root : "sample");
+    loadPanes(projectKey(project.fs));
     project.beforeMove = () => flushAll(project);
     project.onMoved = followMoves;
     return () => {
@@ -438,6 +441,23 @@
     return project.conflicts;
   });
   let showConflicts = $state(false);
+
+  // In a browser the folder is looked at every few seconds instead.
+  onMount(() => {
+    if (!(project.fs instanceof BrowserFs)) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = project.fs.watch(() => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await reload();
+        diskRev++;
+      }, 300);
+    });
+    return () => {
+      clearTimeout(timer);
+      stop();
+    };
+  });
 
   onMount(() => {
     if (!(project.fs instanceof TauriFs)) return;

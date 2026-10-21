@@ -13,6 +13,8 @@
   import type { MessageKey } from "$lib/i18n";
   import { app, num, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
+  import { BrowserFs } from "$lib/browserFs";
+  import { whereIs } from "$lib/platform";
   import HeadingLevel from "./HeadingLevel.svelte";
   import FontPicker from "./FontPicker.svelte";
 
@@ -51,7 +53,9 @@
   // svelte-ignore state_referenced_locally
   let revisions = $state<"accept" | "reject">(project.settings.export.revisions);
   // svelte-ignore state_referenced_locally
-  let format = $state<ExportFormat>(project.settings.export.format);
+  // A browser makes no PDF yet: a project that last made one starts from Word there.
+  // svelte-ignore state_referenced_locally
+  let format = $state<ExportFormat>(project.settings.export.format === "pdf" && !inTauri() && project.fs instanceof BrowserFs ? "docx" : project.settings.export.format);
   // svelte-ignore state_referenced_locally
   let epubId = project.settings.export.epubId;
   // svelte-ignore state_referenced_locally
@@ -67,6 +71,11 @@
     md: { ext: "md", name: "Markdown", mime: "text/markdown" },
   };
   const desktop = inTauri();
+  /** A project folder opened in a browser: exports go to its export folder too. */
+  // svelte-ignore state_referenced_locally
+  const web = project.fs instanceof BrowserFs;
+  /** The app or a browser folder: the export folder exists. */
+  const folder = desktop || web;
 
   /** The choices on this page, as the project stores them. */
   function chosen() {
@@ -181,8 +190,46 @@
     return inProject(await exportPath());
   }
 
-  /** Writes the file in the desktop app; a browser downloads it instead and gets "". */
+  /**
+   * In a browser, "elsewhere" asks where with the browser's own dialog, when it has one.
+   * Null if cancelled, "" when the browser cannot ask and the file is downloaded instead.
+   */
+  async function saveInBrowser(bytes: Uint8Array | string, name: string, mime: string): Promise<Saved | "" | null> {
+    const picker = (window as unknown as { showSaveFilePicker?: (o: object) => Promise<FileSystemFileHandle> }).showSaveFilePicker;
+    if (!picker) return download(bytes, name, mime);
+    let handle: FileSystemFileHandle;
+    try {
+      const { ext, name: kind } = FORMATS[format];
+      handle = await picker({ suggestedName: name, id: "dante-export", types: [{ description: kind, accept: { [mime]: [`.${name.split(".").pop() || ext}`] } }] });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return null;
+      throw e;
+    }
+    const writable = await handle.createWritable();
+    await writable.write(bytes as FileSystemWriteChunkType);
+    await writable.close();
+    return { relative: "", absolute: handle.name };
+  }
+
+  function download(bytes: Uint8Array | string, name: string, mime: string): "" {
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return "";
+  }
+
+  /** Writes the file in the project's export folder or where chosen; the sample project downloads it and gets "". */
   async function save(bytes: Uint8Array | string, elsewhere: boolean, name = fileName(), mime = FORMATS[format].mime): Promise<Saved | "" | null> {
+    if (web) {
+      if (elsewhere) return saveInBrowser(bytes, name, mime);
+      const where = inProject(await exportPath());
+      if (typeof bytes === "string") await project.fs.writeText(where.relative, bytes);
+      else await project.fs.writeBytes(where.relative, bytes);
+      return where;
+    }
     if (desktop) {
       const where = await destination(elsewhere);
       if (!where) return null;
@@ -195,13 +242,7 @@
       }
       return where;
     }
-    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    return "";
+    return download(bytes, name, mime);
   }
 
   let saved = $state<Saved | null>(null);
@@ -307,9 +348,10 @@
       <h2>{t("export.title")}</h2>
       {#if desktop}<button type="button" onclick={openExports}>{t("export.openExports")}</button>{/if}
     </div>
-    {#if desktop}<p class="hint">{t("export.folderHint")}</p>{/if}
+    {#if folder}<p class="hint">{t("export.folderHint")}</p>{/if}
+    {#if web}<p class="hint">{t("export.folderWeb", { path: whereIs(project.fs, EXPORT_FOLDER) })} {t("export.noPdfWeb")}</p>{/if}
     <div class="formats" role="radiogroup" aria-label={t("export.format")}>
-      {#each EXPORT_FORMATS as f (f)}
+      {#each EXPORT_FORMATS.filter((f) => !(web && f === "pdf")) as f (f)}
         <label class="format" class:chosen={format === f}>
           <input type="radio" name="format" value={f} bind:group={format} />
           <strong>{t(`export.format.${f}`)}</strong>
@@ -469,7 +511,7 @@
     </label>
     <div class="actions">
       <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run", { format: FORMATS[format].name === "Word" ? "DOCX" : FORMATS[format].name })}</button>
-      {#if desktop}<button type="button" class="link" disabled={busy} onclick={() => run(true)}>{t("export.saveElsewhere")}</button>{/if}
+      {#if folder}<button type="button" class="link" disabled={busy} onclick={() => run(true)}>{t("export.saveElsewhere")}</button>{/if}
       {#if error}<span class="error" role="alert">{error}</span>{/if}
     </div>
     {#if message}
@@ -477,11 +519,11 @@
         <strong>{t("export.success")}</strong>
         <span>{message}</span>
         {#if saved}
-          <span class="path">{saved.relative ? t("export.savedAs", { path: saved.relative }) : saved.absolute}</span>
-          <div class="buttons">
+          <span class="path">{web && saved.relative ? t("export.savedIn", { path: whereIs(project.fs, saved.relative) }) : saved.relative ? t("export.savedAs", { path: saved.relative }) : saved.absolute}</span>
+          {#if desktop}<div class="buttons">
             <button type="button" onclick={openFile}>{t("export.openFile")}</button>
             <button type="button" onclick={openFolder}>{t("export.openFolder")}</button>
-          </div>
+          </div>{/if}
         {/if}
       </div>
     {/if}
