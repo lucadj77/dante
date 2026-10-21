@@ -12,6 +12,7 @@ import { findImages, imageMime, imageSize, resolveImagePath } from "../images";
 import { expandEmbeds } from "../embeds";
 import { captionStart, splitRow, parseTable, type CellAlign } from "../tables";
 import { resolveLink } from "../wikilinks";
+import { isBlankLine, normalizeBlankLines } from "../blankLines";
 
 // The manuscript as a format-neutral document, built once and rendered by each
 // exporter (DOCX now; EPUB and PDF later).
@@ -50,7 +51,9 @@ export type Block =
   | { type: "item"; runs: Run[]; marker: string; level: number }
   | { type: "table"; align: CellAlign[]; header: Run[][]; rows: Run[][][]; caption?: Run[] }
   | { type: "image"; image: BookImage; align?: Align; caption?: Run[] }
-  | { type: "break" };
+  | { type: "break" }
+  /** An empty line between paragraphs, written as a paragraph of its own: no new scene. */
+  | { type: "blank" };
 
 // Where an image stood, inside the text that goes through typography and the parser: one
 // private-use character per image, its number counted from IMAGE_BASE.
@@ -106,7 +109,9 @@ export function cleanSource(markdown: string, revisions: "accept" | "reject" = "
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/!\[\[[^\]]*\]\]/g, "")
     .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2")
-    .replace(/\[\[([^\]#|]+)(#[^\]]*)?\]\]/g, (_, target: string) => target.split("/").pop()!);
+    .replace(/\[\[([^\]#|]+)(#[^\]]*)?\]\]/g, (_, target: string) => target.split("/").pop()!)
+    // Blank lines as the export reads them, whatever the app that wrote them.
+    .replace(/^.*$/gm, normalizeBlankLines);
 }
 
 const STYLE: Record<string, keyof Run> = {
@@ -115,6 +120,18 @@ const STYLE: Record<string, keyof Run> = {
   Strikethrough: "strike",
   InlineCode: "code",
 };
+// The entities a writer may type; others stay as they are.
+const ENTITIES: Record<string, string> = { nbsp: "\u00a0", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", thinsp: "\u2009", ndash: "–", mdash: "—", hellip: "…", laquo: "«", raquo: "»" };
+
+function entity(text: string): string {
+  const name = text.slice(1, -1);
+  if (name[0] === "#") {
+    const code = name[1] === "x" || name[1] === "X" ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+    return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : text;
+  }
+  return ENTITIES[name] ?? text;
+}
+
 const MARKS = new Set(["EmphasisMark", "StrikethroughMark", "CodeMark", "LinkMark", "URL", "LinkTitle", "LinkLabel", "QuoteMark", "HeaderMark", "TaskMarker"]);
 
 function inlineRuns(source: string, node: SyntaxNode, from: number, to: number, style: Partial<Run> = {}): Run[] {
@@ -136,6 +153,8 @@ function inlineRuns(source: string, node: SyntaxNode, from: number, to: number, 
       text(child.from + 1, child.to - 1);
     } else if (child.name === "HardBreak") {
       runs.push({ ...style, text: "", lineBreak: true });
+    } else if (child.name === "Entity") {
+      runs.push({ ...style, text: entity(source.slice(child.from, child.to)) });
     } else if (child.name === "Escape") {
       runs.push({ ...style, text: source.slice(child.from + 1, child.to) });
     } else if (STYLE[child.name]) {
@@ -219,7 +238,9 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, 
   const visit = (node: SyntaxNode, inQuote: boolean, marker = "", level = -1) => {
     for (let child = node.firstChild; child; child = child.nextSibling) {
       const name = child.name;
-      if (name === "Paragraph" || name === "Task") {
+      if (name === "Paragraph" && isBlankLine(source.slice(child.from, child.to))) {
+        blocks.push({ type: "blank" });
+      } else if (name === "Paragraph" || name === "Task") {
         const runs = inlineRuns(source, child, child.from, child.to);
         // A list item keeps its bullet or number, a task its box.
         let lead = marker;
@@ -294,7 +315,7 @@ function allRuns(blocks: Block[]): Run[] {
   for (const b of blocks) {
     if (b.type === "table") for (const row of [b.header, ...b.rows]) for (const cell of row) out.push(...cell);
     if (b.type === "table" || b.type === "image") out.push(...(b.caption ?? []));
-    else if (b.type !== "break") out.push(...b.runs);
+    else if (b.type !== "break" && b.type !== "blank") out.push(...b.runs);
   }
   return out;
 }

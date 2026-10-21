@@ -192,17 +192,41 @@ describe("the structure of an imported book", () => {
   });
 
   it("splits scenes at empty paragraphs unless they are spacing", () => {
-    const one = [h(1, "Chapter 1"), p("A."), p("B."), p(""), p("C."), p("D.")];
+    const one = [h(1, "Chapter 1"), p("A."), p("B."), p("C."), p(""), p("D."), p("E."), p("F.")];
     expect(defaultBlankLines(one)).toBe(1);
-    expect(structure(one, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.", "C.\n\nD."]);
+    expect(structure(one, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.\n\nC.", "D.\n\nE.\n\nF."]);
     expect(structure(one, names, "", undefined, 0).parts[0].chapters[0].scenes).toHaveLength(1);
     // Empty paragraphs between every paragraph are spacing; two in a row still break.
-    const spaced = [h(1, "Chapter 1"), p("A."), p(""), p("B."), p(""), p("C."), p(""), p(""), p("D."), p(""), p("E.")];
+    const spaced = [h(1, "Chapter 1"), p("A."), p(""), p("B."), p(""), p("C."), p(""), p(""), p("D."), p(""), p("E."), p(""), p("F.")];
     expect(defaultBlankLines(spaced)).toBe(2);
-    expect(structure(spaced, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.\n\nC.", "D.\n\nE."]);
+    expect(structure(spaced, names).parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\nB.\n\nC.", "D.\n\nE.\n\nF."]);
+  });
+
+  it("keeps an empty line as a blank line when it would leave a scene of one or two paragraphs", () => {
+    // A., B. and C. make a scene; D. alone does not, so the empty line before it stays a blank line.
+    const blocks = [h(1, "Chapter 1"), p("A."), p("B."), p("C."), p(""), p("D."), h(1, "Chapter 2"), p("E."), p(""), p("F."), p("G."), p("H."), p(""), p("I."), p("J."), p("K.")];
+    const book = structure(blocks, names, "", undefined, 1);
+    expect(book.parts[0].chapters.map((c) => c.scenes.map((s) => s.text))).toEqual([
+      ["A.\n\nB.\n\nC.\n\n&nbsp;\n\nD."],
+      ["E.\n\n&nbsp;\n\nF.\n\nG.\n\nH.", "I.\n\nJ.\n\nK."],
+    ]);
+    expect(book.blocks?.[4]).toBe("space");
+    expect(book.blocks?.[12]).toBe("break");
+    // Marked by the writer, the empty line still opens a scene.
+    expect(structure(blocks, names, "", undefined, 1, { 4: "break" }).parts[0].chapters[0].scenes).toHaveLength(2);
     expect(defaultBlankLines([p("A."), p("B.")])).toBe(0);
     // With "***" between scenes, empty paragraphs are only spacing.
     expect(defaultBlankLines([h(1, "Chapter 1"), p("A."), p(""), p("B."), p("C."), p("D."), p("* * *"), p("E.")])).toBe(0);
+  });
+
+  it("keeps empty paragraphs as blank lines when asked, without new scenes", () => {
+    const blocks = [h(1, "Chapter 1"), p(""), p("A."), p(""), p(""), p("B."), p(""), h(1, "Chapter 2"), p("C.")];
+    const kept = structure(blocks, names, "", undefined, "keep");
+    expect(kept.parts[0].chapters.map((c) => c.scenes.map((s) => s.text))).toEqual([["A.\n\n&nbsp;\n\n&nbsp;\n\nB."], ["C."]]);
+    expect(kept.blocks?.slice(0, 7)).toEqual(["chapter", "blank", "text", "space", "space", "text", "blank"]);
+    // One empty line marked as text stays, the others are spacing or scene breaks.
+    const marked = structure(blocks, names, "", undefined, 0, { 3: "text" });
+    expect(marked.parts[0].chapters[0].scenes.map((s) => s.text)).toEqual(["A.\n\n&nbsp;\n\nB."]);
   });
 
   it("lets the writer choose what each heading level becomes", () => {
@@ -229,7 +253,7 @@ describe("the structure of an imported book", () => {
       ["2", false, ["Notes"]],
     ]);
     expect(book.blocks).toEqual(["title", "text", "chapter", "text", "text", "text", "chapter", "break", "text", "skip"]);
-    expect(structure([h(1, "C"), p("A."), p(""), p("B.")], names, "", undefined, 1).blocks).toEqual(["chapter", "text", "break", "text"]);
+    expect(structure([h(1, "C"), p("A."), p("B."), p("C."), p(""), p("D."), p("E."), p("F.")], names, "", undefined, 1).blocks).toEqual(["chapter", "text", "text", "text", "break", "text", "text", "text"]);
     // A paragraph marked as a part makes a book with parts; a heading can become a scene.
     const parted = structure([p("Libro primo"), h(1, "Chapter 1"), p("A."), h(1, "Arrival"), p("B.")], names, "", { 1: "chapter" }, 0, { 0: "part", 3: "scene" });
     expect(parted.hasParts).toBe(true);

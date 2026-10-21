@@ -120,7 +120,7 @@ async function documentXml(bytes: Uint8Array): Promise<string> {
 describe("lists, tasks and highlights", () => {
   it("keeps bullets, numbers and boxes, and drops highlight marks", () => {
     const blocks = markdownToBlocks(cleanSource("- uno\n- due\n\n1. primo\n2. secondo\n\n- [ ] da fare\n- [x] fatto\n\nUn ==punto== chiave."));
-    const text = blocks.map((b) => (b.type === "item" ? `${b.marker} ` : "") + (b.type === "break" || b.type === "table" || b.type === "image" ? "---" : b.runs.map((r) => r.text).join("")));
+    const text = blocks.map((b) => (b.type === "item" ? `${b.marker} ` : "") + (b.type === "break" || b.type === "blank" || b.type === "table" || b.type === "image" ? "---" : b.runs.map((r) => r.text).join("")));
     expect(text).toEqual(["• uno", "• due", "1. primo", "2. secondo", "☐ da fare", "☑ fatto", "Un punto chiave."]);
   });
 
@@ -254,5 +254,33 @@ describe("cover in exports", () => {
 describe("addresses written between angle brackets", () => {
   it("keep the address in the text", () => {
     expect(markdownToBlocks("See <https://example.com> now.")).toEqual([{ type: "paragraph", runs: [{ text: "See https://example.com now." }] }]);
+  });
+});
+
+describe("blank lines", () => {
+  it("reads &nbsp;, <br> and a lone non-breaking space as a blank line, not a scene break", () => {
+    for (const line of ["&nbsp;", "&#160;", "<br>", "<br />", " ", " &nbsp; "]) {
+      const blocks = markdownToBlocks(cleanSource(`Uno.\n\n${line}\n\nDue.`));
+      expect(blocks.map((b) => b.type)).toEqual(["paragraph", "blank", "paragraph"]);
+    }
+    // Inside a paragraph an entity is its character.
+    expect(markdownToBlocks("A&nbsp;B &amp; C")).toEqual([{ type: "paragraph", runs: [{ text: "A B & C" }] }]);
+  });
+
+  it("keeps the blank line in every format", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: fr\nexport:\n  typography:\n    frenchSpacing: true\n",
+      "Manuscript/010 Uno/010 Scena.md": "Prima.\n\n&nbsp;\n\nDopo.",
+    });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    expect(book.entries[0].scenes[0].blocks.map((b) => b.type)).toEqual(["paragraph", "blank", "paragraph"]);
+    expect(book.words).toBe(2);
+    const settings = project.settings.export.docx;
+    expect(bookToMarkdown(book, settings)).toContain("Prima.\n\n&nbsp;\n\nDopo.");
+    expect(bookToTypst(book, settings, { words: "mots" })).toMatch(/"Prima\."\]?\n*#v\([\d.]+em\)\n/);
+    const xml = await documentXml(await docxBytes(bookToDocx(book, settings, { words: "words" })));
+    expect(xml).toMatch(/Prima\.<\/w:t><\/w:r><\/w:p><w:p><w:pPr><w:pStyle w:val="Normal"\/><\/w:pPr><\/w:p>/);
+    expect(new TextDecoder().decode(bookToEpub(book, settings, "id"))).toBeTruthy();
   });
 });

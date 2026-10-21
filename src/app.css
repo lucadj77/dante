@@ -124,6 +124,7 @@ select {
 .md-embed-title { font-family: var(--ui-font); font-size: 12px; color: var(--wikilink); cursor: pointer; margin-bottom: 2px; }
 .md-embed-title:hover { text-decoration: underline; }
 .md-embed-body p { margin: 0 0 0.4em; }
+.md-embed-blank { height: 1em; }
 .md-embed-body blockquote { margin: 0 0 0.4em; padding-left: 10px; border-left: 3px solid var(--border); color: var(--text-muted); }
 .md-embed-body p.md-embed-item { margin-bottom: 0.15em; text-indent: -1.5em; }
 .md-embed-marker { display: inline-block; width: 1.5em; text-indent: 0; }
@@ -162,6 +163,7 @@ select {
 .md-code { font-family: ui-monospace, monospace; font-size: 0.9em; background: var(--bg-panel); border-radius: 3px; }
 .md-wikilink { color: var(--wikilink); }
 .md-highlight { background: rgba(245, 214, 70, 0.45); border-radius: 2px; }
+.md-blank-line { color: var(--text-muted); opacity: 0.45; font-family: Georgia, serif; user-select: none; }
 .md-bullet { display: inline-block; width: 0.7em; }
 /* The marker of a list item, in a box as wide as the item's indent: the text hangs after it. */
 .md-list-prefix { display: inline-block; box-sizing: border-box; text-indent: 0; white-space: pre; vertical-align: top; }

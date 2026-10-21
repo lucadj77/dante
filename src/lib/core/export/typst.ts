@@ -178,6 +178,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
         emit(`#pad(left: ${(block.level + (block.marker ? 0 : 1)) * 1.5}em)[#set par(first-line-indent: 0pt, hanging-indent: ${block.marker ? "1.5em" : "0pt"}, justify: false)\n\n${lead}${runs(block.runs)}\n]\n`);
       }
       else if (block.type === "break") emit(`#separator[${lines(opts.sceneSeparator)}]\n`);
+      else if (block.type === "blank") emit(`#v(${+(leading + 1).toFixed(2)}em)\n`);
       else if (block.type === "table") {
         const cells = (row: Run[][], head: boolean) => row.map((c) => (head ? `strong[${runs(c)}]` : `[${runs(c)}]`)).join(", ");
         const align = block.align.map((a) => a ?? "left").join(", ");

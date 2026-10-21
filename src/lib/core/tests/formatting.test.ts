@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EditorSelection, EditorState, type TransactionSpec } from "@codemirror/state";
-import { cycleHeading, insertLink, insertSeparator, insertWikilink, toggleCode, toggleFormat, toggleLines, type Format } from "$lib/editor/formatting";
+import { cycleHeading, insertBlankLine, insertLink, insertSeparator, insertWikilink, toggleCode, toggleFormat, toggleLines, type Format } from "$lib/editor/formatting";
 
 function apply(doc: string, from: number, to: number, format: Format) {
   const state = EditorState.create({ doc, selection: EditorSelection.single(from, to) });
@@ -66,6 +66,13 @@ describe("line formats", () => {
     expect(run("vedi qui", 5, 8, insertLink)).toBe("vedi [qui]()");
     expect(run("vedi Marta", 5, 10, insertWikilink)).toBe("vedi [[Marta]]");
     expect(run("Fine.", 5, 5, insertSeparator)).toBe("Fine.\n\n* * *\n\n");
+  });
+
+  it("adds a blank line after the paragraph, or in place of an empty line", () => {
+    expect(run("Fine.", 5, 5, insertBlankLine)).toBe("Fine.\n\n&nbsp;\n\n");
+    expect(run("Uno.\n\nDue.", 5, 5, insertBlankLine)).toBe("Uno.\n\n&nbsp;\n\nDue.");
+    expect(run("Uno.\n\n\nDue.", 5, 5, insertBlankLine)).toBe("Uno.\n\n&nbsp;\n\nDue.");
+    expect(run("Uno.\n", 5, 5, insertBlankLine)).toBe("Uno.\n\n&nbsp;\n\n");
   });
 });
 

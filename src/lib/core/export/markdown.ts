@@ -3,6 +3,7 @@ import type { DocxSettings, Separator } from "../settings";
 import type { Block, Book, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { setAlignment } from "../alignment";
+import { BLANK_LINE } from "../blankLines";
 
 // The book as one Markdown file: title, author and language as properties, then the
 // novel with parts, chapters and scenes as headings. Comments and revisions are already
@@ -107,6 +108,7 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
         else add(text);
       }
       else if (block.type === "break") add(separator("characters") ?? "---");
+      else if (block.type === "blank") add(BLANK_LINE);
       else if (block.type === "table") {
         const row = (cells: Run[][]) => `| ${cells.map((c) => c.map(inline).join("").replace(/\n/g, " ")).join(" | ")} |`;
         const rule = block.align.map((a) => (a === "center" ? ":---:" : a === "right" ? "---:" : a === "left" ? ":---" : "---"));

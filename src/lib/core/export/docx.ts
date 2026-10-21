@@ -231,6 +231,8 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         );
       } else if (block.type === "break") {
         body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
+      } else if (block.type === "blank") {
+        body.push(new Paragraph({ style: "Normal", children: [] }));
       } else if (block.type === "table") {
         body.push(table(block.align, block.header, block.rows));
         // Word needs a paragraph between two tables, or it joins them: the caption, if any.
