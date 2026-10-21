@@ -99,3 +99,40 @@ describe("dialogue conventions of other countries", () => {
     ]);
   });
 });
+
+describe("dialogue typed with dashes, exported with quotation marks", () => {
+  const rules = (quotes: TypographySettings["quotes"]): TypographySettings => ({ ...all, quotes });
+
+  it("turns each dash into an opening or closing mark", () => {
+    expect(applyTypography("— Vieni.", all)).toBe("«Vieni.»");
+    expect(applyTypography("— Vieni — disse lui.", all)).toBe("«Vieni» disse lui.");
+    expect(applyTypography("— Vieni, — disse lui, — è tardi.", all)).toBe("«Vieni,» disse lui, «è tardi.»");
+    expect(applyTypography("— Vieni —, disse.", all)).toBe("«Vieni», disse.");
+    expect(applyTypography("- Vieni - disse - subito.", all)).toBe("«Vieni» disse «subito.»");
+    expect(applyTypography("-- Sì.", all)).toBe("«Sì.»");
+    expect(applyTypography("– Sì – rispose.", rules("curly"))).toBe("“Sì” rispose.");
+  });
+
+  it("works line by line and leaves narration alone", () => {
+    expect(applyTypography("— Vieni.\n— No — disse.", all)).toBe("«Vieni.»\n«No» disse.");
+    expect(applyTypography("Lui — senza fretta — si alzò.", all)).toBe("Lui — senza fretta — si alzò.");
+    expect(applyTypography("---", all)).toBe("---");
+    expect(applyTypography("- uno\n- due", all)).toBe("«uno»\n«due»");
+  });
+
+  it("leaves hyphens in words and dashes of another kind", () => {
+    expect(applyTypography("— Il socio-economico, anni 1990–2000.", all)).toBe("«Il socio-economico, anni 1990–2000.»");
+    expect(applyTypography("— Vieni — disse - piano - lui.", all)).toBe("«Vieni» disse - piano - lui.");
+  });
+
+  it("reads Spanish dialogue too", () => {
+    expect(applyTypography("—Ven —dijo él— es tarde.", rules("curly"))).toBe("“Ven” dijo él “es tarde.”");
+    expect(applyTypography("—Ven —dijo él—.", rules("curly"))).toBe("“Ven” dijo él.");
+  });
+
+  it("uses each style's marks", () => {
+    expect(applyTypography("— Komm — sagte er.", rules("low"))).toBe("„Komm“ sagte er.");
+    expect(applyTypography("— Viens ! — dit-il.", rules("guillemetsSpaced"))).toBe("«\u202FViens\u202F!\u202F» dit-il.");
+    expect(applyTypography("— Vieni.", rules("keep"))).toBe("— Vieni.");
+  });
+});
