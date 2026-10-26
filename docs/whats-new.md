@@ -12,6 +12,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Shortcuts for Windows and Linux**: the guide and the first steps give every shortcut for both Mac and Windows and Linux (for example Cmd+F / Ctrl+F). On Windows and Linux the button tips now read Ctrl+click and Ctrl+Enter correctly.
 - **Clearer Scrivener import**: when the chosen `.scriv` is an empty file or not a Scrivener project, Dante says so and explains what to choose, instead of a technical error such as "Not a directory". A `.scriv` packed into a single file is imported like a zip.
 - **New project says what is missing**: pressing Create or Import before choosing where to save the project now tells you so instead of leaving the button grey; errors show beside the button, which reads "Importing…" while it works.
+- **Scrivener without odd marks**: the marks of Scrivener's styles, such as `<$Scr_Ps::0>`, no longer show at the start of imported scenes.
 
 ## 0.1.45 · October 26, 2026
 

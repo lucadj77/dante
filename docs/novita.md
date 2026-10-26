@@ -12,6 +12,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Scorciatoie per Windows e Linux**: la guida e i primi passi danno ogni scorciatoia sia per Mac sia per Windows e Linux (per esempio Cmd+F / Ctrl+F). Su Windows e Linux i suggerimenti dei pulsanti scrivono correttamente Ctrl+clic e Ctrl+Invio.
 - **Importazione da Scrivener più chiara**: se il `.scriv` scelto è un file vuoto o non è un progetto Scrivener, Dante lo dice e spiega cosa scegliere, invece di un errore tecnico come «Not a directory». Un `.scriv` compresso in un unico file si importa come uno zip.
 - **Nuovo progetto: dice cosa manca**: se premi Crea o Importa senza aver scelto dove salvare il progetto, Dante te lo dice invece di lasciare il pulsante grigio; gli errori compaiono accanto al pulsante, e mentre lavora il pulsante scrive «Importo…».
+- **Scrivener senza segni strani**: i segni degli stili di Scrivener, come `<$Scr_Ps::0>`, non compaiono più all'inizio delle scene importate.
 
 ## 0.1.45 · 26 ottobre 2026
 
