@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.45 · October 26, 2026
+
 - **Find in the scene**: Cmd+F opens a bar to find a word in the open scene or note, with Enter to go to the next one.
 - **Find and replace in the whole novel**: Alt+Cmd+F, or the **Replace** tab of the search, changes a word in every note, for example a character's name. You see every occurrence first, choose which to change, and can undo. Properties, links, images and comments are left alone, and each scene is saved in a snapshot before the change.
 - **Trash**: the icon at the bottom of the left bar shows what you deleted, puts it back where it was or deletes it for good.
