@@ -4,6 +4,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+## 0.1.46 · 26 ottobre 2026
+
 - **Copertina con una tua immagine**: in Impostazioni > Copertina puoi usare una foto o un disegno tuo al posto delle forme, scegliere se mostrare titolo, sottotitolo e autori, e cambiare il colore del testo e del suo contorno. La copertina compare tra i progetti recenti e all'inizio di Word, PDF ed EPUB.
 - **Pallini dell'albero**: passando col mouse sul pallino accanto a una scena si legge lo stato, per esempio «Stato: bozza». In Impostazioni > Albero delle scene puoi far colorare i pallini da un'altra proprietà, come il punto di vista.
 - **Statistiche al punto giusto**: un clic su una ripetizione o su una frase lunga apre la scena in quel punto e seleziona il passo.

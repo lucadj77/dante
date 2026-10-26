@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+## 0.1.46 · October 26, 2026
+
 - **Cover with a picture of yours**: in Settings > Cover you can use a photo or drawing of yours instead of the shapes, choose whether to show title, subtitle and authors, and change the colour of the text and of its outline. The cover is shown among recent projects and at the start of Word, PDF and EPUB.
 - **Tree dots**: hovering over the dot beside a scene shows its stage, for example "Stage: draft". In Settings > Scene tree the dots can be coloured by another property, such as the point of view.
 - **Statistics to the right spot**: a click on a repetition or a long sentence opens the scene at that point and selects the passage.
