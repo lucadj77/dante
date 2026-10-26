@@ -4,11 +4,16 @@ A light writing app for novelists. A project is just a folder of Markdown files,
 same novel opens in Obsidian, in Claude Code or in any text editor, and can be shared
 through Google Drive or Dropbox.
 
-How to use it is explained in the [user guide](docs/guida.md) (Italian). Beta testers start from
-[Provare Dante](docs/beta.md): download, installation, updates and how to report problems.
+How to use it is explained in the [user guide](docs/guida.md) (Italian), with a shorter
+[first steps](docs/first-steps.md) page ([primi passi](docs/primi-passi.md)) and the list of
+changes in each version ([what's new](docs/whats-new.md), [novità](docs/novita.md)). The same
+pages are in the app's Help. Beta testers start from [Provare Dante](docs/beta.md): download,
+installation, updates and how to report problems.
 
 The design is described in the [design document](https://claude.ai/code/artifact/6ae8607c-9d16-4657-a49c-c0faabf1db0a).
-This repository is at **phase 3: collaboration**.
+The five phases it planned are done; the sections below describe what each one brought, then
+what came after. Dante runs as a desktop app for macOS, Windows and Linux and, with the same
+code, as a web app in Chromium browsers (<https://lucadj77.github.io/dante/>).
 
 ## A project on disk
 
@@ -39,7 +44,7 @@ My novel/
   suggested properties. `Templates/<type name>.md` is the starting text of a new note of that
   type; `{{title}}` and `{{date}}` are filled in.
 
-## What works in phase 1
+## Phase 1: writing
 
 - Open a folder, watch it for changes made by other programs, reload open scenes.
 - Manuscript tree: select, rename (double click or F2), drag to reorder or move.
@@ -59,7 +64,7 @@ My novel/
   pending revisions accepted or rejected.
 - Interface in English and Italian.
 
-## What phase 2 adds
+## Phase 2: Story Bible, notes and links
 
 - Story Bible (Bibbia in Italian, Codex in earlier versions): notes grouped by type, shown as cards with their properties; new notes from the
   type's template or suggested properties; types added and edited from the app.
@@ -75,7 +80,7 @@ My novel/
   each result beside the text.
 - The section bar names its icons at once on hover, or beside them when widened.
 
-## What phase 3 adds
+## Phase 3: collaboration
 
 Several people can work on the same folder shared through Dropbox or Google Drive.
 
@@ -104,7 +109,7 @@ Several people can work on the same folder shared through Dropbox or Google Driv
   merges the copy's differences as revisions to accept one by one (existing comments are kept
   whole). What is set aside goes to `.trash`; a merge keeps a snapshot of the file first.
 
-## What phase 4 adds
+## Phase 4: views
 
 The Views section lists notes as a table, a list, cards, a board (kanban) or a timeline. Each
 view is a YAML file in the Views folder, so it is synced with the project and can be written
@@ -138,7 +143,7 @@ end: until              # timeline only: optional end
 - A project without views offers two starting ones: scenes by status on a board, and a table of
   scenes.
 
-## What phase 5 adds
+## Phase 5: export, statistics and goals
 
 - Export to PDF and EPUB besides DOCX, chosen at the top of the Export page. PDF uses the
   same layout choices as DOCX (standard manuscript or typeset book, page size, font, spacing,
@@ -153,12 +158,14 @@ end: until              # timeline only: optional end
   words: `pages: {unit, size}` in `dante.yaml`, set in the settings), chapters, scenes, reading time;
   words by chapter; how often the scenes name each note of the Story Bible (name or alias, as
   written); the most used words without the commonest ones (English, Italian, Spanish, French).
-- Goals in `dante.yaml` (`goals: {words, deadline, daily, days}`): progress, words a day needed
+- Goals in `dante.yaml` (`goals: {unit, words, deadline, daily, days}`): progress, words a day needed
   to finish on time, today's words and days in a row with the daily goal reached; today's words
-  also appear in the manuscript's side panel. `days` lists the writing days of the week, 1
-  (Monday) to 7 (Sunday): the words needed are spread over those days only, and rest days do
-  not break a run.
-- Writing log: each person's words added and removed and minutes spent writing, by day, in
+  also appear in the manuscript's side panel. `unit` is `words` or `characters` (with spaces):
+  the goals, the status bar, the tree, the writing sessions and the chart count in it; a file
+  without it counts words, and new Italian projects start with characters. `days` lists the
+  writing days of the week, 1 (Monday) to 7 (Sunday): the words needed are spread over those
+  days only, and rest days do not break a run.
+- Writing log: each person's words and characters added and removed and minutes spent writing, by day, in
   `.dante/sessions/<name>.json` (one file per person, so a shared folder never has two writers);
   the chart shows the last 30 days for everyone, the table each person.
 
@@ -229,7 +236,25 @@ pane): they share one document (`src/lib/editor/documents.ts`), so what is typed
 in the others, and the text is written once, from one place. What the panes show is kept on
 this computer for each project, not in the project folder.
 
-## Importing from Word
+## After the five phases
+
+- Find in the scene (Cmd/Ctrl+F) and find and replace across the novel (Alt+Cmd/Ctrl+F), with a
+  preview of every occurrence, undo, and a snapshot of each scene first.
+- Trash: what is deleted goes to `.trash/`, listed in the app to restore or delete for good.
+- Backups: on closing a project, a zip copy in `Documents/Dante backup` (the ten most recent);
+  in the browser, a button downloads it.
+- Status bar under the manuscript: length of the scene, the selection and what is on screen,
+  today's writing against the daily goal, and timed writing sessions with a target.
+- The tree shows each scene's stage (the `status`/`stato` property) as a coloured dot and a bar
+  for the `goal` property of scenes and chapters.
+- New scenes start from `Templates/Scene.md` (`Modelli/Scena.md` in Italian).
+- Statistics also look at style: sentence length, adverbs, dialogue, close repetitions.
+- Automatic updates (desktop) and a "What's new" banner; offline Help with the guide.
+- Blank lines between paragraphs that do not start a new scene (a paragraph of only `&nbsp;`).
+- Hanging-indent lists, tables with captions, images with descriptions and sizes, centred and
+  right-aligned paragraphs, all carried into the exports.
+
+## Importing from Word and Scrivener
 
 "Import from Word…" on the start screen makes a new project from a `.docx` file
 (`src/lib/core/import/`). Word's heading styles decide the structure: with three levels,
@@ -239,7 +264,14 @@ otherwise chapters and titled scenes; with one, chapters. Inside a chapter a lin
 `***`, `* * *`, `#`, `§` or similar starts a new scene. The "Title" style and the
 document's properties give the title and author. Bold, italic and strikethrough become
 Markdown; deleted text of tracked changes is left out. "Chapter 3: Home" keeps "Home" as
-its title, since Dante numbers chapters itself. The Word file is only read.
+its title, since Dante numbers chapters itself. The Word file is only read. A preview shows
+the parts, chapters and scenes found before anything is written, and the book can go into a
+new project or an existing one.
+
+"Import from Scrivener…" reads a Scrivener 2 or 3 project (the `.scriv` folder in the desktop
+app, a zip of it in the browser): the Draft folder's items become parts, chapters and scenes
+by depth, their RTF text becomes Markdown (bold, italic, strikethrough, highlight, alignment)
+and Scrivener's synopses become the `synopsis` property (`src/lib/core/import/scrivener.ts`).
 
 ## Export folder, Markdown and covers
 
@@ -278,20 +310,31 @@ npm install
 npm run tauri dev     # desktop app
 npm run dev           # browser only, with the sample project
 npm test              # core logic tests
+npm run test:e2e      # interface tests in Chromium, on the web build with the sample project
 npm run check         # type checking
 cd src-tauri && cargo test
 ```
 
 The project logic (`src/lib/core`) has no dependency on Tauri or the interface and is
-tested against an in-memory filesystem. The Rust side (`src-tauri/src/files.rs`) only
+tested against an in-memory filesystem. The interface tests (`e2e/`, Playwright) open the
+sample project, write, add a scene, export to Word and use a view; the first run needs
+`npx playwright install chromium`. The code must keep working in Safari 15.4 and later
+(macOS 10.15): `src/lib/core/tests/compatibility.test.ts` checks for syntax and APIs it
+lacks.
+
+The version number is given by the build: every run of the Builds workflow on `main` is
+`0.1.<run number>`, written into the app by `.github/ci-config.sh` and into the web version
+by `DANTE_VERSION`. The `0.1.0` in `package.json`, `tauri.conf.json` and `Cargo.toml` is only
+the starting value and is not changed by hand. The Release workflow publishes a tested
+preview as `v0.1.N`. The Rust side (`src-tauri/src/files.rs`) only
 reads, writes, renames and watches files inside the opened folder.
 
-## Builds for Windows and Linux
+## Builds
 
-The Builds workflow (`.github/workflows/builds.yml`) builds, on every push, a Windows
-installer, a portable Windows zip, and a Linux AppImage, `.deb` and `.rpm`. They are kept
-as artifacts of the run; runs on `main` or started by hand also put them on the `preview`
-release. The macOS app is built locally with `npm run tauri build`.
+The Builds workflow (`.github/workflows/builds.yml`) builds, on every push to `main`, two
+macOS `.dmg` (Apple Silicon and Intel, not signed), a Windows installer, a portable Windows zip, and a Linux
+AppImage, `.deb` and `.rpm`, and puts them on the `preview` release with the files the
+automatic update reads. After them it publishes the web version on GitHub Pages.
 
 The portable copy is `Dante.exe` next to a `dante-data` folder: when that folder exists
 beside the program, the web view keeps its data there (settings, recent projects), so the

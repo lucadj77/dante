@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { unzipSync, strFromU8 } from "fflate";
 
 // What a writer does first with Dante, on the web version and the Italian sample project:
-// open it, write, add a scene, export to Word. The sample lives in memory, so every test
+// open it, write, add a scene, export to Word, look at the board. The sample lives in memory, so every test
 // starts from the same project.
 
 async function openSample(page: Page) {
@@ -71,4 +71,16 @@ test("exports the novel to Word", async ({ page }) => {
   const xml = strFromU8(zip["word/document.xml"]);
   expect(xml).toContain("Quel ramo del lago di Como");
   expect(xml).toContain("Capitolo");
+});
+
+test("shows the scenes on a board, with a card to change them", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="views"]').click();
+  await expect(page.getByRole("heading", { name: "Bacheca" })).toBeVisible();
+  await page.getByRole("button", { name: "⚙ Impostazioni" }).click();
+  await expect(page.getByRole("region", { name: "Impostazioni" })).toBeVisible();
+  await page.getByRole("button", { name: "Il nome", exact: true }).click();
+  const card = page.getByRole("region", { name: "Il nome" });
+  await expect(card.getByRole("button", { name: "Apri la nota" })).toBeVisible();
+  await expect(card.getByRole("textbox").first()).toHaveValue(/Renzo intuisce un mistero/);
 });

@@ -35,10 +35,10 @@
   import { navigator } from "./navigation";
   import { displayValue, parseValue } from "./propertyText";
   import { SYNOPSIS, TITLE } from "$lib/core/manuscript";
-  import { coerce, emptyValue, propertyDef } from "$lib/core/properties";
-  import { isWithin } from "$lib/core/path";
+  import { coerce, propertyDef } from "$lib/core/properties";
   import { readableLinks } from "$lib/core/wikilinks";
-  import PropertyField from "./PropertyField.svelte";
+  import ViewInspector from "./ViewInspector.svelte";
+  import ViewSettings from "./ViewSettings.svelte";
   import { panes } from "./panes.svelte";
   import { tick } from "svelte";
 
@@ -221,7 +221,6 @@
   // The card of a note: its properties, changed without opening it.
   let inspecting = $state<string | null>(null);
   const inspected = $derived(inspecting ? (rows.find((r) => r.path === inspecting) ?? null) : null);
-  let newProperty = $state("");
   // Another view starts without a card open.
   $effect(() => {
     void selected;
@@ -262,13 +261,6 @@
     if (!path || !body) return;
     void tick().then(() => body?.querySelector(".writing")?.scrollIntoView({ block: "nearest", inline: "nearest" }));
   });
-  function addProperty(row: ViewRow) {
-    const key = newProperty.trim();
-    newProperty = "";
-    if (!key || key in row.properties) return;
-    const def = propertyDef(p.project.settings.properties, key);
-    void setValues(row, { [key]: def ? emptyValue(def) : "" });
-  }
 
   /** Writes properties of the note behind a row, or of a chapter's folder note. */
   async function setValues(row: ViewRow, changes: Record<string, unknown>) {
@@ -440,30 +432,6 @@
     void save({ groups: [...new Set([...spec.groups, ...shown, name])] });
   }
 
-  // Settings.
-
-  const csv = (text: string) => text.split(",").map((s) => s.trim()).filter(Boolean);
-
-  function setFilter(i: number, field: string, accepted: string[]) {
-    const entries = Object.entries(spec.filter);
-    entries[i] = [field, accepted];
-    void save({ filter: Object.fromEntries(entries.filter(([f]) => f)) });
-  }
-
-  function removeFilter(i: number) {
-    void save({ filter: Object.fromEntries(Object.entries(spec.filter).filter((_, j) => j !== i)) });
-  }
-
-  function addFilter() {
-    const field = choices.find((c) => !(c in spec.filter) && c !== "name");
-    if (field) void save({ filter: { ...spec.filter, [field]: [] } });
-  }
-
-  function toggleField(field: string, on: boolean) {
-    const current = spec.fields.length ? spec.fields : fields;
-    void save({ fields: on ? [...current.filter((f) => f !== field), field] : current.filter((f) => f !== field) });
-  }
-
   const count = (n: number) => (n === 1 ? t("views.countOne") : t("views.count", { count: n }));
   const typeIds = $derived(Object.keys(p.project.settings.types));
 </script>
@@ -545,96 +513,7 @@
       </header>
 
       {#if settingsOpen && !p.embedded}
-        <section class="settings" aria-label={t("views.settings")}>
-          <label>
-            <span>{t("views.items")}</span>
-            <select value={spec.items} onchange={(e) => save({ items: e.currentTarget.value })}>
-              {#each ["scene", "chapter", "note", ...typeIds] as id (id)}
-                <option value={id}>{itemsLabel(id)}</option>
-              {/each}
-              {#if !["scene", "chapter", "note", ...typeIds].includes(spec.items)}<option value={spec.items}>{spec.items}</option>{/if}
-            </select>
-          </label>
-          <label>
-            <span>{t("views.source")}</span>
-            <input
-              list="view-folders"
-              value={spec.source.join(", ")}
-              placeholder={t("views.sourceHint")}
-              onchange={(e) => save({ source: csv(e.currentTarget.value).map((s) => s.replace(/^\/+|\/+$/g, "")) })}
-            />
-            <datalist id="view-folders">
-              {#each p.project.folders as folder (folder)}<option value={folder}></option>{/each}
-            </datalist>
-          </label>
-          <div class="filters">
-            <span>{t("views.filter")}</span>
-            {#each Object.entries(spec.filter) as [field, accepted], i (field)}
-              <div class="filter">
-                <select value={field} aria-label={t("views.filter")} onchange={(e) => setFilter(i, e.currentTarget.value, accepted)}>
-                  {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
-                </select>
-                <input
-                  value={accepted.join(", ")}
-                  placeholder={t("views.filterValues")}
-                  aria-label={t("views.filterValues")}
-                  onchange={(e) => setFilter(i, field, csv(e.currentTarget.value))}
-                />
-                <button aria-label={t("views.removeFilter")} data-tip={t("views.removeFilter")} onclick={() => removeFilter(i)}>×</button>
-              </div>
-            {/each}
-            <button class="small" onclick={addFilter}>+ {t("views.addFilter")}</button>
-          </div>
-          <label>
-            <span>{t("views.sort")}</span>
-            <select value={spec.sort.replace(/^-/, "")} onchange={(e) => save({ sort: e.currentTarget.value ? (spec.sort.startsWith("-") ? "-" : "") + e.currentTarget.value : "" })}>
-              <option value="">{t("views.natural")}</option>
-              {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
-            </select>
-            {#if spec.sort}
-              <span class="check">
-                <input type="checkbox" checked={spec.sort.startsWith("-")} onchange={(e) => save({ sort: (e.currentTarget.checked ? "-" : "") + spec.sort.replace(/^-/, "") })} />
-                {t("views.descending")}
-              </span>
-            {/if}
-          </label>
-          <label>
-            <span>{spec.type === "kanban" ? t("views.columnsBy") : t("views.groupBy")}</span>
-            <select value={spec.group_by} onchange={(e) => save({ group_by: e.currentTarget.value, groups: [] })}>
-              <option value="">{t("views.nothing")}</option>
-              {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
-            </select>
-          </label>
-          {#if spec.group_by}
-            <label>
-              <span>{t("views.groups")}</span>
-              <input value={spec.groups.join(", ")} placeholder={t("views.groupsHint")} onchange={(e) => save({ groups: csv(e.currentTarget.value) })} />
-            </label>
-          {/if}
-          {#if spec.type === "timeline"}
-            <label>
-              <span>{t("views.date")}</span>
-              <select value={spec.date} onchange={(e) => save({ date: e.currentTarget.value })}>
-                <option value="">{t("views.pickProperty")}</option>
-                {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
-              </select>
-            </label>
-            <label>
-              <span>{t("views.end")}</span>
-              <select value={spec.end} onchange={(e) => save({ end: e.currentTarget.value })}>
-                <option value="">{t("views.nothing")}</option>
-                {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
-              </select>
-            </label>
-          {/if}
-          <fieldset>
-            <legend>{t("views.fields")}</legend>
-            <label class="check"><input type="checkbox" checked={spec.synopsis} onchange={(e) => save({ synopsis: e.currentTarget.checked })} /> {t("views.synopsis")}</label>
-            {#each choices.filter((c) => c !== "name" && c !== SYNOPSIS && c !== TITLE) as c (c)}
-              <label class="check"><input type="checkbox" checked={fields.includes(c)} onchange={(e) => toggleField(c, e.currentTarget.checked)} /> {label(c)}</label>
-            {/each}
-          </fieldset>
-        </section>
+        <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} />
       {/if}
 
       <div class="body" bind:this={body}>
@@ -741,61 +620,15 @@
   </main>
   {#if inspected && !p.embedded}
     {@const row = inspected}
-    <section class="inspector" aria-label={row.name}>
-      <header>
-        <h3>{row.name}</h3>
-        <button class="close" aria-label={t("app.close")} onclick={() => (inspecting = null)}>×</button>
-      </header>
-      <button class="open" onclick={() => openRow(row)}>{t("views.openNote")}</button>
-      {#if row.chapter && spec.items === "scene"}<p class="muted small">{row.chapter}</p>{/if}
-      {#if row.file === null || isWithin(row.path, p.project.settings.folders.manuscript)}
-        <label class="prop">
-          <span>{t("panel.synopsis")}</span>
-          {#key row.path + synopsisText(row)}
-            <textarea
-              rows="4"
-              value={synopsisText(row)}
-              placeholder={t("panel.synopsisHint")}
-              onchange={(e) => {
-                const value = e.currentTarget.value.trim();
-                if (value !== synopsisText(row)) void setValues(row, { [SYNOPSIS]: value || undefined });
-              }}
-            ></textarea>
-          {/key}
-        </label>
-      {/if}
-      {#each cardKeys(row) as key (key)}
-        {@const value = row.properties[key]}
-        <div class="prop" class:unset={!(key in row.properties)}>
-          <span>{key}</span>
-          <div class="field-row">
-            <PropertyField
-              name={key}
-              {value}
-              def={propertyDef(p.project.settings.properties, key)}
-              from={row.file ?? folderNotePath(row.path)}
-              onChange={(v) => {
-                if (value === undefined && (v === "" || (Array.isArray(v) && !v.length))) return;
-                if (JSON.stringify(v) !== JSON.stringify(value)) void setValues(row, { [key]: v });
-              }}
-            />
-            {#if key in row.properties}
-              <button class="remove" aria-label={t("panel.remove", { name: key })} onclick={() => setValues(row, { [key]: undefined })}>×</button>
-            {/if}
-          </div>
-        </div>
-      {/each}
-      <form
-        class="add"
-        onsubmit={(e) => {
-          e.preventDefault();
-          addProperty(row);
-        }}
-      >
-        <input bind:value={newProperty} placeholder={t("panel.propertyName")} aria-label={t("panel.propertyName")} />
-        <button type="submit">{t("panel.addProperty")}</button>
-      </form>
-    </section>
+    <ViewInspector
+      {row}
+      project={p.project}
+      scenes={spec.items === "scene"}
+      keys={cardKeys(row)}
+      onClose={() => (inspecting = null)}
+      onOpen={() => openRow(row)}
+      onChange={(changes) => setValues(row, changes)}
+    />
   {/if}
 </div>
 
@@ -903,65 +736,6 @@
   .views.inspecting {
     grid-template-columns: 200px minmax(0, 1fr) 300px;
   }
-  .inspector {
-    border-left: 1px solid var(--border);
-    background: var(--bg-panel);
-    padding: 12px;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-size: 13px;
-  }
-  .inspector header {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .inspector h3 {
-    flex: 1;
-    margin: 0;
-    font-size: 15px;
-  }
-  .inspector .close,
-  .inspector .remove {
-    border: none;
-    background: none;
-    color: var(--text-muted);
-    padding: 0 4px;
-  }
-  .inspector .open {
-    align-self: flex-start;
-  }
-  .inspector .prop {
-    display: grid;
-    gap: 3px;
-    color: var(--text-muted);
-    font-size: 12px;
-  }
-  .inspector .prop.unset > span {
-    font-style: italic;
-  }
-  .inspector .field-row {
-    display: flex;
-    gap: 4px;
-    align-items: flex-start;
-    color: var(--text);
-  }
-  .inspector textarea {
-    font: inherit;
-    font-size: 13px;
-    color: var(--text);
-    resize: vertical;
-  }
-  .inspector .add {
-    display: flex;
-    gap: 4px;
-  }
-  .inspector .add input {
-    flex: 1;
-    min-width: 0;
-  }
   aside {
     border-right: 1px solid var(--border);
     background: var(--bg-panel);
@@ -1049,57 +823,6 @@
   }
   .danger {
     color: var(--danger);
-  }
-  .settings {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 10px 20px;
-    padding: 12px;
-    margin-bottom: 16px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg-panel);
-    font-size: 13px;
-  }
-  .settings label,
-  .filters {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .settings label > span:first-child,
-  .filters > span,
-  legend {
-    color: var(--text-muted);
-  }
-  .filters,
-  fieldset {
-    grid-column: 1 / -1;
-  }
-  .filter {
-    display: flex;
-    gap: 4px;
-  }
-  .filter input {
-    flex: 1;
-  }
-  .filters .small {
-    align-self: start;
-    font-size: 12px;
-  }
-  fieldset {
-    border: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 14px;
-  }
-  .settings label.check,
-  .check {
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
   }
   .intro {
     max-width: 560px;
