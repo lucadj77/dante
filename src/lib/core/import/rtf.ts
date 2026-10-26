@@ -52,6 +52,8 @@ export function rtfParagraphs(rtf: string): string[] {
     else pieces.push({ text, format });
   };
   const endParagraph = () => {
+    // Scrivener 3 marks where its paragraph and character styles start and end in the text itself.
+    pieces = pieces.map((p) => ({ ...p, text: p.text.replace(/<!?\$Scr_[A-Za-z]+::\d+>/g, "") })).filter((p) => p.text);
     const text = escapeStart(renderFormatted(pieces).replace(/[ \t]+\n/g, "\n").trim());
     paragraphs.push(text ? setAlignment(text, align) : "");
     pieces = [];

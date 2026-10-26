@@ -41,6 +41,10 @@ describe("RTF", () => {
     expect(rtfParagraphs(FILES["Files/Data/S1/content.rtf"])).toEqual(["Marta arrivò *tardi*.", "", "Poi **disse**: “Ciao”."]);
   });
 
+  it("leaves out the marks of Scrivener's styles", () => {
+    expect(rtfParagraphs(rtf("<$Scr_Ps::0>{\\i Tommen, ventunesimo d\\'ec}\\par\n<!$Scr_Ps::0>Mentre <$Scr_Cs::1>riemergeva<!$Scr_Cs::1> dal sonno.\\par"))).toEqual(["*Tommen, ventunesimo dì*", "Mentre riemergeva dal sonno."]);
+  });
+
   it("keeps centred paragraphs and leaves out what is not text", () => {
     const [first, second] = rtfParagraphs(FILES["Files/Data/S2/content.rtf"]);
     expect(first).toContain("text-align:center");

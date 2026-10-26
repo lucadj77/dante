@@ -130,7 +130,8 @@ export class Project {
       settings.export = {
         ...exp,
         docx: { ...merged.export.docx, scene: { ...merged.export.docx.scene, label: exp.docx.scene.label } },
-        typography: merged.export.typography,
+        // Dialogue keeps the marks typed in each new novel: a convention chosen for another book does not carry over.
+        typography: { ...merged.export.typography, quotes: exp.typography.quotes },
         revisions: merged.export.revisions,
       };
     }
