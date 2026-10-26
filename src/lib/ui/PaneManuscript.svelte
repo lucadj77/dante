@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { tick } from "svelte";
   import { findNode, headings as computeHeadings, parentOf, type ManuscriptNode } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
@@ -76,7 +78,7 @@
         if (editors.has(result)) register(result, editors.get(result)!);
       }
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -107,7 +109,7 @@
 </script>
 
 <div class="pane-manuscript">
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
   <div class="column">
     {#if items.length === 0}<p class="empty">{t("editor.empty")}</p>{/if}
     {#each items as item (item.type === "scene" ? item.node.path : `h|${item.path}`)}

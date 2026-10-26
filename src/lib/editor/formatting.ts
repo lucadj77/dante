@@ -345,9 +345,25 @@ function selectionBar(labels: FormattingLabels) {
 
 const run_ = (action: Action) => (view: EditorView) => applyFormat(view, action);
 
+/**
+ * Cmd+Shift with 7, 8, 9 and the full stop, read from the key's place on the keyboard: on an
+ * Italian keyboard Shift+7 types "/", and Cmd+/ would comment the line out instead.
+ */
+const BY_PLACE: Record<string, Action> = { Digit7: "ordered", Digit8: "bullet", Digit9: "task", Period: "quote" };
+
 /** Keyboard shortcuts, the bar over a selection, and its look. */
 export function formatting(labels: FormattingLabels): Extension {
   return [
+    Prec.highest(
+      EditorView.domEventHandlers({
+        keydown(event, view) {
+          const action = BY_PLACE[event.code];
+          if (!action || !event.shiftKey || event.altKey || !(event.metaKey || event.ctrlKey)) return false;
+          event.preventDefault();
+          return applyFormat(view, action);
+        },
+      }),
+    ),
     Prec.high(
       keymap.of([
         { key: "Mod-b", run: run_("bold") },

@@ -11,11 +11,13 @@ import { BLANK_LINE } from "../blankLines";
 export interface ImportedScene {
   title: string;
   text: string;
+  synopsis?: string;
   /** The block the scene starts at, for the preview. */
   at?: number;
 }
 export interface ImportedChapter {
   title: string;
+  synopsis?: string;
   scenes: ImportedScene[];
   /** Holds the text that comes before any heading: it can continue a chapter already written. */
   untitled?: boolean;
@@ -23,6 +25,7 @@ export interface ImportedChapter {
 }
 export interface ImportedPart {
   title: string;
+  synopsis?: string;
   chapters: ImportedChapter[];
   at?: number;
 }
@@ -324,23 +327,23 @@ export function structure(
     scene = null;
   };
 
-  const open = (r: "part" | "chapter" | "scene", heading: string) => {
+  const open = (r: "part" | "chapter" | "scene", heading: string, synopsis?: string) => {
     closeScene();
     const at = current;
     result[at] = r;
     if (r === "part" && FRAME.test(heading)) {
       // Outside any part: an untitled part holds it, written at the top of the manuscript.
-      chapter = { title: heading, scenes: [], at };
+      chapter = { title: heading, scenes: [], at, synopsis };
       parts.push({ title: "", chapters: [chapter] });
       result[at] = "chapter";
     } else if (r === "part") {
-      parts.push({ title: ownTitle(heading), chapters: [], at });
+      parts.push({ title: ownTitle(heading), chapters: [], at, synopsis });
       chapter = null;
     } else if (r === "chapter") {
-      chapter = { title: ownTitle(heading), scenes: [], at };
+      chapter = { title: ownTitle(heading), scenes: [], at, synopsis };
       parts[parts.length - 1].chapters.push(chapter);
     } else {
-      scene = { title: heading, text: "", at };
+      scene = { title: heading, text: "", at, synopsis };
     }
   };
 
@@ -400,7 +403,7 @@ export function structure(
     if (mark) {
       blank = 0;
       spaces = [];
-      open(mark, b.kind === "heading" ? b.text : plainText(b.text));
+      open(mark, b.kind === "heading" ? b.text : plainText(b.text), b.kind === "heading" ? b.synopsis : undefined);
       return;
     }
     if (b.kind === "paragraph") {
@@ -424,7 +427,7 @@ export function structure(
       lines.push(`${"#".repeat(Math.min(6, Math.max(1, b.level)))} ${b.text}`);
       return;
     }
-    open(r, b.text);
+    open(r, b.text, b.synopsis);
   });
   closeScene();
 

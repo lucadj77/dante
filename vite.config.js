@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import { sveltekit } from "@sveltejs/kit/vite";
 import process from "node:process";
 const host = process.env.TAURI_DEV_HOST;
@@ -6,6 +7,11 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [sveltekit()],
+
+  // The interface tests in e2e/ run with Playwright (npm run test:e2e), not with Vitest.
+  test: {
+    exclude: [...configDefaults.exclude, "e2e/**"],
+  },
 
   // macOS 10.15 (Catalina) stops at Safari 15.6, whose WebKit draws the Mac window:
   // newer syntax is rewritten for it. Windows (WebView2) and Linux are newer anyway.
@@ -29,6 +35,8 @@ export default defineConfig(() => ({
           port: 1421,
         }
       : undefined,
+    // The help window reads the guide and its images from docs/.
+    fs: { allow: ["docs"] },
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],

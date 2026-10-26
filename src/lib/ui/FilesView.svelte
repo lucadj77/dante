@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { onDisk, projectKey } from "$lib/platform";
   import type { Snippet } from "svelte";
   import { noteTitle, noteType } from "$lib/core/notes";
@@ -14,7 +16,7 @@
   import SidePanel from "./SidePanel.svelte";
   import { columns, layout, width } from "./layout.svelte";
   import Resizer from "./Resizer.svelte";
-  import { markOnly } from "./folding.svelte";
+  import { hasMarks, mark, markOnly } from "./folding.svelte";
   import { navigator } from "./navigation";
 
   interface Props {
@@ -23,6 +25,12 @@
     diskRev: number;
     /** The folder shown, such as the Research folder. */
     root: string;
+    /**
+     * Several folders shown together, each at the top of the tree, such as Research and
+     * Laboratory in Notes; `root` is then ignored. New notes go in the last one, files added
+     * from the computer in the first.
+     */
+    roots?: string[];
     title: string;
     /** The note or file to show. */
     open: string | null;
@@ -40,10 +48,17 @@
   let saves = $state(0);
   let editor = $state<NoteEditor | null>(null);
 
+  const roots = $derived(p.roots ?? [p.root]);
+  const several = $derived(!!p.roots);
+  /** The folder the tree is drawn from: the project's own when it shows several. */
+  const treeRoot = $derived(several ? "" : p.root);
   const nodes = $derived.by(() => {
     void p.rev;
-    return buildTree(p.root, p.project.files, p.project.folders);
+    if (!several) return buildTree(p.root, p.project.files, p.project.folders);
+    return roots.map((r) => ({ path: r, name: basename(r), dir: true, children: buildTree(r, p.project.files, p.project.folders) }));
   });
+  const isRoot = (path: string) => roots.includes(path);
+  const inRoots = (path: string) => roots.some((r) => isWithin(path, r));
   const current = $derived.by(() => {
     void p.rev;
     return p.open && p.project.files.includes(p.open) ? p.open : null;
@@ -54,10 +69,14 @@
   /** In a browser, files are imported through the page's own file picker. */
   let picker = $state<HTMLInputElement>();
   let pickerDir = "";
-  const foldScope = $derived(`${projectKey(p.project.fs)}|${p.root}`);
-  /** Research and Laboratory keep their own panel widths. */
-  const widthKey = $derived(`files|${p.root}`);
-  const folders = $derived(p.project.folders.filter((f) => isWithin(f, p.root) && f !== p.root));
+  const foldScope = $derived(`${projectKey(p.project.fs)}|${roots.join("|")}`);
+  /** Each folder, or group of folders, keeps its own panel widths. */
+  const widthKey = $derived(`files|${roots.join("|")}`);
+  const folders = $derived(p.project.folders.filter((f) => inRoots(f) && (several || f !== p.root)));
+  // The folders at the top start open, the first time the tree is seen.
+  $effect(() => {
+    if (several && !hasMarks(foldScope)) mark(foldScope, roots, true);
+  });
 
   /** A note with a type shows the type's icon in the tree. */
   function icon(path: string): string | null {
@@ -76,15 +95,16 @@
       await p.onReload();
       return result;
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
       return undefined;
     }
   }
 
   /** The folder new things go in: the one asked for, or the open file's, or the root. */
-  function targetDir(dir?: string): string {
+  function targetDir(dir?: string, first = false): string {
     if (dir !== undefined) return dir;
-    return current && isWithin(current, p.root) ? dirname(current) : p.root;
+    if (current && inRoots(current)) return dirname(current);
+    return first ? roots[0] : roots[roots.length - 1];
   }
 
   async function newNote(dir?: string) {
@@ -103,7 +123,7 @@
   async function importFiles(dir?: string) {
     menu = null;
     if (!(p.project.fs instanceof TauriFs)) {
-      pickerDir = targetDir(dir);
+      pickerDir = targetDir(dir, true);
       picker?.click();
       return;
     }
@@ -112,7 +132,7 @@
     const chosen = await open({ multiple: true, directory: false, title: t("files.import") });
     if (!chosen || chosen.length === 0) return;
     const sources = Array.isArray(chosen) ? chosen : [chosen];
-    const imported = await run(() => fs.importFiles(targetDir(dir), sources));
+    const imported = await run(() => fs.importFiles(targetDir(dir, true), sources));
     if (imported?.length) p.onShow(imported[0]);
   }
 
@@ -128,17 +148,21 @@
 
   async function rename(path: string, name: string) {
     renaming = null;
+    if (isRoot(path)) return;
     const to = await run(() => p.project.renamePath(path, name));
     if (to && p.open && isWithin(p.open, path)) p.onShow(rebase(p.open, path, to));
   }
 
   async function move(path: string, dir: string) {
+    // The folders at the top stay where they are, and nothing leaves them.
+    if (isRoot(path) || !inRoots(dir)) return;
     const to = await run(() => p.project.movePath(path, dir));
     if (to && p.open && isWithin(p.open, path)) p.onShow(rebase(p.open, path, to));
   }
 
   async function remove(path: string) {
     menu = null;
+    if (isRoot(path)) return;
     const isDir = p.project.folders.includes(path);
     const count = p.project.files.filter((f) => isWithin(f, path)).length;
     const name = isDir ? basename(path) : noteTitle(path);
@@ -154,7 +178,7 @@
     try {
       await (p.project.fs as TauriFs).openWithSystem(path);
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 </script>
@@ -192,7 +216,7 @@
     {/if}
     <FileTree
       {nodes}
-      root={p.root}
+      root={treeRoot}
       selected={current}
       {renaming}
       {icon}
@@ -200,7 +224,7 @@
       onMenu={(path, dir, x, y) => (menu = { path, dir, x, y })}
       onMove={move}
       onRename={rename}
-      onStartRename={(path) => (renaming = path)}
+      onStartRename={(path) => (renaming = isRoot(path) ? null : path)}
       onCancelRename={() => (renaming = null)}
       onDelete={remove}
       {foldScope}
@@ -221,15 +245,17 @@
         <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = m.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
         {#if desktop}<button role="menuitem" onclick={() => openWithSystem(m.path)}>{t("files.openWithSystem")}</button>{/if}
       {/if}
-      <button role="menuitem" onclick={() => { const path = m.path; menu = null; renaming = path; }}>{t("tree.rename")}</button>
-      <hr />
-      <button role="menuitem" class="danger" onclick={() => remove(m.path)}>{t("tree.deleteItem")}</button>
+      {#if !isRoot(m.path)}
+        <button role="menuitem" onclick={() => { const path = m.path; menu = null; renaming = path; }}>{t("tree.rename")}</button>
+        <hr />
+        <button role="menuitem" class="danger" onclick={() => remove(m.path)}>{t("tree.deleteItem")}</button>
+      {/if}
     </div>
   {/if}
 
   <main class="center">
     {#if error}
-      <p class="error" role="alert">{error}</p>
+      <p class="error" role="alert"><ErrorText text={error} /></p>
     {/if}
     {#if current && fileKind(current) === "note"}
       {#key current}

@@ -1,37 +1,81 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
-  import type { NovelSettings } from "$lib/core/settings";
+  import { NOVEL_LANGUAGES, type NovelSettings } from "$lib/core/settings";
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
   import CoverPicker from "./CoverPicker.svelte";
+  import AppearanceSettings from "./AppearanceSettings.svelte";
   import AuthorsInput from "./AuthorsInput.svelte";
   import { propertyDef, withDef } from "$lib/core/properties";
   import { cleanSnapshots } from "$lib/core/snapshots";
   import { LANGUAGES } from "$lib/i18n";
-  import { app, saveAppSettings, t } from "$lib/state.svelte";
+  import { app, saveAppSettings, t, type AppSettings } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
   import { WEB_BUILD } from "$lib/build";
   import { checkForUpdates, updates } from "$lib/updates.svelte";
+  import { backupFolder, backupInfo, backupNow, defaultBackupFolder, downloadBackup, type BackupInfo } from "$lib/backups";
+  import { onDisk } from "$lib/platform";
+  import { navigator as dante } from "./navigation";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
+  const nav = dante();
 
-  // The form edits copies; nothing changes until Save.
+  /** Opens the template of new scenes, made first if there is none. */
+  async function editSceneTemplate() {
+    error = "";
+    try {
+      const path = await project.ensureSceneTemplate();
+      await onSaved();
+      nav?.open(path);
+    } catch (e) {
+      error = failure(e);
+    }
+  }
+
+  // The novel's settings are edited in a copy, written to the project a moment after each change.
   // svelte-ignore state_referenced_locally
   let novel = $state<NovelSettings>(structuredClone($state.snapshot(project.settings)));
-  let appSettings = $state(structuredClone($state.snapshot(app.settings)));
-  let saved = $state(false);
+  let saving = $state(false);
   let newProperty = $state("");
   let error = $state("");
+  let tab = $state<"novel" | "app">(lastTab.tab);
+  $effect(() => {
+    lastTab.tab = tab;
+  });
+
+  /** The app's settings change at once, field by field, so nothing else changed meanwhile is lost. */
+  function setApp(patch: Partial<AppSettings>) {
+    saveAppSettings({ ...app.settings, ...patch });
+  }
+  const clamp = (value: string, min: number, max: number, fallback: number) => {
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) && value.trim() ? Math.min(max, Math.max(min, n)) : fallback;
+  };
+
+  // svelte-ignore state_referenced_locally
+  let written = JSON.stringify($state.snapshot(novel));
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    const text = JSON.stringify($state.snapshot(novel));
+    if (text === written) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => void save(text), 700);
+  });
+  // Leaving the page writes what is still waiting.
+  $effect(() => () => {
+    if (timer === undefined) return;
+    clearTimeout(timer);
+    const text = JSON.stringify($state.snapshot(novel));
+    if (text !== written) void save(text);
+  });
+
+  const languages = $derived(
+    NOVEL_LANGUAGES.some((l) => l.code === novel.language) ? NOVEL_LANGUAGES : [...NOVEL_LANGUAGES, { code: novel.language, name: t("settings.otherLanguage", { code: novel.language }) }],
+  );
 
   const levels = $derived<("part" | "chapter")[]>(novel.structure.parts ? ["part", "chapter"] : ["chapter"]);
-  const fonts = [
-    { name: "Georgia", value: "Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" },
-    { name: "Palatino", value: "'Palatino Linotype', Palatino, 'Book Antiqua', serif" },
-    { name: "Garamond", value: "'EB Garamond', Garamond, 'Times New Roman', serif" },
-    { name: "Sans serif", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
-    { name: "Monospace", value: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace" },
-  ];
-
   let cleanBefore = $state(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
   let cleaned = $state("");
   let reportCopied = $state("");
@@ -43,7 +87,66 @@
       await navigator.clipboard.writeText(make ? make() : navigator.userAgent);
       reportCopied = t("support.copied");
     } catch (e) {
-      reportCopied = t("error.generic", { message: String(e) });
+      reportCopied = failure(e);
+    }
+  }
+
+  // Backups: the buttons act at once, with the folder and number shown in the form.
+  let backupDefault = $state("");
+  let backup = $state.raw<BackupInfo | null>(null);
+  let backupMessage = $state("");
+  let backingUp = $state(false);
+  const dateTime = $derived(new Intl.DateTimeFormat(app.settings.language, { dateStyle: "medium", timeStyle: "short" }));
+  if (inTauri()) void defaultBackupFolder().then((f) => (backupDefault = f), () => {});
+
+  async function loadBackups() {
+    try {
+      backup = await backupInfo(project, app.settings);
+    } catch {
+      backup = null;
+    }
+  }
+  $effect(() => {
+    void app.settings.backupFolder;
+    void loadBackups();
+  });
+
+  /** "Il mio romanzo 2026-10-26 10-15-30.zip" says when: the date and time shown are read from it. */
+  function backupDate(path: string): string {
+    const m = /(\d{4})-(\d{2})-(\d{2}) (\d{2})-(\d{2})-(\d{2})\.zip$/.exec(path);
+    return m ? dateTime.format(new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : path;
+  }
+
+  async function makeBackup() {
+    backingUp = true;
+    backupMessage = "";
+    try {
+      if (inTauri()) {
+        const path = await backupNow(project, false, app.settings);
+        if (path) backupMessage = t("backup.done", { name: path.split(/[\\/]/).pop() ?? path });
+        await loadBackups();
+      } else {
+        await downloadBackup(project);
+      }
+    } catch (e) {
+      backupMessage = t("backup.failed", { message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      backingUp = false;
+    }
+  }
+
+  async function chooseBackupFolder() {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const folder = await open({ directory: true, multiple: false, defaultPath: await backupFolder(app.settings).catch(() => undefined) });
+    if (typeof folder === "string") setApp({ backupFolder: folder });
+  }
+
+  async function showBackups() {
+    try {
+      const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
+      if (backup?.latest) await revealItemInDir(backup.latest);
+    } catch (e) {
+      backupMessage = failure(e);
     }
   }
 
@@ -53,39 +156,56 @@
       const n = await cleanSnapshots(project.fs, new Date(cleanBefore + "T00:00:00"));
       cleaned = t("snap.cleaned", { n });
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
-  async function save() {
+  /** Writes the novel's settings as `text` has them. */
+  async function save(text: string) {
+    timer = undefined;
     error = "";
+    saving = true;
     try {
-      saveAppSettings($state.snapshot(appSettings));
-      const settings = $state.snapshot(novel);
+      const settings = JSON.parse(text) as NovelSettings;
       settings.authors = settings.authors.map((a) => a.trim()).filter(Boolean);
       settings.pages.size = Math.max(1, Math.round(Number(settings.pages.size) || 0)) || (settings.pages.unit === "words" ? 250 : 1800);
+      settings.language = settings.language.trim() || "en";
+      written = text;
       await project.saveSettings(settings);
       await onSaved();
-      saved = true;
-      setTimeout(() => (saved = false), 2000);
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
+    } finally {
+      saving = false;
     }
   }
 </script>
 
+<script lang="ts" module>
+  /** The tab shown, kept while the app is open. */
+  const lastTab = { tab: "novel" as "novel" | "app" };
+</script>
+
 <div class="settings">
-  <form
-    onsubmit={(e) => {
-      e.preventDefault();
-      void save();
-    }}
-  >
-    <h2>{t("settings.novel")}</h2>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected={tab === "novel"} onclick={() => (tab = "novel")}>{t("settings.tabNovel")}</button>
+    <button role="tab" aria-selected={tab === "app"} onclick={() => (tab = "app")}>{t("settings.tabApp")}</button>
+    <span class="status" role="status">{#if error}<span class="error"><ErrorText text={error} /></span>{:else}{saving ? t("settings.saving") : t("settings.autosave")}{/if}</span>
+  </div>
+  <form onsubmit={(e) => e.preventDefault()}>
+    {#if tab === "novel"}
+    <p class="hint">{t("settings.tabNovelHint")}</p>
     <label>{t("settings.title")} <input bind:value={novel.title} /></label>
     <label>{t("settings.subtitle")} <input bind:value={novel.subtitle} /></label>
     <AuthorsInput bind:authors={novel.authors} />
-    <label>{t("settings.language")} <input bind:value={novel.language} size="6" /></label>
+    <label
+      >{t("settings.language")}
+      <select bind:value={novel.language}>
+        {#each languages as l (l.code)}
+          <option value={l.code}>{l.name}</option>
+        {/each}
+      </select>
+    </label>
 
     <h3>{t("cover.title")}</h3>
     <p class="hint">{t("cover.hint")}</p>
@@ -109,6 +229,10 @@
         ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
       >
     {/if}
+
+    <h3>{t("settings.sceneTemplate")}</h3>
+    <p class="hint">{t("settings.sceneTemplateHint")}</p>
+    <div class="define"><button type="button" onclick={editSceneTemplate}>{t("settings.sceneTemplateEdit")}</button></div>
 
     <h3>{t("property.defined")}</h3>
     <p class="hint">{t("property.definedHint")}</p>
@@ -160,46 +284,71 @@
       <small>{t("settings.pagesHint")}</small>
     </label>
 
-    <h2>{t("settings.app")}</h2>
+    <h3>{t("snap.cleanTitle")}</h3>
+    <label
+      >{t("snap.cleanHint")}
+      <input type="date" bind:value={cleanBefore} />
+    </label>
+    <div class="clean">
+      <button type="button" onclick={clean}>{t("snap.clean")}</button>
+      {#if cleaned}<span>{cleaned}</span>{/if}
+    </div>
+    {:else}
+    <p class="hint">{t("settings.tabAppHint")}</p>
+    <label
+      >{t("settings.userName")} <input value={app.settings.userName} oninput={(e) => setApp({ userName: e.currentTarget.value })} />
+      <small>{t("settings.userNameHint")}</small>
+    </label>
+    <label class="check" title={t("tip.revisions")}
+      ><input type="checkbox" checked={app.settings.revisions} disabled={!app.settings.userName.trim()} onchange={(e) => setApp({ revisions: e.currentTarget.checked })} /> {t("comments.revisionMode")}</label
+    >
     <label
       >{t("settings.interfaceLanguage")}
-      <select bind:value={appSettings.language}>
+      <select value={app.settings.language} onchange={(e) => setApp({ language: e.currentTarget.value })}>
         {#each Object.entries(LANGUAGES) as [code, lang] (code)}
           <option value={code}>{lang.name}</option>
         {/each}
       </select>
     </label>
-    <label
-      >{t("settings.theme")}
-      <select bind:value={appSettings.theme}>
-        <option value="system">{t("settings.themeSystem")}</option>
-        <option value="light">{t("settings.themeLight")}</option>
-        <option value="dark">{t("settings.themeDark")}</option>
-      </select>
-    </label>
-    <label
-      >{t("settings.font")}
-      <select bind:value={appSettings.fontFamily}>
-        {#each fonts as font (font.value)}
-          <option value={font.value}>{font.name}</option>
-        {/each}
-      </select>
-    </label>
-    <label>{t("settings.fontSize")} <input type="number" min="12" max="32" bind:value={appSettings.fontSize} /></label>
-    <label>{t("settings.lineWidth")} <input type="number" min="40" max="120" bind:value={appSettings.lineWidth} /></label>
-    <label
-      >{t("settings.userName")} <input bind:value={appSettings.userName} />
-      <small>{t("settings.userNameHint")}</small>
-    </label>
-    <label class="check" title={t("tip.revisions")}
-      ><input type="checkbox" bind:checked={appSettings.revisions} disabled={!appSettings.userName.trim()} /> {t("comments.revisionMode")}</label
-    >
+    <AppearanceSettings />
+
+    {#if onDisk(project.fs)}
+      <h3>{t("backup.title")}</h3>
+      {#if inTauri()}
+        <p class="hint">{t("backup.hint")}</p>
+        <div class="field">
+          <span class="label">{t("backup.folder")}</span>
+          <span class="path">{app.settings.backupFolder || backupDefault}</span>
+          <div class="clean">
+            <button type="button" onclick={chooseBackupFolder}>{t("backup.choose")}</button>
+            {#if app.settings.backupFolder}<button type="button" onclick={() => setApp({ backupFolder: "" })}>{t("backup.useDefault")}</button>{/if}
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" checked={app.settings.backupOnClose} onchange={(e) => setApp({ backupOnClose: e.currentTarget.checked })} /> {t("backup.onClose")}</label>
+        <label
+          >{t("backup.keep")}
+          <input type="number" min="1" max="100" value={app.settings.backupKeep} onchange={(e) => setApp({ backupKeep: clamp(e.currentTarget.value, 1, 100, app.settings.backupKeep) })} />
+        </label>
+        <p class="hint">{backup?.latest ? t("backup.last", { date: backupDate(backup.latest), count: backup.count }) : t("backup.none")}</p>
+        <div class="clean">
+          <button type="button" disabled={backingUp} onclick={makeBackup}>{backingUp ? t("backup.running") : t("backup.now")}</button>
+          {#if backup?.latest}<button type="button" onclick={showBackups}>{t("backup.show")}</button>{/if}
+          {#if backupMessage}<span>{backupMessage}</span>{/if}
+        </div>
+      {:else}
+        <p class="hint">{t("backup.browserHint")}</p>
+        <div class="clean">
+          <button type="button" disabled={backingUp} onclick={makeBackup}>{t("backup.download")}</button>
+          {#if backupMessage}<span>{backupMessage}</span>{/if}
+        </div>
+      {/if}
+    {/if}
 
     {#if inTauri() || WEB_BUILD}
       <h3>{t("update.title")}</h3>
       {#if updates.version}<p class="hint">{t("update.version", { version: updates.version })}</p>{/if}
       {#if updates.supported}
-        <label class="check"><input type="checkbox" bind:checked={appSettings.checkUpdates} /> {t("update.atStart")}</label>
+        <label class="check"><input type="checkbox" checked={app.settings.checkUpdates} onchange={(e) => setApp({ checkUpdates: e.currentTarget.checked })} /> {t("update.atStart")}</label>
         <div class="clean">
           <button type="button" disabled={updates.state === "checking" || updates.state === "downloading"} onclick={() => void checkForUpdates()}
             >{t("update.check")}</button
@@ -220,22 +369,7 @@
       <button type="button" onclick={copyReport}>{t("support.copy")}</button>
       {#if reportCopied}<span>{reportCopied}</span>{/if}
     </div>
-
-    <h3>{t("snap.cleanTitle")}</h3>
-    <label
-      >{t("snap.cleanHint")}
-      <input type="date" bind:value={cleanBefore} />
-    </label>
-    <div class="clean">
-      <button type="button" onclick={clean}>{t("snap.clean")}</button>
-      {#if cleaned}<span>{cleaned}</span>{/if}
-    </div>
-
-    <div class="actions">
-      <button class="primary" type="submit">{t("settings.save")}</button>
-      {#if saved}<span class="saved">{t("settings.saved")}</span>{/if}
-      {#if error}<span class="error">{error}</span>{/if}
-    </div>
+    {/if}
   </form>
 </div>
 
@@ -247,10 +381,6 @@
   }
   form {
     max-width: 560px;
-  }
-  h2 {
-    font-size: 20px;
-    margin: 24px 0 12px;
   }
   h3 {
     font-size: 15px;
@@ -287,11 +417,37 @@
   small {
     font-size: 12px;
   }
-  .actions {
+  .tabs {
+    position: sticky;
+    top: -24px;
+    z-index: 1;
     display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 24px;
+    align-items: flex-end;
+    gap: 4px;
+    max-width: 560px;
+    margin: -24px 0 16px;
+    padding-top: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .tabs button {
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    padding: 6px 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .tabs button[aria-selected="true"] {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+  .status {
+    margin-left: auto;
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--text-muted);
   }
   .hint {
     color: var(--text-muted);
@@ -316,8 +472,18 @@
     gap: 12px;
     align-items: center;
   }
-  .saved {
+  .field {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .field .label {
     color: var(--text-muted);
+    font-size: 13px;
+  }
+  .path {
+    font-size: 13px;
+    overflow-wrap: anywhere;
   }
   .error {
     color: var(--danger);

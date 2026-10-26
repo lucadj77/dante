@@ -4,6 +4,30 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Find in the scene**: Cmd+F opens a bar to find a word in the open scene or note, with Enter to go to the next one.
+- **Find and replace in the whole novel**: Alt+Cmd+F, or the **Replace** tab of the search, changes a word in every note, for example a character's name. You see every occurrence first, choose which to change, and can undo. Properties, links, images and comments are left alone, and each scene is saved in a snapshot before the change.
+- **Trash**: the icon at the bottom of the left bar shows what you deleted, puts it back where it was or deletes it for good.
+- **Backups**: when you close a project Dante saves a zip copy of it in Documents/Dante backup, outside the novel's folder, and keeps the 10 most recent. Folder and number can be changed in Settings; in the browser a button downloads the zip.
+- **Window remembered**: Dante reopens with the size and position it had.
+- **Fix**: word goals saved in Statistics no longer erase those a co-author changed meanwhile.
+- **Help inside Dante**: the question mark icon in the left bar opens the first steps, the full guide and what's new, readable without a connection. On the Mac there is also the Help menu (Cmd+?).
+- **New projects ready to use**: every new novel already has the scene status (idea, draft, revised, done), the point of view, and a board and a table of the scenes. The first empty scene explains in three lines how to start.
+- **Simpler settings**: two tabs, This novel and Dante on this computer, and no Save button: every change saves itself. The novel's language is picked from a menu.
+- **Tidier manuscript bar**: it fits on one row; formatting bar, scene cards, revisions and Markdown text are in the More menu.
+- **Notes section**: Research and Laboratory are now one section, with the two folders one below the other. Views is now called Tables and boards.
+- **Clearer errors**: when something fails Dante explains it in a plain sentence; the technical message is behind Details.
+- **Fix**: on an Italian keyboard Cmd+Shift+7 inserted a comment instead of starting a numbered list; now Cmd+Shift+7, 8, 9 and . do what they should.
+- **Stage and goals in the tree**: beside each scene a coloured dot shows its stage (idea, draft, revised, done). A scene or chapter can have a word goal, in the Properties panel: the tree shows a small bar that turns green when you reach it.
+- **Status bar**: under the text the words of the scene, of the selection, of the chapter and of today, always in sight. It can be hidden from the More menu.
+- **Writing sessions**: from the status bar, a timer of 10 to 90 minutes with a number of words to reach, if you like. At the end Dante tells you how many words you wrote.
+- **Template of new scenes**: in Settings choose the properties and the text every new scene starts with, for example the stage «idea» and a few questions.
+- **Style in the statistics**: average sentence length, long sentences, adverbs, share of dialogue and words repeated close together, with examples that open the scene.
+- **Import from Scrivener**: from the start screen, a Scrivener project becomes a Dante project with chapters, scenes and synopses, after the same preview as Word.
+- **Measure in characters**: in Statistics > Goals choose whether to count words or characters with spaces. The choice applies to goals, status bar, tree, panel, writing sessions and chart, and goals already set are converted. New Italian projects start with characters.
+- **Themes and accent colour**: besides light and dark there are Sepia and Night, and you can choose the colour of buttons and links. The system theme now changes along with the computer.
+- **Text like a book**: in Settings > Dante on this computer choose line spacing, space between paragraphs, first-line indent, justified text and any installed font, with a sample below.
+- **Spelling checker**: it can be turned off, and it is told the novel's language.
+
 ## 0.1.44 · October 21, 2026
 
 - **Fix**: version 0.1.43 (and 0.1.42) opened with a blank window after updating. If you installed it, download the new version by hand once: the broken one cannot update itself.

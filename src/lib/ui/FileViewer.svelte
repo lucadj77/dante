@@ -37,6 +37,8 @@
 </script>
 
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
   import { basename } from "$lib/core/path";
   import { t } from "$lib/state.svelte";
@@ -120,7 +122,7 @@
     </div>
   {/if}
   {#if error}
-    <p class="message error">{t("error.generic", { message: error })}</p>
+    <p class="message error"><ErrorText text={failure(error)} /></p>
   {:else if kind === "image"}
     {#if url}<div class="image"><img src={url} alt={basename(path)} /></div>{/if}
   {:else if kind === "pdf"}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { failure } from "$lib/ui/errors";
   import { onMount } from "svelte";
   import { projectFolder } from "$lib/core/launcher";
   import type { Project } from "$lib/core/project";
@@ -10,7 +11,10 @@
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { flushAll, unsaved } from "$lib/ui/documents.svelte";
   import { flushSessions } from "$lib/ui/sessions.svelte";
+  import { backupOnClose } from "$lib/backups";
   import UpdateBanner from "$lib/ui/UpdateBanner.svelte";
+  import HelpDialog from "$lib/ui/HelpDialog.svelte";
+  import { help, openHelp } from "$lib/ui/help.svelte";
   import Welcome from "$lib/ui/Welcome.svelte";
   import Workspace from "$lib/ui/Workspace.svelte";
   import { checkAtStart, checkForUpdates, loadUpdateInfo } from "$lib/updates.svelte";
@@ -29,7 +33,7 @@
       project = await openProjectAt(folder);
     } catch (e) {
       const { message } = await import("@tauri-apps/plugin-dialog");
-      await message(t("error.generic", { message: String(e) }), { title: t("app.name"), kind: "error" });
+      await message(failure(e), { title: t("app.name"), kind: "error" });
     }
   }
 
@@ -84,6 +88,7 @@
       const anyway = await ask(t("quit.unsaved", { message: String(e) }), { title: t("app.name"), kind: "warning", okLabel: t("quit.anyway"), cancelLabel: t("quit.stay") });
       if (!anyway) return;
     }
+    if (project) await backupOnClose(project);
     await invoke("quit");
   }
 
@@ -116,6 +121,8 @@
         listen("quit-requested", () => void quit()),
         // Dante > Check for Updates… in the Mac menu bar.
         listen("check-updates", () => void checkForUpdates(false, true)),
+        // Help > Dante Help in the Mac menu bar.
+        listen("open-help", () => openHelp()),
       ];
       for (const listening of listenings)
         void listening.then((u) => {
@@ -157,6 +164,7 @@
     <button onclick={() => (launcher = null)}>{t("welcome.cancel")}</button>
   </div>
 {/if}
+{#if help.open}<HelpDialog />{/if}
 <UpdateBanner
   beforeInstall={async () => {
     if (project) await flushAll(project);

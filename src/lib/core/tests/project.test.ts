@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { flatten, headings } from "../manuscript";
 import { Project } from "../project";
+import { listTrash } from "../trash";
 
 function sample() {
   return new MemoryFs({
@@ -112,7 +113,7 @@ describe("project", () => {
     const fs = sample();
     const p = await Project.open(fs);
     const log: [number, number][] = [];
-    p.onSceneWritten = (_path, before, after) => log.push([before, after]);
+    p.onSceneWritten = (_path, before, after) => log.push([before.words, after.words]);
     // "The train." was saved; "It was late." is typed and split off at once.
     await p.splitScene("Manuscript/010 Return/010 Arrival.md", "The train.\n", "It was late.", "Untitled");
     expect(log).toEqual([[2, 5]]);
@@ -205,6 +206,35 @@ describe("new project", () => {
     expect(await fs.exists("Ricerca")).toBe(true);
     expect(await fs.readText("dante.yaml")).toContain("title: Il faro");
   });
+
+  it("starts with the stage of work, the point of view and the starting views", async () => {
+    const fs = new MemoryFs({});
+    const { project } = await Project.create(fs, { title: "Il faro", authors: [], language: "it" }, { chapter: "C", scene: "S" }, undefined, { board: "Bacheca", scenes: "Scene" });
+    expect(project.settings.properties.stato).toEqual({ kind: "text", values: ["idea", "bozza", "rivista", "finita"], note_type: "" });
+    expect(project.settings.properties.pov.note_type).toBe("character");
+    expect(project.views).toEqual(["Viste/Bacheca.yaml", "Viste/Scene.yaml"]);
+    const board = await fs.readText("Viste/Bacheca.yaml");
+    expect(board).toContain("group_by: stato");
+    expect(board).toContain("bozza");
+    // Saved with the project, so it stays when the settings are read again.
+    expect((await Project.open(fs)).settings.properties.stato.values).toHaveLength(4);
+  });
+
+  it("starts new scenes from the scene template, when there is one", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: T\nlanguage: it\n", "Manoscritto/010 Uno/010 A.md": "a" });
+    const project = await Project.open(fs);
+    const plain = await project.createScene("Manoscritto/010 Uno", 1, "Senza");
+    expect(fs.files.get(plain)).toBe("");
+    const template = await project.ensureSceneTemplate();
+    expect(template).toBe("Modelli/Scena.md");
+    expect(fs.files.get(template)).toContain("stato: idea");
+    fs.files.set(template, "---\nstato: idea\n---\n# {{title}}\n");
+    const made = await project.createScene("Manoscritto/010 Uno", 2, "Notte");
+    expect(fs.files.get(made)).toBe("---\nstato: idea\n---\n# Notte\n");
+    // A split keeps its own text.
+    const split = await project.splitScene(made, "---\nstato: idea\n---\nprima", "dopo", "Seguito");
+    expect(fs.files.get(split)).toBe("dopo");
+  });
 });
 
 describe("trash", () => {
@@ -220,6 +250,49 @@ describe("trash", () => {
     expect(await p.trash("Manuscript/010 A")).toBe(".trash/010 A");
     expect(fs.files.get(".trash/010 A/020 Two.md")).toBe("two");
     expect(p.manuscript.children.map((c) => c.path)).toEqual(["Manuscript/020 B"]);
+  });
+
+  it("lists what it holds and puts it back where it was", async () => {
+    const fs = new MemoryFs({
+      "Manuscript/010 A/010 One.md": "one",
+      "Manuscript/010 A/020 Two.md": "two",
+      ".trash/Old note.md": "deleted in Obsidian",
+    });
+    const p = await Project.open(fs);
+    await p.trash("Manuscript/010 A/010 One.md");
+    await p.trash("Manuscript/010 A");
+    const items = await listTrash(fs);
+    expect(items.map((i) => [i.name, i.from])).toEqual([
+      ["010 A", "Manuscript/010 A"],
+      ["010 One.md", "Manuscript/010 A/010 One.md"],
+      ["Old note.md", null],
+    ]);
+    // The chapter first, then its scene back inside it; the note of unknown origin to the Laboratory.
+    expect(await p.restore(items[0])).toBe("Manuscript/010 A");
+    expect(await p.restore(items[1])).toBe("Manuscript/010 A/010 One.md");
+    expect(await p.restore(items[2])).toBe("Laboratory/Old note.md");
+    expect(p.manuscript.children[0].children.map((c) => c.path)).toEqual(["Manuscript/010 A/010 One.md", "Manuscript/010 A/020 Two.md"]);
+    expect(await listTrash(fs)).toEqual([]);
+  });
+
+  it("restores under another name when the place is taken, and deletes for good", async () => {
+    const fs = new MemoryFs({ "Manuscript/010 A/010 One.md": "one", "Manuscript/010 A/020 Two.md": "two" });
+    const p = await Project.open(fs);
+    await p.trash("Manuscript/010 A/010 One.md");
+    fs.files.set("Manuscript/010 A/010 One.md", "new one");
+    const [item] = await listTrash(fs);
+    expect(await p.restore(item)).toBe("Manuscript/010 A/010 One 2.md");
+    await p.trash("Manuscript/010 A/020 Two.md");
+    await p.deleteForever(await listTrash(fs));
+    expect(await listTrash(fs)).toEqual([]);
+    expect([...fs.files.keys()].some((f) => f.includes("Two"))).toBe(false);
+  });
+
+  it("notes where merged scenes went", async () => {
+    const fs = new MemoryFs({ "Manuscript/010 A/010 One.md": "one", "Manuscript/010 A/020 Two.md": "two" });
+    const p = await Project.open(fs);
+    await p.mergeScenes(["Manuscript/010 A/010 One.md", "Manuscript/010 A/020 Two.md"]);
+    expect((await listTrash(fs)).map((i) => i.from)).toEqual(["Manuscript/010 A/020 Two.md"]);
   });
 });
 

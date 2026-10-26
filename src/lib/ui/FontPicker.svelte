@@ -3,7 +3,8 @@
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
 
-  let { value = $bindable() }: { value: string } = $props();
+  /** `hint` replaces the note on Word files under the sample. */
+  let { value = $bindable(), hint }: { value: string; hint?: string } = $props();
 
   /** Fonts suited to books and manuscripts, with what each is good for. */
   const FONTS: { name: string; use: string }[] = [
@@ -95,7 +96,7 @@
     <input aria-label={t("font.other")} bind:value placeholder="Garamond" />
   {/if}
   <p class="sample" style="font-family: '{value}', serif">{t("font.sample")}</p>
-  <p class="hint">{t("font.hint")}</p>
+  <p class="hint">{hint ?? t("font.hint")}</p>
 </div>
 
 <style>

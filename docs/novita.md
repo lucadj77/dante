@@ -4,6 +4,30 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+- **Cercare nella scena**: Cmd+F apre una barra per trovare una parola nella scena o nella nota aperta, con Invio per passare alla successiva.
+- **Trova e sostituisci in tutto il romanzo**: Alt+Cmd+F, o la scheda **Sostituisci** della ricerca, cambia una parola in tutte le note, per esempio il nome di un personaggio. Vedi prima ogni occorrenza, scegli quali cambiare e puoi annullare. Proprietà, collegamenti, immagini e commenti non vengono toccati, e ogni scena viene salvata in un'istantanea prima della modifica.
+- **Cestino**: dall'icona in basso nella barra a sinistra vedi cosa hai eliminato, lo rimetti dov'era o lo elimini per sempre.
+- **Copie di sicurezza**: quando chiudi un progetto Dante ne salva una copia zip in Documenti/Dante backup, fuori dalla cartella del romanzo, e tiene le 10 più recenti. Cartella e numero si cambiano in Impostazioni; nel browser c'è un pulsante per scaricare lo zip.
+- **Finestra ricordata**: Dante si riapre con la dimensione e la posizione che aveva.
+- **Correzione**: gli obiettivi di parole salvati in Statistiche non cancellano più quelli cambiati nel frattempo da un coautore.
+- **Aiuto dentro Dante**: l'icona con il punto di domanda nella barra a sinistra apre i primi passi, la guida completa e le novità, da leggere anche senza connessione. Sul Mac c'è anche il menu Help (Cmd+?).
+- **Progetti nuovi pronti all'uso**: ogni nuovo romanzo ha già lo stato delle scene (idea, bozza, rivista, finita), il punto di vista e una bacheca e una tabella delle scene. La prima scena vuota spiega in tre righe come cominciare.
+- **Impostazioni più semplici**: due schede, Questo romanzo e Dante su questo computer, e niente pulsante Salva: ogni modifica si salva da sola. La lingua del romanzo si sceglie da un menu.
+- **Barra del manoscritto più ordinata**: sta su una riga; barra di formattazione, schede della scena, revisioni e testo Markdown sono nel menu Altro.
+- **Sezione Note**: Ricerca e Laboratorio sono ora una sezione sola, con le due cartelle una sotto l'altra. Viste si chiama Tabelle e bacheche.
+- **Errori più chiari**: quando qualcosa non riesce Dante lo spiega con una frase semplice; il messaggio tecnico è dietro Dettagli.
+- **Correzione**: con la tastiera italiana Cmd+Maiusc+7 inseriva un commento invece di iniziare un elenco numerato; ora Cmd+Maiusc+7, 8, 9 e . fanno quello che devono.
+- **Stato e obiettivi nell'albero**: accanto a ogni scena un pallino colorato mostra lo stato (idea, bozza, rivista, finita). Una scena o un capitolo può avere un obiettivo di parole, nel pannello Proprietà: l'albero mostra una piccola barra che diventa verde quando lo raggiungi.
+- **Barra di stato**: sotto il testo le parole della scena, della selezione, del capitolo e di oggi, sempre in vista. Si nasconde dal menu Altro.
+- **Sessioni di scrittura**: dalla barra di stato, un timer da 10 a 90 minuti con un numero di parole da raggiungere, se vuoi. Alla fine Dante dice quante parole hai scritto.
+- **Modello delle nuove scene**: in Impostazioni scegli con quali proprietà e quale testo nasce ogni scena nuova, per esempio con lo stato «idea» e qualche domanda.
+- **Stile nelle statistiche**: lunghezza media delle frasi, frasi lunghe, avverbi, parte di dialogo e parole ripetute a poca distanza, con gli esempi che aprono la scena.
+- **Importazione da Scrivener**: dalla schermata iniziale, un progetto Scrivener diventa un progetto Dante con capitoli, scene e sinossi, dopo la stessa anteprima del Word.
+- **Misure in caratteri**: in Statistiche > Obiettivi scegli se contare in parole o in caratteri spazi inclusi. La scelta vale per obiettivi, barra di stato, albero, pannello, sessioni di scrittura e grafico, e gli obiettivi già impostati vengono convertiti. I nuovi progetti in italiano partono dai caratteri.
+- **Temi e colore d'accento**: oltre a chiaro e scuro ci sono Seppia e Notte, e si può scegliere il colore di pulsanti e collegamenti. Il tema di sistema ora cambia insieme al computer.
+- **Il testo come in un libro**: in Impostazioni > Dante su questo computer scegli interlinea, spazio tra i paragrafi, rientro della prima riga, testo giustificato e qualsiasi font installato, con un esempio sotto.
+- **Correttore**: si può spegnere, e riceve la lingua del romanzo.
+
 ## 0.1.44 · 21 ottobre 2026
 
 - **Correzione**: la versione 0.1.43 (e la 0.1.42) si apriva con la finestra vuota dopo l'aggiornamento. Chi l'ha installata deve scaricare una volta a mano la nuova versione, perché quella rotta non può aggiornarsi da sola.

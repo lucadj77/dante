@@ -21,7 +21,8 @@
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
-  import { formatLabels, tableLabels } from "./formatLabels";
+  import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
+  import { pendingFind, takeFind } from "./find.svelte";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
@@ -39,6 +40,8 @@
     onSplitChapter: (path: string, before: string, after: string) => void;
     onLeave: (path: string, direction: "up" | "down") => boolean;
     onFocus: (path: string) => void;
+    /** The text selected in the scene, "" when none. */
+    onSelection?: (path: string, text: string) => void;
     onText: (path: string, text: string) => void;
     onAddAfter: (path: string) => void;
     onRename: (path: string, title: string) => void;
@@ -59,6 +62,7 @@
   const shared = sharing(doc);
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
+  let ready = $state(false);
   let conflict = $state(doc.conflict);
   let failed = $state(doc.failed);
   let renaming = $state(false);
@@ -98,6 +102,18 @@
     },
   };
 
+  /** What an empty scene says: where to write, how to go on, where the scene's details are. */
+  function emptyHint(): HTMLElement {
+    const box = document.createElement("span");
+    box.className = "empty-hint";
+    for (const key of ["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const) {
+      const line = document.createElement("span");
+      line.textContent = t(key);
+      box.append(line);
+    }
+    return box;
+  }
+
   onMount(() => {
     let destroyed = false;
     const unwatch = doc.watch(() => {
@@ -113,7 +129,7 @@
         preview: !props.raw,
         // The raw view shows properties too, where quotes are YAML syntax.
         typography: props.raw ? undefined : props.project.settings.export.typography,
-        placeholder: "…",
+        placeholder: props.raw ? "…" : emptyHint(),
         onChange(next) {
           props.onText(path, next);
           collab.changed();
@@ -121,20 +137,25 @@
         onSplitScene: (before, after) => props.onSplitScene(path, before, after),
         onSplitChapter: (before, after) => props.onSplitChapter(path, before, after),
         onLeave: (direction) => props.onLeave(path, direction),
+        onSelection: (text) => props.onSelection?.(path, text),
         onFocus: () => {
           props.onFocus(path);
           collab.focused();
         },
         formatLabels: formatLabels(),
         tableLabels: tableLabels(),
+        phrases: searchPhrases(),
         links,
         critic: criticHandlerFor(path),
+        language: props.project.settings.language,
         extensions: [shared.extension],
       });
       shared.attach(editor.view);
+      editor.setSpelling(app.settings.spellcheck);
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight });
       collab.ready(editor);
       props.register(path, handle);
+      ready = true;
     }, () => {
       // Moved or renamed meanwhile: the reloaded tree mounts the scene under its new path.
     });
@@ -152,6 +173,18 @@
   $effect(() => {
     const modes = { typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight };
     editor?.setModes(modes);
+  });
+
+  $effect(() => {
+    const on = app.settings.spellcheck;
+    editor?.setSpelling(on);
+  });
+
+  // A match chosen in the project's find and replace.
+  $effect(() => {
+    if (!ready || pendingFind.request?.path !== path) return;
+    const request = takeFind(path);
+    if (request) editor?.find(request);
   });
 
   // Files changed on disk: take the new text unless there are unsaved edits.

@@ -1,14 +1,15 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { projectKey } from "$lib/platform";
   import { tick, type Snippet } from "svelte";
   import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
-  import { saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import { app, t } from "$lib/state.svelte";
   import Icon from "./Icon.svelte";
-  import { ACTIONS, ICONS } from "$lib/editor/formatting";
-  import { formatLabels } from "./formatLabels";
-  import { app } from "$lib/state.svelte";
+  import FormatBar from "./FormatBar.svelte";
+  import ManuscriptToolbar from "./ManuscriptToolbar.svelte";
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SidePanel from "./SidePanel.svelte";
@@ -19,11 +20,15 @@
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
   import { flushAll } from "./documents.svelte";
-  import { panes, SCENE_SHEETS, toggleSceneSheets } from "./panes.svelte";
+  import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
+  import StatusBar from "./StatusBar.svelte";
+  import { textStats } from "$lib/core/stats";
   import { pickWordFile } from "./wordFile";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
+  import type { NoteIndex } from "$lib/core/notes";
   import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
   interface Props {
@@ -142,6 +147,51 @@
     void localRev;
     return project.manuscript;
   });
+  // The index of the notes, for the words, goals and stages shown in the tree.
+  let noteIndex = $state.raw<NoteIndex | null>(null);
+  $effect(() => {
+    void rev;
+    void localRev;
+    void diskRev;
+    void edits;
+    void project.index().then((i) => (noteIndex = i));
+  });
+  /** What lengths and goals count: words, or characters with spaces included. */
+  const unit = $derived(project.settings.goals.unit);
+  /** Length of each text already counted, so typing in one scene counts only that one again. */
+  const counted = new Map<string, { text: string; unit: string; words: number }>();
+  function wordsOf(path: string, body: string): number {
+    const text = texts[path] ?? body;
+    const known = counted.get(path);
+    if (known && known.text === text && known.unit === unit) return known.words;
+    const words = sceneSize(text, unit);
+    counted.set(path, { text, unit, words });
+    return words;
+  }
+  const marks = $derived.by((): Map<string, TreeMark> => {
+    void edits;
+    void tree;
+    void unit;
+    return noteIndex ? treeMarks(tree, noteIndex, project.settings, wordsOf) : new Map();
+  });
+  /** The text selected in the scene with the cursor. */
+  let selection = $state<{ path: string; text: string }>({ path: "", text: "" });
+  const statusScene = $derived.by(() => {
+    if (!active || !(active in texts)) return null;
+    return { words: wordsOf(active, ""), goal: marks.get(active)?.goal ?? 0 };
+  });
+  const statusView = $derived.by(() => {
+    const root = shownRoot;
+    if (!root || root.kind === "scene") return null;
+    const words = shownScenes.reduce((n, path) => n + wordsOf(path, ""), 0);
+    const label = root.kind === "manuscript" ? t("level.novel") : (headingMap.get(root.path) ?? root.title).replace(/\n/g, " · ");
+    return { label, words, goal: root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0) };
+  });
+  const selectedWords = $derived.by(() => {
+    if (selection.path !== active || !selection.text) return 0;
+    const stats = textStats(selection.text);
+    return unit === "characters" ? stats.characters : stats.words;
+  });
   const headingMap = $derived.by(() => {
     void rev;
     void localRev;
@@ -213,7 +263,7 @@
       await tick();
       applyPendingFocus();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -312,7 +362,7 @@
       await onReload();
       word = null;
     } catch (e) {
-      wordError = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      wordError = failure(e);
     } finally {
       wordBusy = false;
     }
@@ -407,6 +457,8 @@
 
   /** The tree's right-click menu, and the item whose name it asked to edit. */
   let menu = $state<{ path: string; x: number; y: number } | null>(null);
+  /** The toolbar's menu of what is used less often. */
+  let moreOpen = $state(false);
   let renaming = $state<string | null>(null);
 
   function scenesIn(node: ManuscriptNode): number {
@@ -535,6 +587,10 @@
   });
 
   function onKey(event: KeyboardEvent) {
+    if (event.key === "Escape" && moreOpen) {
+      moreOpen = false;
+      return;
+    }
     // Esc that closed something else first, such as the suggestions, stays there.
     if (event.key === "Escape" && fullscreen && !event.defaultPrevented && !menu) void toggleFullscreen();
   }
@@ -611,7 +667,7 @@
     if (hideTimer) return;
     hideTimer = setTimeout(() => {
       hideTimer = undefined;
-      if (hovering || menu || typing()) return;
+      if (hovering || menu || moreOpen || typing()) return;
       edge = null;
     }, 350);
   }
@@ -644,7 +700,13 @@
     >
       <div class="tree-actions">
         <div class="tree-group" role="group" aria-labelledby="tree-add">
-          <span class="caption" id="tree-add">{t("tree.add")}</span>
+          <div class="caption-row">
+            <span class="caption" id="tree-add">{t("tree.add")}</span>
+            <span class="fold">
+              <button class="icon-only" title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /></button>
+              <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
+            </span>
+          </div>
           <div class="add">
             <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
             <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
@@ -652,13 +714,6 @@
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
             <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
-          </div>
-        </div>
-        <div class="tree-group" role="group" aria-labelledby="tree-fold">
-          <span class="caption" id="tree-fold">{t("tree.outline")}</span>
-          <div class="fold">
-            <button title={t("tip.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /><span>{t("tree.foldAll")}</span></button>
-            <button title={t("tip.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /><span>{t("tree.unfoldAll")}</span></button>
           </div>
         </div>
       </div>
@@ -697,6 +752,8 @@
             onMoveBy={moveBy}
             {renaming}
             {foldScope}
+            {marks}
+            {unit}
           />
         {/each}
       </ul>
@@ -770,89 +827,28 @@
       onmouseleave={leaveEdge}
       onfocusout={leaveEdge}
     >
-    <div class="toolbar" role="toolbar">
-      <div class="group" role="group" aria-label={t("toolbar.show")}>
-        <span class="caption">{t("toolbar.show")}</span>
-        <div class="buttons">
-        <div class="segmented">
-          {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
-            {#if l !== "part" || project.settings.structure.parts}
-              <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}><Icon name={l} /><span class="label">{t(`level.${l}`)}</span></button>
-            {/if}
-          {/each}
-        </div>
-        <button aria-pressed={panes.list.some((p) => p.path === SCENE_SHEETS)} title={t("tip.panes.sheets")} onclick={toggleSceneSheets}><Icon name="sheets" /><span class="label">{t("panes.sheetsButton")}</span></button>
-        </div>
-      </div>
-      <div class="group" role="group" aria-label={t("toolbar.writing")}>
-        <span class="caption">{t("toolbar.writing")}</span>
-        <div class="buttons">
-        <button aria-pressed={app.settings.formatBar} title={t("tip.formatBar")} onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}
-          ><Icon name="format" /><span class="label">{t("format.bar")}</span></button
-        >
-        <button aria-pressed={raw} title={t("tip.raw")} onclick={toggleRaw}><Icon name="raw" /><span class="label">{t("editor.raw")}</span></button>
-        <button
-          aria-pressed={app.settings.revisions}
-          class:tracking={app.settings.revisions}
-          title={app.settings.userName.trim() ? t("tip.revisions") : t("tip.revisionsNoName")}
-          disabled={!app.settings.userName.trim()}
-          onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}><Icon name="revisions" /><span class="label">{t("mode.revisions")}</span></button
-        >
-        </div>
-      </div>
-      <!-- The modes leave the cursor in the text, so writing goes on at once. -->
-      <div class="group" role="group" aria-label={t("toolbar.modes")}>
-        <span class="caption">{t("toolbar.modes")}</span>
-        <div class="buttons">
-        <button aria-pressed={focusMode} title={t("tip.focus")} onmousedown={(e) => e.preventDefault()} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
-        <button aria-pressed={typewriter} title={t("tip.typewriter")} onmousedown={(e) => e.preventDefault()} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
-        <button
-          aria-pressed={app.settings.lineHighlight}
-          title={t("tip.lineHighlight")}
-          onmousedown={(e) => e.preventDefault()}
-          onclick={() => saveAppSettings({ ...app.settings, lineHighlight: !app.settings.lineHighlight })}><Icon name="lineHighlight" /><span class="label">{t("mode.lineHighlight")}</span></button
-        >
-        <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onmousedown={(e) => e.preventDefault()} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
-        </div>
-      </div>
-      <div class="group" role="group" aria-label={t("toolbar.size")}>
-        <span class="caption">{t("toolbar.size")}</span>
-        <div class="buttons">
-        <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
-        <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
-        <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
-        </div>
-      </div>
-    </div>
+    <ManuscriptToolbar
+      bind:level
+      bind:focusMode
+      bind:typewriter
+      bind:moreOpen
+      parts={project.settings.structure.parts}
+      {fullscreen}
+      {raw}
+      onToggleFullscreen={toggleFullscreen}
+      onToggleRaw={toggleRaw}
+    />
     <!-- In full screen the formatting comes out with the toolbar, as the bar at the top. -->
     {#if app.settings.formatBar || fullscreen}
-      {@const labels = formatLabels()}
-      <div class="format-row" role="toolbar" aria-label={t("format.bar")}>
-        {#each ACTIONS as action, i (i)}
-          {#if action === null}
-            <span class="cm-format-gap"></span>
-          {:else}
-            <button
-              title={labels[action]}
-              aria-label={labels[action]}
-              disabled={!active}
-              onmousedown={(e) => e.preventDefault()}
-              onclick={() => active && editors.get(active)?.format(action)}>{#if ICONS[action].icon}<Icon name={ICONS[action].icon} />{:else}<span style={ICONS[action].style}>{ICONS[action].text}</span>{/if}</button
-            >
-          {/if}
-        {/each}
-        <span class="cm-format-gap"></span>
-        <button class="split" title={t("tip.splitScene")} disabled={!active} onmousedown={(e) => e.preventDefault()} onclick={() => active && editors.get(active)?.split("scene")}
-          ><Icon name="scene" /><span>{t("split.scene")}</span></button
-        >
-        <button class="split" title={t("tip.splitChapter")} disabled={!active} onmousedown={(e) => e.preventDefault()} onclick={() => active && editors.get(active)?.split("chapter")}
-          ><Icon name="chapter" /><span>{t("split.chapter")}</span></button
-        >
-      </div>
+      <FormatBar
+        disabled={!active}
+        onFormat={(action) => active && editors.get(active)?.format(action)}
+        onSplit={(kind) => active && editors.get(active)?.split(kind)}
+      />
     {/if}
     </div>
     {#if error}
-      <p class="error" role="alert">{error}</p>
+      <p class="error" role="alert"><ErrorText text={error} /></p>
     {/if}
     <div class="page" class:typewriter bind:this={page}>
       <div class="column" style="max-width: {app.settings.lineWidth}ch">
@@ -903,11 +899,15 @@
               }}
               onAddAfter={addAfter}
               onRename={rename}
+              onSelection={(path, text) => (selection = { path, text })}
             />
           {/if}
         {/each}
       </div>
     </div>
+    {#if app.settings.statusBar && !fullscreen}
+      <StatusBar {unit} scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
+    {/if}
   </main>
 
   <!-- In full screen the panes beside the text wait until it is left. -->
@@ -998,18 +998,24 @@
     padding: 6px 4px;
     font-size: 12px;
   }
-  .tree-actions .fold {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-  }
-  .tree-actions .fold button {
+  .caption-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 3px 4px;
-    font-size: 11px;
+    justify-content: space-between;
+  }
+  .tree-actions .fold {
+    display: flex;
+    gap: 2px;
+  }
+  .tree-actions .fold button {
+    padding: 1px 4px;
+    border-color: transparent;
+    background: none;
+    color: var(--text-muted);
+  }
+  .tree-actions .fold button:hover {
+    color: var(--text);
+    background: var(--bg-hover);
   }
   .icon-only {
     display: inline-flex;
@@ -1127,96 +1133,6 @@
   .edge-panel.shown {
     transform: none;
     box-shadow: 0 0 16px rgba(0, 0, 0, 0.16);
-  }
-  .format-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px;
-    padding: 4px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .format-row .split {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-  }
-  .format-row button:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 0;
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--border);
-    container-type: inline-size;
-  }
-  /* Each group of buttons under its name, set apart from the next by a line. */
-  .group {
-    display: grid;
-    gap: 3px;
-    padding: 0 12px;
-    border-left: 1px solid var(--border);
-  }
-  .group .buttons {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .group:first-child {
-    padding-left: 0;
-    border-left: none;
-  }
-  .group:last-child {
-    margin-left: auto;
-  }
-  .group button {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-  }
-  .segmented {
-    display: flex;
-  }
-  .segmented button {
-    border-radius: 0;
-  }
-  .segmented button + button {
-    margin-left: -1px;
-  }
-  .segmented button:first-child {
-    border-radius: 6px 0 0 6px;
-  }
-  .segmented button:last-child {
-    border-radius: 0 6px 6px 0;
-  }
-  .group button.size {
-    min-width: 32px;
-    justify-content: center;
-    font-variant-numeric: tabular-nums;
-  }
-  .group button.tracking {
-    color: var(--critic-add, #1a7f37);
-    border-color: currentColor;
-  }
-  /* A narrow window keeps the icons; the names stay in the tooltips. */
-  @container (max-width: 640px) {
-    .label {
-      display: none;
-    }
-  }
-  /* WebKit without container queries (macOS 10.15): the window width stands in for the bar's. */
-  @supports not (container-type: inline-size) {
-    @media (max-width: 900px) {
-      .label {
-        display: none;
-      }
-    }
   }
   .page {
     flex: 1;

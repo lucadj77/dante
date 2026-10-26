@@ -1,3 +1,4 @@
+mod backup;
 mod files;
 mod pdf;
 mod web;
@@ -150,12 +151,16 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
             &close_pane,
         ],
     )?;
-    app.set_menu(Menu::with_items(h, &[&app_menu, &edit, &view, &window])?)?;
+    // The page opens its own help window, which reads the guide without a connection.
+    let help = Submenu::with_items(h, "Help", true, &[&MenuItem::with_id(h, "open-help", "Dante Help", true, Some("CmdOrCtrl+?"))?])?;
+    app.set_menu(Menu::with_items(h, &[&app_menu, &edit, &view, &window, &help])?)?;
     app.on_menu_event(|app, event| {
         if event.id() == "close-pane" {
             let _ = app.emit("close-pane", ());
         } else if event.id() == "check-updates" {
             let _ = app.emit("check-updates", ());
+        } else if event.id() == "open-help" {
+            let _ = app.emit("open-help", ());
         } else if event.id() == "quit" {
             quit_requested(app);
         }
@@ -183,6 +188,12 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // Size and place of the window, as the writer left them; full screen is not brought back.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(tauri_plugin_window_state::StateFlags::all() - tauri_plugin_window_state::StateFlags::FULLSCREEN)
+                .build(),
+        )
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -220,6 +231,8 @@ pub fn run() {
             files::import_files,
             files::watch_project,
             pdf::compile_pdf,
+            backup::backup_project,
+            backup::list_backups,
             web::download_url,
             webkit::webkit_info,
             opened_project,

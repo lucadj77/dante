@@ -7,6 +7,7 @@ import {
   loadManuscript,
   parentOf,
   scenesOf,
+  SYNOPSIS,
   TITLE,
   type ContainerKind,
   type ManuscriptNode,
@@ -19,26 +20,49 @@ import {
   defaultSettings,
   knownFolders,
   parseSettings,
+  projectStatus,
+  sceneTemplateName,
   serializeSettings,
   SETTINGS_FILE,
+  statusProperty,
   type NoteType,
   type NovelSettings,
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
 import { textStats } from "./stats";
+import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
-import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
+import { isView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
 import { attachmentsFolderName, safeFileName } from "./images";
+import { deleteFromTrash, noteTrashed, restoreFromTrash, TRASH, type TrashItem } from "./trash";
+import { bodyOf, findIn, occurrences, replaceIn, type FindOptions, type Occurrence, type Range } from "./replace";
+
+const NO_TEXT: TextSize = { words: 0, characters: 0 };
+const sizeOf = (body: string): TextSize => {
+  const stats = textStats(body);
+  return { words: stats.words, characters: stats.characters };
+};
+
+/** The matches of a search in one note. */
+export interface NoteMatches {
+  path: string;
+  occurrences: Occurrence[];
+}
+
+/** What a replacement changed, to put it back: each note's whole text before and after. */
+export interface Replaced {
+  count: number;
+  notes: { path: string; before: string; after: string }[];
+}
 
 /** Folders never scanned: app data, other tools' data, version control. */
 // Exports are copies of the novel: kept out of links, searches and statistics.
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules", EXPORT_FOLDER]);
-const TRASH = ".trash";
 
 /** Scenes cannot be merged while one of them has a conflict copy to settle. */
 export class MergeConflictError extends Error {
@@ -85,6 +109,8 @@ export class Project {
     names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
     preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
+    /** Names of the starting views, a board and a table of the scenes; none are made without. */
+    views?: { board: string; scenes: string },
   ): Promise<{ project: Project; scene: string }> {
     await fs.mkdir("");
     const settings = { ...defaultSettings(details.language), title: details.title, authors: details.authors.map((a) => a.trim()).filter(Boolean), cover: details.cover ?? coverFor(details.title) };
@@ -111,6 +137,7 @@ export class Project {
     await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
     for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
     const project = await Project.open(fs, details.language);
+    if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views)) await project.createView(name, view);
     if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
     const scene = await project.createScene(chapter, 0, names.scene);
@@ -204,15 +231,15 @@ export class Project {
   /** Called after files were moved or renamed, with where any old path went. */
   onMoved: ((moved: (path: string) => string) => void) | null = null;
 
-  /** Called after a scene is written, with its words before and after, for the writing log. */
-  onSceneWritten: ((path: string, before: number, after: number) => void) | null = null;
+  /** Called after a scene is written, with its words and characters before and after, for the writing log. */
+  onSceneWritten: ((path: string, before: TextSize, after: TextSize) => void) | null = null;
 
   /** Writes a whole note, keeping the link index current. */
   async writeNote(path: string, text: string): Promise<void> {
     const scene = this.onSceneWritten && isMarkdown(path) && isWithin(path, this.settings.folders.manuscript);
-    const before = scene && (await this.fs.exists(path)) ? textStats(splitNote(await this.fs.readText(path)).body).words : 0;
+    const before = scene && (await this.fs.exists(path)) ? sizeOf(splitNote(await this.fs.readText(path)).body) : NO_TEXT;
     await this.fs.writeText(path, text);
-    if (scene) this.onSceneWritten?.(path, before, textStats(splitNote(text).body).words);
+    if (scene) this.onSceneWritten?.(path, before, sizeOf(splitNote(text).body));
     if (this.indexing) (await this.indexing).set(path, text);
   }
 
@@ -276,9 +303,7 @@ export class Project {
     const template = this.templatePath(typeId);
     let text: string;
     if (await this.fs.exists(template)) {
-      const clean = sanitizeTitle(title) || "Untitled";
-      const date = new Date().toISOString().slice(0, 10);
-      text = (await this.fs.readText(template)).replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
+      text = fillTemplate(await this.fs.readText(template), title);
     } else {
       text = this.typeSkeleton(typeId);
     }
@@ -319,6 +344,22 @@ export class Project {
     const path = this.templatePath(typeId);
     if (!(await this.fs.exists(path))) {
       await this.fs.writeText(path, this.typeSkeleton(typeId));
+      await this.reload();
+    }
+    return path;
+  }
+
+  /** The template new scenes start from, when it exists: `<Templates>/Scena.md` in an Italian novel. */
+  sceneTemplatePath(): string {
+    return join(this.settings.folders.templates, `${sceneTemplateName(this.settings.language)}.md`);
+  }
+
+  /** Opens the template of new scenes, creating it with the first stage of work if needed. */
+  async ensureSceneTemplate(): Promise<string> {
+    const path = this.sceneTemplatePath();
+    if (!(await this.fs.exists(path))) {
+      const status = projectStatus(this.settings);
+      await this.fs.writeText(path, writeProperties("", { [status.name]: status.values[0] ?? "", synopsis: "" }) + "\n");
       await this.reload();
     }
     return path;
@@ -445,8 +486,7 @@ export class Project {
    */
   async resolveConflict(conflict: ConflictCopy, how: "original" | "copy" | "merge", snapshotName: string, fallbackAuthor: string): Promise<void> {
     if (how === "copy" || (how === "merge" && !isMarkdown(conflict.original))) {
-      await this.fs.mkdir(TRASH);
-      await this.fs.rename(conflict.original, await this.freeName(TRASH, basename(conflict.original)));
+      await this.toTrash(conflict.original);
       await this.fs.rename(conflict.path, conflict.original);
       await this.reload();
       return;
@@ -466,13 +506,85 @@ export class Project {
    * where Obsidian keeps deleted notes too, so it can be recovered. Returns where it went.
    */
   async trash(path: string): Promise<string> {
-    const target = await this.freeName(TRASH, basename(path));
-    await this.fs.mkdir(TRASH);
     // Its conflict copies go with it, or they would show as files of their own.
-    for (const copy of this.conflictCopies(path)) await this.fs.rename(copy, await this.freeName(TRASH, basename(copy)));
-    await this.fs.rename(path, target);
+    for (const copy of this.conflictCopies(path)) await this.toTrash(copy);
+    const target = await this.toTrash(path);
     await this.reload();
     return target;
+  }
+
+  /** Moves one item to .trash, noting where it was; returns where it went. */
+  private async toTrash(path: string): Promise<string> {
+    const target = await this.freeName(TRASH, basename(path));
+    await this.fs.mkdir(TRASH);
+    await this.fs.rename(path, target);
+    await noteTrashed(this.fs, target, path);
+    return target;
+  }
+
+  /** Puts an item of the trash back where it was (or in the Laboratory); returns its path. */
+  async restore(item: TrashItem): Promise<string> {
+    const path = await restoreFromTrash(this.fs, item, this.settings.folders.laboratory);
+    await this.reload();
+    return path;
+  }
+
+  /** Deletes items of the trash for good. */
+  async deleteForever(items: TrashItem[]): Promise<void> {
+    await deleteFromTrash(this.fs, items);
+  }
+
+  // Finding and replacing across notes
+
+  /** The notes under `within` (every folder when empty) whose text holds `query`. */
+  async findAll(query: string, options: FindOptions, within: string[] = []): Promise<NoteMatches[]> {
+    if (!query) return [];
+    const index = await this.index();
+    const out: NoteMatches[] = [];
+    for (const path of this.files) {
+      if (!isMarkdown(path) || (within.length && !within.some((w) => isWithin(path, w)))) continue;
+      const note = index.notes.get(path);
+      if (!note) continue;
+      const ranges = findIn(note.body, query, options);
+      if (ranges.length) out.push({ path, occurrences: occurrences(note.body, ranges) });
+    }
+    return out;
+  }
+
+  /**
+   * Replaces the chosen matches, each note read again from disk: a match that is no
+   * longer there is skipped. Scenes are copied to a snapshot named `snapshotName` first.
+   */
+  async replaceAll(chosen: { path: string; ranges: Range[] }[], query: string, replacement: string, options: FindOptions, snapshotName: string): Promise<Replaced> {
+    const result: Replaced = { count: 0, notes: [] };
+    for (const { path, ranges } of chosen) {
+      if (!ranges.length || !(await this.fs.exists(path))) continue;
+      const before = await this.fs.readText(path);
+      const body = bodyOf(before);
+      const now = findIn(body, query, options);
+      const still = ranges.filter((r) => now.some((n) => n.from === r.from && n.to === r.to));
+      if (!still.length) continue;
+      if (isWithin(path, this.settings.folders.manuscript)) await takeSnapshot(this.fs, path, snapshotName);
+      const after = replaceBody(before, replaceIn(body, still, replacement, options));
+      await this.writeNote(path, after);
+      result.count += still.length;
+      result.notes.push({ path, before, after });
+    }
+    return result;
+  }
+
+  /** Undoes a replacement in the notes nobody changed since; returns the notes it could not undo. */
+  async undoReplace(replaced: Replaced): Promise<string[]> {
+    const skipped: string[] = [];
+    for (const note of replaced.notes) {
+      const now = (await this.fs.exists(note.path)) ? await this.fs.readText(note.path) : null;
+      if (now !== note.after) {
+        skipped.push(note.path);
+        continue;
+      }
+      await this.writeNote(note.path, note.before);
+    }
+    return skipped;
   }
 
   /**
@@ -493,9 +605,12 @@ export class Project {
       taken.add(name.toLowerCase());
       return name;
     };
-    const withTitle = (title: string, file: string, body = "") => {
+    const withTitle = (title: string, file: string, body = "", synopsis = "") => {
       const clean = title.trim();
-      return clean && clean !== file ? writeProperties(body, { [TITLE]: clean }) : body;
+      const properties: Properties = {};
+      if (clean && clean !== file) properties[TITLE] = clean;
+      if (synopsis.trim()) properties[SYNOPSIS] = synopsis.trim();
+      return Object.keys(properties).length ? writeProperties(body, properties) : body;
     };
     if (book.hasParts && !this.settings.structure.parts) {
       // With parts on, a folder at the top reads as a part: the chapters already there say they are not.
@@ -514,7 +629,7 @@ export class Project {
       let order = nextOrder(continued);
       for (const scene of opening.scenes) {
         const file = fileName(scene.title, taken);
-        await this.fs.writeText(join(continued.path, formatName(order, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        await this.fs.writeText(join(continued.path, formatName(order, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : "", scene.synopsis));
         order += step;
       }
       book = { ...book, parts: [{ ...book.parts[0], chapters: book.parts[0].chapters.slice(1) }, ...book.parts.slice(1)] };
@@ -537,14 +652,14 @@ export class Project {
           : dir === this.manuscript.path && this.settings.structure.parts
             ? "chapter"
             : null;
-      const note = withTitle(chapter.title, name);
+      const note = withTitle(chapter.title, name, "", chapter.synopsis);
       if (kind || note) await this.fs.writeText(folderNotePath(path), kind ? writeProperties(note, { kind }) : note);
       // A scene may not share its chapter's name, or it would be read as the chapter's note.
       const scenes = new Set([name.toLowerCase()]);
       let sceneOrder = step;
       for (const scene of chapter.scenes) {
         const file = fileName(scene.title, scenes);
-        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : "", scene.synopsis));
         sceneOrder += step;
       }
     };
@@ -554,7 +669,7 @@ export class Project {
         const path = join(root.path, formatName(rootOrder, name));
         rootOrder += step;
         await this.fs.mkdir(path);
-        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name), { kind: "part" }));
+        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name, "", part.synopsis), { kind: "part" }));
         const taken = new Set([name.toLowerCase()]);
         let order = step;
         for (const chapter of part.chapters) {
@@ -596,16 +711,18 @@ export class Project {
       const updated = rewriteLinks(await this.fs.readText(file), file, renames, before, after);
       if (updated !== null) await this.fs.writeText(file, updated);
     }
-    await this.fs.mkdir(TRASH);
-    for (const path of rest) await this.fs.rename(path, await this.freeName(TRASH, basename(path)));
+    for (const path of rest) await this.toTrash(path);
     await this.reload();
     return first;
   }
 
-  async createScene(parentPath: string, index: number, title: string, body = ""): Promise<string> {
+  /** A new scene with `body` as its text, or, without one, the scene template's text if there is a template. */
+  async createScene(parentPath: string, index: number, title: string, body?: string): Promise<string> {
     const parent = this.node(parentPath);
     const clean = this.uniqueTitle(parent, sanitizeTitle(title) || "Untitled");
-    return this.insertNew(parent, index, clean, async (path) => this.fs.writeText(path + ".md", body), ".md");
+    let text = body ?? "";
+    if (body === undefined && (await this.fs.exists(this.sceneTemplatePath()))) text = fillTemplate(await this.fs.readText(this.sceneTemplatePath()), clean);
+    return this.insertNew(parent, index, clean, async (path) => this.fs.writeText(path + ".md", text), ".md");
   }
 
   async createContainer(parentPath: string, index: number, title: string, kind?: ContainerKind): Promise<string> {
@@ -634,15 +751,16 @@ export class Project {
    */
   private async writeKeptHalf(path: string, before: string, after: string): Promise<void> {
     const log = this.onSceneWritten;
-    const words = (body: string) => textStats(body).words;
-    const old = log && (await this.fs.exists(path)) ? words(splitNote(await this.fs.readText(path)).body) : 0;
+    const old = log && (await this.fs.exists(path)) ? sizeOf(splitNote(await this.fs.readText(path)).body) : NO_TEXT;
     this.onSceneWritten = null;
     try {
       await this.writeBody(path, before);
     } finally {
       this.onSceneWritten = log;
     }
-    log?.(path, old, words(before) + words(after));
+    const kept = sizeOf(before);
+    const moved = sizeOf(after);
+    log?.(path, old, { words: kept.words + moved.words, characters: kept.characters + moved.characters });
   }
 
   /**
@@ -795,3 +913,9 @@ export class Project {
   }
 }
 
+/** A template's text for a new note: {{title}} and {{date}} filled in. */
+function fillTemplate(template: string, title: string): string {
+  const clean = sanitizeTitle(title) || "Untitled";
+  const date = new Date().toISOString().slice(0, 10);
+  return template.replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
+}

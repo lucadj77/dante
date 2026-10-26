@@ -11,6 +11,11 @@
   --danger: #a33b2b;
   --editor-bg: #fffefb;
   --wikilink: #2f5f9e;
+  /* The stages of work of a scene, from the first to the last. */
+  --status-0: #a7a196;
+  --status-1: #d1912a;
+  --status-2: #3f7fc4;
+  --status-3: #3d9a5c;
   --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
@@ -28,7 +33,41 @@
   --danger: #e07a68;
   --editor-bg: #1f1e1c;
   --wikilink: #8fb4e8;
+  --status-0: #8a857c;
+  --status-1: #e0a648;
+  --status-2: #6ea3e0;
+  --status-3: #5fbf7f;
   color-scheme: dark;
+}
+
+/* Sepia: warm paper, for long sessions in daylight. */
+:root[data-palette="sepia"] {
+  --bg: #f3ead6;
+  --bg-panel: #ebe0c8;
+  --bg-hover: #e1d4b6;
+  --bg-active: #e3d3ae;
+  --text: #3a2e1f;
+  --text-muted: #77664d;
+  --border: #d6c6a4;
+  --accent: #8a5a2b;
+  --accent-text: #ffffff;
+  --editor-bg: #f8f0dd;
+  --wikilink: #8a5a2b;
+}
+
+/* Night: almost black and softer text, for writing in the dark. */
+:root[data-palette="night"] {
+  --bg: #0d0d0f;
+  --bg-panel: #141417;
+  --bg-hover: #1e1e22;
+  --bg-active: #1f2a38;
+  --text: #c8c2b6;
+  --text-muted: #837d73;
+  --border: #29292e;
+  --accent: #8aa6c9;
+  --accent-text: #0d0d0f;
+  --editor-bg: #0b0b0d;
+  --wikilink: #8fb0d6;
 }
 
 * {
@@ -95,13 +134,21 @@ select {
 .cm-content {
   font-family: var(--editor-font);
   font-size: var(--editor-size);
-  line-height: 1.7;
+  line-height: var(--editor-line-height, 1.7);
+  text-align: var(--editor-align, left);
+  -webkit-hyphens: var(--editor-hyphens, manual);
+  hyphens: var(--editor-hyphens, manual);
   /* CodeMirror's own theme sets a black caret with a stronger selector; the app's theme wins. */
   caret-color: var(--text) !important;
 }
 .cm-scroller {
   overflow: visible;
 }
+/* The page layout chosen in the settings: space between paragraphs and first-line indent. */
+.cm-line.md-gap { line-height: calc(var(--editor-line-height, 1.7) * var(--editor-gap, 1)); }
+.cm-line.md-para { text-indent: var(--editor-indent, 0); }
+.cm-line.md-para.md-align-center,
+.cm-line.md-para.md-align-right { text-indent: 0; }
 .cm-line.md-h1 { font-size: 1.6em; font-weight: 600; }
 .cm-line.md-h2 { font-size: 1.35em; font-weight: 600; }
 .cm-line.md-h3 { font-size: 1.15em; font-weight: 600; }
@@ -200,3 +247,98 @@ select {
 .cm-tooltip-autocomplete > ul > li[aria-selected] { background: var(--bg-active) !important; color: var(--text) !important; }
 .cm-completionDetail { color: var(--text-muted); margin-left: 8px; font-style: normal !important; }
 
+
+/* The find panel of the editors (Cmd+F). Regular expressions are left out: they are for programmers. */
+.cm-panels {
+  background: var(--bg-panel);
+  color: var(--text);
+}
+.cm-panels.cm-panels-top {
+  border-bottom: 1px solid var(--border);
+}
+.cm-search {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  /* Three rows whatever the width: find and its buttons, the options, replace and its buttons. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 6px 28px 6px 8px !important;
+}
+.cm-search br {
+  display: none;
+}
+.cm-search > * {
+  margin: 0 !important;
+}
+.cm-search input[name="search"] {
+  order: 1;
+  flex: 1 1 calc(100% - 260px);
+  min-width: 8em;
+}
+.cm-search button[name="next"],
+.cm-search button[name="prev"],
+.cm-search button[name="select"] {
+  order: 1;
+}
+.cm-search label {
+  order: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 10px !important;
+  white-space: nowrap;
+}
+.cm-search label input {
+  margin: 0;
+}
+.cm-search input[name="replace"] {
+  order: 3;
+  flex: 1 1 calc(100% - 230px);
+  min-width: 8em;
+}
+.cm-search button[name="replace"],
+.cm-search button[name="replaceAll"] {
+  order: 3;
+}
+.cm-search button[name="close"] {
+  top: 4px !important;
+  right: 6px !important;
+}
+.cm-search label:has(input[name="re"]) {
+  display: none;
+}
+.cm-search .cm-textfield {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.cm-search .cm-button {
+  background-image: none;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.cm-search .cm-button:hover {
+  background: var(--bg-hover);
+}
+.cm-searchMatch {
+  background: rgb(255 200 0 / 0.3);
+  outline: none;
+}
+.cm-searchMatch.cm-searchMatch-selected {
+  background: rgb(255 150 0 / 0.45);
+}
+
+/* The few lines an empty scene shows in place of the text. */
+.cm-placeholder .empty-hint {
+  display: inline-grid;
+  gap: 0.35em;
+  font-size: 0.85em;
+  font-style: italic;
+  line-height: 1.4;
+}

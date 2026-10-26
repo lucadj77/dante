@@ -1,5 +1,5 @@
 import { MemoryFs } from "./core/fs";
-import { dayKey } from "./core/sessions";
+import { dayKey, type DayLog } from "./core/sessions";
 import { prideAndPrejudice } from "./samples/pride-and-prejudice";
 import { promessiSposi } from "./samples/promessi-sposi";
 
@@ -7,12 +7,14 @@ import { promessiSposi } from "./samples/promessi-sposi";
 export function sampleProject(language = "en"): MemoryFs {
   const now = new Date().toISOString();
   // Anna's writing over the last two weeks, for the statistics.
-  const days: Record<string, { added: number; removed: number; minutes: number }> = {};
+  const days: Record<string, DayLog> = {};
   for (let i = 13; i >= 1; i--) {
     if (i % 4 === 0) continue;
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days[dayKey(d)] = { added: 300 + ((i * 137) % 500), removed: (i * 53) % 120, minutes: 25 + ((i * 17) % 60) };
+    const added = 300 + ((i * 137) % 500);
+    const removed = (i * 53) % 120;
+    days[dayKey(d)] = { added, removed, charactersAdded: added * 6, charactersRemoved: removed * 6, minutes: 25 + ((i * 17) % 60) };
   }
   if (language === "it") return italianSample(days, now);
   return new MemoryFs({
@@ -59,13 +61,13 @@ const HOUSE_SKETCH =
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220" viewBox="0 0 400 220"><rect width="400" height="220" fill="#e4ecf2"/><rect y="170" width="400" height="50" fill="#8fb27a"/><rect x="110" y="80" width="180" height="95" fill="#e9dcc3" stroke="#7a6a52"/><path d="M100 82 L200 35 L300 82 Z" fill="#8a5a44"/><rect x="185" y="130" width="30" height="45" fill="#5b4632"/><rect x="130" y="100" width="25" height="25" fill="#bcd4e6"/><rect x="245" y="100" width="25" height="25" fill="#bcd4e6"/><circle cx="340" cy="45" r="22" fill="#f2c94c"/></svg>';
 
 /** The same, from I promessi sposi, for an interface in Italian. */
-function italianSample(days: Record<string, { added: number; removed: number; minutes: number }>, now: string): MemoryFs {
+function italianSample(days: Record<string, DayLog>, now: string): MemoryFs {
   return new MemoryFs({
     // Anna, su un altro computer, sta scrivendo la scena di Lucia (per i prossimi tre minuti).
     ".dante/presence/anna.json": JSON.stringify({ user: "Anna", path: "Manoscritto/020 Renzo/040 Lucia.md", since: now, updated: now }),
     ".dante/sessions/anna.json": JSON.stringify({ user: "Anna", days }),
     "dante.yaml":
-      "title: I promessi sposi\nauthor: Alessandro Manzoni\nlanguage: it\ngoals:\n  words: 220000\n  deadline: 2027-06-30\n  daily: 500\nproperties:\n  stato:\n    kind: text\n    values: [idea, bozza, rivista, finita]\n  pov:\n    kind: link\n    note_type: character\n  luogo:\n    kind: link\n    note_type: place\n  data: date\n  età: number\n",
+      "title: I promessi sposi\nauthor: Alessandro Manzoni\nlanguage: it\ngoals:\n  unit: characters\n  words: 1300000\n  deadline: 2027-06-30\n  daily: 3000\nproperties:\n  stato:\n    kind: text\n    values: [idea, bozza, rivista, finita]\n  pov:\n    kind: link\n    note_type: character\n  luogo:\n    kind: link\n    note_type: place\n  data: date\n  età: number\n",
     ...promessiSposi,
     "Bibbia/Personaggi/Renzo Tramaglino.md":
       "---\ntype: character\nruolo: protagonista\netà: 20\naliases: [Renzo, Lorenzo]\n---\nFilatore di seta, orfano, con un poderetto. Deve sposare [[Lucia Mondella|Lucia]] e non capisce perché [[Don Abbondio]] rimandi.\n",

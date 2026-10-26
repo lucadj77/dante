@@ -17,6 +17,8 @@ export const NUMBERED = "numbered";
 export const TITLE = "title";
 /** Property of a scene or folder note: what happens in it, in a few lines. */
 export const SYNOPSIS = "synopsis";
+/** Property of a scene or folder note: the words it should reach. */
+export const GOAL = "goal";
 
 /** The `title` property, when it holds one. */
 function ownTitle(properties: Record<string, unknown>): string | null {

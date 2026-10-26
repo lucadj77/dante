@@ -1,13 +1,19 @@
 import type { Project } from "$lib/core/project";
-import { SessionRecorder } from "$lib/core/sessions";
+import { netOf, SessionRecorder } from "$lib/core/sessions";
+import type { PageUnit } from "$lib/core/settings";
 import { app } from "$lib/state.svelte";
 
-/** What this person wrote today, for the progress shown next to the text. */
-export const writing = $state({ today: 0, minutes: 0 });
+/** What this person wrote today, in words and characters, for the progress shown next to the text. */
+export const writing = $state({ today: 0, todayCharacters: 0, minutes: 0 });
+
+/** What this person wrote today in the unit given. */
+export function writtenToday(unit: PageUnit): number {
+  return unit === "characters" ? writing.todayCharacters : writing.today;
+}
 
 let recorder: SessionRecorder | null = null;
 
-/** Logs the words written in the project's scenes under the user's name. */
+/** Logs the words and characters written in the project's scenes under the user's name. */
 export function startSessions(project: Project): () => void {
   const current = (): SessionRecorder => {
     const user = app.settings.userName.trim();
@@ -19,7 +25,8 @@ export function startSessions(project: Project): () => void {
   };
   const refresh = async () => {
     const day = await current().today();
-    writing.today = day.added - day.removed;
+    writing.today = netOf(day, "words");
+    writing.todayCharacters = netOf(day, "characters");
     writing.minutes = day.minutes;
   };
   project.onSceneWritten = (_path, before, after) => {

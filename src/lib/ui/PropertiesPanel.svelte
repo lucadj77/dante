@@ -1,12 +1,15 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode, folderNotePath, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
+  import { findNode, folderNotePath, GOAL, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
+  import { goalOf } from "$lib/core/statistics";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import { isWritingDay } from "$lib/core/sessions";
-  import { writing } from "./sessions.svelte";
+  import { writtenToday } from "./sessions.svelte";
   import type { MessageKey } from "$lib/i18n";
-  import { num, t } from "$lib/state.svelte";
+  import { num, t, tu } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
   import PropertyField from "./PropertyField.svelte";
   import { emptyValue, KIND_ICONS, propertyDef, withDef, type PropertyDef } from "$lib/core/properties";
@@ -54,8 +57,11 @@
   // `kind` and `numbered` live in folder notes and are set with the controls above the list.
   // Title and synopsis have their own fields above the list.
   const entries = $derived(
-    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
+    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && key !== GOAL && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
   );
+  const goal = $derived(goalOf(properties));
+  const unit = $derived(p.project.settings.goals.unit);
+  const today = $derived(writtenToday(unit));
   const synopsis = $derived(typeof properties[SYNOPSIS] === "string" ? (properties[SYNOPSIS] as string) : displayValue(properties[SYNOPSIS]));
 
   async function retitle(title: string) {
@@ -65,7 +71,7 @@
       await p.project.retitle(node.path, title);
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
@@ -86,7 +92,7 @@
       await p.project.setProperties(node.path, changes);
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -99,7 +105,7 @@
       await p.project.saveSettings({ ...p.project.settings, properties: withDef(p.project.settings.properties, key, def) });
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -174,6 +180,26 @@
           ></textarea>
         {/key}
       </label>
+      <label class="title-field goal-field">
+        <span>{tu("panel.goal", unit)}</span>
+        {#key node.path + goal}
+          <input
+            type="number"
+            min="0"
+            step="100"
+            value={goal || ""}
+            placeholder={t("panel.goalNone")}
+            data-tip={tu("panel.goalHint", unit)}
+            onchange={(e) => {
+              const value = Math.max(0, Math.round(Number((e.currentTarget as HTMLInputElement).value) || 0));
+              if (value !== goal) void update({ [GOAL]: value || undefined });
+            }}
+            onkeydown={(e) => {
+              if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+            }}
+          />
+        {/key}
+      </label>
       {#if isContainer && node}
         <label class="title-field">
           <span>{t("panel.kind")}</span>
@@ -234,7 +260,7 @@
         <button type="submit">{t("panel.addProperty")}</button>
       </form>
     {/if}
-    {#if error}<p class="error">{error}</p>{/if}
+    {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
   </section>
 
   {#if node && node.kind === "scene"}
@@ -272,10 +298,12 @@
     </table>
     <p class="today">
       {!isWritingDay(new Date(), p.project.settings.goals.days)
-        ? t(writing.today ? "panel.todayRest" : "panel.rest", { words: format(writing.today) })
+        ? today
+          ? tu("panel.todayRest", unit, { words: format(today) })
+          : t("panel.rest")
         : p.project.settings.goals.daily > 0
-          ? t("panel.todayGoal", { words: format(writing.today), goal: format(p.project.settings.goals.daily) })
-          : t("panel.today", { words: format(writing.today) })}
+          ? tu("panel.todayGoal", unit, { words: format(today), goal: format(p.project.settings.goals.daily) })
+          : tu("panel.today", unit, { words: format(today) })}
     </p>
   </section>
 </div>

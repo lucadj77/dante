@@ -1,10 +1,12 @@
 import type { ProjectFs } from "./fs";
 import { join } from "./path";
 import { slug } from "./presence";
+import type { PageUnit } from "./settings";
 
 /**
  * How much each person writes each day: `.dante/sessions/<user>.json` holds, per day, the
- * words added and removed in the manuscript and the minutes spent writing. Each person
+ * words and characters (spaces included) added and removed in the manuscript and the
+ * minutes spent writing. Logs written before characters were counted have only words. Each person
  * writes only their own file, so the shared folder never has two writers for one file.
  */
 export const SESSIONS_DIR = ".dante/sessions";
@@ -12,9 +14,23 @@ export const SESSIONS_DIR = ".dante/sessions";
 export const SESSION_GAP = 5 * 60 * 1000;
 
 export interface DayLog {
+  /** Words. */
   added: number;
   removed: number;
+  charactersAdded?: number;
+  charactersRemoved?: number;
   minutes: number;
+}
+
+/** How long a text is, in both the units a goal can count. */
+export interface TextSize {
+  words: number;
+  characters: number;
+}
+
+/** What a day's log adds up to in a unit: written, less deleted. */
+export function netOf(day: DayLog, unit: PageUnit): number {
+  return unit === "characters" ? (day.charactersAdded || 0) - (day.charactersRemoved || 0) : (day.added || 0) - (day.removed || 0);
 }
 
 export interface WritingLog {
@@ -54,11 +70,11 @@ export async function readLogs(fs: ProjectFs): Promise<WritingLog[]> {
   return logs;
 }
 
-/** Net words written each day, by everyone or by the logs given. */
-export function wordsByDay(logs: WritingLog[]): Map<string, number> {
+/** Net words (or characters) written each day, by everyone or by the logs given. */
+export function wordsByDay(logs: WritingLog[], unit: PageUnit = "words"): Map<string, number> {
   const out = new Map<string, number>();
   for (const log of logs) {
-    for (const [day, d] of Object.entries(log.days)) out.set(day, (out.get(day) ?? 0) + (d.added || 0) - (d.removed || 0));
+    for (const [day, d] of Object.entries(log.days)) out.set(day, (out.get(day) ?? 0) + netOf(d, unit));
   }
   return out;
 }
@@ -96,7 +112,7 @@ export function streak(byDay: Map<string, number>, goal: number, today = new Dat
 }
 
 /**
- * Keeps one person's log: each change to a scene adds its words to today, and the time
+ * Keeps one person's log: each change to a scene adds its words and characters to today, and the time
  * between changes counts as writing unless there was a long pause. Writes are batched.
  */
 export class SessionRecorder {
@@ -127,14 +143,16 @@ export class SessionRecorder {
     return this.loading;
   }
 
-  /** Counts the change from `before` to `after` words of a scene. */
-  async record(before: number, after: number, now = new Date()): Promise<void> {
-    if (before === after) return;
+  /** Counts the change of a scene from `before` to `after`. */
+  async record(before: TextSize, after: TextSize, now = new Date()): Promise<void> {
+    if (before.words === after.words && before.characters === after.characters) return;
     this.log = await this.load();
     const key = dayKey(now);
     const day = (this.log.days[key] ??= { added: 0, removed: 0, minutes: 0 });
-    if (after > before) day.added += after - before;
-    else day.removed += before - after;
+    if (after.words > before.words) day.added += after.words - before.words;
+    else day.removed += before.words - after.words;
+    if (after.characters > before.characters) day.charactersAdded = (day.charactersAdded || 0) + after.characters - before.characters;
+    else if (after.characters < before.characters) day.charactersRemoved = (day.charactersRemoved || 0) + before.characters - after.characters;
     const elapsed = now.getTime() - this.last;
     if (this.last && elapsed > 0 && elapsed < SESSION_GAP) day.minutes = Math.round((day.minutes + elapsed / 60000) * 10) / 10;
     this.last = now.getTime();

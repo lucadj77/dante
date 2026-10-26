@@ -198,11 +198,17 @@ export interface NovelSettings {
   };
   /** Writing goals, shared by everyone working on the novel; 0 or "" means none. */
   goals: {
-    /** Length of the finished novel, in words. */
+    /**
+     * What the goals count, and what the status bar, the tree and the writing log show:
+     * words, or characters with spaces included. It also gives the unit of the `goal`
+     * property of scenes and chapters. Files written before it existed counted words.
+     */
+    unit: PageUnit;
+    /** Length of the finished novel, in the unit. */
     words: number;
     /** Date to finish by, as YYYY-MM-DD. */
     deadline: string;
-    /** Words to write each day. */
+    /** Words (or characters) to write each day. */
     daily: number;
     /** Days of the week given to writing, 1 (Monday) to 7 (Sunday); the others are rest days. */
     days: number[];
@@ -329,14 +335,60 @@ const PROPERTY_NAMES: Record<string, [string, string, string, string]> = {
   fr: ["âge", "date", "lieu", "propriétaire"],
 };
 
+/** The languages a novel can be written in, with Dante's names for its folders and labels. */
+export const NOVEL_LANGUAGES: { code: string; name: string }[] = [
+  { code: "en", name: "English" },
+  { code: "it", name: "Italiano" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+];
+
+/** The property a scene's stage of work goes in, and its stages: the starting board's columns. */
+const STATUS: Record<string, [string, string[]]> = {
+  en: ["status", ["idea", "draft", "revised", "done"]],
+  it: ["stato", ["idea", "bozza", "rivista", "finita"]],
+  es: ["estado", ["idea", "borrador", "revisada", "terminada"]],
+  fr: ["statut", ["idée", "brouillon", "révisée", "terminée"]],
+};
+
+export function statusProperty(language: string): { name: string; values: string[] } {
+  const [name, values] = STATUS[language.slice(0, 2)] ?? STATUS.en;
+  return { name, values: [...values] };
+}
+
+const STATUS_NAMES = ["status", "stato", "estado", "statut"];
+
+/**
+ * The property that holds the stage of work of a scene in this project: the one of the
+ * novel's language, or one with another of those names that the project already defines.
+ */
+export function projectStatus(settings: Pick<NovelSettings, "language" | "properties">): { name: string; values: string[] } {
+  const status = statusProperty(settings.language);
+  const own = Object.entries(settings.properties).find(([name, def]) => name === status.name || (def.kind === "text" && STATUS_NAMES.includes(name)));
+  if (own) status.name = own[0];
+  if (own && own[1].values.length) status.values = [...own[1].values];
+  return status;
+}
+
 export function defaultPropertyDefs(language: string): Record<string, PropertyDef> {
   const [age, date, place, owner] = PROPERTY_NAMES[language.slice(0, 2)] ?? PROPERTY_NAMES.en;
+  const status = statusProperty(language);
   return {
+    // A new novel starts with what the starting views use: the stage of each scene and its point of view.
+    [status.name]: { kind: "text", values: status.values, note_type: "" },
+    pov: { kind: "link", values: [], note_type: "character" },
     [age]: { kind: "number", values: [], note_type: "" },
     [date]: { kind: "date", values: [], note_type: "" },
     [place]: { kind: "link", values: [], note_type: "place" },
     [owner]: { kind: "link", values: [], note_type: "character" },
   };
+}
+
+const SCENE_TEMPLATE: Record<string, string> = { en: "Scene", it: "Scena", es: "Escena", fr: "Scène" };
+
+/** The name of the template of new scenes, in the Templates folder, in the novel's language. */
+export function sceneTemplateName(language: string): string {
+  return SCENE_TEMPLATE[language.slice(0, 2)] ?? SCENE_TEMPLATE.en;
 }
 
 export function defaultFolders(language: string): NovelSettings["folders"] {
@@ -388,7 +440,8 @@ export function defaultSettings(language = "en"): NovelSettings {
         restartEachPart: false,
       },
     },
-    goals: { words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
+    // Italian writers and publishers measure in characters; the others in words.
+    goals: { unit: language.startsWith("it") ? "characters" : "words", words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
     cover: { template: "", palette: "" },
     pages: { unit: "characters", size: 1800 },
     export: {
@@ -477,6 +530,8 @@ export function parseSettings(text: string): NovelSettings {
   settings.goals.days = Array.isArray(days)
     ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort()
     : [1, 2, 3, 4, 5, 6, 7];
+  const rawGoals = isObject(raw) && isObject(raw.goals) ? raw.goals : {};
+  settings.goals.unit = rawGoals.unit === "characters" ? "characters" : "words";
   if (settings.pages.unit !== "words") settings.pages.unit = "characters";
   if (!(settings.pages.size > 0)) settings.pages.size = settings.pages.unit === "words" ? 250 : 1800;
   // Before the page size could be chosen, a typeset book was always A5.

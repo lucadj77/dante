@@ -1,25 +1,51 @@
-import { translate, type MessageKey } from "./i18n";
+import { LANGUAGES, translate, type MessageKey } from "./i18n";
 import { formatNumber } from "./core/numbers";
 
 export interface AppSettings {
   language: string;
-  theme: "system" | "light" | "dark";
+  /** Light or dark as the system is, or one of the themes. */
+  theme: "system" | "light" | "sepia" | "dark" | "night";
+  /** The colour of buttons, links and selections: one of ACCENTS, or "" for the theme's own. */
+  accent: string;
   fontFamily: string;
   fontSize: number;
   /** Maximum line length in the editor, in characters. */
   lineWidth: number;
+  /** Space between the lines of a paragraph, as a multiple of the font size. */
+  lineHeight: number;
+  /** Height of the empty line between paragraphs, as a share of a line: 1 is a whole line. */
+  paragraphGap: number;
+  /** Indent of the first line of each paragraph, in em; 0 for none. */
+  indent: number;
+  /** Paragraphs justified, as in a book, instead of ragged on the right. */
+  justify: boolean;
+  /** The system's spelling checker in the editor. */
+  spellcheck: boolean;
   userName: string;
   /** The formatting bar under the manuscript toolbar. */
   formatBar: boolean;
   /** Revision mode: changes are written as CriticMarkup signed with the user name. */
   revisions: boolean;
-  /** Length analysis in the statistics: what to measure and at which level. */
-  statsUnit: "words" | "characters";
+  /** Length analysis in the statistics: what to measure ("" for the project's unit) and at which level. */
+  statsUnit: "words" | "characters" | "";
   statsLevel: "scene" | "chapter" | "part";
   /** A light shade on the row the cursor is on. */
   lineHighlight: boolean;
   /** Look for a newer version on the preview release at every start. */
   checkUpdates: boolean;
+  /** Where backups go, a folder of this computer; empty for Documents/Dante backup. */
+  backupFolder: string;
+  /** A backup when a project closes (or Dante quits), if something changed since the last. */
+  backupOnClose: boolean;
+  /** How many backups of each project are kept. */
+  backupKeep: number;
+  /** The bar under the text with the words of the scene and of today. */
+  statusBar: boolean;
+  /** The last writing session chosen: its minutes and the words to reach (0 for none). */
+  sprintMinutes: number;
+  sprintWords: number;
+  /** The same, for projects that count characters. */
+  sprintCharacters: number;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -29,16 +55,29 @@ function defaults(): AppSettings {
   return {
     language: browser === "it" ? "it" : "en",
     theme: "system",
+    accent: "",
     fontFamily: "Georgia, 'Iowan Old Style', 'Palatino Linotype', serif",
     fontSize: 18,
     lineWidth: 68,
+    lineHeight: 1.7,
+    paragraphGap: 1,
+    indent: 0,
+    justify: false,
+    spellcheck: true,
     userName: "",
     formatBar: true,
     revisions: false,
-    statsUnit: "words",
+    statsUnit: "",
     statsLevel: "chapter",
     lineHighlight: false,
     checkUpdates: true,
+    backupFolder: "",
+    backupOnClose: true,
+    backupKeep: 10,
+    statusBar: true,
+    sprintMinutes: 25,
+    sprintWords: 0,
+    sprintCharacters: 0,
   };
 }
 
@@ -81,6 +120,12 @@ export function num(n: number, digits = 0): string {
 
 export function t(key: MessageKey, values?: Record<string, string | number>): string {
   return translate(app.settings.language, key, values);
+}
+
+/** A text that speaks of words, or its version for characters (key + "Chars") when the project counts those. */
+export function tu(key: MessageKey, unit: "words" | "characters", values?: Record<string, string | number>): string {
+  const chars = `${key}Chars`;
+  return t(unit === "characters" && chars in LANGUAGES.en.messages ? (chars as MessageKey) : key, values);
 }
 
 const EXPORT_KEY = "dante.last-export-settings";

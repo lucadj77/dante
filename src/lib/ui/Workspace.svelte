@@ -14,9 +14,13 @@
   import FilesView from "./FilesView.svelte";
   import ViewsView from "./ViewsView.svelte";
   import StatsView from "./StatsView.svelte";
-  import { startSessions } from "./sessions.svelte";
+  import { flushSessions, startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
+  import ReplacePanel from "./ReplacePanel.svelte";
+  import TrashDialog from "./TrashDialog.svelte";
+  import { backupOnClose } from "$lib/backups";
+  import { help, openHelp } from "./help.svelte";
   import Icon, { type IconName } from "./Icon.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
@@ -47,12 +51,12 @@
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
-  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "stats" | "export" | "settings" | "files";
+  type Section = "manuscript" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
   const sections: { id: Section & IconName }[] = [
     { id: "manuscript" },
     { id: "codex" },
-    { id: "research" },
-    { id: "laboratory" },
+    // Research and Laboratory, side by side in one tree.
+    { id: "notes" },
     { id: "views" },
     { id: "stats" },
     { id: "export" },
@@ -101,8 +105,7 @@
     const f = project.settings.folders;
     if (isWithin(path, f.manuscript)) return { section: "manuscript" };
     if (isWithin(path, f.codex)) return { section: "codex" };
-    if (isWithin(path, f.research)) return { section: "research" };
-    if (isWithin(path, f.laboratory)) return { section: "laboratory" };
+    if (isWithin(path, f.research) || isWithin(path, f.laboratory)) return { section: "notes" };
     if (isView(path, project.settings)) return { section: "views" };
     const note = index?.notes.get(path);
     if (note && noteType(path, note.properties, project.settings) !== null && !isWithin(path, f.templates)) return { section: "codex" };
@@ -256,13 +259,31 @@
     }),
   });
 
+  /** Closes the project: what was typed is written, and a backup is made if the settings ask. */
+  let closing = false;
+  async function close() {
+    if (closing) return;
+    closing = true;
+    try {
+      await flushAll(project);
+      await flushSessions();
+    } catch {
+      // The editors keep trying to write as they close.
+    }
+    await backupOnClose(project);
+    onClose();
+  }
+
   /** The search opened from the section bar, over the section. */
   let searching = $state(false);
   /** The search was opened to choose what a new pane shows. */
   let searchingBeside = $state(false);
+  /** The drawer shows the search, or find and replace across the project. */
+  let replacing = $state(false);
+  let showTrash = $state(false);
 
   /** Sections that can have panes beside them; the others use the whole width. */
-  const withPanes = $derived(["manuscript", "codex", "research", "laboratory", "files", "views"].includes(section));
+  const withPanes = $derived(["manuscript", "codex", "notes", "files", "views"].includes(section));
   const showPanes = $derived(withPanes && panes.list.length > 0);
 
   /** The item the section shows, for swapping it with a pane. */
@@ -321,12 +342,21 @@
       e.preventDefault();
       return;
     }
+    // Alt+Cmd/Ctrl+F opens find and replace across the project.
+    if (e.altKey && !e.shiftKey && e.code === "KeyF") {
+      e.preventDefault();
+      searchingBeside = false;
+      searching = !(searching && replacing);
+      replacing = true;
+      return;
+    }
     if (e.altKey) return;
     // Cmd/Ctrl+Shift+F opens the search, as in Obsidian.
     if (e.shiftKey && e.key.toLowerCase() === "f") {
       e.preventDefault();
       searchingBeside = false;
-      searching = !searching;
+      searching = !(searching && !replacing);
+      replacing = false;
       return;
     }
     const step = e.key === "+" || e.key === "=" ? 1 : e.key === "-" || e.key === "_" ? -1 : e.key === "0" ? 0 : null;
@@ -343,6 +373,7 @@
         if (pane) swap(pane);
       } else {
         searchingBeside = true;
+        replacing = false;
         searching = true;
       }
       return true;
@@ -388,6 +419,10 @@
   let diskRev = $state(0);
   /** Bumped after the project reloads, so views read the new tree. */
   let rev = $state(0);
+  const novelTitle = $derived.by(() => {
+    void rev;
+    return project.settings.title;
+  });
 
   async function reload() {
     await project.reload();
@@ -494,6 +529,17 @@
   ondrop={() => (dragActive = dropOver = false)}
 />
 
+{#if showTrash}
+  <TrashDialog
+    {project}
+    onClose={() => (showTrash = false)}
+    onRestored={async () => {
+      await reload();
+      diskRev++;
+    }}
+  />
+{/if}
+
 {#if showConflicts && conflicts.length}
   <ConflictsDialog
     {project}
@@ -529,17 +575,29 @@
         {@render item(s.id, s.id, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); }, t(`tip.section.${s.id}` as MessageKey))}
       {/each}
       <div class="spacer"></div>
+      {@render item("help", "help", t("help.title"), help.open, () => openHelp(), t("tip.help"))}
+      {@render item("trash", "trash", t("trash.title"), showTrash, () => (showTrash = true), t("tip.trash"))}
       {@render item("settings", "settings", t("section.settings"), section === "settings", () => go("settings"), t("tip.section.settings"))}
-      {@render item("close", "close", t("app.close"), undefined, onClose, t("tip.close"))}
+      {@render item("close", "close", t("app.close"), undefined, close, t("tip.close"))}
       {@render item("names", layout.wideNav ? "hideNames" : "showNames", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
     </nav>
   {/if}
   {#if searching && !fullscreen}
     <div class="search-backdrop" role="presentation" onmousedown={() => (searching = false)}></div>
     <div class="search-drawer" class:wide={layout.wideNav} role="dialog" aria-label={t("side.search")}>
-      {#key searchingBeside}
-        <QuickSearch {project} version={rev} {diskRev} beside={searchingBeside} onOpened={() => (searching = false)} />
-      {/key}
+      {#if !searchingBeside}
+        <div class="drawer-tabs" role="tablist">
+          <button role="tab" aria-selected={!replacing} onclick={() => (replacing = false)}>{t("search.tab")}</button>
+          <button role="tab" aria-selected={replacing} title={t("tip.replace")} onclick={() => (replacing = true)}>{t("replace.tab")}</button>
+        </div>
+      {/if}
+      {#if replacing && !searchingBeside}
+        <ReplacePanel {project} version={rev} onOpened={() => (searching = false)} />
+      {:else}
+        {#key searchingBeside}
+          <QuickSearch {project} version={rev} {diskRev} beside={searchingBeside} onOpened={() => (searching = false)} />
+        {/key}
+      {/if}
     </div>
   {/if}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -564,11 +622,11 @@
             >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
           >
         {/if}
-        {#if project.settings.title}<span class="project-name">{project.settings.title}</span>{/if}
+        {#if novelTitle}<span class="project-name">{novelTitle}</span>{/if}
         {#if panels}
           <button
             class="panel-toggle"
-            class:alone={!project.settings.title}
+            class:alone={!novelTitle}
             aria-pressed={!layout.right}
             aria-label={t(layout.right ? "nav.hideRight" : "nav.showRight")}
             data-tip={t(layout.right ? "tip.hideRight" : "tip.showRight")}
@@ -607,20 +665,19 @@
       />
     {:else if section === "codex"}
       <CodexView {project} {rev} {diskRev} open={opened.codex ?? null} onShow={(path) => (opened.codex = path)} onReload={reload} beside={showPanes ? besidePanes : null} />
-    {:else if section === "research" || section === "laboratory"}
-      {#key section}
-        <FilesView
-          {project}
-          {rev}
-          {diskRev}
-          root={project.settings.folders[section]}
-          title={t(`section.${section}`)}
-          open={opened[section] ?? null}
-          onShow={(path) => (opened[section] = path)}
-          onReload={reload}
-          beside={showPanes ? besidePanes : null}
-        />
-      {/key}
+    {:else if section === "notes"}
+      <FilesView
+        {project}
+        {rev}
+        {diskRev}
+        root={project.settings.folders.research}
+        roots={[project.settings.folders.research, project.settings.folders.laboratory]}
+        title={t("section.notes")}
+        open={opened.notes ?? null}
+        onShow={(path) => (opened.notes = path)}
+        onReload={reload}
+        beside={showPanes ? besidePanes : null}
+      />
     {:else if section === "files"}
       {#key filesRoot}
         <FilesView
@@ -720,6 +777,24 @@
   }
   .search-drawer.wide {
     left: 180px;
+  }
+  .drawer-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-tabs button {
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    padding: 4px 10px;
+    color: var(--text-muted);
+  }
+  .drawer-tabs button[aria-selected="true"] {
+    color: var(--text);
+    border-bottom-color: var(--accent);
   }
   .section {
     display: flex;

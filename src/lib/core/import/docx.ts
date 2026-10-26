@@ -12,7 +12,8 @@ import { unzip } from "./unzip";
 import { child, descendants, isElement, parseXml, textOf, type XmlElement } from "./xml";
 
 export type DocBlock =
-  | { kind: "heading"; level: number; text: string }
+  /** `synopsis` comes from programs that keep one with each document, as Scrivener does. */
+  | { kind: "heading"; level: number; text: string; synopsis?: string }
   | { kind: "paragraph"; text: string };
 
 export interface DocxContent {
@@ -21,7 +22,7 @@ export interface DocxContent {
   blocks: DocBlock[];
 }
 
-interface Format {
+export interface Format {
   bold?: boolean;
   italic?: boolean;
   strike?: boolean;
@@ -150,7 +151,7 @@ function headingLevel(styles: Map<string, Style>, pPr: XmlElement | undefined): 
 
 const ESCAPE = /[\\*_`]|~~|==|\[\[/g;
 
-function escapeText(text: string): string {
+export function escapeText(text: string): string {
   return text.replace(ESCAPE, (m) => m.split("").map((c) => "\\" + c).join(""));
 }
 
@@ -165,7 +166,7 @@ const MARKERS: [keyof Format, string][] = [
  * Text pieces with their formatting as Markdown. Markers never sit next to a space on
  * their inner side, where Markdown would not read them.
  */
-function renderFormatted(pieces: { text: string; format: Format }[]): string {
+export function renderFormatted(pieces: { text: string; format: Format }[]): string {
   let out = "";
   let open: string[] = [];
   let pending = "";
@@ -345,7 +346,7 @@ function plainOf(list: Token[]): string {
 }
 
 /** Escapes what Markdown would read as a heading, quote or list at the start of a paragraph. */
-function escapeStart(text: string): string {
+export function escapeStart(text: string): string {
   if (/^(#{1,6}(\s|$)|>|[-+*](\s|$))/.test(text)) return "\\" + text;
   return text.replace(/^(\d+)([.)])(\s|$)/, "$1\\$2$3");
 }

@@ -1,8 +1,10 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { open } from "@tauri-apps/plugin-dialog";
   import { sanitizeTitle } from "$lib/core/naming";
   import { Project } from "$lib/core/project";
-  import { parseSettings, SETTINGS_FILE } from "$lib/core/settings";
+  import { NOVEL_LANGUAGES, parseSettings, SETTINGS_FILE } from "$lib/core/settings";
   import { coverSvg, resolveCover, svgUrl, type CoverSettings } from "$lib/core/cover";
   import CoverPicker from "./CoverPicker.svelte";
   import AuthorsInput from "./AuthorsInput.svelte";
@@ -18,6 +20,8 @@
   import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
   import WordImport from "./WordImport.svelte";
   import { pickWordFile } from "./wordFile";
+  import { pickScrivener } from "./scrivenerFile";
+  import { openHelp } from "./help.svelte";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
   let error = $state("");
@@ -74,13 +78,11 @@
   /** The book as the preview left it. */
   let imported = $state<ImportedBook | null>(null);
   let importedFrom = $state("");
+  let fromScrivener = $state(false);
   const importedCounts = $derived(imported ? counts(imported) : null);
-  const novelLanguages = [
-    { code: "en", name: "English" },
-    { code: "it", name: "Italiano" },
-    { code: "es", name: "Español" },
-    { code: "fr", name: "Français" },
-  ];
+  const novelLanguages = NOVEL_LANGUAGES;
+  /** The starting views of a new novel: a board and a table of the scenes. */
+  const starters = () => ({ board: t("views.starter.board"), scenes: t("views.starter.scenes") });
 
   async function openPath(path: string) {
     onOpen(await openProjectAt(path));
@@ -103,7 +105,7 @@
       const folder = await open({ directory: true, multiple: false });
       if (typeof folder === "string") await openPath(folder);
     } catch (e) {
-      error = e instanceof OpenElsewhere ? e.message : t("error.generic", { message: String(e) });
+      error = e instanceof OpenElsewhere ? e.message : failure(e);
     }
   }
 
@@ -133,7 +135,7 @@
       }
       await openPath(path);
     } catch (e) {
-      error = e instanceof OpenElsewhere ? e.message : t("error.generic", { message: String(e) });
+      error = e instanceof OpenElsewhere ? e.message : failure(e);
     }
   }
 
@@ -159,19 +161,35 @@
   async function importWord(bytes: Uint8Array, fileName: string) {
     error = "";
     try {
-      const read = await readDocx(bytes, { note: t("import.note") });
-      roles = defaultRoles(read.blocks);
-      blanks = defaultBlankLines(read.blocks);
-      marks = {};
-      content = read;
-      importedFrom = fileName;
-      imported = null;
-      title = "";
-      if (read.author) authors = authorsOf(read.author);
-      previewing = true;
+      preview(await readDocx(bytes, { note: t("import.note") }), fileName);
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
     }
+  }
+
+  /** Reads a Scrivener project and opens its preview, as a Word file's. */
+  async function chooseScrivener() {
+    error = "";
+    try {
+      const picked = await pickScrivener(t("untitled"));
+      if (picked) preview(picked.content, picked.name, true);
+    } catch (e) {
+      error = t("import.failed", { name: "Scrivener", message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  /** Shows the preview of a book read from another program, before the new project's form. */
+  function preview(read: DocxContent, fileName: string, scrivener = false) {
+    fromScrivener = scrivener;
+    roles = defaultRoles(read.blocks);
+    blanks = defaultBlankLines(read.blocks);
+    marks = {};
+    content = read;
+    importedFrom = fileName;
+    imported = null;
+    title = "";
+    if (read.author) authors = authorsOf(read.author);
+    previewing = true;
   }
 
   async function chooseWord() {
@@ -180,7 +198,7 @@
       const file = await pickWordFile();
       if (file) await importWord(file.bytes, file.name);
     } catch (e) {
-      error = t("error.generic", { message: String(e) });
+      error = failure(e);
     }
   }
 
@@ -188,7 +206,7 @@
   function previewed(book: ImportedBook) {
     imported = book;
     previewing = false;
-    if (!title.trim()) title = book.title || importedFrom.replace(/\.docx$/i, "");
+    if (!title.trim()) title = book.title || importedFrom.replace(/\.(docx|scriv|zip)$/i, "");
     creating = true;
   }
 
@@ -212,7 +230,7 @@
       }
       if (!desktop) {
         // In a browser an imported book can be tried, kept only while the page is open.
-        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences());
+        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences(), starters());
         if (imported) await project.importBook(imported);
         onOpen(project);
         return;
@@ -220,7 +238,7 @@
       const path = `${parent.replace(/[\\/]+$/, "")}/${folderName}`;
       await made(new TauriFs(path), path, path);
     } catch (e) {
-      error = t("error.generic", { message: String(e) });
+      error = failure(e);
     } finally {
       busy = false;
     }
@@ -237,6 +255,7 @@
       { title: title.trim(), authors, language, cover: resolveCover(cover, title) },
       imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
       exportPreferences(),
+      starters(),
     );
     if (imported) await project.importBook(imported);
     await addLauncher(project);
@@ -262,6 +281,7 @@
     bind:blanks
     bind:marks
     action={t("import.continue")}
+    note={fromScrivener ? t("import.howScrivener") : undefined}
     onDone={previewed}
     onCancel={cancel}
   />
@@ -321,8 +341,10 @@
         <button onclick={openFolder}>{t("welcome.open")}</button>
       {/if}
       <button onclick={chooseWord}>{t("import.word")}</button>
+      <button title={web ? t("tip.importScrivenerWeb") : t("tip.importScrivener")} onclick={chooseScrivener}>{t("import.scrivener")}</button>
       <button onclick={openSample}>{t("welcome.sample")}</button>
     </div>
+    <p class="help-link"><button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button></p>
     {#if !folders}
       <p class="note">{t("welcome.browser")}</p>
     {/if}
@@ -347,7 +369,7 @@
     <p class="note">{notice}</p>
   {/if}
   {#if error}
-    <p class="error">{error}</p>
+    <p class="error"><ErrorText text={error} /></p>
   {/if}
 </main>
 
@@ -481,6 +503,10 @@
     opacity: 1;
   }
   .note {
+    font-size: 13px;
+  }
+  .help-link {
+    margin: 12px 0 0;
     font-size: 13px;
   }
   .error {

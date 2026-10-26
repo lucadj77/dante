@@ -301,7 +301,7 @@ end: until              # timeline only, optional
 
 `dante.yaml` also holds headings (`structure.part`, `structure.chapter`: `numbering` arabic,
 roman, words, ordinal or none; `label`; `showLabel`; `showTitle`; `separator`;
-`restartEachPart`), goals (`goals: {words, deadline, daily, days}`), pages
+`restartEachPart`), goals (`goals: {unit, words, deadline, daily, days}`; `unit` is `words` or `characters` with spaces, `words` when missing, and `words`/`daily` and the scenes' `goal` property are in that unit), pages
 (`pages: {unit, size}`), the cover, and export choices (`export.docx`, `export.typography`
 with `quotes` (`keep` in new projects: dialogue as typed), `dialogueDash`, `apostrophes`, `ellipsis`, `spaces`; `export.paratext` with
 dedication, epigraph and so on; `export.revisions: accept | reject`). Edit only the keys you

@@ -2,10 +2,12 @@ import { completionStatus } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
-import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import { Decoration, EditorView, keymap, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
+import { openSearchPanel, search, searchKeymap, SearchQuery, setSearchQuery } from "@codemirror/search";
 import { formatting, type FormattingLabels } from "./formatting";
 import { cursorLine, focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
+import { textLayout } from "./layout";
 import { tableLabels, type TableLabels } from "./tables";
 import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
@@ -17,7 +19,8 @@ export interface SceneEditorOptions {
   text: string;
   /** Hides Markdown markers away from the cursor. Off for the raw Markdown view. */
   preview: boolean;
-  placeholder?: string;
+  /** Shown while the text is empty: a word, or an element with a few lines of help. */
+  placeholder?: string | HTMLElement;
   /** Conventions applied while typing; none when absent. */
   typography?: TypographySettings;
   onChange: (text: string) => void;
@@ -28,6 +31,8 @@ export interface SceneEditorOptions {
   /** Arrow keys past the first or last line move to the neighbouring scene. */
   onLeave?: (direction: "up" | "down") => boolean;
   onFocus?: () => void;
+  /** The selected text, or "" when nothing is selected, whenever the selection changes. */
+  onSelection?: (text: string) => void;
   /** Names of the formatting buttons shown over a selection. */
   formatLabels: FormattingLabels;
   /** Names of the buttons over a table being edited; English when absent. */
@@ -36,8 +41,21 @@ export interface SceneEditorOptions {
   links?: LinkHandler;
   /** Starting comments and opening their threads. */
   critic?: CriticHandler;
+  /** The words of the find panel (Cmd+F) in the interface language, by CodeMirror's English phrase. */
+  phrases?: Record<string, string>;
+  /** The language of the text, for the spelling checker and hyphenation; the page's when absent. */
+  language?: string;
   /** More behaviour, such as sharing the text with other editors of the same file. */
   extensions?: Extension[];
+}
+
+/** A match to show: the find panel opens on `query` and the match at `from`–`to` is selected. */
+export interface FindRequest {
+  query: string;
+  caseSensitive: boolean;
+  wholeWord: boolean;
+  from?: number;
+  to?: number;
 }
 
 export interface SceneEditor {
@@ -48,14 +66,19 @@ export interface SceneEditor {
   setRevisions(author: string | null): void;
   /** Read-only while someone else is editing the same file. */
   setReadOnly(readOnly: boolean): void;
+  /** The system's spelling checker underlines unknown words, or not. */
+  setSpelling(on: boolean): void;
   focus(at: "start" | "end"): void;
   /** Splits at the cursor into a new scene or a new chapter, as the shortcuts do. */
   split(kind: "scene" | "chapter"): void;
+  /** Opens the find panel on a query and selects a match, as when coming from the project search. */
+  find(request: FindRequest): void;
   destroy(): void;
 }
 
 export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   const modes = new Compartment();
+  const spelling = new Compartment();
   const revisions = new Compartment();
   const locked = new Compartment();
   const split = (handler?: (before: string, after: string) => void) => (view: EditorView) => {
@@ -91,12 +114,19 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
         { key: "ArrowDown", run: leave("down") },
       ]),
     ),
-    keymap.of([...defaultKeymap, ...historyKeymap]),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+    search({ top: true }),
+    options.phrases ? EditorState.phrases.of(options.phrases) : [],
     EditorView.updateListener.of((update) => {
       if (update.docChanged) options.onChange(update.state.doc.toString());
       if (update.focusChanged && update.view.hasFocus) options.onFocus?.();
+      if (options.onSelection && (update.selectionSet || update.docChanged)) {
+        const { state } = update;
+        options.onSelection(state.selection.ranges.map((r) => state.sliceDoc(r.from, r.to)).join("\n"));
+      }
     }),
-    EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
+    spelling.of(spellingAttributes(true)),
+    options.language ? EditorView.contentAttributes.of({ lang: options.language }) : [],
     modes.of([]),
     revisions.of([]),
     locked.of([]),
@@ -106,9 +136,9 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     criticCommands(options.critic),
     ...(options.extensions ?? []),
   ];
-  if (options.preview) extensions.push(livePreview, criticPreview);
+  if (options.preview) extensions.push(livePreview, criticPreview, textLayout);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
-  if (options.placeholder) extensions.push(placeholderExt(options.placeholder));
+  if (options.placeholder) extensions.push(emptyBodyHint(options.placeholder));
 
   const view = new EditorView({
     parent: options.parent,
@@ -130,6 +160,9 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     setReadOnly(readOnly) {
       view.dispatch({ effects: locked.reconfigure(readOnly ? EditorState.readOnly.of(true) : []) });
     },
+    setSpelling(on) {
+      view.dispatch({ effects: spelling.reconfigure(spellingAttributes(on)) });
+    },
     focus(at) {
       view.focus();
       const pos = at === "start" ? 0 : view.state.doc.length;
@@ -138,8 +171,80 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     split(kind) {
       split(kind === "scene" ? options.onSplitScene : options.onSplitChapter)(view);
     },
+    find(request) {
+      const query = new SearchQuery({ search: request.query, caseSensitive: request.caseSensitive, wholeWord: request.wholeWord, literal: true });
+      openSearchPanel(view);
+      view.dispatch({ effects: setSearchQuery.of(query) });
+      const { from, to } = request;
+      const length = view.state.doc.length;
+      // The match comes from the file: the text may have changed since, so it must still be there.
+      const at =
+        from !== undefined && to !== undefined && to <= length && view.state.doc.sliceString(from, to).toLowerCase() === request.query.toLowerCase()
+          ? { from, to }
+          : null;
+      const range = at ?? query.getCursor(view.state).next().value;
+      if (range && "from" in range) {
+        view.dispatch({ selection: { anchor: range.from, head: range.to }, effects: EditorView.scrollIntoView(range.from, { y: "center" }) });
+        // The manuscript may still be scrolling to the scene: the match is brought back into view after it.
+        setTimeout(() => view.dispatch({ effects: EditorView.scrollIntoView(view.state.selection.main.from, { y: "center" }) }), 600);
+      }
+      view.focus();
+    },
     destroy() {
       view.destroy();
     },
   };
+}
+
+/** The engine's spelling checker and, on iPad and phones, its corrections as you type. */
+function spellingAttributes(on: boolean) {
+  return EditorView.contentAttributes.of(on ? { spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" } : { spellcheck: "false", autocorrect: "off", autocapitalize: "sentences" });
+}
+
+/** Properties alone, with no text after them, as a scene made from a template starts. */
+const ONLY_PROPERTIES = /^---\r?\n[\s\S]*?\r?\n---[ \t]*\s*$/;
+
+class HintWidget extends WidgetType {
+  constructor(private content: string | HTMLElement) {
+    super();
+  }
+  eq(other: HintWidget) {
+    return other.content === this.content;
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = "cm-placeholder";
+    span.setAttribute("aria-hidden", "true");
+    span.append(typeof this.content === "string" ? this.content : this.content.cloneNode(true));
+    return span;
+  }
+  ignoreEvent() {
+    return false;
+  }
+}
+
+/**
+ * What an empty scene says, shown while it has no text: even when it has properties, as a
+ * scene made from the template of new scenes does.
+ */
+function emptyBodyHint(content: string | HTMLElement): Extension {
+  const widget = Decoration.widget({ widget: new HintWidget(content), side: 1 });
+  const build = (view: EditorView): DecorationSet => {
+    const doc = view.state.doc;
+    const text = doc.length < 2000 ? doc.toString() : "x";
+    const empty = !text.trim() || ONLY_PROPERTIES.test(text);
+    return empty ? Decoration.set([widget.range(doc.length)]) : Decoration.none;
+  };
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = build(view);
+      }
+      update(update: ViewUpdate) {
+        if (update.docChanged) this.decorations = build(update.view);
+      }
+    },
+    { decorations: (v) => v.decorations },
+  );
 }

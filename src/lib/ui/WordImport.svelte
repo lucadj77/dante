@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
   import type { Snippet } from "svelte";
   import type { DocxContent } from "$lib/core/import/docx";
   import {
@@ -34,8 +35,10 @@
     onCancel: () => void;
     /** Choices shown above the buttons, such as where the book goes. */
     footer?: Snippet<[ImportedBook]>;
+    /** What the import keeps, when the book comes from another program than Word. */
+    note?: string;
   }
-  let { content, fileName, roles = $bindable(), blanks = $bindable(), marks = $bindable(), action, busy = false, error = "", onDone, onCancel, footer }: Props =
+  let { content, fileName, roles = $bindable(), blanks = $bindable(), marks = $bindable(), action, busy = false, error = "", onDone, onCancel, footer, note }: Props =
     $props();
 
   const ROLES: HeadingRole[] = ["part", "chapter", "scene", "text"];
@@ -204,9 +207,9 @@
     </div>
 
     <footer>
-      <p class="note small">{t("import.how")}</p>
+      <p class="note small">{note ?? t("import.how")}</p>
       {#if footer}{@render footer(book)}{/if}
-      {#if error}<p class="error" role="alert">{error}</p>{/if}
+      {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
       <div class="actions">
         <button class="primary" disabled={busy} onclick={() => onDone(book)}>{action}</button>
         <button disabled={busy} onclick={onCancel}>{t("welcome.cancel")}</button>
