@@ -287,16 +287,35 @@ export function goalProgress(words: number, goal: number, deadline: string, toda
   };
 }
 
-/** What the manuscript tree shows beside an item: its length, its goal and the stage of work. */
+/** What the manuscript tree shows beside an item: its length, its goal and the coloured dot of a scene. */
 export interface TreeMark {
   /** In the project's unit, words or characters. */
   words: number;
   /** Words (or characters) to reach; 0 without a goal. */
   goal: number;
-  /** A scene's stage of work, as written; "" when none. */
+  /** The value of the property the dot shows (the stage of work, unless chosen otherwise), as read; "" when none. */
   status: string;
-  /** Where the stage stands among the project's stages, 0 (first) to 3 (last); null when it is not one of them. */
+  /** Where the stage stands among the project's stages, 0 (first) to 3 (last); null when it is not one of them, or the dot shows another property. */
   tone: number | null;
+  /** The colour of a value of another property, 0 to 7, the same for the same value; null for the stage of work. */
+  hue?: number | null;
+  /** The property the dot shows. */
+  property?: string;
+}
+
+/** How many colours the dots have for a property other than the stage of work. */
+export const DOT_HUES = 8;
+
+/** A property value as the tree's tooltip reads it: "[[Renzo|R.]]" is "R.", a list is "a, b". */
+export function dotValue(value: unknown): string {
+  const one = (v: unknown): string => {
+    if (v === null || v === undefined || typeof v === "object") return "";
+    const text = String(v).trim();
+    const link = /^\[\[([^\]|]*)(?:\|([^\]]*))?\]\]$/.exec(text);
+    if (!link) return text;
+    return (link[2] ?? link[1].split("#")[0].split("/").pop() ?? "").trim();
+  };
+  return Array.isArray(value) ? value.map(one).filter(Boolean).join(", ") : one(value);
 }
 
 /** The words (or characters, in the project's unit) a scene or folder note should reach, from its `goal` property. */
@@ -318,14 +337,32 @@ export function statusTone(value: string, values: string[]): number | null {
  */
 export function treeMarks(manuscript: ManuscriptNode, index: NoteIndex, settings: NovelSettings, words: (path: string, body: string) => number): Map<string, TreeMark> {
   const status = projectStatus(settings);
+  // The dot shows the stage of work, or the property chosen in the settings (as the point of view).
+  const chosen = settings.tree?.dot?.trim() ?? "";
+  const property = chosen || status.name;
+  const isStatus = property.toLowerCase() === status.name.toLowerCase();
+  // Another property's values take colours in the order of its allowed values, then in reading order.
+  const hues = new Map<string, number>();
+  for (const v of settings.properties[property]?.values ?? []) if (!hues.has(v.toLowerCase())) hues.set(v.toLowerCase(), hues.size);
   const out = new Map<string, TreeMark>();
   const visit = (node: ManuscriptNode): number => {
     if (node.kind === "scene") {
       const note = index.notes.get(node.path);
-      const value = note?.properties[status.name];
-      const stage = typeof value === "string" ? value.trim() : "";
+      const properties = note?.properties ?? {};
+      const key = Object.keys(properties).find((k) => k === property) ?? Object.keys(properties).find((k) => k.toLowerCase() === property.toLowerCase());
+      const value = key ? dotValue(properties[key]) : "";
       const n = words(node.path, note?.body ?? "");
-      out.set(node.path, { words: n, goal: goalOf(note?.properties ?? {}), status: stage, tone: stage ? statusTone(stage, status.values) : null });
+      const mark: TreeMark = { words: n, goal: goalOf(properties), status: value, tone: isStatus && value ? statusTone(value, status.values) : null };
+      if (!isStatus) {
+        let hue: number | null = null;
+        if (value) {
+          if (!hues.has(value.toLowerCase())) hues.set(value.toLowerCase(), hues.size);
+          hue = hues.get(value.toLowerCase())! % DOT_HUES;
+        }
+        mark.hue = hue;
+        mark.property = property;
+      }
+      out.set(node.path, mark);
       return n;
     }
     const n = node.children.reduce((sum, child) => sum + visit(child), 0);

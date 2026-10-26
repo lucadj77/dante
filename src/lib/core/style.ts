@@ -12,12 +12,27 @@ export interface StyleScene {
   text: string;
 }
 
+/**
+ * Where a passage is in the scene, for the editor to select it: the `nth` time `word` appears
+ * as a whole word (any case), through the `throughNth` use of `through` after it. Counted in
+ * the text as read, so a word only in a comment can move the count.
+ */
+export interface Place {
+  word: string;
+  nth: number;
+  through: string;
+  throughNth: number;
+  /** A whole sentence: its stop and closing quotes are selected too. */
+  sentence?: boolean;
+}
+
 export interface LongSentence {
   path: string;
   title: string;
   words: number;
   /** The start of the sentence. */
   excerpt: string;
+  place: Place;
 }
 
 export interface Repetition {
@@ -28,6 +43,7 @@ export interface Repetition {
   distance: number;
   /** The passage from the first use to the second. */
   excerpt: string;
+  place: Place;
 }
 
 export interface StyleReport {
@@ -59,9 +75,42 @@ export interface StyleOptions {
 const WORD = /[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
 const count = (text: string) => text.match(WORD)?.length ?? 0;
 
-/** Sentences of a paragraph: up to a full stop, question or exclamation mark, or ellipsis. */
-function sentences(paragraph: string): string[] {
-  return (paragraph.match(/[^.!?…]+(?:[.!?…]+["'»”’)\]]*|$)/g) ?? []).map((s) => s.trim()).filter((s) => count(s) > 0);
+/** Sentences of a paragraph, with where each starts: up to a full stop, question or exclamation mark, or ellipsis. */
+function sentences(paragraph: string): { text: string; at: number }[] {
+  const out: { text: string; at: number }[] = [];
+  for (const m of paragraph.matchAll(/[^.!?…]+(?:[.!?…]+["'»”’)\]]*|$)/g)) {
+    const text = m[0].trim();
+    if (count(text) > 0) out.push({ text, at: m.index! + m[0].length - m[0].trimStart().length });
+  }
+  return out;
+}
+
+// Letters, digits and "_" make a word for the editor's search, so "l’amico" holds the word "amico".
+const WORD_CHAR = /[\p{L}\p{N}_]/u;
+
+/** Where `word` stands as a whole word in `text`, in any case. */
+export function wordPositions(text: string, word: string): number[] {
+  const out: number[] = [];
+  const hay = text.toLowerCase();
+  const needle = word.toLowerCase();
+  if (!needle || hay.length !== text.length) return out;
+  for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + 1)) {
+    if (WORD_CHAR.test(text[i - 1] ?? "") || WORD_CHAR.test(text[i + needle.length] ?? "")) continue;
+    out.push(i);
+  }
+  return out;
+}
+
+/** The place of the passage from `start` (where `first` begins) to `end` (where `last` ends). */
+function placeOf(text: string, first: string, start: number, last: string, end: number): Place {
+  const firsts = wordPositions(text, first);
+  const lasts = wordPositions(text, last);
+  return {
+    word: first,
+    nth: Math.max(0, firsts.filter((p) => p < start).length),
+    through: last,
+    throughNth: Math.max(0, lasts.filter((p) => p >= start + first.length && p < end - last.length).length),
+  };
 }
 
 // Adverbs by their ending, with the common words that end the same way and are not adverbs.
@@ -110,13 +159,22 @@ export function styleReport(scenes: StyleScene[], language: string, options: Sty
   const repetitions: Repetition[] = [];
 
   for (const scene of scenes) {
-    const paragraphs = scene.text.split("\n").filter((l) => l.trim());
-    for (const paragraph of paragraphs) {
+    let offset = 0;
+    for (const paragraph of scene.text.split("\n")) {
+      const at = offset;
+      offset += paragraph.length + 1;
+      if (!paragraph.trim()) continue;
       dialogue += spoken(paragraph);
-      for (const sentence of sentences(paragraph)) {
+      for (const { text: sentence, at: from } of sentences(paragraph)) {
         const n = count(sentence);
         sentenceCount++;
-        if (n > limit) long.push({ path: scene.path, title: scene.title, words: n, excerpt: sentence.length > 140 ? sentence.slice(0, 140) + "…" : sentence });
+        if (n <= limit) continue;
+        const words = [...sentence.matchAll(WORD)];
+        const first = words[0];
+        const last = words[words.length - 1];
+        const start = at + from + first.index!;
+        const place = { ...placeOf(scene.text, first[0], start, last[0], at + from + last.index! + last[0].length), sentence: true };
+        long.push({ path: scene.path, title: scene.title, words: n, excerpt: sentence.length > 140 ? sentence.slice(0, 140) + "…" : sentence, place });
       }
     }
     // Repetitions run across the paragraphs of a scene, as the reader meets them.
@@ -134,7 +192,10 @@ export function styleReport(scenes: StyleScene[], language: string, options: Sty
       if (before === undefined || i - before > window || i - before <= 2) return;
       const start = tokens[before].index!;
       const end = match.index! + match[0].length;
-      repetitions.push({ path: scene.path, title: scene.title, word, distance: i - before - 1, excerpt: scene.text.slice(start, end).replace(/\s+/g, " ") });
+      // The word itself, without the elided article: where "l’amico" has "amico".
+      const used = (m: RegExpMatchArray) => m.index! + m[0].length - word.length;
+      const place = placeOf(scene.text, word, used(tokens[before]), word, end);
+      repetitions.push({ path: scene.path, title: scene.title, word, distance: i - before - 1, excerpt: scene.text.slice(start, end).replace(/\s+/g, " "), place });
     });
   }
 

@@ -100,3 +100,70 @@ test("changes theme and page layout from the settings", async ({ page }) => {
   await expect(line).toHaveCSS("text-align", "justify");
   expect(await page.locator(".cm-line.md-gap").count()).toBeGreaterThan(0);
 });
+
+test("names the stage under each scene's dot, or the property chosen for it", async ({ page }) => {
+  await openSample(page);
+  await page.locator(".row .status").first().hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Stato: finita");
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.getByLabel("Il pallino accanto a ogni scena mostra").selectOption("pov");
+  await page.locator('nav button[data-section="manuscript"]').click();
+  const dot = page.locator(".row", { hasText: "La passeggiata" }).locator(".status");
+  await expect(dot).toHaveAttribute("data-hue", "0");
+  await dot.hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Pov: Don Abbondio");
+});
+
+test("goes from the statistics to the very passage", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="stats"]').click();
+  const repetition = page.locator("ul.examples").first().locator("li").first();
+  const excerpt = (await repetition.locator(".excerpt").innerText()).replace(/^«|»$/g, "");
+  await repetition.locator("button.link").click();
+  await expect.poll(() => page.evaluate(() => String(getSelection()).replace(/\s+/g, " "))).toBe(excerpt);
+  await page.locator('nav button[data-section="stats"]').click();
+  const sentence = page.locator("ul.examples").nth(1).locator("li").first();
+  const start = (await sentence.locator(".excerpt").innerText()).slice(0, 60);
+  await sentence.locator("button.link").click();
+  await expect.poll(() => page.evaluate(() => String(getSelection()).replace(/\s+/g, " "))).toMatch(new RegExp(`^${start.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*[.!?…»”]$`));
+});
+
+test("opens the exported book with a cover made from a picture of the writer's", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="settings"]').click();
+  // A red square as the picture: the cover drawn from it is red where the texts are not.
+  const png = await page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 40;
+    canvas.height = 60;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ff0000";
+    context.fillRect(0, 0, 40, 60);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.locator('.cover-picker input[type="file"]').setInputFiles({ name: "copertina.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+  await expect(page.locator(".cover-picker")).toContainText("copertina.png");
+  await page.locator('nav button[data-section="export"]').click();
+  await page.getByRole("radio", { name: /Word/ }).check();
+  await page.getByRole("checkbox", { name: "Apri il libro con la copertina" }).check();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Esporta DOCX" }).click();
+  const file = await download;
+  const bytes = new Uint8Array(await (await file.createReadStream()).toArray().then((chunks) => Buffer.concat(chunks)));
+  const zip = unzipSync(bytes);
+  const media = Object.keys(zip).filter((name) => name.startsWith("word/media/") && name.endsWith(".png"));
+  expect(media.length).toBeGreaterThan(0);
+  // The corner of the cover is the picture's red.
+  const corner = await page.evaluate(async (data) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${data}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d")!;
+    context.drawImage(image, 0, 0);
+    return [...context.getImageData(5, canvas.height - 5, 1, 1).data];
+  }, Buffer.from(zip[media[0]]).toString("base64"));
+  expect(corner.slice(0, 3)).toEqual([255, 0, 0]);
+});

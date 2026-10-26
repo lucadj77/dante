@@ -4,7 +4,7 @@ Aggiornata al 26 ottobre 2026.
 
 Ogni capitolo della guida ha due parti. **Come si fa** spiega in pochi passi come usare una funzione, senza termini tecnici. **Approfondimento** spiega cosa succede nei file del romanzo, per chi vuole capire meglio o lavorare anche fuori da Dante. Per iniziare basta leggere le prime parti dei capitoli 1-5, oppure la pagina [Primi passi](primi-passi.md), che si apre anche dentro Dante con l'icona **Aiuto** (capitolo 20).
 
-Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla schermata iniziale con **Prova il progetto di esempio**: sono i primi capitoli dei *Promessi sposi*, con le schede dei personaggi e dei luoghi, alcune viste, un commento e una revisione di una coautrice, Anna. Aprilo e prova ogni passo mentre leggi: le modifiche non vengono salvate da nessuna parte. Le scorciatoie sono scritte come su Mac (Cmd); su Windows e Linux si usa Ctrl.
+Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla schermata iniziale con **Prova il progetto di esempio**: sono i primi capitoli dei *Promessi sposi*, con le schede dei personaggi e dei luoghi, alcune viste, un commento e una revisione di una coautrice, Anna. Aprilo e prova ogni passo mentre leggi: le modifiche non vengono salvate da nessuna parte. Le scorciatoie sono scritte prima come su Mac e poi come su Windows e Linux, per esempio Cmd+F / Ctrl+F; quelle uguali ovunque, come Alt+Invio, sono scritte una volta sola.
 
 ## Indice
 
@@ -64,7 +64,7 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
 
    ![La schermata iniziale, con i pulsanti in alto e i progetti recenti sotto](img/benvenuto.png)
 
-   Con **Nuovo progetto** compare questo modulo. La copertina è un disegno semplice che Dante prepara con il titolo e gli autori: scegli una forma e dei colori, o lasciala com'è.
+   Con **Nuovo progetto** compare questo modulo. La copertina è un disegno semplice che Dante prepara con il titolo e gli autori: scegli una forma e dei colori, o lasciala com'è. Più tardi, in **Impostazioni**, puoi metterci una tua immagine (capitolo 13).
 
    ![Il modulo per un nuovo progetto: titolo, autori, lingua, copertina e cartella](img/nuovo-progetto.png)
 3. Apri le **Impostazioni** (l'ingranaggio nella barra a sinistra). Hanno due schede: **Questo romanzo**, con le scelte salvate nel progetto, e **Dante su questo computer**, con quelle che valgono per tutti i progetti. Nella seconda scrivi **il tuo nome**: serve a firmare commenti e revisioni e a contare le parole che scrivi ogni giorno. Non c'è un pulsante per salvare: ogni modifica si salva da sola dopo un istante.
@@ -135,7 +135,7 @@ La finestra ha quattro zone, da sinistra a destra:
 
 In alto, accanto al nome della sezione, compaiono gli avvisi (nell'immagine, **1 copia in conflitto**, capitolo 10); a destra c'è il titolo del romanzo.
 
-I due pannelli laterali si nascondono e si riaprono dai pulsanti in alto; si allargano trascinandone il bordo, e un doppio clic sul bordo li riporta alla larghezza normale. Cmd+ e Cmd− ingrandiscono e riducono il testo, Cmd+0 lo riporta come prima.
+I due pannelli laterali si nascondono e si riaprono dai pulsanti in alto; si allargano trascinandone il bordo, e un doppio clic sul bordo li riporta alla larghezza normale. Cmd+ e Cmd− (Ctrl+ e Ctrl− su Windows e Linux) ingrandiscono e riducono il testo, Cmd+0 / Ctrl+0 lo riporta come prima.
 
 ### Approfondimento
 
@@ -151,15 +151,15 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
 
   ![Una riga selezionata nella scena Perpetua, con la piccola barra di formattazione sopra](img/barra-selezione.png)
 
-  *Prova:* apri la scena **Perpetua**, seleziona «Misericordia! cos'ha, signor padrone?» e premi **I** nella barra: la frase diventa corsiva. Cmd+Z la riporta com'era.
-- **Allineare un paragrafo**: metti il cursore nel paragrafo e usa i pulsanti di allineamento della barra di formattazione (centrato o a destra), oppure Cmd+Maiusc+E e Cmd+Maiusc+R. Un secondo clic sullo stesso pulsante lo riporta all'allineamento di base: a sinistra mentre scrivi, giustificato o a sinistra in esportazione secondo il profilo. Su una riga vuota il pulsante apre un paragrafo già allineato. Invio alla fine di un paragrafo allineato ne apre uno normale; Backspace all'inizio toglie l'allineamento. L'allineamento si vede nell'editor ed è rispettato in Word, PDF, EPUB e Markdown; dall'importazione da Word restano i paragrafi centrati e a destra. Nel file il paragrafo è racchiuso in `<span style="display:block;text-align:center">…</span>` (o `text-align:right`): Dante nasconde il tag, la vista Markdown lo mostra, e Obsidian mostra il paragrafo allineato con corsivi e grassetti intatti.
+  *Prova:* apri la scena **Perpetua**, seleziona «Misericordia! cos'ha, signor padrone?» e premi **I** nella barra: la frase diventa corsiva. Cmd+Z / Ctrl+Z la riporta com'era.
+- **Allineare un paragrafo**: metti il cursore nel paragrafo e usa i pulsanti di allineamento della barra di formattazione (centrato o a destra), oppure Cmd+Maiusc+E / Ctrl+Maiusc+E e Cmd+Maiusc+R / Ctrl+Maiusc+R. Un secondo clic sullo stesso pulsante lo riporta all'allineamento di base: a sinistra mentre scrivi, giustificato o a sinistra in esportazione secondo il profilo. Su una riga vuota il pulsante apre un paragrafo già allineato. Invio alla fine di un paragrafo allineato ne apre uno normale; Backspace all'inizio toglie l'allineamento. L'allineamento si vede nell'editor ed è rispettato in Word, PDF, EPUB e Markdown; dall'importazione da Word restano i paragrafi centrati e a destra. Nel file il paragrafo è racchiuso in `<span style="display:block;text-align:center">…</span>` (o `text-align:right`): Dante nasconde il tag, la vista Markdown lo mostra, e Obsidian mostra il paragrafo allineato con corsivi e grassetti intatti.
 - **Righe vuote**: in Markdown due o più righe vuote tra due paragrafi valgono come una sola, quindi lo spazio in più che vedi mentre scrivi sparisce in esportazione e in Obsidian. Per lasciare davvero una riga vuota, senza aprire una nuova scena, premi il pulsante **¶** della barra di formattazione o Alt+Invio: dopo il paragrafo in cui sei compare una riga con un **¶** chiaro, che nel libro sarà una riga vuota. Il **¶** non si stampa; per toglierla, metti il cursore sulla riga e cancellala come una riga qualsiasi.
 
   *Esempio:* alla fine di un paragrafo («…e la porta si chiuse.») premi Alt+Invio e continua a scrivere il paragrafo successivo. In Word, PDF ed EPUB tra i due paragrafi c'è una riga bianca e la scena resta una. Per una pausa più forte, con il separatore (per esempio `* * *`), usa invece il pulsante **Separatore di scena**.
-- **Cercare nella scena**: Cmd+F apre una barra sopra il testo. Scrivi la parola: Invio (o Cmd+G) passa alla successiva, Maiusc+Invio (o Maiusc+Cmd+G) torna alla precedente, **tutte** le seleziona tutte. Le caselle limitano la ricerca alle maiuscole scritte così o alle parole intere. Il campo **Sostituisci con** cambia la parola solo in questa scena; per cambiarla in tutto il romanzo usa **Sostituisci** (capitolo 9). Esc chiude la barra.
+- **Cercare nella scena**: Cmd+F / Ctrl+F apre una barra sopra il testo. Scrivi la parola: Invio (o Cmd+G / Ctrl+G) passa alla successiva, Maiusc+Invio (o Maiusc+Cmd+G / Ctrl+Maiusc+G) torna alla precedente, **tutte** le seleziona tutte. Le caselle limitano la ricerca alle maiuscole scritte così o alle parole intere. Il campo **Sostituisci con** cambia la parola solo in questa scena; per cambiarla in tutto il romanzo usa **Sostituisci** (capitolo 9). Esc chiude la barra.
 
-  *Prova:* apri la scena **Perpetua**, premi Cmd+F e scrivi «padrone»: la prima volta che compare è evidenziata, Invio passa alla seguente.
-- **Dividere**: con il cursore nel punto giusto, **Dividi in scena** (Cmd+Invio) sposta il testo che segue in una nuova scena; **Dividi in capitolo** (Cmd+Maiusc+Invio) apre un nuovo capitolo da quel punto, con le scene che seguono.
+  *Prova:* apri la scena **Perpetua**, premi Cmd+F / Ctrl+F e scrivi «padrone»: la prima volta che compare è evidenziata, Invio passa alla seguente.
+- **Dividere**: con il cursore nel punto giusto, **Dividi in scena** (Cmd+Invio / Ctrl+Invio) sposta il testo che segue in una nuova scena; **Dividi in capitolo** (Cmd+Maiusc+Invio / Ctrl+Maiusc+Invio) apre un nuovo capitolo da quel punto, con le scene che seguono.
 - **Modalità di scrittura**:
   - **Macchina da scrivere**: la riga su cui scrivi resta al centro della finestra.
   - **Focus**: tutto è attenuato tranne il paragrafo che stai scrivendo.
@@ -167,7 +167,7 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
     ![La modalità Focus: solo il paragrafo con il cursore resta in nero](img/focus.png)
   - **Riga**: ombreggia leggermente la riga su cui si trova il cursore, così l'occhio la ritrova subito. Si accende e si spegne con il suo tasto, e la scelta resta per le volte successive.
   - **Schermo intero**: resta solo il testo. Porta il mouse al bordo in alto per far uscire le barre (modalità e formattazione), al bordo sinistro per l'indice, al bordo destro per il pannello laterale; si nascondono di nuovo quando il mouse se ne va, ma restano aperti mentre scrivi in un loro campo. I pannelli affiancati tornano quando esci. Esc per uscire.
-- **Elenchi**: i pulsanti della barra di formattazione (o Cmd+Maiusc+8, Cmd+Maiusc+7 e Cmd+Maiusc+9) iniziano un elenco puntato, numerato o di caselle di spunta. Il testo di ogni voce rientra dopo il punto, il numero o la casella, e le righe che vanno a capo si allineano sotto la prima, non sotto il punto. Una voce che inizia con qualche spazio in più (quattro vanno sempre bene) sta dentro la precedente e rientra di un livello. In Word, PDF ed EPUB gli elenchi hanno lo stesso rientro; in Markdown restano elenchi Markdown.
+- **Elenchi**: i pulsanti della barra di formattazione (o Cmd+Maiusc+8 / Ctrl+Maiusc+8, Cmd+Maiusc+7 / Ctrl+Maiusc+7 e Cmd+Maiusc+9 / Ctrl+Maiusc+9) iniziano un elenco puntato, numerato o di caselle di spunta. Il testo di ogni voce rientra dopo il punto, il numero o la casella, e le righe che vanno a capo si allineano sotto la prima, non sotto il punto. Una voce che inizia con qualche spazio in più (quattro vanno sempre bene) sta dentro la precedente e rientra di un livello. In Word, PDF ed EPUB gli elenchi hanno lo stesso rientro; in Markdown restano elenchi Markdown.
 - **Tabelle**: il pulsante **Tabella** della barra di formattazione inserisce una tabella di tre colonne. Scrivi nella prima cella; **Tab** passa alla cella successiva (dopo l'ultima aggiunge una riga), **Maiusc+Tab** torna indietro, **Invio** aggiunge una riga sotto e, su una riga vuota alla fine, esce dalla tabella. Mentre il cursore è nella tabella compare sopra una barra: **Riga** aggiunge una riga sopra o sotto quella del cursore o la elimina, **Colonna** fa lo stesso con le colonne (a sinistra, a destra, elimina), **Allinea** allinea la colonna del cursore a sinistra, al centro o a destra (premuto di nuovo, toglie l'allineamento). **+ Didascalia** scrive `Tabella: ` sotto la tabella e ci porta il cursore, oppure porta il cursore alla didascalia che c'è già. Mentre la modifichi la tabella è scritta con lettere tutte della stessa larghezza, e le colonne si rimettono in fila da sole a ogni Tab, Invio, comando della barra e quando il cursore esce dalla tabella.
 
   *Esempio:* premi **Tabella** e scrivi «Personaggio», Tab, «Chi è», Tab, «Prima scena», Tab, «Renzo», Tab, «filatore di seta», e così via. Mentre scrivi la vedi così, con la barra sopra:
@@ -177,12 +177,12 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
   Quando il cursore esce dalla tabella, la vedi come sarà nel libro, con la didascalia sotto:
 
   ![La stessa tabella finita, con la didascalia «I personaggi del capitolo»](img/tabella.png)
-- **Immagini**: premi il pulsante **Immagine** della barra di formattazione e scegli il file, oppure incolla un'immagine (Cmd+V) o trascinala nel testo. Dante la copia nella cartella **Allegati** dentro **Ricerca** e la mostra nel punto in cui si trova il cursore. Porta il mouse sull'immagine per cambiarne la larghezza (**200**, **400**, **600** pixel o **1:1**, la dimensione originale) e l'allineamento (a sinistra, al centro, a destra). Un clic sull'immagine mostra il testo che la inserisce, per modificarlo a mano.
+- **Immagini**: premi il pulsante **Immagine** della barra di formattazione e scegli il file, oppure incolla un'immagine (Cmd+V / Ctrl+V) o trascinala nel testo. Dante la copia nella cartella **Allegati** dentro **Ricerca** e la mostra nel punto in cui si trova il cursore. Porta il mouse sull'immagine per cambiarne la larghezza (**200**, **400**, **600** pixel o **1:1**, la dimensione originale) e l'allineamento (a sinistra, al centro, a destra). Un clic sull'immagine mostra il testo che la inserisce, per modificarlo a mano.
 - **Barra di stato**: sotto il testo una riga mostra le parole della scena con il cursore (con il suo obiettivo, se ne ha uno), quelle del testo selezionato, del capitolo o di ciò che è a schermo, e quelle scritte oggi rispetto all'obiettivo del giorno. Se il progetto misura in caratteri (capitolo 12), la barra conta caratteri spazi inclusi invece di parole. Si nasconde da **Altro** > **Barra di stato**.
 - **Sessione di scrittura**: premi **Sessione** a destra nella barra di stato, scegli quanti minuti (da 10 a 90) e, se vuoi, quante parole raggiungere, poi **Inizia**. Nella barra scorrono il tempo che resta e le parole scritte da quando hai cominciato; alla fine Dante dice quante parole hai scritto. **Termina** la chiude prima. Contano le parole aggiunte, tolte quelle cancellate, come nelle statistiche; in un progetto che misura in caratteri, la sessione chiede e conta caratteri.
 
   *Esempio:* una sessione da 25 minuti con 500 parole da raggiungere. Mentre scrivi la barra mostra «18:42 · 312 parole su 500»; allo scadere compare «Obiettivo raggiunto: 534 parole in 25 min.», oppure «Sessione finita» se non ci sei arrivato.
-- **Dialoghi e tipografia**: se attivi la correzione mentre scrivi, Dante mette da solo le virgolette o le lineette del dialogo, l'apostrofo tipografico e i puntini di sospensione. Cmd+Z annulla una correzione che non volevi.
+- **Dialoghi e tipografia**: se attivi la correzione mentre scrivi, Dante mette da solo le virgolette o le lineette del dialogo, l'apostrofo tipografico e i puntini di sospensione. Cmd+Z / Ctrl+Z annulla una correzione che non volevi.
 
 ### Approfondimento
 
@@ -208,9 +208,9 @@ Tutto si fa dall'albero nella sezione Manoscritto.
 - **Rinominare**: doppio clic sul nome, oppure F2.
 
   <img src="img/menu-albero.png" width="290" alt="Il menu del tasto destro su una scena dell'albero">
-- **Spostare**: trascina scene e capitoli dove vuoi, anche da un capitolo all'altro. Con Alt+Cmd+↑ e Alt+Cmd+↓ sposti l'elemento selezionato di un posto.
-- **Unire scene**: tieni premuto Cmd e clicca le scene da unire, poi premi **Fondi** nella barra sopra l'albero (o dal clic destro). Il testo finisce nella prima scena, in ordine di lettura.
-- **Eliminare**: clic destro → **Elimina…**, oppure Cmd+Backspace. L'elemento va nel **Cestino** e si può recuperare.
+- **Spostare**: trascina scene e capitoli dove vuoi, anche da un capitolo all'altro. Con Alt+Cmd+↑ / Ctrl+Alt+↑ e Alt+Cmd+↓ / Ctrl+Alt+↓ sposti l'elemento selezionato di un posto.
+- **Unire scene**: tieni premuto Cmd (su Windows e Linux Ctrl) e clicca le scene da unire, poi premi **Fondi** nella barra sopra l'albero (o dal clic destro). Il testo finisce nella prima scena, in ordine di lettura.
+- **Eliminare**: clic destro → **Elimina…**, oppure Cmd+Backspace / Ctrl+Backspace. L'elemento va nel **Cestino** e si può recuperare.
 - **Cestino**: si apre con l'icona del cestino in basso nella barra a sinistra, sopra le Impostazioni. Elenca ciò che è stato eliminato, dal più recente, con il posto da cui viene. **Rimetti a posto** lo riporta lì; se nel frattempo quel posto è stato preso, l'elemento torna accanto con un «2» nel nome. **Elimina per sempre** e **Svuota il cestino** lo cancellano davvero, dopo una conferma. Nel cestino finiscono anche le scene fuse in un'altra e le copie in conflitto scartate (capitolo 10).
 - **Prologo, epilogo, interludio**: seleziona il capitolo e, nel pannello Proprietà, scegli il **Tipo** (prologo ed epilogo non hanno numero) oppure spunta **Senza numero (come un interludio)**. Nel progetto di esempio l'**Introduzione** è un prologo: per questo il primo capitolo vero si chiama «Capitolo 1».
 
@@ -223,9 +223,12 @@ Tutto si fa dall'albero nella sezione Manoscritto.
 
 Una scena finita fuori da qualsiasi capitolo è segnata nell'albero come **fuori dai capitoli**: trascinala nel capitolo giusto.
 
-- **Stato nell'albero**: accanto a ogni scena un pallino colorato dice a che punto è, secondo la proprietà **stato** (capitolo 8): grigio per idea, arancione per bozza, blu per rivista, verde per finita. Passando col mouse sul pallino si legge lo stato. Un valore che non è tra quelli previsti ha un cerchio vuoto.
+- **Stato nell'albero**: accanto a ogni scena un pallino colorato dice a che punto è, secondo la proprietà **stato** (capitolo 8): grigio per idea, arancione per bozza, blu per rivista, verde per finita. Passando col mouse sul pallino compare «Stato: bozza» (o il valore che ha la scena). Un valore che non è tra quelli previsti ha un cerchio vuoto.
+- **Colorare l'albero con un'altra proprietà**: in **Impostazioni** > **Questo romanzo** > **Albero delle scene** scegli quale proprietà decide il colore del pallino, per esempio **pov** per vedere a colpo d'occhio di chi è il punto di vista di ogni scena. Ogni valore ha un suo colore (fino a otto, poi i colori si ripetono) e passando col mouse sul pallino si legge, per esempio, «Pov: Renzo». Le scene senza quella proprietà non hanno pallino. Per tornare allo stato scegli di nuovo **lo stato di lavorazione**.
+
+  *Prova:* nel progetto di esempio scegli **pov**: le scene di don Abbondio e quelle di Renzo prendono due colori diversi.
 - **Obiettivi di parole o di caratteri**: a una scena o a un capitolo puoi dare un **Obiettivo di parole** (o **di caratteri**, se il progetto misura in caratteri) nel pannello Proprietà. L'albero mostra allora una piccola barra a destra del nome, che diventa verde quando l'obiettivo è raggiunto; passando col mouse si leggono le parole scritte e quelle da raggiungere.
-- **Modello delle nuove scene**: in **Impostazioni** > **Questo romanzo** > **Nuove scene**, il pulsante **Modifica il modello delle nuove scene** apre il modello (lo crea la prima volta con lo stato «idea»). Ogni scena nuova parte da lì, con le stesse proprietà e lo stesso testo, per esempio qualche domanda da tenere presente. Le scene create dividendone una (Cmd+Invio) tengono invece il testo che segue il cursore.
+- **Modello delle nuove scene**: in **Impostazioni** > **Questo romanzo** > **Nuove scene**, il pulsante **Modifica il modello delle nuove scene** apre il modello (lo crea la prima volta con lo stato «idea»). Ogni scena nuova parte da lì, con le stesse proprietà e lo stesso testo, per esempio qualche domanda da tenere presente. Le scene create dividendone una (Cmd+Invio / Ctrl+Invio) tengono invece il testo che segue il cursore.
 
   *Esempio:* nel modello scrivi le proprietà `stato: idea` e `pov:` e, nel testo, «Chi vuole cosa? Cosa lo ostacola?». Ogni scena nuova nasce con lo stato «idea», il campo del punto di vista pronto e le due domande, da cancellare quando cominci a scrivere.
 
@@ -251,6 +254,7 @@ Il mio romanzo/
     └── 900 Epilogo/
 ```
 
+- **Pallino dell'albero**: la proprietà scelta è salvata in `dante.yaml` come `tree.dot` (vuota per lo stato), quindi vale per tutti quelli che lavorano al romanzo. I colori degli altri valori seguono l'ordine dei valori previsti per la proprietà, se ne ha (capitolo 8), poi l'ordine in cui compaiono nel manoscritto; maiuscole e minuscole non contano, e di un collegamento come `[[Renzo Tramaglino|Renzo]]` si legge il nome mostrato.
 - **Prefissi numerici**: il numero all'inizio del nome (010, 020…) decide solo l'ordine e non compare nei titoli. I numeri vanno di 10 in 10 per lasciare spazio. Quando sposti qualcosa, Dante rinomina il minor numero possibile di file e aggiorna i collegamenti che puntavano a ciò che si è spostato.
 - **Nota cartella**: un capitolo o una parte tiene le sue proprietà in una nota con lo stesso nome della cartella (`010 Arrivo/010 Arrivo.md`). La proprietà `kind` vale `part`, `chapter`, `prologue` o `epilogue`; `numbered: false` toglie il numero. Per questo una scena non può avere lo stesso nome del suo capitolo.
 - **Numeri visibili**: "Capitolo 3: La lettera" è calcolato al momento dalle impostazioni in `dante.yaml`, non dal prefisso né dal testo del file.
@@ -373,13 +377,13 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 
   ![L'anteprima della scheda «La casa di Lucia», aperta sopra il testo](img/anteprima.png)
 
-   Le scorciatoie restano: Cmd+clic apre subito nell'editor, Alt+clic (Option su Mac) nel pannello.
+   Le scorciatoie restano: Cmd+clic / Ctrl+clic apre subito nell'editor, Alt+clic (Option su Mac) nel pannello.
 - **Collegamento a una nota che non c'è**: il clic chiede se crearla e dove, come scheda di un tipo della Bibbia (personaggio, luogo…), nella Ricerca o nel Laboratorio. La nota nuova si apre nel pannello a fianco, così la scena resta sotto gli occhi.
 - **Chi rimanda a chi**: la scheda **Collegamenti** del pannello destro mostra le note che rimandano a quella aperta (con la riga che le contiene) e quelle a cui rimanda.
-- **Cercare**: Cmd+Maiusc+F (o la lente in alto a sinistra) cerca nei nomi, negli alias e nel testo di tutte le note, con un'anteprima di ogni risultato. Il menu sotto la casella limita la ricerca a una sezione.
+- **Cercare**: Cmd+Maiusc+F / Ctrl+Maiusc+F (o la lente in alto a sinistra) cerca nei nomi, negli alias e nel testo di tutte le note, con un'anteprima di ogni risultato. Il menu sotto la casella limita la ricerca a una sezione.
 
   <img src="img/cerca.png" width="420" alt="La ricerca di «Lucia»: schede, scene e righe che la nominano">
-- **Trova e sostituisci in tutto il progetto**: Alt+Cmd+F, oppure la scheda **Sostituisci** in cima alla ricerca. Scrivi la parola da cercare e quella nuova: sotto compaiono tutte le occorrenze, nota per nota, con la parola vecchia barrata e la nuova accanto. Togli la spunta a quelle da lasciare come sono, oppure usa **Nessuna** e spunta solo quelle che ti servono. Un clic su una riga apre la nota con la parola selezionata. **Sostituisci** cambia quelle spuntate; subito dopo **Annulla la sostituzione** rimette tutto com'era. Con **Solo parole intere** «Renzo» non trova «Renzino»; senza **Maiuscole e minuscole** la parola nuova prende le maiuscole di quella vecchia («RENZO» diventa «LORENZO»). Il menu sotto limita la sostituzione a una sezione.
+- **Trova e sostituisci in tutto il progetto**: Alt+Cmd+F / Ctrl+Alt+F, oppure la scheda **Sostituisci** in cima alla ricerca. Scrivi la parola da cercare e quella nuova: sotto compaiono tutte le occorrenze, nota per nota, con la parola vecchia barrata e la nuova accanto. Togli la spunta a quelle da lasciare come sono, oppure usa **Nessuna** e spunta solo quelle che ti servono. Un clic su una riga apre la nota con la parola selezionata. **Sostituisci** cambia quelle spuntate; subito dopo **Annulla la sostituzione** rimette tutto com'era. Con **Solo parole intere** «Renzo» non trova «Renzino»; senza **Maiuscole e minuscole** la parola nuova prende le maiuscole di quella vecchia («RENZO» diventa «LORENZO»). Il menu sotto limita la sostituzione a una sezione.
 
   *Esempio:* per cambiare nome a un personaggio, cerca «Renzo» e sostituisci con «Lorenzo» nel Manoscritto. Prima di cambiare una scena Dante ne salva un'istantanea chiamata «Prima di sostituire «Renzo»», da riprendere se serve (capitolo 7). Per cambiare anche il nome della scheda, rinominala: i collegamenti si aggiornano da soli.
 
@@ -391,7 +395,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 - Il modello di un tipo è il file `Modelli/<nome del tipo>.md`; `{{title}}` e `{{date}}` vengono sostituiti con il nome della nota e la data del giorno.
 - I collegamenti sono wikilink come in Obsidian: `[[Lucia Mondella]]` o `[[Lucia Mondella|la promessa sposa]]`. Quando rinomini o sposti una nota, Dante aggiorna tutti i collegamenti che la riguardano.
 - Gli alias si scrivono nella proprietà `aliases` della nota: `[[` li suggerisce e le statistiche contano anche quelli.
-- Un collegamento chiuso a mano su un alias viene riscritto come `[[Corrado Olivieri|Corrado]]`: nel testo si legge sempre «Corrado», e il collegamento funziona anche in Obsidian, che non risolve gli alias da solo. Succede solo quando l'alias appartiene a una sola nota e nessuna nota si chiama così; maiuscole e minuscole non contano. Cmd+Z annulla la riscrittura insieme alle parentesi. Un `[[Corrado]]` scritto prima, o fuori da Dante, porta comunque alla scheda dentro Dante.
+- Un collegamento chiuso a mano su un alias viene riscritto come `[[Corrado Olivieri|Corrado]]`: nel testo si legge sempre «Corrado», e il collegamento funziona anche in Obsidian, che non risolve gli alias da solo. Succede solo quando l'alias appartiene a una sola nota e nessuna nota si chiama così; maiuscole e minuscole non contano. Cmd+Z / Ctrl+Z annulla la riscrittura insieme alle parentesi. Un `[[Corrado]]` scritto prima, o fuori da Dante, porta comunque alla scheda dentro Dante.
 - Eliminare un tipo non cancella le sue note, che restano dove sono con le loro proprietà. Quello che si elimina dalle sezioni va in `.trash`.
 - Le pagine HTML aperte in Dante non eseguono i loro script.
 - **Sostituisci** cambia solo il testo delle note. Restano come sono le proprietà in testa al file, il nome della nota dentro un collegamento (`[[Renzo Tramaglino|Renzo]]` cambia solo l'alias dopo `|`), le immagini e i file incorporati, gli indirizzi dei link, i tag HTML, il testo dei commenti `{>>…<<}` e i blocchi di codice. Le revisioni (`{++…++}`, `{--…--}`) sono testo e vengono cambiate. Se una nota cambia tra la ricerca e la sostituzione, Dante cerca di nuovo e salta le occorrenze che non ci sono più. **Annulla la sostituzione** salta le note modificate dopo la sostituzione e le elenca.
@@ -402,7 +406,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 
 1. **Condividere**: metti la cartella del progetto in Dropbox o Google Drive e condividila con chi lavora con te. Ognuno la apre con **Apri cartella…**.
 2. **Firmarsi**: ognuno scrive il proprio nome in **Impostazioni → Il tuo nome**.
-3. **Commentare**: seleziona il testo e premi 💬 (o Cmd+Alt+M), scrivi il commento e premi Cmd+Invio. Nel testo il commento appare come una nuvoletta.
+3. **Commentare**: seleziona il testo e premi 💬 (o Cmd+Alt+M / Ctrl+Alt+M), scrivi il commento e premi Cmd+Invio / Ctrl+Invio. Nel testo il commento appare come una nuvoletta.
 4. **Proporre modifiche**: scegli **Altro** > **Segna le modifiche come revisioni** nella barra in alto (serve il tuo nome nelle Impostazioni); finché sono attive nella barra resta l'etichetta **Revisioni attive**. Da quel momento quello che scrivi appare sottolineato e quello che cancelli barrato, con il tuo nome, finché qualcuno non decide.
 5. **Decidere**: la scheda **Commenti** del pannello destro elenca commenti e modifiche del testo mostrato. Per ciascuno puoi **Rispondi**, **Risolvi** (chiude la discussione), **Accetta** o **Rifiuta**; in cima ci sono **Accetta tutte** e **Rifiuta tutte**.
 
@@ -506,7 +510,7 @@ La sezione **Statistiche** mostra:
 - **Lunghezza**: quanto è lunga ogni scena, ogni capitolo o ogni parte, con la quota sul totale, una barra, la media, la mediana, la più breve e la più lunga. Due gruppi di pulsanti sopra la tabella scelgono la misura (**Parole** o **Caratteri spazi inclusi**) e il livello (**Scene**, **Capitoli**, **Parti**; Parti compare solo se il romanzo ha parti). Finché non scegli, la misura è quella del progetto; poi la scelta resta per le volte successive.
 - **Citazioni**: quante volte le scene nominano ogni personaggio, luogo o altra scheda della Bibbia, con la prima e l'ultima scena in cui compare, e le schede mai nominate.
 - **Parole più usate**: senza articoli, preposizioni e altre parole comunissime.
-- **Stile**: qualche numero su come è scritto il testo, per trovare i passi da rileggere: la lunghezza media delle frasi, le **frasi lunghe** (più di 40 parole), gli **avverbi** in -mente e i più usati, la parte di testo in **dialogo** e le **ripetizioni vicine**, cioè la stessa parola usata di nuovo entro 30 parole. Sotto ci sono le ripetizioni più vicine e le frasi più lunghe, con la scena: un clic la apre, e per una ripetizione evidenzia la parola. Sono stime fatte sulle sole parole, non regole.
+- **Stile**: qualche numero su come è scritto il testo, per trovare i passi da rileggere: la lunghezza media delle frasi, le **frasi lunghe** (più di 40 parole), gli **avverbi** in -mente e i più usati, la parte di testo in **dialogo** e le **ripetizioni vicine**, cioè la stessa parola usata di nuovo entro 30 parole. Sotto ci sono le ripetizioni più vicine e le frasi più lunghe, con la scena: un clic apre la scena proprio in quel punto e seleziona il passo, dalla prima alla seconda volta che compare la parola ripetuta, o la frase lunga intera. Per una ripetizione si apre anche la barra di ricerca con la parola, così Invio passa alle altre volte in cui compare. Sono stime fatte sulle sole parole, non regole.
 
   *Esempio:* nel progetto di esempio la frase più lunga è nello *Scartafaccio* e supera le 130 parole: Manzoni imita lo stile del Seicento. Una ripetizione voluta, come «zitto, zitto» o «sempre e sempre», non viene contata.
 
@@ -525,6 +529,7 @@ Per le scene singole, il pannello **Proprietà** mostra parole, caratteri e temp
 - **Registro di scrittura**: Dante conta, mentre scrivi, le parole e i caratteri aggiunti e cancellati e i minuti passati a scrivere, giorno per giorno, in `.dante/sessions/<nome>.json`. Parole scritte con altri programmi non entrano nel registro, ma entrano nei totali. I caratteri si contano da questa versione: nei giorni precedenti il grafico in caratteri resta vuoto.
 - **Citazioni**: contano il nome della scheda e i suoi alias scritti esattamente come nella nota, maiuscole comprese.
 - **Stile**: le frasi finiscono a un punto, un punto di domanda o esclamativo o ai puntini; gli avverbi si riconoscono dalla desinenza (-mente in italiano e spagnolo, -ly in inglese, -ment in francese), lasciando fuori le parole comuni che finiscono allo stesso modo senza esserlo, come «mente» o «clemente». Il dialogo è il testo tra caporali o virgolette, o quello delle battute aperte da una lineetta, dove le lineette successive alternano battuta e narrazione. Le ripetizioni contano parole di almeno quattro lettere, senza le parole comunissime e senza quelle ripetute subito o con una sola parola in mezzo.
+- **Andare al punto esatto**: le statistiche leggono il testo senza commenti e Markdown, quindi per ritrovare il passo nella scena Dante conta le parole: «la terza volta che compare *amico*, fino alla successiva». Se nel frattempo hai modificato la scena, o la parola compare anche dentro un commento, la selezione può cadere su un'altra occorrenza vicina; se la parola non c'è più, la scena si apre sulla prima.
 - **Sessioni**: il timer della barra di stato non scrive niente nel progetto; le parole che conta sono quelle del registro di scrittura di oggi.
 - **Lunghezza**: al livello Parti, prologo, epilogo e capitoli fuori dalle parti finiscono in un'unica riga "Fuori dalle parti", che non entra in media e mediana. Al livello Scene la colonna Dove indica il capitolo (o la parte) della scena. Misura e livello sono impostazioni del computer (`statsUnit`, `statsLevel`), non di `dante.yaml`: ognuno sceglie la sua.
 
@@ -542,6 +547,16 @@ Per le scene singole, il pannello **Proprietà** mostra parole, caratteri e temp
 
 Le scelte restano salvate nel progetto: la volta dopo basta premere Esporta.
 
+**Copertina.** Con **Apri il libro con la copertina** il file Word, il PDF e l'EPUB iniziano con la copertina del progetto, la stessa che compare tra i progetti recenti. Si prepara in **Impostazioni** > **Questo romanzo** > **Copertina**:
+
+- **Usa una tua immagine…** sceglie una foto o un disegno dal computer. L'immagine riempie tutta la copertina (se non ha le proporzioni di un libro, 2:3, i bordi in più vengono tagliati) e prende il posto delle forme. **Torna alle forme** la toglie.
+- **Forme** e **Colori** disegnano invece una copertina semplice. I colori decidono anche il colore predefinito dei testi.
+- **Testi sulla copertina**: togli la spunta a **Titolo**, **Sottotitolo** o **Autori** per non mostrarli, per esempio se il titolo è già nell'immagine.
+- **Colore del testo** cambia il colore di titolo, sottotitolo e autori; **Torna al colore predefinito** riprende quello dei colori scelti.
+- **Contorno del testo** aggiunge un bordo intorno alle lettere, del colore che scegli accanto: aiuta a leggere il titolo sopra una foto con zone chiare e scure.
+
+*Prova:* nel progetto di esempio scegli un'immagine, togli il sottotitolo, metti il testo bianco con il contorno nero e guarda l'anteprima.
+
 ![La sezione Esportazione con i quattro formati e le prime impostazioni della pagina](img/esportazione.png)
 
 *Esempio:* per mandare il manoscritto a un editore scegli **Word (DOCX)** e **Manoscritto standard**: Times New Roman 12, interlinea doppia, intestazione con autore, titolo e numero di pagina, frontespizio. Per una copia da leggere sul tablet scegli **EPUB**.
@@ -553,6 +568,7 @@ Le scelte restano salvate nel progetto: la volta dopo basta premere Esporta.
 - **PDF** è composto da [Typst](https://typst.app), incluso nell'app: non c'è niente da installare. Usa i font del computer, più Libertinus Serif e New Computer Modern quando il font scelto manca.
 - **EPUB 3**: un file per ogni parte, capitolo e pagina di apertura o chiusura, con indice dei capitoli dentro le parti. Il carattere e la dimensione li sceglie in buona parte chi legge; si può modificare il foglio di stile (CSS). Il libro mantiene lo stesso identificativo tra un'esportazione e l'altra (`export.epubId` in `dante.yaml`).
 - **Tabelle e immagini** passano in tutti i formati. In Word la tabella occupa la larghezza del testo e la riga di intestazione si ripete a ogni pagina. Nel PDF le immagini sono lette dalla cartella del progetto: vanno bene PNG, JPEG, GIF, SVG e WebP. In Word ed EPUB i formati che non accettano (WebP, SVG e altri) sono convertiti in PNG. Nel Markdown esportato le immagini restano riferimenti ai file del progetto.
+- **Copertina**: l'immagine scelta viene copiata nella cartella **Allegati** dentro **Ricerca**, come le immagini del testo, e `dante.yaml` ne tiene il percorso sotto `cover.image`, insieme a `cover.show` (titolo, sottotitolo, autori), `cover.textColor` e `cover.outlineColor`. JPEG, PNG, WebP e GIF restano come sono; gli altri formati sono convertiti in PNG. In Word ed EPUB la copertina diventa un'immagine PNG di 1200 × 1800 pixel; nel PDF l'immagine riempie la prima pagina e i testi sono disegnati sopra.
 - I titoli usano il `title` di ogni capitolo o scena; `published_title` lo sostituisce solo nell'esportazione, utile se il titolo di lavoro è diverso da quello definitivo.
 - Tutte le impostazioni di esportazione sono salvate in `dante.yaml` sotto `export`. Un nuovo progetto parte dalle ultime usate.
 
@@ -588,61 +604,61 @@ Anche un assistente di intelligenza artificiale che lavora sui file (Claude Code
 
 ### Come si fa
 
-Su Mac si usa Cmd, su Windows Ctrl; anche le etichette dei pulsanti nell'app si adattano al sistema. Passando col mouse su un pulsante, il suggerimento mostra la sua scorciatoia.
+Su Mac si usa Cmd, su Windows e Linux Ctrl; Alt è il tasto che sul Mac si chiama anche Option. Le tabelle danno le due versioni. Nell'app i suggerimenti dei pulsanti mostrano solo quella del sistema che stai usando. Passando col mouse su un pulsante, il suggerimento mostra la sua scorciatoia.
 
 **Scrittura**
 
-| Scorciatoia | Azione |
-| --- | --- |
-| Cmd+Invio | Dividi in scena: il testo dopo il cursore va in una nuova scena |
-| Cmd+Maiusc+Invio | Dividi in capitolo: apre un nuovo capitolo dal cursore |
-| Alt+Invio | riga vuota tra due paragrafi, senza nuova scena |
-| Cmd+B | grassetto |
-| Cmd+I | corsivo |
-| Cmd+Maiusc+X | barrato |
-| Cmd+Maiusc+H | evidenziato |
-| Cmd+Alt+M | commento sul testo selezionato |
-| Cmd+K | link |
-| Cmd+E | codice |
-| Cmd+Maiusc+7 | elenco numerato |
-| Cmd+Maiusc+8 | elenco puntato |
-| Cmd+Maiusc+9 | casella di spunta |
-| Cmd+Maiusc+. | citazione |
-| Cmd+Maiusc+E | centra il paragrafo (di nuovo: torna a sinistra) |
-| Cmd+Maiusc+R | allinea il paragrafo a destra (di nuovo: torna a sinistra) |
-| Cmd+clic | segue un collegamento sulla riga che stai modificando |
-| Cmd+Z | annulla, anche una correzione tipografica automatica |
-| Cmd+Invio (in un commento) | aggiunge il commento o la risposta |
+| Mac | Windows e Linux | Azione |
+| --- | --- | --- |
+| Cmd+Invio | Ctrl+Invio | Dividi in scena: il testo dopo il cursore va in una nuova scena |
+| Cmd+Maiusc+Invio | Ctrl+Maiusc+Invio | Dividi in capitolo: apre un nuovo capitolo dal cursore |
+| Alt+Invio | Alt+Invio | riga vuota tra due paragrafi, senza nuova scena |
+| Cmd+B | Ctrl+B | grassetto |
+| Cmd+I | Ctrl+I | corsivo |
+| Cmd+Maiusc+X | Ctrl+Maiusc+X | barrato |
+| Cmd+Maiusc+H | Ctrl+Maiusc+H | evidenziato |
+| Cmd+Alt+M | Ctrl+Alt+M | commento sul testo selezionato |
+| Cmd+K | Ctrl+K | link |
+| Cmd+E | Ctrl+E | codice |
+| Cmd+Maiusc+7 | Ctrl+Maiusc+7 | elenco numerato |
+| Cmd+Maiusc+8 | Ctrl+Maiusc+8 | elenco puntato |
+| Cmd+Maiusc+9 | Ctrl+Maiusc+9 | casella di spunta |
+| Cmd+Maiusc+. | Ctrl+Maiusc+. | citazione |
+| Cmd+Maiusc+E | Ctrl+Maiusc+E | centra il paragrafo (di nuovo: torna a sinistra) |
+| Cmd+Maiusc+R | Ctrl+Maiusc+R | allinea il paragrafo a destra (di nuovo: torna a sinistra) |
+| Cmd+clic | Ctrl+clic | segue un collegamento sulla riga che stai modificando |
+| Cmd+Z | Ctrl+Z | annulla, anche una correzione tipografica automatica |
+| Cmd+Invio (in un commento) | Ctrl+Invio (in un commento) | aggiunge il commento o la risposta |
 
 **Albero del manoscritto**
 
-| Scorciatoia | Azione |
-| --- | --- |
-| Invio | apre la scena; apre o chiude un capitolo |
-| F2 o doppio clic | rinomina |
-| Alt+Cmd+↑ / ↓ | sposta su o giù di un posto |
-| Freccia destra / sinistra | apre o chiude un capitolo o una parte |
-| Cmd+clic | aggiunge una scena alla scelta, per fonderle |
-| Cmd+Backspace o Canc | sposta nel cestino |
+| Mac | Windows e Linux | Azione |
+| --- | --- | --- |
+| Invio | Invio | apre la scena; apre o chiude un capitolo |
+| F2 o doppio clic | F2 o doppio clic | rinomina |
+| Alt+Cmd+↑ / ↓ | Ctrl+Alt+↑ / ↓ | sposta su o giù di un posto |
+| Freccia destra / sinistra | Freccia destra / sinistra | apre o chiude un capitolo o una parte |
+| Cmd+clic | Ctrl+clic | aggiunge una scena alla scelta, per fonderle |
+| Cmd+Backspace o Canc | Ctrl+Backspace o Canc | sposta nel cestino |
 
 **Finestra**
 
-| Scorciatoia | Azione |
-| --- | --- |
-| Cmd+F | cerca nella scena o nella nota |
-| Cmd+G / Maiusc+Cmd+G | occorrenza successiva / precedente |
-| Cmd+Maiusc+F | apre e chiude la ricerca nel progetto |
-| Alt+Cmd+F | trova e sostituisci in tutto il progetto |
-| Cmd++ / Cmd+− / Cmd+0 | ingrandisce, riduce, ripristina il testo |
-| Esc | esce da schermo intero, chiude ricerca e finestre, annulla una modifica in corso |
-| Cmd+\\ (tastiera italiana: Cmd+ù) | apre un pannello a fianco, scegliendo con la ricerca cosa mostrare |
-| Alt+Cmd+\\ | scambia il pannello con ciò che mostra la sezione |
-| Alt+Cmd+← / Alt+Cmd+→ | sposta il cursore tra la sezione e i pannelli |
-| Cmd+W | chiude il pannello che ha il cursore |
+| Mac | Windows e Linux | Azione |
+| --- | --- | --- |
+| Cmd+F | Ctrl+F | cerca nella scena o nella nota |
+| Cmd+G / Maiusc+Cmd+G | Ctrl+G / Ctrl+Maiusc+G | occorrenza successiva / precedente |
+| Cmd+Maiusc+F | Ctrl+Maiusc+F | apre e chiude la ricerca nel progetto |
+| Alt+Cmd+F | Ctrl+Alt+F | trova e sostituisci in tutto il progetto |
+| Cmd++ / Cmd+− / Cmd+0 | Ctrl++ / Ctrl+− / Ctrl+0 | ingrandisce, riduce, ripristina il testo |
+| Esc | Esc | esce da schermo intero, chiude ricerca e finestre, annulla una modifica in corso |
+| Cmd+\\ (tastiera italiana: Cmd+ù) | Ctrl+\\ (tastiera italiana: Ctrl+ù) | apre un pannello a fianco, scegliendo con la ricerca cosa mostrare |
+| Alt+Cmd+\\ | Ctrl+Alt+\\ | scambia il pannello con ciò che mostra la sezione |
+| Alt+Cmd+← / Alt+Cmd+→ | Ctrl+Alt+← / Ctrl+Alt+→ | sposta il cursore tra la sezione e i pannelli |
+| Cmd+W | Ctrl+W | chiude il pannello che ha il cursore |
 
 ### Approfondimento
 
-Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. funzionano anche con la tastiera italiana, dove Maiusc con quei tasti scrive altri caratteri (/, (, ) e :): Dante guarda il tasto premuto, non il carattere. Sul Mac Cmd+? apre l'aiuto (capitolo 20).
+Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. (Ctrl+Maiusc+7/8/9 e Ctrl+Maiusc+.) funzionano anche con la tastiera italiana, dove Maiusc con quei tasti scrive altri caratteri (/, (, ) e :): Dante guarda il tasto premuto, non il carattere. Sul Mac Cmd+? apre l'aiuto (capitolo 20).
 
 ## 16. Pannelli affiancati
 
@@ -715,7 +731,7 @@ Se chiudi la scheda subito dopo aver scritto, il browser può chiedere se vuoi d
 - **Spostare capitoli e parti è più lento**: il browser non sa rinominare le cartelle, quindi Dante copia i file nella nuova posizione e poi cancella la vecchia. Non chiudere il browser mentre lo fa; se succede, Dante completa lo spostamento alla prossima apertura. Chi collabora via Drive o Dropbox riceve più modifiche del solito.
 - **Le modifiche fatte da fuori** (un coautore, Obsidian, un'altra app) compaiono dopo qualche secondo, oppure quando torni sulla scheda di Dante, non subito come nell'app.
 - **Niente "mostra nel Finder" né "apri con l'app predefinita"**: Dante dice in quale cartella si trova il file e offre di scaricarne una copia. Le esportazioni finiscono nella cartella `export` del progetto, oppure dove scegli con **Salva in un'altra posizione…**.
-- **Cmd+W chiude la scheda del browser**, non il pannello: per chiudere il pannello usa **Alt+Cmd+W** (su Windows e Linux Alt+Ctrl+W).
+- **Cmd+W (Ctrl+W) chiude la scheda del browser**, non il pannello: per chiudere il pannello usa **Alt+Cmd+W** (su Windows e Linux Ctrl+Alt+W).
 - **Un progetto si apre in una sola scheda alla volta**: se è già aperto altrove, Dante lo dice. Due schede sullo stesso progetto scriverebbero una sopra l'altra.
 - **Immagini da un indirizzo web**: molti siti non permettono al browser di scaricarle. In quel caso salva l'immagine sul computer e trascinala in Dante.
 - **Doppio clic su `Titolo.dante`**: funziona solo con Dante installato dal browser (punto 2) e chiede un clic in più per dare il permesso sulla cartella.

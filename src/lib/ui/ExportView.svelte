@@ -5,11 +5,11 @@
   import { pageCount } from "$lib/core/statistics";
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
   import { bookToEpub, EPUB_CSS } from "$lib/core/export/epub";
-  import { bookToTypst } from "$lib/core/export/typst";
+  import { bookToTypst, typstImage } from "$lib/core/export/typst";
   import { bookToMarkdown } from "$lib/core/export/markdown";
   import { EXPORT_FOLDER, exportBaseName } from "$lib/core/export/files";
   import { coverSvg, svgUrl } from "$lib/core/cover";
-  import { coverPng, imageToPng } from "./coverImage";
+  import { coverPicture, coverPng, imageToPng } from "./coverImage";
   import type { Project } from "$lib/core/project";
   import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
@@ -62,7 +62,13 @@
   let epubId = project.settings.export.epubId;
   // svelte-ignore state_referenced_locally
   let useCover = $state(project.settings.export.cover);
-  const coverUrl = $derived(svgUrl(coverSvg(project.settings, project.settings.cover)));
+  /** The cover's picture, read from the project, as a data: URL; "" without one. */
+  let picture = $state("");
+  $effect(() => {
+    const cover = project.settings.cover;
+    void coverPicture(project.fs, cover).then((url) => (picture = url));
+  });
+  const coverUrl = $derived(svgUrl(coverSvg(project.settings, project.settings.cover, picture ? { url: picture } : undefined)));
   // svelte-ignore state_referenced_locally
   let epubCss = $state(project.settings.export.epubCss.trim() ? project.settings.export.epubCss : EPUB_CSS);
 
@@ -298,20 +304,28 @@
       const layout = project.settings.export.docx;
       const labels = { words: t("export.words") };
       const pages = num(pageCount(book, project.settings.pages), 1);
-      const cover = useCover && format !== "md" ? coverSvg(project.settings, project.settings.cover) : "";
+      const withCover = useCover && format !== "md";
+      const photo = withCover ? await coverPicture(project.fs, project.settings.cover) : "";
+      // With a picture the texts are drawn apart and laid over it, as a PNG or by Typst.
+      const cover = withCover ? coverSvg(project.settings, project.settings.cover, photo ? { url: photo, textOnly: true } : undefined) : "";
+      /** The whole cover in one SVG, for where the picture cannot be drawn apart. */
+      const wholeCover = photo ? coverSvg(project.settings, project.settings.cover, { url: photo }) : cover;
+      // Typst reads the picture from the project's folder when it can, else takes it inside the SVG.
+      const typstWithCover = () =>
+        photo && typstImage(project.settings.cover.image ?? "") ? bookToTypst(book, layout, labels, cover, project.settings.cover.image) : bookToTypst(book, layout, labels, wholeCover);
       let where: Saved | "" | null;
       if (format === "docx") {
-        where = await save(await docxBytes(bookToDocx(book, layout, labels, (cover && (await coverPng(cover))) || undefined)), elsewhere);
+        where = await save(await docxBytes(bookToDocx(book, layout, labels, (cover && (await coverPng(cover, photo))) || undefined)), elsewhere);
       } else if (format === "md") {
         where = await save(bookToMarkdown(book, layout), elsewhere);
       } else if (format === "epub") {
-        const png = cover ? await coverPng(cover) : null;
-        const image = png ? { data: png, mediaType: "image/png" as const } : cover ? { data: cover, mediaType: "image/svg+xml" as const } : undefined;
+        const png = cover ? await coverPng(cover, photo) : null;
+        const image = png ? { data: png, mediaType: "image/png" as const } : cover ? { data: wholeCover, mediaType: "image/svg+xml" as const } : undefined;
         where = await save(bookToEpub(book, layout, epubId, new Date(), epubCss, image), elsewhere);
       } else if (desktop) {
         // Typst, inside the app, turns the source into the PDF at the chosen path. Files the
         // text refers to are looked up in the project's folder; the sample project has none.
-        const source = bookToTypst(book, layout, labels, cover);
+        const source = typstWithCover();
         where = await destination(elsewhere);
         if (where) {
           if (where.relative) await project.fs.mkdir(EXPORT_FOLDER);
@@ -321,7 +335,7 @@
         }
       } else {
         // Only the desktop app compiles PDFs; a browser gets the Typst source.
-        where = await save(bookToTypst(book, layout, labels, cover), elsewhere, fileName("typ"), "text/plain");
+        where = await save(typstWithCover(), elsewhere, fileName("typ"), "text/plain");
         if (where !== null) {
           message = t("export.pdfBrowser");
           return;

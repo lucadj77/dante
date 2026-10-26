@@ -1,5 +1,5 @@
 import { parseDocument } from "yaml";
-import { COVER_PALETTES, COVER_TEMPLATES, type CoverSettings } from "./cover";
+import { COVER_PALETTES, COVER_TEMPLATES, hexColor, type CoverSettings } from "./cover";
 import { authorsOf } from "./export/files";
 import { parsePropertyDefs, serializePropertyDefs, type PropertyDef } from "./properties";
 
@@ -215,6 +215,10 @@ export interface NovelSettings {
   };
   /** The generated cover, shown among recent projects and, if chosen, in DOCX, PDF and EPUB. */
   cover: CoverSettings;
+  tree: {
+    /** The property whose value colours the dot beside each scene; "" is the stage of work. */
+    dot: string;
+  };
   /** What makes a page in the statistics and the export summary. */
   pages: {
     /** Characters (spaces included) or words. */
@@ -442,7 +446,8 @@ export function defaultSettings(language = "en"): NovelSettings {
     },
     // Italian writers and publishers measure in characters; the others in words.
     goals: { unit: language.startsWith("it") ? "characters" : "words", words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
-    cover: { template: "", palette: "" },
+    cover: { template: "", palette: "", image: "", show: { title: true, subtitle: true, authors: true }, textColor: "", outlineColor: "" },
+    tree: { dot: "" },
     pages: { unit: "characters", size: 1800 },
     export: {
       format: "docx",
@@ -525,6 +530,10 @@ export function parseSettings(text: string): NovelSettings {
   if (!EXPORT_FORMATS.includes(settings.export.format)) settings.export.format = "docx";
   if (!(COVER_TEMPLATES as readonly string[]).includes(settings.cover.template)) settings.cover.template = "";
   if (!(settings.cover.palette in COVER_PALETTES)) settings.cover.palette = "";
+  settings.cover.textColor = hexColor(settings.cover.textColor);
+  settings.cover.outlineColor = hexColor(settings.cover.outlineColor);
+  // The picture is a file of the project, by its path inside it.
+  if (/(^|[\\/])\.\.([\\/]|$)|^[\\/]|^[a-z]:/i.test(settings.cover.image ?? "")) settings.cover.image = "";
   if (!(QUOTE_STYLES as readonly string[]).includes(settings.export.typography.quotes)) settings.export.typography.quotes = "keep";
   const days: unknown = settings.goals.days;
   settings.goals.days = Array.isArray(days)

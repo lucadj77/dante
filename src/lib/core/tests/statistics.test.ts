@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneSize, statusTone, treeMarks } from "../statistics";
+import { dotValue, frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneSize, statusTone, treeMarks } from "../statistics";
 import { defaultSettings, parseSettings } from "../settings";
 
 function sample() {
@@ -190,5 +190,22 @@ describe("tree marks", () => {
     expect(marks.get("Manoscritto/010 Uno/030 C.md")).toMatchObject({ words: 1, status: "altro", tone: null });
     expect(marks.get("Manoscritto/010 Uno")).toEqual({ words: 11, goal: 5000, status: "", tone: null });
     expect(statusTone("idea", ["idea", "bozza", "rivista", "finita"])).toBe(0);
+  });
+  it("colours the dots by another property when chosen", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\ntree:\n  dot: pov\n",
+      "Manoscritto/010 Uno/010 A.md": '---\nstato: bozza\npov: "[[Renzo Tramaglino|Renzo]]"\n---\nUno.',
+      "Manoscritto/010 Uno/020 B.md": '---\npov: "[[Lucia]]"\n---\nDue.',
+      "Manoscritto/010 Uno/030 C.md": '---\npov: "[[renzo tramaglino|renzo]]"\n---\nTre.',
+      "Manoscritto/010 Uno/040 D.md": "Quattro.",
+    });
+    const project = await Project.open(fs);
+    const marks = treeMarks(project.manuscript, await project.index(), project.settings, (_, body) => sceneSize(body));
+    expect(marks.get("Manoscritto/010 Uno/010 A.md")).toMatchObject({ status: "Renzo", hue: 0, tone: null, property: "pov" });
+    expect(marks.get("Manoscritto/010 Uno/020 B.md")).toMatchObject({ status: "Lucia", hue: 1 });
+    expect(marks.get("Manoscritto/010 Uno/030 C.md")).toMatchObject({ status: "renzo", hue: 0 });
+    expect(marks.get("Manoscritto/010 Uno/040 D.md")).toMatchObject({ status: "", hue: null });
+    expect(dotValue(["[[Anna]]", "Bruno"])).toBe("Anna, Bruno");
+    expect(dotValue("[[Luoghi/Il paese#Chiesa]]")).toBe("Il paese");
   });
 });

@@ -6,7 +6,7 @@
   import { dayKey, isWritingDay, netOf, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
-  import { styleReport, type StyleReport } from "$lib/core/style";
+  import { styleReport, type Place, type StyleReport } from "$lib/core/style";
   import { showMatch } from "./find.svelte";
   import { app, num, saveAppSettings, t, tu } from "$lib/state.svelte";
   import { navigator } from "./navigation";
@@ -192,9 +192,9 @@
   const sceneTitle = (path: string) => stats?.scenes.find((s) => s.path === path)?.title ?? path;
   let showUnnamed = $state(false);
 
-  /** Opens the scene with the repeated word found in it. */
-  function openRepetition(path: string, word: string) {
-    showMatch(path, { query: word, caseSensitive: false, wholeWord: true });
+  /** Opens the scene with the passage selected: a repetition with the word found, or a long sentence. */
+  function openPlace(path: string, place: Place, word?: string) {
+    showMatch(path, word ? { query: word, caseSensitive: false, wholeWord: true, place } : { query: place.word, caseSensitive: false, wholeWord: true, place, panel: false });
     nav?.open(path);
   }
 </script>
@@ -435,7 +435,7 @@
           <ul class="examples">
             {#each style.repetitions as r, i (i)}
               <li>
-                <button class="link" onclick={() => openRepetition(r.path, r.word)}>{r.title}</button>
+                <button class="link" onclick={() => openPlace(r.path, r.place, r.word)}>{r.title}</button>
                 <span class="excerpt">«{r.excerpt}»</span>
               </li>
             {/each}
@@ -446,7 +446,7 @@
           <ul class="examples">
             {#each style.long.slice(0, 8) as l, i (i)}
               <li>
-                <button class="link" onclick={() => nav?.open(l.path)}>{l.title}</button>
+                <button class="link" onclick={() => openPlace(l.path, l.place)}>{l.title}</button>
                 <span class="count">{t("style.words", { n: n(l.words) })}</span>
                 <span class="excerpt">{l.excerpt}</span>
               </li>

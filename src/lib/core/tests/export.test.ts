@@ -248,6 +248,9 @@ describe("cover in exports", () => {
     expect(new TextDecoder("latin1").decode(docx)).toMatch(/word\/media\/[^"]+\.png/);
     const typst = bookToTypst(book, project.settings.export.docx, { words: "words" }, svg);
     expect(typst).toContain('#page(margin: 0pt, header: none, footer: none, image(bytes("<svg ');
+    // A picture of the project fills the page, read from its file, with the texts over it.
+    const withPicture = bookToTypst(book, project.settings.export.docx, { words: "words" }, svg, "Ricerca/Allegati/foto.jpg");
+    expect(withPicture).toContain('#page(margin: 0pt, header: none, footer: none, background: image("/Ricerca/Allegati/foto.jpg", width: 100%, height: 100%, fit: "cover"), image(bytes("<svg ');
   });
 });
 

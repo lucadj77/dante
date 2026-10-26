@@ -20,6 +20,9 @@ function lines(text: string): string {
 
 const TYPST_IMAGE = /\.(png|jpe?g|gif|svg|webp)$/i;
 
+/** True for a picture Typst can read from its file. */
+export const typstImage = (path: string) => TYPST_IMAGE.test(path);
+
 /** An image on a line of text, its middle at the middle of the lowercase letters, as in the editor. */
 function inlineImage(r: Run, maxWidth: number): string {
   const image = r.image!;
@@ -52,8 +55,12 @@ function fonts(font: string): string {
 const cm = (n: number) => `${+n.toFixed(2)}cm`;
 
 
-/** Renders the book with the same choices as the DOCX: manuscript or typeset book. */
-export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = ""): string {
+/**
+ * Renders the book with the same choices as the DOCX: manuscript or typeset book.
+ * `coverSvg` opens it on a page of its own; with `coverImage`, a picture of the project,
+ * the picture fills that page and `coverSvg` (the texts) lies over it.
+ */
+export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = "", coverImage = ""): string {
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -95,7 +102,8 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   emit("");
 
   // The cover fills the first page, edge to edge.
-  if (coverSvg) emit(`#page(margin: 0pt, header: none, footer: none, image(bytes(${str(coverSvg)}), format: "svg", width: 100%, height: 100%, fit: "cover"))`);
+  const picture = coverImage ? `, background: image(${str("/" + coverImage)}, width: 100%, height: 100%, fit: "cover")` : "";
+  if (coverSvg) emit(`#page(margin: 0pt, header: none, footer: none${picture}, image(bytes(${str(coverSvg)}), format: "svg", width: 100%, height: 100%, fit: "cover"))`);
 
   // Front matter: title page, dedication, epigraph, each on its own page.
   let pages = 0;
