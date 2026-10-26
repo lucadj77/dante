@@ -1,7 +1,8 @@
 
 // A simple cover made from the novel's settings: the authors at the top, the title in
-// the middle, abstract shapes in one or two colours behind them. Nothing is stored but
-// the chosen template and palette (in dante.yaml), so the cover follows the title.
+// the middle, abstract shapes in one or two colours behind them, or a picture of the
+// writer's. Nothing is stored but the choices (in dante.yaml) and the picture, a file of
+// the project, so the cover follows the title.
 
 export const COVER_TEMPLATES = ["circles", "waves", "stripes", "blocks", "arcs", "frame", "sun", "mountains", "dots", "corners", "triangles", "band"] as const;
 export type CoverTemplate = (typeof COVER_TEMPLATES)[number];
@@ -40,6 +41,19 @@ export interface CoverSettings {
   /** "" picks one from the title, for projects made before covers existed. */
   template: CoverTemplate | "";
   palette: CoverPalette | "";
+  /** A picture of the project (its path) drawn instead of the background and the shapes; "" for none. */
+  image?: string;
+  /** Which texts the cover shows; all of them unless turned off. */
+  show?: { title: boolean; subtitle: boolean; authors: boolean };
+  /** Colour of the texts, as #rrggbb; "" takes the palette's. */
+  textColor?: string;
+  /** Colour of a line around the letters, as #rrggbb; "" for none. */
+  outlineColor?: string;
+}
+
+/** A colour as #rrggbb, or "" when it is not one. */
+export function hexColor(value: unknown): string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim().toLowerCase() : "";
 }
 
 /** Width and height of the cover, in pixels: 2:3, as most books. */
@@ -177,17 +191,32 @@ export interface CoverText {
   authors: string[];
 }
 
-/** The cover as an SVG document. */
-export function coverSvg(text: CoverText, cover: CoverSettings): string {
+export interface CoverPicture {
+  /** The picture as a URL an SVG can hold: a data: URL. */
+  url: string;
+  /** Only the texts, on a transparent ground, to be laid over the picture drawn apart. */
+  textOnly?: boolean;
+}
+
+/**
+ * The cover as an SVG document. With `picture` (the cover's image, read from the project)
+ * it fills the cover in place of the background and the shapes.
+ */
+export function coverSvg(text: CoverText, cover: CoverSettings, picture?: CoverPicture): string {
   const { template, palette } = resolveCover(cover, text.title);
   const p = COVER_PALETTES[palette];
   const [W, H] = COVER_SIZE;
   const usable = W - 200;
   const out: string[] = [];
+  const show = { title: true, subtitle: true, authors: true, ...cover.show };
+  const fill = hexColor(cover.textColor) || p.text;
+  const outline = hexColor(cover.outlineColor);
+  // The line goes behind the letters, so it widens them without thinning them.
+  const stroke = (size: number) => (outline ? ` stroke="${outline}" stroke-width="${Math.max(3, Math.round(size * 0.07))}" stroke-linejoin="round" paint-order="stroke"` : "");
 
   // Authors at the top, in spaced capitals: one per line when there are up to three,
   // otherwise all together on up to three lines.
-  const names = text.authors.map((a) => a.trim().toLocaleUpperCase()).filter(Boolean);
+  const names = show.authors ? text.authors.map((a) => a.trim().toLocaleUpperCase()).filter(Boolean) : [];
   if (names.length) {
     const lines = names.length === 1 ? fit(names[0], 16, 2) : names.length <= 3 ? names : fit(names.join(" · "), 22, 3);
     const longest = Math.max(...lines.map((l) => l.length));
@@ -195,13 +224,13 @@ export function coverSvg(text: CoverText, cover: CoverSettings): string {
     const size = Math.round(Math.min(lines.length > 2 ? 64 : 84, usable / (longest * 0.74)));
     lines.forEach((line, i) => {
       out.push(
-        `<text x="${W / 2}" y="${Math.round(190 + i * size * 1.25)}" font-family="${SANS}" font-size="${size}" letter-spacing="${Math.round(size * 0.1)}" text-anchor="middle" fill="${p.text}">${escapeXml(line)}</text>`,
+        `<text x="${W / 2}" y="${Math.round(190 + i * size * 1.25)}" font-family="${SANS}" font-size="${size}" letter-spacing="${Math.round(size * 0.1)}" text-anchor="middle" fill="${fill}"${stroke(size)}>${escapeXml(line)}</text>`,
       );
     });
   }
 
   // The title in the middle, as large as it fits: the line count giving the largest size wins.
-  const title = text.title.trim();
+  const title = show.title ? text.title.trim() : "";
   let best = { size: 0, lines: [] as string[] };
   for (let n = 1; title && n <= 5; n++) {
     const lines = wrap(title, n);
@@ -211,21 +240,26 @@ export function coverSvg(text: CoverText, cover: CoverSettings): string {
   }
   const size = Math.round(best.size);
   const lineHeight = size * 1.12;
-  const subtitle = text.subtitle?.trim() ? fit(text.subtitle.trim(), 30, 2) : [];
+  const subtitle = show.subtitle && text.subtitle?.trim() ? fit(text.subtitle.trim(), 30, 2) : [];
   const subSize = 64;
   const block = best.lines.length * lineHeight + (subtitle.length ? 40 + subtitle.length * subSize * 1.3 : 0);
   let y = 820 - block / 2 + size * 0.8;
   for (const line of best.lines) {
-    out.push(`<text x="${W / 2}" y="${Math.round(y)}" font-family="${SERIF}" font-size="${size}" font-weight="bold" text-anchor="middle" fill="${p.text}">${escapeXml(line)}</text>`);
+    out.push(`<text x="${W / 2}" y="${Math.round(y)}" font-family="${SERIF}" font-size="${size}" font-weight="bold" text-anchor="middle" fill="${fill}"${stroke(size)}>${escapeXml(line)}</text>`);
     y += lineHeight;
   }
   y += 40 - lineHeight + subSize * 1.3;
   for (const line of subtitle) {
-    out.push(`<text x="${W / 2}" y="${Math.round(y)}" font-family="${SERIF}" font-size="${subSize}" font-style="italic" text-anchor="middle" fill="${p.text}">${escapeXml(line)}</text>`);
+    out.push(`<text x="${W / 2}" y="${Math.round(y)}" font-family="${SERIF}" font-size="${subSize}" font-style="italic" text-anchor="middle" fill="${fill}"${stroke(subSize)}>${escapeXml(line)}</text>`);
     y += subSize * 1.3;
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="${p.background}"/>${shapes(template, p)}${out.join("")}</svg>`;
+  const ground = picture?.textOnly
+    ? ""
+    : picture
+      ? `<rect width="${W}" height="${H}" fill="${p.background}"/><image href="${escapeXml(picture.url)}" xlink:href="${escapeXml(picture.url)}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`
+      : `<rect width="${W}" height="${H}" fill="${p.background}"/>${shapes(template, p)}`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${ground}${out.join("")}</svg>`;
 }
 
 /** The SVG as a URL an <img> can show. */

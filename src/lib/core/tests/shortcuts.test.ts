@@ -14,4 +14,10 @@ describe("shortcut labels outside the Mac", () => {
     expect(pcShortcuts("Zoom (⌘+), (⌘0), (⌘⇧.)", "en")).toBe("Zoom (Ctrl++), (Ctrl+0), (Ctrl+Shift+.)");
     expect(pcShortcuts("Corsivo (⌘I)", "fr")).toBe("Corsivo (Ctrl+I)");
   });
+
+  it("names a click and the Enter of the comment box", () => {
+    expect(pcShortcuts("⌘clic apre", "it")).toBe("Ctrl+clic apre");
+    expect(pcShortcuts("⌥click", "en")).toBe("Alt+click");
+    expect(pcShortcuts("Scrivi un commento (⌘↵ per aggiungerlo)", "it")).toBe("Scrivi un commento (Ctrl+Invio per aggiungerlo)");
+  });
 });

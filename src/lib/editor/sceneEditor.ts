@@ -11,6 +11,7 @@ import { textLayout } from "./layout";
 import { tableLabels, type TableLabels } from "./tables";
 import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
+import type { Place } from "$lib/core/style";
 import { criticCommands, criticPreview, trackChanges, type CriticHandler } from "./critic";
 import type { TypographySettings } from "$lib/core/settings";
 
@@ -56,6 +57,32 @@ export interface FindRequest {
   wholeWord: boolean;
   from?: number;
   to?: number;
+  /** A passage found by counting words, as the statistics point at one; it is selected whole. */
+  place?: Place;
+  /** False leaves the find panel closed and only selects the match. */
+  panel?: boolean;
+}
+
+/** The passage `place` points at in the text, or null when the words are no longer there. */
+export function placeRange(state: EditorState, place: Place): { from: number; to: number } | null {
+  const uses = (word: string, from = 0) => new SearchQuery({ search: word, caseSensitive: false, wholeWord: true, literal: true }).getCursor(state, from);
+  // The search also takes "è" for "e": only the word as written counts, as in the statistics.
+  const nth = (word: string, n: number, from = 0) => {
+    const cursor = uses(word, from);
+    for (let i = 0; ; ) {
+      const next = cursor.next();
+      if (next.done) return null;
+      if (state.sliceDoc(next.value.from, next.value.to).toLowerCase() !== word.toLowerCase()) continue;
+      if (i++ === n) return next.value;
+    }
+  };
+  const start = nth(place.word, place.nth);
+  if (!start) return null;
+  const end = place.through ? nth(place.through, place.throughNth, start.to) : null;
+  let to = end ? end.to : start.to;
+  // A sentence ends with its stop and closing quotes, which are selected with it.
+  if (place.sentence) while (to < state.doc.length && /[.!?…"'»”’)\]*_]/.test(state.doc.sliceString(to, to + 1))) to++;
+  return { from: start.from, to };
 }
 
 export interface SceneEditor {
@@ -173,8 +200,10 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     },
     find(request) {
       const query = new SearchQuery({ search: request.query, caseSensitive: request.caseSensitive, wholeWord: request.wholeWord, literal: true });
-      openSearchPanel(view);
-      view.dispatch({ effects: setSearchQuery.of(query) });
+      if (request.panel !== false) {
+        openSearchPanel(view);
+        view.dispatch({ effects: setSearchQuery.of(query) });
+      }
       const { from, to } = request;
       const length = view.state.doc.length;
       // The match comes from the file: the text may have changed since, so it must still be there.
@@ -182,7 +211,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
         from !== undefined && to !== undefined && to <= length && view.state.doc.sliceString(from, to).toLowerCase() === request.query.toLowerCase()
           ? { from, to }
           : null;
-      const range = at ?? query.getCursor(view.state).next().value;
+      const range = at ?? (request.place ? placeRange(view.state, request.place) : null) ?? query.getCursor(view.state).next().value;
       if (range && "from" in range) {
         view.dispatch({ selection: { anchor: range.from, head: range.to }, effects: EditorView.scrollIntoView(range.from, { y: "center" }) });
         // The manuscript may still be scrolling to the scene: the match is brought back into view after it.

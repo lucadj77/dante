@@ -159,7 +159,8 @@
       />
     {:else}
       {#if isScene && info?.status}
-        <span class="status" data-tone={info.tone ?? ""} title={t("tree.status", { status: info.status })} aria-label={t("tree.status", { status: info.status })}></span>
+        {@const tip = info.property ? t("tree.dot", { property: info.property.charAt(0).toLocaleUpperCase() + info.property.slice(1), value: info.status }) : t("tree.status", { status: info.status })}
+        <span class="status" data-tone={info.tone ?? ""} data-hue={info.hue ?? ""} title={tip} aria-label={tip}></span>
       {/if}
       <span class="label">{label}</span>
       {#if info && info.goal}
@@ -238,6 +239,7 @@
     padding-left: 6px;
   }
   .status {
+    position: relative;
     flex: none;
     width: 8px;
     height: 8px;
@@ -245,6 +247,40 @@
     border-radius: 50%;
     border: 1.5px solid var(--text-muted);
     box-sizing: border-box;
+  }
+  /* A larger target than the dot, for its tooltip. */
+  .status::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+  .status[data-hue="0"] {
+    --hue: #d9534f;
+  }
+  .status[data-hue="1"] {
+    --hue: #e8913a;
+  }
+  .status[data-hue="2"] {
+    --hue: #c7a923;
+  }
+  .status[data-hue="3"] {
+    --hue: #4ea65a;
+  }
+  .status[data-hue="4"] {
+    --hue: #2fa3a3;
+  }
+  .status[data-hue="5"] {
+    --hue: #4a7fd6;
+  }
+  .status[data-hue="6"] {
+    --hue: #8c63d6;
+  }
+  .status[data-hue="7"] {
+    --hue: #d064a6;
+  }
+  .status[data-hue]:not([data-hue=""]) {
+    background: var(--hue);
+    border-color: var(--hue);
   }
   .status[data-tone="0"] {
     background: var(--status-0);

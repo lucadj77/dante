@@ -4,6 +4,11 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+- **Copertina con una tua immagine**: in Impostazioni > Copertina puoi usare una foto o un disegno tuo al posto delle forme, scegliere se mostrare titolo, sottotitolo e autori, e cambiare il colore del testo e del suo contorno. La copertina compare tra i progetti recenti e all'inizio di Word, PDF ed EPUB.
+- **Pallini dell'albero**: passando col mouse sul pallino accanto a una scena si legge lo stato, per esempio «Stato: bozza». In Impostazioni > Albero delle scene puoi far colorare i pallini da un'altra proprietà, come il punto di vista.
+- **Statistiche al punto giusto**: un clic su una ripetizione o su una frase lunga apre la scena in quel punto e seleziona il passo.
+- **Scorciatoie per Windows e Linux**: la guida e i primi passi danno ogni scorciatoia sia per Mac sia per Windows e Linux (per esempio Cmd+F / Ctrl+F). Su Windows e Linux i suggerimenti dei pulsanti scrivono correttamente Ctrl+clic e Ctrl+Invio.
+
 ## 0.1.45 · 26 ottobre 2026
 
 - **Cercare nella scena**: Cmd+F apre una barra per trovare una parola nella scena o nella nota aperta, con Invio per passare alla successiva.

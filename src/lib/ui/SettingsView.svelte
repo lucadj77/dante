@@ -2,7 +2,7 @@
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
-  import { NOVEL_LANGUAGES, type NovelSettings } from "$lib/core/settings";
+  import { NOVEL_LANGUAGES, projectStatus, type NovelSettings } from "$lib/core/settings";
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
   import CoverPicker from "./CoverPicker.svelte";
@@ -38,6 +38,13 @@
   // svelte-ignore state_referenced_locally
   let novel = $state<NovelSettings>(structuredClone($state.snapshot(project.settings)));
   let saving = $state(false);
+  /** Properties the tree's dots can show besides the stage of work. */
+  const dotChoices = $derived.by(() => {
+    const status = projectStatus(novel).name.toLowerCase();
+    const names = Object.keys(novel.properties).filter((n) => n.toLowerCase() !== status);
+    if (novel.tree.dot && !names.includes(novel.tree.dot) && novel.tree.dot.toLowerCase() !== status) names.push(novel.tree.dot);
+    return names;
+  });
   let newProperty = $state("");
   let error = $state("");
   let tab = $state<"novel" | "app">(lastTab.tab);
@@ -209,7 +216,7 @@
 
     <h3>{t("cover.title")}</h3>
     <p class="hint">{t("cover.hint")}</p>
-    <CoverPicker bind:cover={novel.cover} text={novel} />
+    <CoverPicker bind:cover={novel.cover} text={novel} {project} />
 
     <h3>{t("settings.structure")}</h3>
     <label class="check"><input type="checkbox" bind:checked={novel.structure.parts} /> {t("settings.parts")}</label>
@@ -229,6 +236,18 @@
         ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
       >
     {/if}
+
+    <h3>{t("settings.tree")}</h3>
+    <label
+      >{t("settings.treeDot")}
+      <select bind:value={novel.tree.dot}>
+        <option value="">{t("settings.treeDotStatus", { name: projectStatus(novel).name })}</option>
+        {#each dotChoices as name (name)}
+          <option value={name}>{name}</option>
+        {/each}
+      </select>
+    </label>
+    <p class="hint">{t("settings.treeDotHint")}</p>
 
     <h3>{t("settings.sceneTemplate")}</h3>
     <p class="hint">{t("settings.sceneTemplateHint")}</p>

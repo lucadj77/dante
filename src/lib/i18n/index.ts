@@ -11,16 +11,17 @@ export const LANGUAGES: Record<string, { name: string; messages: Partial<Record<
 const IS_MAC = typeof navigator === "undefined" || /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 const KEY_NAMES: Record<string, Record<string, string>> = {
-  en: { "⌘": "Ctrl", "⌃": "Ctrl", "⌥": "Alt", "⇧": "Shift", "↩": "Enter" },
-  it: { "⌘": "Ctrl", "⌃": "Ctrl", "⌥": "Alt", "⇧": "Maiusc", "↩": "Invio" },
+  en: { "⌘": "Ctrl", "⌃": "Ctrl", "⌥": "Alt", "⇧": "Shift", "↩": "Enter", "↵": "Enter", "⌫": "Backspace" },
+  it: { "⌘": "Ctrl", "⌃": "Ctrl", "⌥": "Alt", "⇧": "Maiusc", "↩": "Invio", "↵": "Invio", "⌫": "Backspace" },
 };
 
 /** Rewrites "⌥⌘↑" as "Ctrl+Alt+↑", in the order Windows and Linux use. */
 export function pcShortcuts(text: string, language: string): string {
   const names = KEY_NAMES[language] ?? KEY_NAMES.en;
-  return text.replace(/([⌃⌥⇧⌘]+)(.)/gu, (_, mods: string, key: string) => {
+  // A click ("⌘clic", "⌥click") keeps its word: "Ctrl+clic".
+  return text.replace(/([⌃⌥⇧⌘]+)(clic(?:k)?|.)/gu, (_, mods: string, key: string) => {
     const parts = ["⌘", "⌃", "⌥", "⇧"].filter((m) => mods.includes(m)).map((m) => names[m]);
-    return [...new Set(parts), names[key] ?? key.toUpperCase()].join("+");
+    return [...new Set(parts), names[key] ?? (key.length > 1 ? key : key.toUpperCase())].join("+");
   });
 }
 

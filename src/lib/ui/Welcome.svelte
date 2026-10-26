@@ -7,6 +7,7 @@
   import { NOVEL_LANGUAGES, parseSettings, SETTINGS_FILE } from "$lib/core/settings";
   import { coverSvg, resolveCover, svgUrl, type CoverSettings } from "$lib/core/cover";
   import CoverPicker from "./CoverPicker.svelte";
+  import { coverPicture } from "./coverImage";
   import AuthorsInput from "./AuthorsInput.svelte";
   import { authorsOf } from "$lib/core/export/files";
   import { sampleProject } from "$lib/sample";
@@ -54,10 +55,11 @@
       if (!folders) continue;
       // A browser shows the real cover only of folders it may read without asking.
       void (isWebPath(r.path) ? webFs(r.path, false) : folderFs(r.path))
-        .then((fs) => fs?.readText(SETTINGS_FILE) ?? Promise.reject())
-        .then((text) => {
-          const settings = parseSettings(text);
-          covers[r.path] = svgUrl(coverSvg({ ...settings, title: settings.title || r.title }, settings.cover));
+        .then(async (fs) => {
+          if (!fs) throw new Error();
+          const settings = parseSettings(await fs.readText(SETTINGS_FILE));
+          const picture = await coverPicture(fs, settings.cover);
+          covers[r.path] = svgUrl(coverSvg({ ...settings, title: settings.title || r.title }, settings.cover, picture ? { url: picture } : undefined));
         })
         .catch(() => {
           // A project without settings, or out of reach: the title alone makes its cover.

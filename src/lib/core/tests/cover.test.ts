@@ -35,13 +35,41 @@ describe("cover", () => {
   });
 
   it("is kept in the settings, and unknown values are dropped", () => {
-    expect(parseSettings("cover:\n  template: blocks\n  palette: plum\n").cover).toEqual({ template: "blocks", palette: "plum" });
-    expect(parseSettings("cover:\n  template: spirals\n  palette: neon\n").cover).toEqual({ template: "", palette: "" });
+    expect(parseSettings("cover:\n  template: blocks\n  palette: plum\n").cover).toMatchObject({ template: "blocks", palette: "plum", image: "", textColor: "" });
+    expect(parseSettings("cover:\n  template: spirals\n  palette: neon\n").cover).toMatchObject({ template: "", palette: "" });
+    const own = parseSettings("cover:\n  image: Ricerca/Allegati/foto.jpg\n  show:\n    subtitle: false\n  textColor: '#FFCC00'\n  outlineColor: red\n").cover;
+    expect(own).toMatchObject({ image: "Ricerca/Allegati/foto.jpg", show: { title: true, subtitle: false, authors: true }, textColor: "#ffcc00", outlineColor: "" });
+    expect(parseSettings("cover:\n  image: ../fuori.jpg\n").cover.image).toBe("");
+    expect(parseSettings("cover:\n  image: /Users/me/foto.jpg\n").cover.image).toBe("");
   });
 
   it("is chosen when a project is created", async () => {
     const { project } = await Project.create(new MemoryFs(), { title: "Nebbia", authors: [], language: "it" }, null);
-    expect(project.settings.cover).toEqual(coverFor("Nebbia"));
+    expect(project.settings.cover).toMatchObject(coverFor("Nebbia"));
+  });
+
+  it("hides the texts turned off and draws them in the chosen colours", () => {
+    const text = { title: "Nebbia", subtitle: "Un giallo", authors: ["Ada Rossi"] };
+    const svg = coverSvg(text, { template: "waves", palette: "sea", show: { title: true, subtitle: false, authors: false }, textColor: "#ffcc00", outlineColor: "#000000" });
+    expect(svg).toContain(">Nebbia</text>");
+    expect(svg).not.toContain("Un giallo");
+    expect(svg).not.toContain("ADA ROSSI");
+    expect(svg).toContain('fill="#ffcc00" stroke="#000000"');
+    expect(svg).not.toContain("#f0fbfb");
+    expect(coverSvg(text, { template: "waves", palette: "sea" })).not.toContain("stroke=\"#");
+  });
+
+  it("puts a picture in place of the shapes, or leaves only the texts to lay over it", () => {
+    const text = { title: "Nebbia", authors: [] };
+    const picture = "data:image/png;base64,AAAA";
+    const svg = coverSvg(text, { template: "waves", palette: "sea", image: "foto.png" }, { url: picture });
+    expect(svg).toContain(`<image href="${picture}"`);
+    expect(svg).toContain('preserveAspectRatio="xMidYMid slice"');
+    expect(svg).not.toContain("<path");
+    const texts = coverSvg(text, { template: "waves", palette: "sea", image: "foto.png" }, { url: picture, textOnly: true });
+    expect(texts).not.toContain("<image");
+    expect(texts).not.toContain("<rect");
+    expect(texts).toContain(">Nebbia</text>");
   });
 });
 
