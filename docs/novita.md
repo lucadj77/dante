@@ -8,6 +8,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Pallini dell'albero**: passando col mouse sul pallino accanto a una scena si legge lo stato, per esempio «Stato: bozza». In Impostazioni > Albero delle scene puoi far colorare i pallini da un'altra proprietà, come il punto di vista.
 - **Statistiche al punto giusto**: un clic su una ripetizione o su una frase lunga apre la scena in quel punto e seleziona il passo.
 - **Scorciatoie per Windows e Linux**: la guida e i primi passi danno ogni scorciatoia sia per Mac sia per Windows e Linux (per esempio Cmd+F / Ctrl+F). Su Windows e Linux i suggerimenti dei pulsanti scrivono correttamente Ctrl+clic e Ctrl+Invio.
+- **Importazione da Scrivener più chiara**: se il `.scriv` scelto è un file vuoto o non è un progetto Scrivener, Dante lo dice e spiega cosa scegliere, invece di un errore tecnico come «Not a directory». Un `.scriv` compresso in un unico file si importa come uno zip.
 
 ## 0.1.45 · 26 ottobre 2026
 

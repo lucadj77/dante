@@ -18,6 +18,7 @@
   import { allow, chooseFolder, forgetFolder, isWebPath, rememberFolder, webFolders, webFs } from "$lib/webFolders";
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { ScrivenerError } from "$lib/core/import/scrivener";
   import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
   import WordImport from "./WordImport.svelte";
   import { pickWordFile } from "./wordFile";
@@ -176,7 +177,8 @@
       const picked = await pickScrivener(t("untitled"));
       if (picked) preview(picked.content, picked.name, true);
     } catch (e) {
-      error = t("import.failed", { name: "Scrivener", message: e instanceof Error ? e.message : String(e) });
+      const message = e instanceof ScrivenerError ? t(`scrivener.${e.reason}`) : e instanceof Error ? e.message : String(e);
+      error = t("import.failed", { name: "Scrivener", message });
     }
   }
 

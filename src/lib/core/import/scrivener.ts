@@ -10,6 +10,13 @@ import type { DocBlock, DocxContent } from "./docx";
 import { rtfParagraphs } from "./rtf";
 import { child, childrenNamed, descendants, parseXml, textOf, type XmlElement } from "./xml";
 
+/** Why a Scrivener project cannot be read, for a message in the writer's language. */
+export class ScrivenerError extends Error {
+  constructor(public reason: "empty" | "notProject" | "noDraft") {
+    super(reason === "empty" ? "The file is empty" : reason === "noDraft" ? "The Scrivener project has no Draft folder" : "Not a Scrivener project");
+  }
+}
+
 /** The files of a Scrivener project, by their path inside the .scriv folder; null when missing. */
 export type ScrivenerFiles = (path: string) => Promise<Uint8Array | null>;
 
@@ -31,7 +38,7 @@ function itemsIn(item: XmlElement): XmlElement[] {
 export async function readScrivener(scrivx: string, files: ScrivenerFiles, name = "", untitled = "Untitled"): Promise<DocxContent> {
   const project = parseXml(scrivx);
   const binder = descendants(project, "Binder")[0];
-  if (!binder) throw new Error("Not a Scrivener project");
+  if (!binder) throw new ScrivenerError("notProject");
   const meta = (tag: string) => {
     const found = descendants(project, tag)[0];
     return found ? textOf(found).trim() : "";
@@ -62,7 +69,7 @@ export async function readScrivener(scrivx: string, files: ScrivenerFiles, name 
     for (const inner of itemsIn(item)) await visit(inner, level + 1);
   };
   for (const item of draft(binder)) await visit(item, 1);
-  if (!blocks.length) throw new Error("The Scrivener project has no Draft folder");
+  if (!blocks.length) throw new ScrivenerError("noDraft");
   return { title: meta("ProjectTitle") || name, author: meta("FullName") || meta("AuthorName"), blocks };
 }
 
@@ -72,7 +79,7 @@ export async function readScrivener(scrivx: string, files: ScrivenerFiles, name 
  */
 export async function readScrivenerZip(entries: Map<string, () => Promise<Uint8Array>>, untitled?: string): Promise<DocxContent> {
   const scrivx = [...entries.keys()].filter((p) => /\.scrivx$/i.test(p) && !p.split("/").some((s) => s.startsWith("._") || s === "__MACOSX")).sort((a, b) => a.length - b.length)[0];
-  if (!scrivx) throw new Error("No .scrivx file in the zip");
+  if (!scrivx) throw new ScrivenerError("notProject");
   const root = scrivx.includes("/") ? scrivx.slice(0, scrivx.lastIndexOf("/") + 1) : "";
   const read = async (path: string) => {
     const file = entries.get(root + path);
