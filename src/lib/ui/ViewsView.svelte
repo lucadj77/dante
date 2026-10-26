@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { writeProperties } from "$lib/core/frontmatter";
   import { findNode, folderNotePath } from "$lib/core/manuscript";
   import type { NoteIndex } from "$lib/core/notes";
@@ -19,12 +21,14 @@
     moveBefore,
     shiftEnd,
     VIEW_KINDS,
+    starterViews,
     type Group,
     type Moment,
     type ViewKind,
     type ViewRow,
     type ViewSpec,
   } from "$lib/core/views";
+  import { statusProperty } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
   import { num, t } from "$lib/state.svelte";
   import { confirmDelete } from "./dialogs";
@@ -147,7 +151,7 @@
     return type ? `${type.icon} ${type.name}`.trim() : items;
   }
 
-  const fail = (e: unknown) => (error = t("error.generic", { message: e instanceof Error ? e.message : String(e) }));
+  const fail = (e: unknown) => (error = failure(e));
 
   async function save(changes: Partial<ViewSpec>) {
     if (!selected) return;
@@ -182,8 +186,12 @@
   }
 
   async function createStarters() {
-    await create(t("views.starter.board"), { ...defaultView("kanban"), items: "scene", group_by: "status", groups: ["idea", "draft", "revised", "done"], fields: ["pov"] });
-    await create(t("views.starter.scenes"), { ...defaultView("table"), items: "scene", fields: ["chapter", "status", "pov", "words"] });
+    // The stage of work goes in the property the novel's language calls for, or one the project already defines.
+    const status = statusProperty(p.project.settings.language);
+    const own = Object.entries(p.project.settings.properties).find(([name, def]) => name === status.name || (def.kind === "text" && ["status", "stato", "estado", "statut"].includes(name)));
+    if (own && own[1].values.length) Object.assign(status, { name: own[0], values: own[1].values });
+    else if (own) status.name = own[0];
+    for (const [name, view] of starterViews(status, { board: t("views.starter.board"), scenes: t("views.starter.scenes") })) await create(name, view);
   }
 
   async function rename() {
@@ -491,7 +499,7 @@
   {/if}
 
   <main>
-    {#if error}<p class="error" role="alert">{error}</p>{/if}
+    {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
     {#if !selected}
       <div class="intro">
         <p>{t("views.none", { folder: p.project.settings.folders.views })}</p>

@@ -329,9 +329,34 @@ const PROPERTY_NAMES: Record<string, [string, string, string, string]> = {
   fr: ["âge", "date", "lieu", "propriétaire"],
 };
 
+/** The languages a novel can be written in, with Dante's names for its folders and labels. */
+export const NOVEL_LANGUAGES: { code: string; name: string }[] = [
+  { code: "en", name: "English" },
+  { code: "it", name: "Italiano" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+];
+
+/** The property a scene's stage of work goes in, and its stages: the starting board's columns. */
+const STATUS: Record<string, [string, string[]]> = {
+  en: ["status", ["idea", "draft", "revised", "done"]],
+  it: ["stato", ["idea", "bozza", "rivista", "finita"]],
+  es: ["estado", ["idea", "borrador", "revisada", "terminada"]],
+  fr: ["statut", ["idée", "brouillon", "révisée", "terminée"]],
+};
+
+export function statusProperty(language: string): { name: string; values: string[] } {
+  const [name, values] = STATUS[language.slice(0, 2)] ?? STATUS.en;
+  return { name, values: [...values] };
+}
+
 export function defaultPropertyDefs(language: string): Record<string, PropertyDef> {
   const [age, date, place, owner] = PROPERTY_NAMES[language.slice(0, 2)] ?? PROPERTY_NAMES.en;
+  const status = statusProperty(language);
   return {
+    // A new novel starts with what the starting views use: the stage of each scene and its point of view.
+    [status.name]: { kind: "text", values: status.values, note_type: "" },
+    pov: { kind: "link", values: [], note_type: "character" },
     [age]: { kind: "number", values: [], note_type: "" },
     [date]: { kind: "date", values: [], note_type: "" },
     [place]: { kind: "link", values: [], note_type: "place" },

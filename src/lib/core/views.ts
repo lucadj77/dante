@@ -54,6 +54,14 @@ export function defaultView(type: ViewKind = "table"): ViewSpec {
   return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true, order: [] };
 }
 
+/** The views a new novel starts with: a board of the scenes by stage of work, and a table of them. */
+export function starterViews(status: { name: string; values: string[] }, names: { board: string; scenes: string }): [string, ViewSpec][] {
+  return [
+    [names.board, { ...defaultView("kanban"), items: "scene", group_by: status.name, groups: [...status.values], fields: ["pov"] }],
+    [names.scenes, { ...defaultView("table"), items: "scene", fields: ["chapter", status.name, "pov", "words"] }],
+  ];
+}
+
 const text = (v: unknown): string => (v === null || v === undefined ? "" : String(v).trim());
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map(text).filter(Boolean) : text(v) ? [text(v)] : []);
 

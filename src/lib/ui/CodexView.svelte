@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { projectKey } from "$lib/platform";
   import type { Snippet } from "svelte";
   import type { NoteInfo } from "$lib/core/notes";
@@ -69,7 +71,7 @@
       await p.onReload();
       if (p.open && isWithin(p.open, from)) p.onShow(rebase(p.open, from, to));
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -173,7 +175,7 @@
       await p.onReload();
       return result;
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
       return undefined;
     }
   }
@@ -301,7 +303,7 @@
       </div>
     {/if}
     {#if error}
-      <p class="error" role="alert">{error}</p>
+      <p class="error" role="alert"><ErrorText text={error} /></p>
     {/if}
     {#if current}
       <div class="item-bar">

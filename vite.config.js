@@ -29,6 +29,8 @@ export default defineConfig(() => ({
           port: 1421,
         }
       : undefined,
+    // The help window reads the guide and its images from docs/.
+    fs: { allow: ["docs"] },
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],

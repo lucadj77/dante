@@ -151,12 +151,16 @@ fn mac_menu(app: &App) -> tauri::Result<()> {
             &close_pane,
         ],
     )?;
-    app.set_menu(Menu::with_items(h, &[&app_menu, &edit, &view, &window])?)?;
+    // The page opens its own help window, which reads the guide without a connection.
+    let help = Submenu::with_items(h, "Help", true, &[&MenuItem::with_id(h, "open-help", "Dante Help", true, Some("CmdOrCtrl+?"))?])?;
+    app.set_menu(Menu::with_items(h, &[&app_menu, &edit, &view, &window, &help])?)?;
     app.on_menu_event(|app, event| {
         if event.id() == "close-pane" {
             let _ = app.emit("close-pane", ());
         } else if event.id() == "check-updates" {
             let _ = app.emit("check-updates", ());
+        } else if event.id() == "open-help" {
+            let _ = app.emit("open-help", ());
         } else if event.id() == "quit" {
             quit_requested(app);
         }

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { noteTitle } from "$lib/core/notes";
   import type { NoteMatches, Project, Replaced } from "$lib/core/project";
   import type { FindOptions } from "$lib/core/replace";
@@ -66,7 +68,7 @@
       results = found;
       skipped = new Set();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -105,7 +107,7 @@
             ? t("replace.doneOne")
             : t("replace.doneMany", { count: num(result.count), notes: num(result.notes.length) });
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     } finally {
       busy = false;
     }
@@ -123,7 +125,7 @@
       message = notUndone.length ? t("replace.undoSkipped", { names: notUndone.map((n) => noteTitle(n, manuscript)).join(", ") }) : t("replace.undone");
       done = null;
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     } finally {
       busy = false;
     }
@@ -168,7 +170,7 @@
       {#if done}<button class="link" disabled={busy} onclick={undo}>{t("replace.undo")}</button>{/if}
     </p>
   {/if}
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
 
   {#if query && results.length === 0}
     <p class="muted">{t("replace.none")}</p>

@@ -21,6 +21,7 @@ import {
   parseSettings,
   serializeSettings,
   SETTINGS_FILE,
+  statusProperty,
   type NoteType,
   type NovelSettings,
 } from "./settings";
@@ -29,7 +30,7 @@ import { textStats } from "./stats";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
-import { isView, serializeView, VIEW_EXT, type ViewSpec } from "./views";
+import { isView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
@@ -98,6 +99,8 @@ export class Project {
     names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
     preferences?: Pick<NovelSettings, "structure"> & Pick<NovelSettings["export"], "docx" | "typography" | "revisions">,
+    /** Names of the starting views, a board and a table of the scenes; none are made without. */
+    views?: { board: string; scenes: string },
   ): Promise<{ project: Project; scene: string }> {
     await fs.mkdir("");
     const settings = { ...defaultSettings(details.language), title: details.title, authors: details.authors.map((a) => a.trim()).filter(Boolean), cover: details.cover ?? coverFor(details.title) };
@@ -124,6 +127,7 @@ export class Project {
     await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
     for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
     const project = await Project.open(fs, details.language);
+    if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views)) await project.createView(name, view);
     if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
     const scene = await project.createScene(chapter, 0, names.scene);

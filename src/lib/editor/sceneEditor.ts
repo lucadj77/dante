@@ -18,7 +18,8 @@ export interface SceneEditorOptions {
   text: string;
   /** Hides Markdown markers away from the cursor. Off for the raw Markdown view. */
   preview: boolean;
-  placeholder?: string;
+  /** Shown while the text is empty: a word, or an element with a few lines of help. */
+  placeholder?: string | HTMLElement;
   /** Conventions applied while typing; none when absent. */
   typography?: TypographySettings;
   onChange: (text: string) => void;

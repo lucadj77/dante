@@ -10,6 +10,13 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Copie di sicurezza**: quando chiudi un progetto Dante ne salva una copia zip in Documenti/Dante backup, fuori dalla cartella del romanzo, e tiene le 10 più recenti. Cartella e numero si cambiano in Impostazioni; nel browser c'è un pulsante per scaricare lo zip.
 - **Finestra ricordata**: Dante si riapre con la dimensione e la posizione che aveva.
 - **Correzione**: gli obiettivi di parole salvati in Statistiche non cancellano più quelli cambiati nel frattempo da un coautore.
+- **Aiuto dentro Dante**: l'icona con il punto di domanda nella barra a sinistra apre i primi passi, la guida completa e le novità, da leggere anche senza connessione. Sul Mac c'è anche il menu Help (Cmd+?).
+- **Progetti nuovi pronti all'uso**: ogni nuovo romanzo ha già lo stato delle scene (idea, bozza, rivista, finita), il punto di vista e una bacheca e una tabella delle scene. La prima scena vuota spiega in tre righe come cominciare.
+- **Impostazioni più semplici**: due schede, Questo romanzo e Dante su questo computer, e niente pulsante Salva: ogni modifica si salva da sola. La lingua del romanzo si sceglie da un menu.
+- **Barra del manoscritto più ordinata**: sta su una riga; barra di formattazione, schede della scena, revisioni e testo Markdown sono nel menu Altro.
+- **Sezione Note**: Ricerca e Laboratorio sono ora una sezione sola, con le due cartelle una sotto l'altra. Viste si chiama Tabelle e bacheche.
+- **Errori più chiari**: quando qualcosa non riesce Dante lo spiega con una frase semplice; il messaggio tecnico è dietro Dettagli.
+- **Correzione**: con la tastiera italiana Cmd+Maiusc+7 inseriva un commento invece di iniziare un elenco numerato; ora Cmd+Maiusc+7, 8, 9 e . fanno quello che devono.
 
 ## 0.1.44 · 21 ottobre 2026
 

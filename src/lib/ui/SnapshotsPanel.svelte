@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { diffWords, type DiffPart } from "$lib/core/diff";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
@@ -37,7 +39,7 @@
     try {
       await fn();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -108,7 +110,7 @@
       </li>
     {/each}
   </ul>
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
 </section>
 
 {#if comparing}

@@ -2,7 +2,7 @@
 
 Aggiornata al 26 ottobre 2026.
 
-Ogni capitolo della guida ha due parti. **Come si fa** spiega in pochi passi come usare una funzione, senza termini tecnici. **Approfondimento** spiega cosa succede nei file del romanzo, per chi vuole capire meglio o lavorare anche fuori da Dante. Per iniziare basta leggere le prime parti dei capitoli 1-5.
+Ogni capitolo della guida ha due parti. **Come si fa** spiega in pochi passi come usare una funzione, senza termini tecnici. **Approfondimento** spiega cosa succede nei file del romanzo, per chi vuole capire meglio o lavorare anche fuori da Dante. Per iniziare basta leggere le prime parti dei capitoli 1-5, oppure la pagina [Primi passi](primi-passi.md), che si apre anche dentro Dante con l'icona **Aiuto** (capitolo 20).
 
 Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla schermata iniziale con **Prova il progetto di esempio**: sono i primi capitoli dei *Promessi sposi*, con le schede dei personaggi e dei luoghi, alcune viste, un commento e una revisione di una coautrice, Anna. Aprilo e prova ogni passo mentre leggi: le modifiche non vengono salvate da nessuna parte. Le scorciatoie sono scritte come su Mac (Cmd); su Windows e Linux si usa Ctrl.
 
@@ -16,9 +16,9 @@ Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla 
 6. [Organizzare il manoscritto](#6-organizzare-il-manoscritto)
 7. [Istantanee](#7-istantanee)
 8. [Proprietà, titolo e sinossi](#8-proprietà-titolo-e-sinossi)
-9. [Bibbia, Ricerca e Laboratorio](#9-bibbia-ricerca-e-laboratorio)
+9. [Bibbia e Note](#9-bibbia-e-note)
 10. [Scrivere in più persone](#10-scrivere-in-più-persone)
-11. [Viste](#11-viste)
+11. [Tabelle e bacheche](#11-tabelle-e-bacheche)
 12. [Statistiche e obiettivi](#12-statistiche-e-obiettivi)
 13. [Esportare in Word, PDF ed EPUB](#13-esportare-in-word-pdf-ed-epub)
 14. [Aprire il progetto in Obsidian](#14-aprire-il-progetto-in-obsidian)
@@ -27,6 +27,7 @@ Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla 
 17. [Aggiornamenti](#17-aggiornamenti)
 18. [Dante nel browser](#18-dante-nel-browser)
 19. [Copie di sicurezza](#19-copie-di-sicurezza)
+20. [Aiuto dentro Dante](#20-aiuto-dentro-dante)
 
 ## 1. Cos'è Dante
 
@@ -64,8 +65,10 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
    Con **Nuovo progetto** compare questo modulo. La copertina è un disegno semplice che Dante prepara con il titolo e gli autori: scegli una forma e dei colori, o lasciala com'è.
 
    ![Il modulo per un nuovo progetto: titolo, autori, lingua, copertina e cartella](img/nuovo-progetto.png)
-3. Apri le **Impostazioni** (l'ingranaggio nella barra a sinistra) e scrivi **il tuo nome**: serve a firmare commenti e revisioni e a contare le parole che scrivi ogni giorno.
-4. Controlla **titolo**, **autore** e **lingua del romanzo**: la lingua decide, per esempio, la sillabazione e i nomi delle cartelle.
+3. Apri le **Impostazioni** (l'ingranaggio nella barra a sinistra). Hanno due schede: **Questo romanzo**, con le scelte salvate nel progetto, e **Dante su questo computer**, con quelle che valgono per tutti i progetti. Nella seconda scrivi **il tuo nome**: serve a firmare commenti e revisioni e a contare le parole che scrivi ogni giorno. Non c'è un pulsante per salvare: ogni modifica si salva da sola dopo un istante.
+4. Nella scheda **Questo romanzo** controlla **titolo**, **autore** e **lingua del romanzo** (italiano, inglese, spagnolo o francese, da un menu): la lingua decide, per esempio, la sillabazione e i nomi delle cartelle.
+
+Un progetto nuovo ha già la proprietà **stato** per le scene (idea, bozza, rivista, finita), il **punto di vista** collegato ai personaggi e due viste pronte nella sezione **Tabelle e bacheche**: una bacheca delle scene per stato e una tabella delle scene (capitolo 11). La prima scena, vuota, mostra in grigio tre righe su come cominciare, che spariscono appena scrivi.
 
 I progetti aperti di recente restano elencati nella schermata iniziale. Per tornarci, usa **Chiudi progetto** nella barra a sinistra. Dante ricorda la dimensione e la posizione della finestra e la riapre com'era.
 
@@ -119,7 +122,7 @@ La finestra ha quattro zone, da sinistra a destra:
 
 ![L'area di lavoro con le quattro zone numerate](img/area-di-lavoro.png)
 
-1. **La barra delle sezioni**, con un'icona per ciascuna: Manoscritto, Bibbia, Ricerca, Laboratorio, Viste, Statistiche, Esportazione, Impostazioni, oltre a Cerca e Chiudi progetto. Passando col mouse su un'icona compare il nome; allargando la barra i nomi restano visibili.
+1. **La barra delle sezioni**, con un'icona per ciascuna: Manoscritto, Bibbia, Note, Tabelle e bacheche, Statistiche, Esportazione, Impostazioni, oltre a Cerca, Aiuto, Cestino e Chiudi progetto. Passando col mouse su un'icona compare il nome; allargando la barra i nomi restano visibili.
 2. **Il pannello a sinistra**: nel Manoscritto è l'albero di parti, capitoli e scene; nelle altre sezioni è l'elenco di note e file.
 3. **L'editor** al centro, dove scrivi.
 4. **Il pannello a destra**, con tre schede: **Proprietà** (dati della scena o nota, istantanee, statistiche), **Collegamenti** (le note che rimandano a questa e viceversa) e **Commenti**.
@@ -130,14 +133,15 @@ I due pannelli laterali si nascondono e si riaprono dai pulsanti in alto; si all
 
 ### Approfondimento
 
-Ogni sezione corrisponde a una cartella del progetto (Manoscritto, Bibbia, Ricerca, Laboratorio, Viste); Statistiche, Esportazione e Impostazioni leggono e scrivono `dante.yaml` e i dati in `.dante/`. Lo stato dell'albero (rami aperti o chiusi) è ricordato dal computer, non dal progetto.
+Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste per **Tabelle e bacheche** e, per **Note**, le due cartelle Ricerca e Laboratorio, che restano separate su disco e in Obsidian; Statistiche, Esportazione e Impostazioni leggono e scrivono `dante.yaml` e i dati in `.dante/`. Lo stato dell'albero (rami aperti o chiusi) è ricordato dal computer, non dal progetto.
 
 ## 5. Scrivere
 
 ### Come si fa
 
-- **Cosa vedere**: in alto, sotto **Mostra**, scegli se vedere solo la **Scena** selezionata, tutto il **Capitolo**, tutta la **Parte** o tutto il **Romanzo**, una scena dopo l'altra. Con le frecce passi da una scena alla successiva.
-- **Formattare**: seleziona il testo e usa la barra che compare sopra la selezione (grassetto, corsivo, evidenziato, commento…), oppure le scorciatoie (capitolo 15). La **barra di formattazione** fissa si mostra o nasconde dal suo pulsante.
+- **Cosa vedere**: in alto a sinistra scegli se vedere solo la **Scena** selezionata, tutto il **Capitolo**, tutta la **Parte** o tutto il **Romanzo**, una scena dopo l'altra. Con le frecce passi da una scena alla successiva.
+- **La barra in alto**: dopo la scelta di cosa vedere ci sono le modalità di scrittura (Focus, Macchina da scrivere, Riga, Schermo intero), lo zoom e il menu **Altro**. **Altro** accende e spegne la **barra di formattazione**, le **schede della scena** accanto al testo (capitolo 16), le **revisioni** (capitolo 10) e il **testo com'è nel file**, con i simboli Markdown. Quando le revisioni o il testo com'è nel file sono accesi, nella barra compare un'etichetta che lo ricorda; un clic la spegne. Con una finestra stretta le etichette dei pulsanti si nascondono e restano le icone: passando col mouse si legge il nome.
+- **Formattare**: seleziona il testo e usa la barra che compare sopra la selezione (grassetto, corsivo, evidenziato, commento…), oppure le scorciatoie (capitolo 15). La **barra di formattazione** fissa si mostra o nasconde dal menu **Altro**.
 
   ![Una riga selezionata nella scena Perpetua, con la piccola barra di formattazione sopra](img/barra-selezione.png)
 
@@ -172,7 +176,7 @@ Ogni sezione corrisponde a una cartella del progetto (Manoscritto, Bibbia, Ricer
 
 ### Approfondimento
 
-- Il testo è Markdown: `*corsivo*`, `**grassetto**`, `==evidenziato==`, `~~barrato~~`. L'editor nasconde questi simboli tranne dove si trova il cursore, come in Obsidian. Il pulsante **Markdown** mostra il file com'è, simboli e proprietà comprese.
+- Il testo è Markdown: `*corsivo*`, `**grassetto**`, `==evidenziato==`, `~~barrato~~`. L'editor nasconde questi simboli tranne dove si trova il cursore, come in Obsidian. **Altro** > **Testo com'è nel file** mostra il file com'è, simboli e proprietà comprese.
 - Un'immagine si scrive come in Obsidian: `![[foto.jpg]]`, oppure `![[foto.jpg|300]]` per una larghezza di 300 pixel (`|300x200` fissa anche l'altezza); funziona anche `![descrizione](cartella/foto.jpg)`. L'immagine può stare in qualsiasi cartella del progetto: con `![[nome.jpg]]` Dante la cerca per nome, come Obsidian. Se incolli o trascini nel testo l'indirizzo web di un'immagine, Dante la scarica in **Ricerca/Allegati** e la inserisce da lì. Un indirizzo scritto a mano (`![](https://…/foto.jpg)`) si vede nell'editor ma non passa nell'esportazione finché non premi **⤓** sulla barra dell'immagine, che la scarica nel progetto; un file fuori dal progetto non si vede, perché chi apre il progetto da un altro computer non lo avrebbe: va copiato nel progetto, come fa il pulsante **Immagine**. L'allineamento usa lo stesso tag dei paragrafi allineati. In esportazione un'immagine da sola in un paragrafo diventa una figura, con il suo allineamento; un'immagine dentro una frase resta nella riga, centrata sulle lettere come nell'editor. Un'immagine più larga della pagina viene ridotta alla larghezza del testo; un'immagine che non si trova viene saltata. Le immagini non contano nelle parole e nei caratteri.
 - **Didascalie**, come le scrive Pandoc: la descrizione di un'immagine che sta da sola nel suo paragrafo (`![[casa.png|La casa al mare|300]]`) è la sua didascalia e compare sotto l'immagine. Per una tabella premi **+ Didascalia** nella barra sopra la tabella, oppure scrivi tu, dopo una riga vuota sotto la tabella, una riga che inizia con `Tabella:` (oppure solo `:`), per esempio `Tabella: Le fasi del romanzo`; nell'editor si vede centrata sotto la tabella, senza la parola iniziale. Le didascalie passano in Word, PDF ed EPUB sotto la figura o la tabella, in corsivo, e contano nelle parole dell'esportazione.
 - **Note incorporate**, come in Obsidian: `![[Nota]]` su una riga da sola mostra il testo della nota in un riquadro, in sola lettura; `![[Nota#Titolo]]` mostra solo quella sezione (con le sue sottosezioni), `![[Nota#^id]]` solo il paragrafo che finisce con `^id`. Un clic sul nome in alto apre la nota, un clic nel testo mostra la riga com'è scritta. In esportazione il testo della nota prende il posto della riga, comprese le note che incorpora a sua volta; una nota che incorpora sé stessa viene saltata. Dentro una frase `![[Nota]]` resta un collegamento. Le parole delle note incorporate contano nell'esportazione, non nelle statistiche della scena.
@@ -333,7 +337,7 @@ properties:
 
 Un valore che non rispetta la definizione resta com'è ed è segnalato nel pannello. I nuovi progetti in italiano definiscono già età (numero), data (data), luogo (collegamento a un luogo) e proprietario (collegamento a un personaggio).
 
-## 9. Bibbia, Ricerca e Laboratorio
+## 9. Bibbia e Note
 
 ### Come si fa
 
@@ -341,8 +345,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 
   ![La Bibbia del progetto di esempio: i tipi a sinistra, le schede dei personaggi al centro](img/bibbia.png)
 - **Tipi della Bibbia**: puoi aggiungerne di nuovi (per esempio "Creatura") e, per ogni tipo, **Modifica il tipo** (nome, icona, proprietà suggerite) e **Modifica il modello**, cioè il testo da cui parte ogni nuova scheda.
-- **Ricerca**: un archivio per note, immagini, PDF e pagine web raccolti per il romanzo. **Aggiungi file…** copia file dal computer; immagini, PDF e HTML si aprono dentro Dante, gli altri con il programma predefinito.
-- **Laboratorio**: lo spazio per bozze, scalette e idee che non fanno parte del manoscritto. Funziona come la Ricerca.
+- **Note**: tutto quello che non è manoscritto né Bibbia, in due cartelle mostrate una sotto l'altra. **Ricerca** è l'archivio per note, immagini, PDF e pagine web raccolti per il romanzo; **Laboratorio** è lo spazio per bozze, scalette e idee. **Nuova nota** la crea nel Laboratorio, **Aggiungi file…** copia file dal computer nella Ricerca; per spostare una nota da una cartella all'altra trascinala. Immagini, PDF e HTML si aprono dentro Dante, gli altri file con il programma predefinito.
 - **Collegamenti**: scrivi `[[` nel testo e Dante suggerisce le note del progetto, anche per alias. Funziona anche al contrario: se selezioni «Corrado» e lo chiudi tra `[[ ]]` (o scrivi `[[Corrado]]`) e Corrado è un alias di «Corrado Olivieri», Dante riconosce il personaggio e collega la sua scheda. Un collegamento a una nota che non esiste ancora appare più chiaro.
 - **Clic su un collegamento**: si apre un piccolo menu con **Apri nell'editor**, **Apri nel pannello** e **Anteprima**.
 
@@ -382,7 +385,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 1. **Condividere**: metti la cartella del progetto in Dropbox o Google Drive e condividila con chi lavora con te. Ognuno la apre con **Apri cartella…**.
 2. **Firmarsi**: ognuno scrive il proprio nome in **Impostazioni → Il tuo nome**.
 3. **Commentare**: seleziona il testo e premi 💬 (o Cmd+Alt+M), scrivi il commento e premi Cmd+Invio. Nel testo il commento appare come una nuvoletta.
-4. **Proporre modifiche**: attiva **Revisioni** nella barra in alto. Da quel momento quello che scrivi appare sottolineato e quello che cancelli barrato, con il tuo nome, finché qualcuno non decide.
+4. **Proporre modifiche**: scegli **Altro** > **Segna le modifiche come revisioni** nella barra in alto (serve il tuo nome nelle Impostazioni); finché sono attive nella barra resta l'etichetta **Revisioni attive**. Da quel momento quello che scrivi appare sottolineato e quello che cancelli barrato, con il tuo nome, finché qualcuno non decide.
 5. **Decidere**: la scheda **Commenti** del pannello destro elenca commenti e modifiche del testo mostrato. Per ciascuno puoi **Rispondi**, **Risolvi** (chiude la discussione), **Accetta** o **Rifiuta**; in cima ci sono **Accetta tutte** e **Rifiuta tutte**.
 
 ![La scena L'incontro con il commento e la revisione di Anna, elencati nella scheda Commenti](img/commenti.png)
@@ -406,20 +409,20 @@ Se Dropbox o Drive creano una **copia in conflitto** (succede quando due persone
 
 Si legge così: `{== ==}` racchiude il testo commentato, `{>> <<}` contiene il commento (o la firma di una revisione), `{-- --}` è il testo da togliere e `{++ ++}` quello da aggiungere. Ogni risposta è un altro `{>> <<}` in coda.
 
-- In Obsidian questi segni si vedono così come sono; Dante li nasconde e disegna il testo come un programma di videoscrittura. Il pulsante **Markdown** li mostra.
+- In Obsidian questi segni si vedono così come sono; Dante li nasconde e disegna il testo come un programma di videoscrittura. **Altro** > **Testo com'è nel file** li mostra.
 - In modalità revisione, scrivere dentro una propria aggiunta la modifica direttamente; scrivere dentro l'aggiunta di un altro o in un testo evidenziato modifica il testo senza creare una nuova revisione.
 - **Risolvi** toglie la discussione dal file. Nell'esportazione i commenti spariscono e le revisioni in sospeso vengono accettate o rifiutate, come scegli.
 - **Presenza**: ogni copia di Dante scrive in `.dante/presence/<nome>.json` cosa sta modificando, e lo aggiorna ogni minuto. Chi apre per primo una scena la tiene; una presenza non aggiornata da tre minuti (per esempio dopo che il computer si è spento) non conta più.
 - **Copie in conflitto**: Dante riconosce i nomi usati da Dropbox ("copia in conflitto di Anna…"), Google Drive ("(1)" accanto all'originale), Syncthing e servizi simili, e le tiene fuori dall'albero. Quello che scarti va in `.trash`; prima di unire, un'istantanea conserva il file com'era. Le revisioni nate da un'unione sono firmate da chi ha scritto la copia.
 - Il registro delle parole scritte è un file per persona, `.dante/sessions/<nome>.json`, così due persone non scrivono mai lo stesso file.
 
-## 11. Viste
+## 11. Tabelle e bacheche
 
 ### Come si fa
 
 Una vista mostra scene, capitoli o schede della Bibbia in un colpo d'occhio, come **Tabella**, **Lista**, **Schede**, **Bacheca** o **Linea del tempo**.
 
-1. Nella sezione **Viste**, la prima volta, premi **Crea le viste di partenza**: avrai una bacheca delle scene per stato e una tabella delle scene. Oppure premi **Nuova vista** e dalle un nome.
+1. Nella sezione **Tabelle e bacheche** un progetto nuovo ha già una bacheca delle scene per stato e una tabella delle scene. In un progetto che non ne ha, premi **Crea le viste di partenza**; per un'altra vista premi **Nuova vista** e dalle un nome.
 2. In alto scegli come mostrarla (tabella, lista, schede, bacheca, linea del tempo).
 3. Con **⚙ Impostazioni** scegli cosa elencare (scene, capitoli e parti, tutte le note o un tipo della Bibbia), da quali cartelle, con quali condizioni (**Solo se**), come ordinare, come raggruppare e quali campi mostrare.
 
@@ -613,7 +616,7 @@ Su Mac si usa Cmd, su Windows Ctrl; anche le etichette dei pulsanti nell'app si 
 
 ### Approfondimento
 
-Da verificare: con la tastiera italiana Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. potrebbero non funzionare, perché Maiusc con quei tasti produce altri caratteri (/, (, ) e :). In quel caso si usano i pulsanti della barra di formattazione.
+Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. funzionano anche con la tastiera italiana, dove Maiusc con quei tasti scrive altri caratteri (/, (, ) e :): Dante guarda il tasto premuto, non il carattere. Sul Mac Cmd+? apre l'aiuto (capitolo 20).
 
 ## 16. Pannelli affiancati
 
@@ -622,7 +625,7 @@ Da verificare: con la tastiera italiana Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. potrebbe
 Accanto al testo puoi tenere aperte fino a due cose in più: un'altra scena, un capitolo, la scheda di un personaggio, una nota, un'immagine o una vista come la linea del tempo. Ogni pannello si può modificare, e resta aperto anche quando cambi sezione.
 
 - **Aprire a fianco.** Tieni premuto **Alt** (Option su Mac) mentre fai clic: su un link `[[Lucia Mondella]]` nel testo, su una scena nell'albero, su una scheda della Bibbia, su una nota, su una vista o su un risultato della ricerca. Puoi anche usare la voce **Apri a fianco** del menu del tasto destro, il pulsante ⧉ nella scheda Collegamenti, oppure trascinare una voce sul bordo destro della finestra.
-- **Schede della scena.** Il pulsante **Schede** nella barra del Manoscritto apre un pannello che mostra le schede della Bibbia nominate nella scena che stai scrivendo (per nome o alias) o collegate con `[[…]]`. Scrivi «Agnese» e la sua scheda compare tra le linguette in alto; passando a un'altra scena le linguette cambiano.
+- **Schede della scena.** **Altro** > **Schede della scena** nella barra del Manoscritto apre un pannello che mostra le schede della Bibbia nominate nella scena che stai scrivendo (per nome o alias) o collegate con `[[…]]`. Scrivi «Agnese» e la sua scheda compare tra le linguette in alto; passando a un'altra scena le linguette cambiano.
 
   ![La scena L'incontro con il pannello Schede della scena aperto sulla scheda di don Abbondio](img/pannelli.png)
 
@@ -723,3 +726,22 @@ Una copia di sicurezza è un file zip con tutto il progetto, tenuto sul computer
 - Due romanzi con lo stesso nome di cartella hanno sottocartelle diverse («Il mio romanzo», «Il mio romanzo 2»): un file `.dante-backup-of` nella sottocartella dice a quale progetto appartiene.
 - La copia si scrive prima con un nome provvisorio e prende il suo nome solo quando è completa, quindi uno zip con il nome giusto non è mai a metà.
 - La cartella scelta vale per tutti i progetti di questo computer, come le altre impostazioni dell'applicazione. Una cartella sincronizzata (Drive, Dropbox, iCloud) va bene come seconda protezione, ma tiene la copia sullo stesso servizio che potrebbe aver causato il problema.
+
+## 20. Aiuto dentro Dante
+
+### Come si fa
+
+L'icona **Aiuto** (il punto di domanda nella barra a sinistra, sopra il cestino) apre una finestra con tre schede:
+
+- **Primi passi**: sette passi per cominciare, dalla creazione del progetto all'esportazione.
+- **Guida completa**: questa guida, con l'elenco dei capitoli a sinistra. Un clic su un rimando («capitolo 7») porta al capitolo.
+- **Novità**: cosa cambia in ogni versione.
+
+Si legge anche senza connessione, perché è dentro Dante. Dalla schermata iniziale ci si arriva con **Primi passi e guida**; sul Mac anche dal menu **Help** > **Dante Help** (Cmd+?). Esc chiude la finestra.
+
+### Approfondimento
+
+- Le pagine sono i file `docs/primi-passi.md`, `docs/guida.md` e `docs/novita.md` del repository, con le immagini di `docs/img/`, copiati dentro l'app quando viene preparata: la guida dentro Dante è quella della versione installata.
+- Con l'interfaccia in inglese le schede mostrano `first-steps.md` e `whats-new.md`; la guida completa per ora è solo in italiano.
+- I link ad altre pagine del repository (per esempio [Provare Dante](beta.md)) si aprono su GitHub nel browser.
+- **Messaggi di errore**: quando qualcosa non riesce (un file che non si può scrivere, un disco pieno, una cartella sparita, la connessione assente) Dante lo dice con una frase semplice. Il messaggio tecnico resta nascosto dietro **Dettagli**, da copiare se segnali il problema.

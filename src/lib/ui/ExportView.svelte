@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { buildBook } from "$lib/core/export/book";
   import { pageCount } from "$lib/core/statistics";
   import { bookToDocx, docxBytes } from "$lib/core/export/docx";
@@ -116,7 +118,7 @@
   }
   $effect(() => {
     JSON.stringify([options, typography, paratext, structure, revisions, format, useCover, epubCss]);
-    const timer = setTimeout(() => void persist().catch((e) => (error = t("error.generic", { message: String(e) }))), 500);
+    const timer = setTimeout(() => void persist().catch((e) => (error = failure(e))), 500);
     return () => clearTimeout(timer);
   });
 
@@ -247,7 +249,7 @@
 
   let saved = $state<Saved | null>(null);
 
-  const fail = (e: unknown) => (error = t("error.generic", { message: e instanceof Error ? e.message : String(e) }));
+  const fail = (e: unknown) => (error = failure(e));
 
   async function openFile() {
     if (!saved) return;
@@ -512,7 +514,7 @@
     <div class="actions">
       <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run", { format: FORMATS[format].name === "Word" ? "DOCX" : FORMATS[format].name })}</button>
       {#if folder}<button type="button" class="link" disabled={busy} onclick={() => run(true)}>{t("export.saveElsewhere")}</button>{/if}
-      {#if error}<span class="error" role="alert">{error}</span>{/if}
+      {#if error}<span class="error" role="alert"><ErrorText text={error} /></span>{/if}
     </div>
     {#if message}
       <div class="success" role="status">

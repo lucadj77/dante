@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
   import type { Snippet } from "svelte";
   import type { DocxContent } from "$lib/core/import/docx";
   import {
@@ -206,7 +207,7 @@
     <footer>
       <p class="note small">{t("import.how")}</p>
       {#if footer}{@render footer(book)}{/if}
-      {#if error}<p class="error" role="alert">{error}</p>{/if}
+      {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
       <div class="actions">
         <button class="primary" disabled={busy} onclick={() => onDone(book)}>{action}</button>
         <button disabled={busy} onclick={onCancel}>{t("welcome.cancel")}</button>

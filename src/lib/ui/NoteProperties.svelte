@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { Properties } from "$lib/core/frontmatter";
   import { noteTitle, noteType } from "$lib/core/notes";
   import type { Project } from "$lib/core/project";
@@ -47,7 +49,7 @@
       await p.project.setProperties(p.path, changes);
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -60,7 +62,7 @@
       await p.project.saveSettings({ ...p.project.settings, properties: withDef(p.project.settings.properties, key, def) });
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -162,7 +164,7 @@
       <button type="submit">{t("panel.addProperty")}</button>
     </form>
   {/if}
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
 </section>
 
 <style>

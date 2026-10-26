@@ -286,3 +286,12 @@ select {
 .cm-searchMatch.cm-searchMatch-selected {
   background: rgb(255 150 0 / 0.45);
 }
+
+/* The few lines an empty scene shows in place of the text. */
+.cm-placeholder .empty-hint {
+  display: inline-grid;
+  gap: 0.35em;
+  font-size: 0.85em;
+  font-style: italic;
+  line-height: 1.4;
+}

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { Properties } from "$lib/core/frontmatter";
   import { findNode, folderNotePath, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
@@ -65,7 +67,7 @@
       await p.project.retitle(node.path, title);
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
   const isContainer = $derived(!!node && node.kind !== "scene" && node.kind !== "manuscript");
@@ -86,7 +88,7 @@
       await p.project.setProperties(node.path, changes);
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -99,7 +101,7 @@
       await p.project.saveSettings({ ...p.project.settings, properties: withDef(p.project.settings.properties, key, def) });
       await p.onChanged();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -234,7 +236,7 @@
         <button type="submit">{t("panel.addProperty")}</button>
       </form>
     {/if}
-    {#if error}<p class="error">{error}</p>{/if}
+    {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
   </section>
 
   {#if node && node.kind === "scene"}

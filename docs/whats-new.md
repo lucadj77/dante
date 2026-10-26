@@ -10,6 +10,13 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Backups**: when you close a project Dante saves a zip copy of it in Documents/Dante backup, outside the novel's folder, and keeps the 10 most recent. Folder and number can be changed in Settings; in the browser a button downloads the zip.
 - **Window remembered**: Dante reopens with the size and position it had.
 - **Fix**: word goals saved in Statistics no longer erase those a co-author changed meanwhile.
+- **Help inside Dante**: the question mark icon in the left bar opens the first steps, the full guide and what's new, readable without a connection. On the Mac there is also the Help menu (Cmd+?).
+- **New projects ready to use**: every new novel already has the scene status (idea, draft, revised, done), the point of view, and a board and a table of the scenes. The first empty scene explains in three lines how to start.
+- **Simpler settings**: two tabs, This novel and Dante on this computer, and no Save button: every change saves itself. The novel's language is picked from a menu.
+- **Tidier manuscript bar**: it fits on one row; formatting bar, scene cards, revisions and Markdown text are in the More menu.
+- **Notes section**: Research and Laboratory are now one section, with the two folders one below the other. Views is now called Tables and boards.
+- **Clearer errors**: when something fails Dante explains it in a plain sentence; the technical message is behind Details.
+- **Fix**: on an Italian keyboard Cmd+Shift+7 inserted a comment instead of starting a numbered list; now Cmd+Shift+7, 8, 9 and . do what they should.
 
 ## 0.1.44 · October 21, 2026
 

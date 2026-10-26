@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
   import { parseSettings, SETTINGS_FILE, type NovelSettings } from "$lib/core/settings";
   import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
@@ -37,7 +39,7 @@
         words = frequentWords(s.scenes.map((x) => x.text), p.project.settings.language, 40);
         logs = await readLogs(p.project.fs);
       } catch (e) {
-        error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+        error = failure(e);
       }
     })();
   });
@@ -73,7 +75,7 @@
       await p.project.saveSettings({ ...fresh, goals: { ...fresh.goals, [key]: value } });
       await p.onSaved();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -151,7 +153,7 @@
 </script>
 
 <div class="stats">
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
   {#if !stats}
     <p class="muted">…</p>
   {:else}

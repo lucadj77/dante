@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { projectKey } from "$lib/platform";
   import { tick, type Snippet } from "svelte";
   import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
@@ -213,7 +215,7 @@
       await tick();
       applyPendingFocus();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     }
   }
 
@@ -312,7 +314,7 @@
       await onReload();
       word = null;
     } catch (e) {
-      wordError = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      wordError = failure(e);
     } finally {
       wordBusy = false;
     }
@@ -407,6 +409,8 @@
 
   /** The tree's right-click menu, and the item whose name it asked to edit. */
   let menu = $state<{ path: string; x: number; y: number } | null>(null);
+  /** The toolbar's menu of what is used less often. */
+  let moreOpen = $state(false);
   let renaming = $state<string | null>(null);
 
   function scenesIn(node: ManuscriptNode): number {
@@ -535,6 +539,10 @@
   });
 
   function onKey(event: KeyboardEvent) {
+    if (event.key === "Escape" && moreOpen) {
+      moreOpen = false;
+      return;
+    }
     // Esc that closed something else first, such as the suggestions, stays there.
     if (event.key === "Escape" && fullscreen && !event.defaultPrevented && !menu) void toggleFullscreen();
   }
@@ -611,7 +619,7 @@
     if (hideTimer) return;
     hideTimer = setTimeout(() => {
       hideTimer = undefined;
-      if (hovering || menu || typing()) return;
+      if (hovering || menu || moreOpen || typing()) return;
       edge = null;
     }, 350);
   }
@@ -644,7 +652,13 @@
     >
       <div class="tree-actions">
         <div class="tree-group" role="group" aria-labelledby="tree-add">
-          <span class="caption" id="tree-add">{t("tree.add")}</span>
+          <div class="caption-row">
+            <span class="caption" id="tree-add">{t("tree.add")}</span>
+            <span class="fold">
+              <button class="icon-only" title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /></button>
+              <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
+            </span>
+          </div>
           <div class="add">
             <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
             <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
@@ -652,13 +666,6 @@
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
             <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
-          </div>
-        </div>
-        <div class="tree-group" role="group" aria-labelledby="tree-fold">
-          <span class="caption" id="tree-fold">{t("tree.outline")}</span>
-          <div class="fold">
-            <button title={t("tip.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /><span>{t("tree.foldAll")}</span></button>
-            <button title={t("tip.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /><span>{t("tree.unfoldAll")}</span></button>
           </div>
         </div>
       </div>
@@ -771,39 +778,15 @@
       onfocusout={leaveEdge}
     >
     <div class="toolbar" role="toolbar">
-      <div class="group" role="group" aria-label={t("toolbar.show")}>
-        <span class="caption">{t("toolbar.show")}</span>
-        <div class="buttons">
-        <div class="segmented">
-          {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
-            {#if l !== "part" || project.settings.structure.parts}
-              <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}><Icon name={l} /><span class="label">{t(`level.${l}`)}</span></button>
-            {/if}
-          {/each}
-        </div>
-        <button aria-pressed={panes.list.some((p) => p.path === SCENE_SHEETS)} title={t("tip.panes.sheets")} onclick={toggleSceneSheets}><Icon name="sheets" /><span class="label">{t("panes.sheetsButton")}</span></button>
-        </div>
-      </div>
-      <div class="group" role="group" aria-label={t("toolbar.writing")}>
-        <span class="caption">{t("toolbar.writing")}</span>
-        <div class="buttons">
-        <button aria-pressed={app.settings.formatBar} title={t("tip.formatBar")} onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}
-          ><Icon name="format" /><span class="label">{t("format.bar")}</span></button
-        >
-        <button aria-pressed={raw} title={t("tip.raw")} onclick={toggleRaw}><Icon name="raw" /><span class="label">{t("editor.raw")}</span></button>
-        <button
-          aria-pressed={app.settings.revisions}
-          class:tracking={app.settings.revisions}
-          title={app.settings.userName.trim() ? t("tip.revisions") : t("tip.revisionsNoName")}
-          disabled={!app.settings.userName.trim()}
-          onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}><Icon name="revisions" /><span class="label">{t("mode.revisions")}</span></button
-        >
-        </div>
+      <div class="segmented" role="group" aria-label={t("toolbar.show")}>
+        {#each ["scene", "chapter", "part", "novel"] as const as l (l)}
+          {#if l !== "part" || project.settings.structure.parts}
+            <button aria-pressed={level === l} title={t(`tip.level.${l}`)} onclick={() => (level = l)}><Icon name={l} /><span class="label">{t(`level.${l}`)}</span></button>
+          {/if}
+        {/each}
       </div>
       <!-- The modes leave the cursor in the text, so writing goes on at once. -->
-      <div class="group" role="group" aria-label={t("toolbar.modes")}>
-        <span class="caption">{t("toolbar.modes")}</span>
-        <div class="buttons">
+      <div class="modes" role="group" aria-label={t("toolbar.modes")}>
         <button aria-pressed={focusMode} title={t("tip.focus")} onmousedown={(e) => e.preventDefault()} onclick={() => (focusMode = !focusMode)}><Icon name="focus" /><span class="label">{t("mode.focus")}</span></button>
         <button aria-pressed={typewriter} title={t("tip.typewriter")} onmousedown={(e) => e.preventDefault()} onclick={() => (typewriter = !typewriter)}><Icon name="typewriter" /><span class="label">{t("mode.typewriter")}</span></button>
         <button
@@ -813,15 +796,45 @@
           onclick={() => saveAppSettings({ ...app.settings, lineHighlight: !app.settings.lineHighlight })}><Icon name="lineHighlight" /><span class="label">{t("mode.lineHighlight")}</span></button
         >
         <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onmousedown={(e) => e.preventDefault()} onclick={toggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
-        </div>
       </div>
-      <div class="group" role="group" aria-label={t("toolbar.size")}>
-        <span class="caption">{t("toolbar.size")}</span>
-        <div class="buttons">
+      <span class="grow"></span>
+      <!-- What changes how the text is written stays in sight while it is on. -->
+      {#if app.settings.revisions && app.settings.userName.trim()}
+        <button class="chip tracking" title={t("tip.revisionsOn")} onclick={() => saveAppSettings({ ...app.settings, revisions: false })}><Icon name="revisions" /><span class="label">{t("mode.revisionsOn")}</span></button>
+      {/if}
+      {#if raw}
+        <button class="chip" aria-pressed="true" title={t("tip.rawOn")} onclick={toggleRaw}><Icon name="raw" /><span class="label">{t("mode.rawOn")}</span></button>
+      {/if}
+      <div class="zoom" role="group" aria-label={t("toolbar.size")}>
         <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
         <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
         <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
-        </div>
+      </div>
+      <div class="more">
+        <button aria-expanded={moreOpen} aria-haspopup="menu" title={t("tip.more")} onclick={() => (moreOpen = !moreOpen)}><Icon name="more" /><span class="label">{t("toolbar.more")}</span></button>
+        {#if moreOpen}
+          <div class="menu-backdrop" role="presentation" onmousedown={() => (moreOpen = false)}></div>
+          <div class="more-menu" role="menu" aria-label={t("toolbar.more")}>
+            <button role="menuitemcheckbox" aria-checked={app.settings.formatBar} title={t("tip.formatBar")} onclick={() => saveAppSettings({ ...app.settings, formatBar: !app.settings.formatBar })}
+              ><span class="tick">{app.settings.formatBar ? "✓" : ""}</span><Icon name="format" />{t("more.formatBar")}</button
+            >
+            <button role="menuitemcheckbox" aria-checked={panes.list.some((p) => p.path === SCENE_SHEETS)} title={t("tip.panes.sheets")} onclick={() => { moreOpen = false; toggleSceneSheets(); }}
+              ><span class="tick">{panes.list.some((p) => p.path === SCENE_SHEETS) ? "✓" : ""}</span><Icon name="sheets" />{t("more.sheets")}</button
+            >
+            <hr />
+            <button
+              role="menuitemcheckbox"
+              aria-checked={app.settings.revisions && !!app.settings.userName.trim()}
+              title={app.settings.userName.trim() ? t("tip.revisions") : t("tip.revisionsNoName")}
+              disabled={!app.settings.userName.trim()}
+              onclick={() => saveAppSettings({ ...app.settings, revisions: !app.settings.revisions })}
+              ><span class="tick">{app.settings.revisions && app.settings.userName.trim() ? "✓" : ""}</span><Icon name="revisions" />{app.settings.userName.trim() ? t("more.revisions") : t("more.revisionsNoName")}</button
+            >
+            <button role="menuitemcheckbox" aria-checked={raw} title={t("tip.raw")} onclick={() => { moreOpen = false; toggleRaw(); }}
+              ><span class="tick">{raw ? "✓" : ""}</span><Icon name="raw" />{t("more.raw")}</button
+            >
+          </div>
+        {/if}
       </div>
     </div>
     <!-- In full screen the formatting comes out with the toolbar, as the bar at the top. -->
@@ -852,7 +865,7 @@
     {/if}
     </div>
     {#if error}
-      <p class="error" role="alert">{error}</p>
+      <p class="error" role="alert"><ErrorText text={error} /></p>
     {/if}
     <div class="page" class:typewriter bind:this={page}>
       <div class="column" style="max-width: {app.settings.lineWidth}ch">
@@ -998,18 +1011,24 @@
     padding: 6px 4px;
     font-size: 12px;
   }
-  .tree-actions .fold {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-  }
-  .tree-actions .fold button {
+  .caption-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 3px 4px;
-    font-size: 11px;
+    justify-content: space-between;
+  }
+  .tree-actions .fold {
+    display: flex;
+    gap: 2px;
+  }
+  .tree-actions .fold button {
+    padding: 1px 4px;
+    border-color: transparent;
+    background: none;
+    color: var(--text-muted);
+  }
+  .tree-actions .fold button:hover {
+    color: var(--text);
+    background: var(--bg-hover);
   }
   .icon-only {
     display: inline-flex;
@@ -1150,35 +1169,28 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px 0;
+    gap: 6px 12px;
     padding: 6px 12px;
     border-bottom: 1px solid var(--border);
     container-type: inline-size;
   }
-  /* Each group of buttons under its name, set apart from the next by a line. */
-  .group {
-    display: grid;
-    gap: 3px;
-    padding: 0 12px;
-    border-left: 1px solid var(--border);
+  .toolbar > * {
+    flex: none;
   }
-  .group .buttons {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .group:first-child {
-    padding-left: 0;
-    border-left: none;
-  }
-  .group:last-child {
-    margin-left: auto;
-  }
-  .group button {
+  .toolbar button {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     font-size: 12px;
+  }
+  .modes,
+  .zoom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .grow {
+    flex: 1;
   }
   .segmented {
     display: flex;
@@ -1195,24 +1207,80 @@
   .segmented button:last-child {
     border-radius: 0 6px 6px 0;
   }
-  .group button.size {
+  .zoom button.size {
     min-width: 32px;
     justify-content: center;
     font-variant-numeric: tabular-nums;
   }
-  .group button.tracking {
+  .chip.tracking {
     color: var(--critic-add, #1a7f37);
     border-color: currentColor;
   }
+  .more {
+    position: relative;
+  }
+  .more-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 21;
+    display: grid;
+    min-width: 260px;
+    padding: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  }
+  .more-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 13px;
+  }
+  .more-menu button:hover:not(:disabled) {
+    background: var(--bg-hover);
+  }
+  .more-menu button:disabled {
+    opacity: 0.55;
+  }
+  .more-menu .tick {
+    width: 12px;
+    color: var(--accent);
+  }
+  .more-menu hr {
+    width: 100%;
+    margin: 4px 0;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
   /* A narrow window keeps the icons; the names stay in the tooltips. */
-  @container (max-width: 640px) {
+  /* A narrower bar keeps one row: first the modes, then every button, show only their icons;
+     the names stay in the tooltips. */
+  @container (max-width: 900px) {
+    .modes .label,
+    .chip .label {
+      display: none;
+    }
+  }
+  @container (max-width: 560px) {
     .label {
       display: none;
     }
   }
   /* WebKit without container queries (macOS 10.15): the window width stands in for the bar's. */
   @supports not (container-type: inline-size) {
-    @media (max-width: 900px) {
+    @media (max-width: 1500px) {
+      .modes .label,
+      .chip .label {
+        display: none;
+      }
+    }
+    @media (max-width: 1000px) {
       .label {
         display: none;
       }

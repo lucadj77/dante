@@ -42,3 +42,8 @@ export function markOnly(scope: string, paths: string[]) {
   folds.scopes[scope] = [...paths];
   save();
 }
+
+/** Whether a tree was ever folded or unfolded on this computer. */
+export function hasMarks(scope: string): boolean {
+  return scope in folds.scopes;
+}

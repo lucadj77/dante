@@ -15,6 +15,8 @@
 </script>
 
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { onMount } from "svelte";
   import type { Project } from "$lib/core/project";
   import { basename, isMarkdown, join } from "$lib/core/path";
@@ -72,7 +74,7 @@
     try {
       p.onCreated(await place.create());
     } catch (e) {
-      error = String(e);
+      error = failure(e);
     }
   }
 
@@ -144,7 +146,7 @@
         {place.label}<span class="detail">{place.detail}</span>
       </button>
     {/each}
-    {#if error}<p class="error" role="alert">{error}</p>{/if}
+    {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
     <hr />
     <button role="menuitem" onclick={edit}>{t("linkMenu.edit")}</button>
   {/if}

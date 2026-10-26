@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import type { ConflictCopy } from "$lib/core/conflicts";
   import type { DiffPart } from "$lib/core/diff";
   import { conflictDiff } from "$lib/core/conflicts";
@@ -44,7 +46,7 @@
       await p.onResolved();
       if (p.conflicts.length === 0) p.onClose();
     } catch (e) {
-      error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+      error = failure(e);
     } finally {
       busy = false;
     }
@@ -98,7 +100,7 @@
       {:else}
         <p class="muted">{t("conflicts.binary")}</p>
       {/if}
-      {#if error}<p class="error" role="alert">{error}</p>{/if}
+      {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
       <div class="actions">
         <button disabled={busy} title={t("tip.conflict.original")} onclick={() => resolve("original")}>{t("conflicts.keepOriginal")}</button>
         <button disabled={busy} title={t("tip.conflict.copy")} onclick={() => resolve("copy")}>{t("conflicts.keepCopy")}</button>

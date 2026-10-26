@@ -100,6 +100,18 @@
     },
   };
 
+  /** What an empty scene says: where to write, how to go on, where the scene's details are. */
+  function emptyHint(): HTMLElement {
+    const box = document.createElement("span");
+    box.className = "empty-hint";
+    for (const key of ["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const) {
+      const line = document.createElement("span");
+      line.textContent = t(key);
+      box.append(line);
+    }
+    return box;
+  }
+
   onMount(() => {
     let destroyed = false;
     const unwatch = doc.watch(() => {
@@ -115,7 +127,7 @@
         preview: !props.raw,
         // The raw view shows properties too, where quotes are YAML syntax.
         typography: props.raw ? undefined : props.project.settings.export.typography,
-        placeholder: "…",
+        placeholder: props.raw ? "…" : emptyHint(),
         onChange(next) {
           props.onText(path, next);
           collab.changed();

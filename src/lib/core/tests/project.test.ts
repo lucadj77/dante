@@ -206,6 +206,19 @@ describe("new project", () => {
     expect(await fs.exists("Ricerca")).toBe(true);
     expect(await fs.readText("dante.yaml")).toContain("title: Il faro");
   });
+
+  it("starts with the stage of work, the point of view and the starting views", async () => {
+    const fs = new MemoryFs({});
+    const { project } = await Project.create(fs, { title: "Il faro", authors: [], language: "it" }, { chapter: "C", scene: "S" }, undefined, { board: "Bacheca", scenes: "Scene" });
+    expect(project.settings.properties.stato).toEqual({ kind: "text", values: ["idea", "bozza", "rivista", "finita"], note_type: "" });
+    expect(project.settings.properties.pov.note_type).toBe("character");
+    expect(project.views).toEqual(["Viste/Bacheca.yaml", "Viste/Scene.yaml"]);
+    const board = await fs.readText("Viste/Bacheca.yaml");
+    expect(board).toContain("group_by: stato");
+    expect(board).toContain("bozza");
+    // Saved with the project, so it stays when the settings are read again.
+    expect((await Project.open(fs)).settings.properties.stato.values).toHaveLength(4);
+  });
 });
 
 describe("trash", () => {

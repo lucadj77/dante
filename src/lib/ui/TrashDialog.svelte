@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "$lib/ui/errors";
   import { noteTitle } from "$lib/core/notes";
   import type { Project } from "$lib/core/project";
   import { listTrash, type TrashItem } from "$lib/core/trash";
@@ -31,7 +33,7 @@
   void load();
 
   function fail(e: unknown) {
-    error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
+    error = failure(e);
   }
 
   /** The name as the writer knows it: a scene without its order number or extension. */
@@ -86,7 +88,7 @@
     </header>
     <p class="muted">{t("trash.hint")}</p>
     {#if message}<p class="message" role="status">{message}</p>{/if}
-    {#if error}<p class="error">{error}</p>{/if}
+    {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
     {#if items && items.length === 0}
       <p class="muted">{t("trash.empty")}</p>
     {:else if items}

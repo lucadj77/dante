@@ -20,6 +20,7 @@
   import ReplacePanel from "./ReplacePanel.svelte";
   import TrashDialog from "./TrashDialog.svelte";
   import { backupOnClose } from "$lib/backups";
+  import { help, openHelp } from "./help.svelte";
   import Icon, { type IconName } from "./Icon.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
@@ -50,12 +51,12 @@
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
-  type Section = "manuscript" | "codex" | "research" | "laboratory" | "views" | "stats" | "export" | "settings" | "files";
+  type Section = "manuscript" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
   const sections: { id: Section & IconName }[] = [
     { id: "manuscript" },
     { id: "codex" },
-    { id: "research" },
-    { id: "laboratory" },
+    // Research and Laboratory, side by side in one tree.
+    { id: "notes" },
     { id: "views" },
     { id: "stats" },
     { id: "export" },
@@ -104,8 +105,7 @@
     const f = project.settings.folders;
     if (isWithin(path, f.manuscript)) return { section: "manuscript" };
     if (isWithin(path, f.codex)) return { section: "codex" };
-    if (isWithin(path, f.research)) return { section: "research" };
-    if (isWithin(path, f.laboratory)) return { section: "laboratory" };
+    if (isWithin(path, f.research) || isWithin(path, f.laboratory)) return { section: "notes" };
     if (isView(path, project.settings)) return { section: "views" };
     const note = index?.notes.get(path);
     if (note && noteType(path, note.properties, project.settings) !== null && !isWithin(path, f.templates)) return { section: "codex" };
@@ -283,7 +283,7 @@
   let showTrash = $state(false);
 
   /** Sections that can have panes beside them; the others use the whole width. */
-  const withPanes = $derived(["manuscript", "codex", "research", "laboratory", "files", "views"].includes(section));
+  const withPanes = $derived(["manuscript", "codex", "notes", "files", "views"].includes(section));
   const showPanes = $derived(withPanes && panes.list.length > 0);
 
   /** The item the section shows, for swapping it with a pane. */
@@ -419,6 +419,10 @@
   let diskRev = $state(0);
   /** Bumped after the project reloads, so views read the new tree. */
   let rev = $state(0);
+  const novelTitle = $derived.by(() => {
+    void rev;
+    return project.settings.title;
+  });
 
   async function reload() {
     await project.reload();
@@ -571,6 +575,7 @@
         {@render item(s.id, s.id, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); }, t(`tip.section.${s.id}` as MessageKey))}
       {/each}
       <div class="spacer"></div>
+      {@render item("help", "help", t("help.title"), help.open, () => openHelp(), t("tip.help"))}
       {@render item("trash", "trash", t("trash.title"), showTrash, () => (showTrash = true), t("tip.trash"))}
       {@render item("settings", "settings", t("section.settings"), section === "settings", () => go("settings"), t("tip.section.settings"))}
       {@render item("close", "close", t("app.close"), undefined, close, t("tip.close"))}
@@ -617,11 +622,11 @@
             >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
           >
         {/if}
-        {#if project.settings.title}<span class="project-name">{project.settings.title}</span>{/if}
+        {#if novelTitle}<span class="project-name">{novelTitle}</span>{/if}
         {#if panels}
           <button
             class="panel-toggle"
-            class:alone={!project.settings.title}
+            class:alone={!novelTitle}
             aria-pressed={!layout.right}
             aria-label={t(layout.right ? "nav.hideRight" : "nav.showRight")}
             data-tip={t(layout.right ? "tip.hideRight" : "tip.showRight")}
@@ -660,20 +665,19 @@
       />
     {:else if section === "codex"}
       <CodexView {project} {rev} {diskRev} open={opened.codex ?? null} onShow={(path) => (opened.codex = path)} onReload={reload} beside={showPanes ? besidePanes : null} />
-    {:else if section === "research" || section === "laboratory"}
-      {#key section}
-        <FilesView
-          {project}
-          {rev}
-          {diskRev}
-          root={project.settings.folders[section]}
-          title={t(`section.${section}`)}
-          open={opened[section] ?? null}
-          onShow={(path) => (opened[section] = path)}
-          onReload={reload}
-          beside={showPanes ? besidePanes : null}
-        />
-      {/key}
+    {:else if section === "notes"}
+      <FilesView
+        {project}
+        {rev}
+        {diskRev}
+        root={project.settings.folders.research}
+        roots={[project.settings.folders.research, project.settings.folders.laboratory]}
+        title={t("section.notes")}
+        open={opened.notes ?? null}
+        onShow={(path) => (opened.notes = path)}
+        onReload={reload}
+        beside={showPanes ? besidePanes : null}
+      />
     {:else if section === "files"}
       {#key filesRoot}
         <FilesView
