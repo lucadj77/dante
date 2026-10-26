@@ -302,13 +302,15 @@ describe("new project with earlier choices", () => {
     const prefs = {
       structure: { ...earlier.project.settings.structure, chapter: { ...earlier.project.settings.structure.chapter, numbering: "ordinal" as const } },
       docx: { ...earlier.project.settings.export.docx, pageSize: "15x21" as const, font: "Garamond" },
-      typography: { ...earlier.project.settings.export.typography, quotes: "dash" as const },
+      typography: { ...earlier.project.settings.export.typography, quotes: "dash" as const, ellipsis: false },
       revisions: "reject" as const,
     };
     const { project } = await Project.create(new MemoryFs({}), { title: "B", authors: ["L"], language: "it" }, { chapter: "C", scene: "S" }, prefs);
     expect(project.settings.export.docx.pageSize).toBe("15x21");
     expect(project.settings.export.docx.font).toBe("Garamond");
-    expect(project.settings.export.typography.quotes).toBe("dash");
+    // Dialogue marks stay as typed in each new novel; the other typography choices carry over.
+    expect(project.settings.export.typography.quotes).toBe("keep");
+    expect(project.settings.export.typography.ellipsis).toBe(false);
     expect(project.settings.export.revisions).toBe("reject");
     expect(project.settings.structure.chapter.numbering).toBe("ordinal");
     expect(project.settings.structure.chapter.label).toBe("Capitolo");

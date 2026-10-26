@@ -13,6 +13,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Importazione da Scrivener più chiara**: se il `.scriv` scelto è un file vuoto o non è un progetto Scrivener, Dante lo dice e spiega cosa scegliere, invece di un errore tecnico come «Not a directory». Un `.scriv` compresso in un unico file si importa come uno zip.
 - **Nuovo progetto: dice cosa manca**: se premi Crea o Importa senza aver scelto dove salvare il progetto, Dante te lo dice invece di lasciare il pulsante grigio; gli errori compaiono accanto al pulsante, e mentre lavora il pulsante scrive «Importo…».
 - **Scrivener senza segni strani**: i segni degli stili di Scrivener, come `<$Scr_Ps::0>`, non compaiono più all'inizio delle scene importate.
+- **Dialoghi come nel testo nei nuovi progetti**: un nuovo romanzo esporta i dialoghi con i segni con cui sono scritti, anche se per un altro romanzo avevi scelto i caporali. Le altre scelte dell'ultima esportazione restano il punto di partenza.
 
 ## 0.1.45 · 26 ottobre 2026
 
