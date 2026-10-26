@@ -3,6 +3,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import { openSearchPanel, search, searchKeymap, SearchQuery, setSearchQuery } from "@codemirror/search";
 import { formatting, type FormattingLabels } from "./formatting";
 import { cursorLine, focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
@@ -36,8 +37,19 @@ export interface SceneEditorOptions {
   links?: LinkHandler;
   /** Starting comments and opening their threads. */
   critic?: CriticHandler;
+  /** The words of the find panel (Cmd+F) in the interface language, by CodeMirror's English phrase. */
+  phrases?: Record<string, string>;
   /** More behaviour, such as sharing the text with other editors of the same file. */
   extensions?: Extension[];
+}
+
+/** A match to show: the find panel opens on `query` and the match at `from`–`to` is selected. */
+export interface FindRequest {
+  query: string;
+  caseSensitive: boolean;
+  wholeWord: boolean;
+  from?: number;
+  to?: number;
 }
 
 export interface SceneEditor {
@@ -51,6 +63,8 @@ export interface SceneEditor {
   focus(at: "start" | "end"): void;
   /** Splits at the cursor into a new scene or a new chapter, as the shortcuts do. */
   split(kind: "scene" | "chapter"): void;
+  /** Opens the find panel on a query and selects a match, as when coming from the project search. */
+  find(request: FindRequest): void;
   destroy(): void;
 }
 
@@ -91,7 +105,9 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
         { key: "ArrowDown", run: leave("down") },
       ]),
     ),
-    keymap.of([...defaultKeymap, ...historyKeymap]),
+    keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+    search({ top: true }),
+    options.phrases ? EditorState.phrases.of(options.phrases) : [],
     EditorView.updateListener.of((update) => {
       if (update.docChanged) options.onChange(update.state.doc.toString());
       if (update.focusChanged && update.view.hasFocus) options.onFocus?.();
@@ -137,6 +153,25 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     },
     split(kind) {
       split(kind === "scene" ? options.onSplitScene : options.onSplitChapter)(view);
+    },
+    find(request) {
+      const query = new SearchQuery({ search: request.query, caseSensitive: request.caseSensitive, wholeWord: request.wholeWord, literal: true });
+      openSearchPanel(view);
+      view.dispatch({ effects: setSearchQuery.of(query) });
+      const { from, to } = request;
+      const length = view.state.doc.length;
+      // The match comes from the file: the text may have changed since, so it must still be there.
+      const at =
+        from !== undefined && to !== undefined && to <= length && view.state.doc.sliceString(from, to).toLowerCase() === request.query.toLowerCase()
+          ? { from, to }
+          : null;
+      const range = at ?? query.getCursor(view.state).next().value;
+      if (range && "from" in range) {
+        view.dispatch({ selection: { anchor: range.from, head: range.to }, effects: EditorView.scrollIntoView(range.from, { y: "center" }) });
+        // The manuscript may still be scrolling to the scene: the match is brought back into view after it.
+        setTimeout(() => view.dispatch({ effects: EditorView.scrollIntoView(view.state.selection.main.from, { y: "center" }) }), 600);
+      }
+      view.focus();
     },
     destroy() {
       view.destroy();

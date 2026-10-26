@@ -12,6 +12,8 @@
   import { inTauri } from "$lib/tauriFs";
   import { WEB_BUILD } from "$lib/build";
   import { checkForUpdates, updates } from "$lib/updates.svelte";
+  import { backupFolder, backupInfo, backupNow, defaultBackupFolder, downloadBackup, type BackupInfo } from "$lib/backups";
+  import { onDisk } from "$lib/platform";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
 
@@ -44,6 +46,65 @@
       reportCopied = t("support.copied");
     } catch (e) {
       reportCopied = t("error.generic", { message: String(e) });
+    }
+  }
+
+  // Backups: the buttons act at once, with the folder and number shown in the form.
+  let backupDefault = $state("");
+  let backup = $state.raw<BackupInfo | null>(null);
+  let backupMessage = $state("");
+  let backingUp = $state(false);
+  const dateTime = $derived(new Intl.DateTimeFormat(app.settings.language, { dateStyle: "medium", timeStyle: "short" }));
+  if (inTauri()) void defaultBackupFolder().then((f) => (backupDefault = f), () => {});
+
+  async function loadBackups() {
+    try {
+      backup = await backupInfo(project, $state.snapshot(appSettings));
+    } catch {
+      backup = null;
+    }
+  }
+  $effect(() => {
+    void appSettings.backupFolder;
+    void loadBackups();
+  });
+
+  /** "Il mio romanzo 2026-10-26 10-15-30.zip" says when: the date and time shown are read from it. */
+  function backupDate(path: string): string {
+    const m = /(\d{4})-(\d{2})-(\d{2}) (\d{2})-(\d{2})-(\d{2})\.zip$/.exec(path);
+    return m ? dateTime.format(new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : path;
+  }
+
+  async function makeBackup() {
+    backingUp = true;
+    backupMessage = "";
+    try {
+      if (inTauri()) {
+        const path = await backupNow(project, false, $state.snapshot(appSettings));
+        if (path) backupMessage = t("backup.done", { name: path.split(/[\\/]/).pop() ?? path });
+        await loadBackups();
+      } else {
+        await downloadBackup(project);
+      }
+    } catch (e) {
+      backupMessage = t("backup.failed", { message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      backingUp = false;
+    }
+  }
+
+  async function chooseBackupFolder() {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const folder = await open({ directory: true, multiple: false, defaultPath: await backupFolder($state.snapshot(appSettings)).catch(() => undefined) });
+    if (typeof folder === "string") appSettings.backupFolder = folder;
+  }
+
+  async function showBackups() {
+    try {
+      const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
+      if (backup?.latest) await revealItemInDir(backup.latest);
+    } catch (e) {
+      backupMessage = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -214,6 +275,35 @@
       {/if}
     {/if}
 
+    {#if onDisk(project.fs)}
+      <h3>{t("backup.title")}</h3>
+      {#if inTauri()}
+        <p class="hint">{t("backup.hint")}</p>
+        <div class="field">
+          <span class="label">{t("backup.folder")}</span>
+          <span class="path">{appSettings.backupFolder || backupDefault}</span>
+          <div class="clean">
+            <button type="button" onclick={chooseBackupFolder}>{t("backup.choose")}</button>
+            {#if appSettings.backupFolder}<button type="button" onclick={() => (appSettings.backupFolder = "")}>{t("backup.useDefault")}</button>{/if}
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" bind:checked={appSettings.backupOnClose} /> {t("backup.onClose")}</label>
+        <label>{t("backup.keep")} <input type="number" min="1" max="100" bind:value={appSettings.backupKeep} /></label>
+        <p class="hint">{backup?.latest ? t("backup.last", { date: backupDate(backup.latest), count: backup.count }) : t("backup.none")}</p>
+        <div class="clean">
+          <button type="button" disabled={backingUp} onclick={makeBackup}>{backingUp ? t("backup.running") : t("backup.now")}</button>
+          {#if backup?.latest}<button type="button" onclick={showBackups}>{t("backup.show")}</button>{/if}
+          {#if backupMessage}<span>{backupMessage}</span>{/if}
+        </div>
+      {:else}
+        <p class="hint">{t("backup.browserHint")}</p>
+        <div class="clean">
+          <button type="button" disabled={backingUp} onclick={makeBackup}>{t("backup.download")}</button>
+          {#if backupMessage}<span>{backupMessage}</span>{/if}
+        </div>
+      {/if}
+    {/if}
+
     <h3>{t("support.title")}</h3>
     <p class="hint">{t("support.hint")}</p>
     <div class="clean">
@@ -318,6 +408,19 @@
   }
   .saved {
     color: var(--text-muted);
+  }
+  .field {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .field .label {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .path {
+    font-size: 13px;
+    overflow-wrap: anywhere;
   }
   .error {
     color: var(--danger);

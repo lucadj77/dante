@@ -1,6 +1,6 @@
 # Dante, guida all'uso
 
-Aggiornata al 21 ottobre 2026.
+Aggiornata al 26 ottobre 2026.
 
 Ogni capitolo della guida ha due parti. **Come si fa** spiega in pochi passi come usare una funzione, senza termini tecnici. **Approfondimento** spiega cosa succede nei file del romanzo, per chi vuole capire meglio o lavorare anche fuori da Dante. Per iniziare basta leggere le prime parti dei capitoli 1-5.
 
@@ -26,6 +26,7 @@ Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla 
 16. [Pannelli affiancati](#16-pannelli-affiancati)
 17. [Aggiornamenti](#17-aggiornamenti)
 18. [Dante nel browser](#18-dante-nel-browser)
+19. [Copie di sicurezza](#19-copie-di-sicurezza)
 
 ## 1. Cos'è Dante
 
@@ -66,7 +67,7 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
 3. Apri le **Impostazioni** (l'ingranaggio nella barra a sinistra) e scrivi **il tuo nome**: serve a firmare commenti e revisioni e a contare le parole che scrivi ogni giorno.
 4. Controlla **titolo**, **autore** e **lingua del romanzo**: la lingua decide, per esempio, la sillabazione e i nomi delle cartelle.
 
-I progetti aperti di recente restano elencati nella schermata iniziale. Per tornarci, usa **Chiudi progetto** nella barra a sinistra.
+I progetti aperti di recente restano elencati nella schermata iniziale. Per tornarci, usa **Chiudi progetto** nella barra a sinistra. Dante ricorda la dimensione e la posizione della finestra e la riapre com'era.
 
 Ogni progetto contiene anche un file con il titolo del romanzo e l'estensione **.dante** (per esempio `Il mio romanzo.dante`). Un **doppio clic** su quel file apre Dante con il romanzo già caricato; se Dante è già aperto, passa a quel romanzo dopo aver salvato il testo. Il file si può rinominare, ma deve restare nella cartella principale del progetto. Funziona con Dante installato, non con la copia portatile né avviato da `npm run tauri dev`.
 
@@ -145,6 +146,9 @@ Ogni sezione corrisponde a una cartella del progetto (Manoscritto, Bibbia, Ricer
 - **Righe vuote**: in Markdown due o più righe vuote tra due paragrafi valgono come una sola, quindi lo spazio in più che vedi mentre scrivi sparisce in esportazione e in Obsidian. Per lasciare davvero una riga vuota, senza aprire una nuova scena, premi il pulsante **¶** della barra di formattazione o Alt+Invio: dopo il paragrafo in cui sei compare una riga con un **¶** chiaro, che nel libro sarà una riga vuota. Il **¶** non si stampa; per toglierla, metti il cursore sulla riga e cancellala come una riga qualsiasi.
 
   *Esempio:* alla fine di un paragrafo («…e la porta si chiuse.») premi Alt+Invio e continua a scrivere il paragrafo successivo. In Word, PDF ed EPUB tra i due paragrafi c'è una riga bianca e la scena resta una. Per una pausa più forte, con il separatore (per esempio `* * *`), usa invece il pulsante **Separatore di scena**.
+- **Cercare nella scena**: Cmd+F apre una barra sopra il testo. Scrivi la parola: Invio (o Cmd+G) passa alla successiva, Maiusc+Invio (o Maiusc+Cmd+G) torna alla precedente, **tutte** le seleziona tutte. Le caselle limitano la ricerca alle maiuscole scritte così o alle parole intere. Il campo **Sostituisci con** cambia la parola solo in questa scena; per cambiarla in tutto il romanzo usa **Sostituisci** (capitolo 9). Esc chiude la barra.
+
+  *Prova:* apri la scena **Perpetua**, premi Cmd+F e scrivi «padrone»: la prima volta che compare è evidenziata, Invio passa alla seguente.
 - **Dividere**: con il cursore nel punto giusto, **Dividi in scena** (Cmd+Invio) sposta il testo che segue in una nuova scena; **Dividi in capitolo** (Cmd+Maiusc+Invio) apre un nuovo capitolo da quel punto, con le scene che seguono.
 - **Modalità di scrittura**:
   - **Macchina da scrivere**: la riga su cui scrivi resta al centro della finestra.
@@ -191,7 +195,8 @@ Tutto si fa dall'albero nella sezione Manoscritto.
   <img src="img/menu-albero.png" width="290" alt="Il menu del tasto destro su una scena dell'albero">
 - **Spostare**: trascina scene e capitoli dove vuoi, anche da un capitolo all'altro. Con Alt+Cmd+↑ e Alt+Cmd+↓ sposti l'elemento selezionato di un posto.
 - **Unire scene**: tieni premuto Cmd e clicca le scene da unire, poi premi **Fondi** nella barra sopra l'albero (o dal clic destro). Il testo finisce nella prima scena, in ordine di lettura.
-- **Eliminare**: clic destro → **Elimina…**, oppure Cmd+Backspace. L'elemento va nella cartella `.trash` del progetto e si può recuperare.
+- **Eliminare**: clic destro → **Elimina…**, oppure Cmd+Backspace. L'elemento va nel **Cestino** e si può recuperare.
+- **Cestino**: si apre con l'icona del cestino in basso nella barra a sinistra, sopra le Impostazioni. Elenca ciò che è stato eliminato, dal più recente, con il posto da cui viene. **Rimetti a posto** lo riporta lì; se nel frattempo quel posto è stato preso, l'elemento torna accanto con un «2» nel nome. **Elimina per sempre** e **Svuota il cestino** lo cancellano davvero, dopo una conferma. Nel cestino finiscono anche le scene fuse in un'altra e le copie in conflitto scartate (capitolo 10).
 - **Prologo, epilogo, interludio**: seleziona il capitolo e, nel pannello Proprietà, scegli il **Tipo** (prologo ed epilogo non hanno numero) oppure spunta **Senza numero (come un interludio)**. Nel progetto di esempio l'**Introduzione** è un prologo: per questo il primo capitolo vero si chiama «Capitolo 1».
 
   <img src="img/tipo-capitolo.png" width="280" alt="Il pannello Proprietà dell'Introduzione, con Tipo: Prologo">
@@ -228,7 +233,8 @@ Il mio romanzo/
 - **Prefissi numerici**: il numero all'inizio del nome (010, 020…) decide solo l'ordine e non compare nei titoli. I numeri vanno di 10 in 10 per lasciare spazio. Quando sposti qualcosa, Dante rinomina il minor numero possibile di file e aggiorna i collegamenti che puntavano a ciò che si è spostato.
 - **Nota cartella**: un capitolo o una parte tiene le sue proprietà in una nota con lo stesso nome della cartella (`010 Arrivo/010 Arrivo.md`). La proprietà `kind` vale `part`, `chapter`, `prologue` o `epilogue`; `numbered: false` toglie il numero. Per questo una scena non può avere lo stesso nome del suo capitolo.
 - **Numeri visibili**: "Capitolo 3: La lettera" è calcolato al momento dalle impostazioni in `dante.yaml`, non dal prefisso né dal testo del file.
-- **Fusione**: le scene unite oltre alla prima vanno in `.trash`, e i collegamenti che puntavano a loro portano alla prima. Una scena con una copia in conflitto va sistemata prima (capitolo 10).
+- **Cestino**: è la cartella `.trash` del progetto, la stessa che usa Obsidian. Dante annota in `.dante/trash.json` da dove viene ogni elemento, per poterlo rimettere a posto; un file messo nel cestino da Obsidian o a mano, di cui Dante non conosce l'origine, torna nel Laboratorio. Il cestino è nella cartella del romanzo, quindi lo vedono e lo svuotano anche i coautori.
+- **Fusione**: le scene unite oltre alla prima vanno nel cestino, e i collegamenti che puntavano a loro portano alla prima. Una scena con una copia in conflitto va sistemata prima (capitolo 10).
 - **Scena fuori dai capitoli**: se resta lì, l'esportazione la aggiunge in coda al capitolo precedente.
 
 ## 7. Istantanee
@@ -251,7 +257,7 @@ Un'istantanea è una copia di una scena com'era in un certo momento, da riprende
 
 ### Approfondimento
 
-Le istantanee sono file in `.dante/snapshots/` e seguono la loro scena quando viene spostata o rinominata. Riguardano una scena alla volta: per conservare l'intero romanzo a una certa data serve un backup della cartella del progetto.
+Le istantanee sono file in `.dante/snapshots/` e seguono la loro scena quando viene spostata o rinominata. Riguardano una scena alla volta: per conservare l'intero romanzo ci sono le copie di sicurezza (capitolo 19).
 
 ## 8. Proprietà, titolo e sinossi
 
@@ -352,6 +358,9 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 - **Cercare**: Cmd+Maiusc+F (o la lente in alto a sinistra) cerca nei nomi, negli alias e nel testo di tutte le note, con un'anteprima di ogni risultato. Il menu sotto la casella limita la ricerca a una sezione.
 
   <img src="img/cerca.png" width="420" alt="La ricerca di «Lucia»: schede, scene e righe che la nominano">
+- **Trova e sostituisci in tutto il progetto**: Alt+Cmd+F, oppure la scheda **Sostituisci** in cima alla ricerca. Scrivi la parola da cercare e quella nuova: sotto compaiono tutte le occorrenze, nota per nota, con la parola vecchia barrata e la nuova accanto. Togli la spunta a quelle da lasciare come sono, oppure usa **Nessuna** e spunta solo quelle che ti servono. Un clic su una riga apre la nota con la parola selezionata. **Sostituisci** cambia quelle spuntate; subito dopo **Annulla la sostituzione** rimette tutto com'era. Con **Solo parole intere** «Renzo» non trova «Renzino»; senza **Maiuscole e minuscole** la parola nuova prende le maiuscole di quella vecchia («RENZO» diventa «LORENZO»). Il menu sotto limita la sostituzione a una sezione.
+
+  *Esempio:* per cambiare nome a un personaggio, cerca «Renzo» e sostituisci con «Lorenzo» nel Manoscritto. Prima di cambiare una scena Dante ne salva un'istantanea chiamata «Prima di sostituire «Renzo»», da riprendere se serve (capitolo 7). Per cambiare anche il nome della scheda, rinominala: i collegamenti si aggiornano da soli.
 
 **Un esempio completo.** Apri la scheda di **Lucia Mondella** nella Bibbia. Nel testo, «La casa di Lucia» è blu perché è un collegamento: un clic e scegli **Anteprima** per leggerla senza lasciare la scheda. Ora apri la scena **Lucia** nel Manoscritto e scrivi `[[Agn`: Dante suggerisce **Agnese**; premi Invio e il collegamento è fatto. Nella scheda di Agnese, la scheda **Collegamenti** del pannello destro ora elenca anche la scena **Lucia**.
 
@@ -364,6 +373,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 - Un collegamento chiuso a mano su un alias viene riscritto come `[[Corrado Olivieri|Corrado]]`: nel testo si legge sempre «Corrado», e il collegamento funziona anche in Obsidian, che non risolve gli alias da solo. Succede solo quando l'alias appartiene a una sola nota e nessuna nota si chiama così; maiuscole e minuscole non contano. Cmd+Z annulla la riscrittura insieme alle parentesi. Un `[[Corrado]]` scritto prima, o fuori da Dante, porta comunque alla scheda dentro Dante.
 - Eliminare un tipo non cancella le sue note, che restano dove sono con le loro proprietà. Quello che si elimina dalle sezioni va in `.trash`.
 - Le pagine HTML aperte in Dante non eseguono i loro script.
+- **Sostituisci** cambia solo il testo delle note. Restano come sono le proprietà in testa al file, il nome della nota dentro un collegamento (`[[Renzo Tramaglino|Renzo]]` cambia solo l'alias dopo `|`), le immagini e i file incorporati, gli indirizzi dei link, i tag HTML, il testo dei commenti `{>>…<<}` e i blocchi di codice. Le revisioni (`{++…++}`, `{--…--}`) sono testo e vengono cambiate. Se una nota cambia tra la ricerca e la sostituzione, Dante cerca di nuovo e salta le occorrenze che non ci sono più. **Annulla la sostituzione** salta le note modificate dopo la sostituzione e le elenca.
 
 ## 10. Scrivere in più persone
 
@@ -590,7 +600,10 @@ Su Mac si usa Cmd, su Windows Ctrl; anche le etichette dei pulsanti nell'app si 
 
 | Scorciatoia | Azione |
 | --- | --- |
-| Cmd+Maiusc+F | apre e chiude la ricerca |
+| Cmd+F | cerca nella scena o nella nota |
+| Cmd+G / Maiusc+Cmd+G | occorrenza successiva / precedente |
+| Cmd+Maiusc+F | apre e chiude la ricerca nel progetto |
+| Alt+Cmd+F | trova e sostituisci in tutto il progetto |
 | Cmd++ / Cmd+− / Cmd+0 | ingrandisce, riduce, ripristina il testo |
 | Esc | esce da schermo intero, chiude ricerca e finestre, annulla una modifica in corso |
 | Cmd+\\ (tastiera italiana: Cmd+ù) | apre un pannello a fianco, scegliendo con la ricerca cosa mostrare |
@@ -691,3 +704,22 @@ Se chiudi la scheda subito dopo aver scritto, il browser può chiedere se vuoi d
 - **Pubblicazione**: a ogni modifica unita in `main` la compilazione su GitHub prepara la versione web (`npm run build:web`, con `VITE_DANTE_WEB=1`) con lo stesso numero `0.1.N` dell'app, scrive `version.json` con le novità e la pubblica su GitHub Pages (`.github/workflows/builds.yml`, lavoro *web*). Per provarla in locale: `DANTE_BASE=/dante npm run build:web` e servire la cartella `build` all'indirizzo `/dante/`.
 - **Indirizzo**: tutto ciò che sta sotto `lucadj77.github.io` è per il browser lo stesso sito. Se un giorno quell'account pubblicasse altre pagine con GitHub Pages, quelle potrebbero leggere i dati di Dante nel browser. Un dominio proprio (per esempio `dante.<dominio>.it`) toglie il problema e si collega a GitHub Pages senza cambiare il resto.
 
+## 19. Copie di sicurezza
+
+Una copia di sicurezza è un file zip con tutto il progetto, tenuto sul computer fuori dalla cartella del romanzo. Serve se la cartella si rovina, per esempio per un problema di sincronizzazione con Drive o Dropbox, o se un file viene cancellato per sbaglio fuori da Dante.
+
+### Come si fa
+
+- Dante crea una copia da solo quando chiudi il progetto o esci da Dante, se qualcosa è cambiato dall'ultima.
+- Le copie sono nella cartella **Documenti/Dante backup**, in una sottocartella per ogni romanzo. Di ogni romanzo restano le 10 più recenti; le più vecchie si cancellano da sole.
+- In **Impostazioni → Copie di sicurezza** puoi scegliere un'altra cartella, quante copie tenere, se crearle alla chiusura, e vedere quando è stata fatta l'ultima. **Crea una copia ora** ne fa una subito, **Mostra le copie** apre la cartella.
+- **Per riprendere un progetto**: apri lo zip (doppio clic), sposta la cartella che contiene dove vuoi e aprila con **Apri cartella…** dalla schermata iniziale. Conviene non sovrascrivere la cartella rovinata finché non hai controllato che la copia sia quella giusta.
+- **Nel browser** Dante non può scrivere fuori dalla cartella del romanzo: in Impostazioni c'è **Scarica una copia di sicurezza (zip)**, da premere ogni tanto e conservare in un posto sicuro.
+
+### Approfondimento
+
+- Il nome di ogni copia è il nome della cartella del progetto con data e ora, per esempio `Il mio romanzo 2026-10-26 18-02-11.zip`. Dentro c'è la cartella del progetto com'era.
+- Restano fuori la cartella `export` (si rifà dal romanzo), il cestino `.trash`, le cartelle `.obsidian` e `.git` e i file di presenza dei coautori. Le istantanee in `.dante/snapshots` ci sono.
+- Due romanzi con lo stesso nome di cartella hanno sottocartelle diverse («Il mio romanzo», «Il mio romanzo 2»): un file `.dante-backup-of` nella sottocartella dice a quale progetto appartiene.
+- La copia si scrive prima con un nome provvisorio e prende il suo nome solo quando è completa, quindi uno zip con il nome giusto non è mai a metà.
+- La cartella scelta vale per tutti i progetti di questo computer, come le altre impostazioni dell'applicazione. Una cartella sincronizzata (Drive, Dropbox, iCloud) va bene come seconda protezione, ma tiene la copia sullo stesso servizio che potrebbe aver causato il problema.

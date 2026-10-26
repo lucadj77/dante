@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { flatten, headings } from "../manuscript";
 import { Project } from "../project";
+import { listTrash } from "../trash";
 
 function sample() {
   return new MemoryFs({
@@ -220,6 +221,49 @@ describe("trash", () => {
     expect(await p.trash("Manuscript/010 A")).toBe(".trash/010 A");
     expect(fs.files.get(".trash/010 A/020 Two.md")).toBe("two");
     expect(p.manuscript.children.map((c) => c.path)).toEqual(["Manuscript/020 B"]);
+  });
+
+  it("lists what it holds and puts it back where it was", async () => {
+    const fs = new MemoryFs({
+      "Manuscript/010 A/010 One.md": "one",
+      "Manuscript/010 A/020 Two.md": "two",
+      ".trash/Old note.md": "deleted in Obsidian",
+    });
+    const p = await Project.open(fs);
+    await p.trash("Manuscript/010 A/010 One.md");
+    await p.trash("Manuscript/010 A");
+    const items = await listTrash(fs);
+    expect(items.map((i) => [i.name, i.from])).toEqual([
+      ["010 A", "Manuscript/010 A"],
+      ["010 One.md", "Manuscript/010 A/010 One.md"],
+      ["Old note.md", null],
+    ]);
+    // The chapter first, then its scene back inside it; the note of unknown origin to the Laboratory.
+    expect(await p.restore(items[0])).toBe("Manuscript/010 A");
+    expect(await p.restore(items[1])).toBe("Manuscript/010 A/010 One.md");
+    expect(await p.restore(items[2])).toBe("Laboratory/Old note.md");
+    expect(p.manuscript.children[0].children.map((c) => c.path)).toEqual(["Manuscript/010 A/010 One.md", "Manuscript/010 A/020 Two.md"]);
+    expect(await listTrash(fs)).toEqual([]);
+  });
+
+  it("restores under another name when the place is taken, and deletes for good", async () => {
+    const fs = new MemoryFs({ "Manuscript/010 A/010 One.md": "one", "Manuscript/010 A/020 Two.md": "two" });
+    const p = await Project.open(fs);
+    await p.trash("Manuscript/010 A/010 One.md");
+    fs.files.set("Manuscript/010 A/010 One.md", "new one");
+    const [item] = await listTrash(fs);
+    expect(await p.restore(item)).toBe("Manuscript/010 A/010 One 2.md");
+    await p.trash("Manuscript/010 A/020 Two.md");
+    await p.deleteForever(await listTrash(fs));
+    expect(await listTrash(fs)).toEqual([]);
+    expect([...fs.files.keys()].some((f) => f.includes("Two"))).toBe(false);
+  });
+
+  it("notes where merged scenes went", async () => {
+    const fs = new MemoryFs({ "Manuscript/010 A/010 One.md": "one", "Manuscript/010 A/020 Two.md": "two" });
+    const p = await Project.open(fs);
+    await p.mergeScenes(["Manuscript/010 A/010 One.md", "Manuscript/010 A/020 Two.md"]);
+    expect((await listTrash(fs)).map((i) => i.from)).toEqual(["Manuscript/010 A/020 Two.md"]);
   });
 });
 

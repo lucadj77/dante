@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Project } from "$lib/core/project";
+  import { parseSettings, SETTINGS_FILE, type NovelSettings } from "$lib/core/settings";
   import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
@@ -43,14 +44,33 @@
 
   const n = num;
 
-  // Goals, kept in dante.yaml for everyone working on the novel.
+  // Goals, kept in dante.yaml for everyone working on the novel. A change writes only the
+  // goal that changed, onto the settings as they are on disk now, so a goal a coauthor set
+  // meanwhile is not overwritten with the value this window read when it opened.
   // svelte-ignore state_referenced_locally
   let goals = $state({ ...p.project.settings.goals, days: [...p.project.settings.goals.days] });
-  async function saveGoals() {
+  let editingGoal = false;
+  $effect(() => {
+    void p.rev;
+    void p.diskRev;
+    if (editingGoal) return;
+    const g = p.project.settings.goals;
+    goals = { ...g, days: [...g.days] };
+  });
+
+  type Goals = NovelSettings["goals"];
+  async function saveGoal<K extends keyof Goals>(key: K) {
     error = "";
+    const value = {
+      words: Math.max(0, Math.round(Number(goals.words) || 0)),
+      deadline: goals.deadline || "",
+      daily: Math.max(0, Math.round(Number(goals.daily) || 0)),
+      days: [...goals.days].sort(),
+    }[key] as Goals[K];
     try {
-      const clean = { words: Math.max(0, Math.round(Number(goals.words) || 0)), deadline: goals.deadline || "", daily: Math.max(0, Math.round(Number(goals.daily) || 0)), days: [...goals.days].sort() };
-      await p.project.saveSettings({ ...p.project.settings, goals: clean });
+      const fs = p.project.fs;
+      const fresh = (await fs.exists(SETTINGS_FILE)) ? parseSettings(await fs.readText(SETTINGS_FILE)) : p.project.settings;
+      await p.project.saveSettings({ ...fresh, goals: { ...fresh.goals, [key]: value } });
       await p.onSaved();
     } catch (e) {
       error = t("error.generic", { message: e instanceof Error ? e.message : String(e) });
@@ -63,7 +83,7 @@
   );
   function toggleDay(day: number) {
     goals.days = goals.days.includes(day) ? goals.days.filter((d) => d !== day) : [...goals.days, day];
-    void saveGoals();
+    void saveGoal("days");
   }
 
   // The project's settings are not reactive: read them again whenever the numbers are.
@@ -157,12 +177,13 @@
         class="goals"
         onsubmit={(e) => {
           e.preventDefault();
-          void saveGoals();
+          // Enter in a field: leaving it saves it.
+          (document.activeElement as HTMLElement | null)?.blur();
         }}
       >
-        <label>{t("statsView.goalWords")} <input type="number" min="0" step="1000" bind:value={goals.words} onchange={saveGoals} /></label>
-        <label>{t("statsView.deadline")} <input type="date" bind:value={goals.deadline} onchange={saveGoals} /></label>
-        <label>{t("statsView.daily")} <input type="number" min="0" step="50" bind:value={goals.daily} onchange={saveGoals} /></label>
+        <label>{t("statsView.goalWords")} <input type="number" min="0" step="1000" bind:value={goals.words} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("words")} /></label>
+        <label>{t("statsView.deadline")} <input type="date" bind:value={goals.deadline} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("deadline")} /></label>
+        <label>{t("statsView.daily")} <input type="number" min="0" step="50" bind:value={goals.daily} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("daily")} /></label>
         <fieldset class="weekdays">
           <legend>{t("statsView.writingDays")}</legend>
           {#each weekdays as w (w.day)}

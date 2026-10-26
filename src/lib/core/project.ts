@@ -34,11 +34,24 @@ import type { ImportedBook } from "./import/structure";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
 import { attachmentsFolderName, safeFileName } from "./images";
+import { deleteFromTrash, noteTrashed, restoreFromTrash, TRASH, type TrashItem } from "./trash";
+import { bodyOf, findIn, occurrences, replaceIn, type FindOptions, type Occurrence, type Range } from "./replace";
+
+/** The matches of a search in one note. */
+export interface NoteMatches {
+  path: string;
+  occurrences: Occurrence[];
+}
+
+/** What a replacement changed, to put it back: each note's whole text before and after. */
+export interface Replaced {
+  count: number;
+  notes: { path: string; before: string; after: string }[];
+}
 
 /** Folders never scanned: app data, other tools' data, version control. */
 // Exports are copies of the novel: kept out of links, searches and statistics.
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules", EXPORT_FOLDER]);
-const TRASH = ".trash";
 
 /** Scenes cannot be merged while one of them has a conflict copy to settle. */
 export class MergeConflictError extends Error {
@@ -445,8 +458,7 @@ export class Project {
    */
   async resolveConflict(conflict: ConflictCopy, how: "original" | "copy" | "merge", snapshotName: string, fallbackAuthor: string): Promise<void> {
     if (how === "copy" || (how === "merge" && !isMarkdown(conflict.original))) {
-      await this.fs.mkdir(TRASH);
-      await this.fs.rename(conflict.original, await this.freeName(TRASH, basename(conflict.original)));
+      await this.toTrash(conflict.original);
       await this.fs.rename(conflict.path, conflict.original);
       await this.reload();
       return;
@@ -466,13 +478,85 @@ export class Project {
    * where Obsidian keeps deleted notes too, so it can be recovered. Returns where it went.
    */
   async trash(path: string): Promise<string> {
-    const target = await this.freeName(TRASH, basename(path));
-    await this.fs.mkdir(TRASH);
     // Its conflict copies go with it, or they would show as files of their own.
-    for (const copy of this.conflictCopies(path)) await this.fs.rename(copy, await this.freeName(TRASH, basename(copy)));
-    await this.fs.rename(path, target);
+    for (const copy of this.conflictCopies(path)) await this.toTrash(copy);
+    const target = await this.toTrash(path);
     await this.reload();
     return target;
+  }
+
+  /** Moves one item to .trash, noting where it was; returns where it went. */
+  private async toTrash(path: string): Promise<string> {
+    const target = await this.freeName(TRASH, basename(path));
+    await this.fs.mkdir(TRASH);
+    await this.fs.rename(path, target);
+    await noteTrashed(this.fs, target, path);
+    return target;
+  }
+
+  /** Puts an item of the trash back where it was (or in the Laboratory); returns its path. */
+  async restore(item: TrashItem): Promise<string> {
+    const path = await restoreFromTrash(this.fs, item, this.settings.folders.laboratory);
+    await this.reload();
+    return path;
+  }
+
+  /** Deletes items of the trash for good. */
+  async deleteForever(items: TrashItem[]): Promise<void> {
+    await deleteFromTrash(this.fs, items);
+  }
+
+  // Finding and replacing across notes
+
+  /** The notes under `within` (every folder when empty) whose text holds `query`. */
+  async findAll(query: string, options: FindOptions, within: string[] = []): Promise<NoteMatches[]> {
+    if (!query) return [];
+    const index = await this.index();
+    const out: NoteMatches[] = [];
+    for (const path of this.files) {
+      if (!isMarkdown(path) || (within.length && !within.some((w) => isWithin(path, w)))) continue;
+      const note = index.notes.get(path);
+      if (!note) continue;
+      const ranges = findIn(note.body, query, options);
+      if (ranges.length) out.push({ path, occurrences: occurrences(note.body, ranges) });
+    }
+    return out;
+  }
+
+  /**
+   * Replaces the chosen matches, each note read again from disk: a match that is no
+   * longer there is skipped. Scenes are copied to a snapshot named `snapshotName` first.
+   */
+  async replaceAll(chosen: { path: string; ranges: Range[] }[], query: string, replacement: string, options: FindOptions, snapshotName: string): Promise<Replaced> {
+    const result: Replaced = { count: 0, notes: [] };
+    for (const { path, ranges } of chosen) {
+      if (!ranges.length || !(await this.fs.exists(path))) continue;
+      const before = await this.fs.readText(path);
+      const body = bodyOf(before);
+      const now = findIn(body, query, options);
+      const still = ranges.filter((r) => now.some((n) => n.from === r.from && n.to === r.to));
+      if (!still.length) continue;
+      if (isWithin(path, this.settings.folders.manuscript)) await takeSnapshot(this.fs, path, snapshotName);
+      const after = replaceBody(before, replaceIn(body, still, replacement, options));
+      await this.writeNote(path, after);
+      result.count += still.length;
+      result.notes.push({ path, before, after });
+    }
+    return result;
+  }
+
+  /** Undoes a replacement in the notes nobody changed since; returns the notes it could not undo. */
+  async undoReplace(replaced: Replaced): Promise<string[]> {
+    const skipped: string[] = [];
+    for (const note of replaced.notes) {
+      const now = (await this.fs.exists(note.path)) ? await this.fs.readText(note.path) : null;
+      if (now !== note.after) {
+        skipped.push(note.path);
+        continue;
+      }
+      await this.writeNote(note.path, note.before);
+    }
+    return skipped;
   }
 
   /**
@@ -596,8 +680,7 @@ export class Project {
       const updated = rewriteLinks(await this.fs.readText(file), file, renames, before, after);
       if (updated !== null) await this.fs.writeText(file, updated);
     }
-    await this.fs.mkdir(TRASH);
-    for (const path of rest) await this.fs.rename(path, await this.freeName(TRASH, basename(path)));
+    for (const path of rest) await this.toTrash(path);
     await this.reload();
     return first;
   }

@@ -21,7 +21,8 @@
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
-  import { formatLabels, tableLabels } from "./formatLabels";
+  import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
+  import { pendingFind, takeFind } from "./find.svelte";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
@@ -59,6 +60,7 @@
   const shared = sharing(doc);
   let host: HTMLDivElement;
   let editor: SceneEditor | null = null;
+  let ready = $state(false);
   let conflict = $state(doc.conflict);
   let failed = $state(doc.failed);
   let renaming = $state(false);
@@ -127,6 +129,7 @@
         },
         formatLabels: formatLabels(),
         tableLabels: tableLabels(),
+        phrases: searchPhrases(),
         links,
         critic: criticHandlerFor(path),
         extensions: [shared.extension],
@@ -135,6 +138,7 @@
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight });
       collab.ready(editor);
       props.register(path, handle);
+      ready = true;
     }, () => {
       // Moved or renamed meanwhile: the reloaded tree mounts the scene under its new path.
     });
@@ -152,6 +156,13 @@
   $effect(() => {
     const modes = { typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight };
     editor?.setModes(modes);
+  });
+
+  // A match chosen in the project's find and replace.
+  $effect(() => {
+    if (!ready || pendingFind.request?.path !== path) return;
+    const request = takeFind(path);
+    if (request) editor?.find(request);
   });
 
   // Files changed on disk: take the new text unless there are unsaved edits.

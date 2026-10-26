@@ -4,7 +4,8 @@
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { ACTIONS, ICONS, applyFormat } from "$lib/editor/formatting";
   import { app, t } from "$lib/state.svelte";
-  import { formatLabels, tableLabels } from "./formatLabels";
+  import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
+  import { pendingFind, takeFind } from "./find.svelte";
   import Icon from "./Icon.svelte";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
@@ -74,6 +75,7 @@
         },
         formatLabels: formatLabels(),
         tableLabels: tableLabels(),
+        phrases: searchPhrases(),
         links,
         critic: collab ? criticHandlerFor(path) : undefined,
         onFocus: () => {
@@ -96,6 +98,13 @@
       shared.detach();
       editor?.destroy();
     };
+  });
+
+  // A match chosen in the project's find and replace.
+  $effect(() => {
+    if (!ready || props.preview || pendingFind.request?.path !== path) return;
+    const request = takeFind(path);
+    if (request) editor?.find(request);
   });
 
   $effect(() => {

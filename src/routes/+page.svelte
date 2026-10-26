@@ -10,6 +10,7 @@
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import { flushAll, unsaved } from "$lib/ui/documents.svelte";
   import { flushSessions } from "$lib/ui/sessions.svelte";
+  import { backupOnClose } from "$lib/backups";
   import UpdateBanner from "$lib/ui/UpdateBanner.svelte";
   import Welcome from "$lib/ui/Welcome.svelte";
   import Workspace from "$lib/ui/Workspace.svelte";
@@ -84,6 +85,7 @@
       const anyway = await ask(t("quit.unsaved", { message: String(e) }), { title: t("app.name"), kind: "warning", okLabel: t("quit.anyway"), cancelLabel: t("quit.stay") });
       if (!anyway) return;
     }
+    if (project) await backupOnClose(project);
     await invoke("quit");
   }
 

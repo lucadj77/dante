@@ -1,3 +1,4 @@
+mod backup;
 mod files;
 mod pdf;
 mod web;
@@ -183,6 +184,12 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // Size and place of the window, as the writer left them; full screen is not brought back.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(tauri_plugin_window_state::StateFlags::all() - tauri_plugin_window_state::StateFlags::FULLSCREEN)
+                .build(),
+        )
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -220,6 +227,8 @@ pub fn run() {
             files::import_files,
             files::watch_project,
             pdf::compile_pdf,
+            backup::backup_project,
+            backup::list_backups,
             web::download_url,
             webkit::webkit_info,
             opened_project,

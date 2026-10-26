@@ -200,3 +200,89 @@ select {
 .cm-tooltip-autocomplete > ul > li[aria-selected] { background: var(--bg-active) !important; color: var(--text) !important; }
 .cm-completionDetail { color: var(--text-muted); margin-left: 8px; font-style: normal !important; }
 
+
+/* The find panel of the editors (Cmd+F). Regular expressions are left out: they are for programmers. */
+.cm-panels {
+  background: var(--bg-panel);
+  color: var(--text);
+}
+.cm-panels.cm-panels-top {
+  border-bottom: 1px solid var(--border);
+}
+.cm-search {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  /* Three rows whatever the width: find and its buttons, the options, replace and its buttons. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 6px 28px 6px 8px !important;
+}
+.cm-search br {
+  display: none;
+}
+.cm-search > * {
+  margin: 0 !important;
+}
+.cm-search input[name="search"] {
+  order: 1;
+  flex: 1 1 calc(100% - 260px);
+  min-width: 8em;
+}
+.cm-search button[name="next"],
+.cm-search button[name="prev"],
+.cm-search button[name="select"] {
+  order: 1;
+}
+.cm-search label {
+  order: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 10px !important;
+  white-space: nowrap;
+}
+.cm-search label input {
+  margin: 0;
+}
+.cm-search input[name="replace"] {
+  order: 3;
+  flex: 1 1 calc(100% - 230px);
+  min-width: 8em;
+}
+.cm-search button[name="replace"],
+.cm-search button[name="replaceAll"] {
+  order: 3;
+}
+.cm-search button[name="close"] {
+  top: 4px !important;
+  right: 6px !important;
+}
+.cm-search label:has(input[name="re"]) {
+  display: none;
+}
+.cm-search .cm-textfield {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.cm-search .cm-button {
+  background-image: none;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.cm-search .cm-button:hover {
+  background: var(--bg-hover);
+}
+.cm-searchMatch {
+  background: rgb(255 200 0 / 0.3);
+  outline: none;
+}
+.cm-searchMatch.cm-searchMatch-selected {
+  background: rgb(255 150 0 / 0.45);
+}

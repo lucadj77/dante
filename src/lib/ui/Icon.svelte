@@ -30,6 +30,7 @@
     stats: "M4 20h16 M7 17v-6 M12 17V6 M17 17v-9",
     export: "M12 15V3 M7 8l5-5 5 5 M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5",
     settings: "M4 6h9 M17 6h3 M15 4v4 M4 12h3 M11 12h9 M9 10v4 M4 18h11 M19 18h1 M17 16v4",
+    trash: "M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6",
     close: "M13 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h7 M10 12h11 M18 9l3 3-3 3",
     showNames: "M6 6l6 6-6 6 M13 6l6 6-6 6",
     hideNames: "M18 6l-6 6 6 6 M11 6l-6 6 6 6",

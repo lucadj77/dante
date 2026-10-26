@@ -4,6 +4,13 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Find in the scene**: Cmd+F opens a bar to find a word in the open scene or note, with Enter to go to the next one.
+- **Find and replace in the whole novel**: Alt+Cmd+F, or the **Replace** tab of the search, changes a word in every note, for example a character's name. You see every occurrence first, choose which to change, and can undo. Properties, links, images and comments are left alone, and each scene is saved in a snapshot before the change.
+- **Trash**: the icon at the bottom of the left bar shows what you deleted, puts it back where it was or deletes it for good.
+- **Backups**: when you close a project Dante saves a zip copy of it in Documents/Dante backup, outside the novel's folder, and keeps the 10 most recent. Folder and number can be changed in Settings; in the browser a button downloads the zip.
+- **Window remembered**: Dante reopens with the size and position it had.
+- **Fix**: word goals saved in Statistics no longer erase those a co-author changed meanwhile.
+
 ## 0.1.44 · October 21, 2026
 
 - **Fix**: version 0.1.43 (and 0.1.42) opened with a blank window after updating. If you installed it, download the new version by hand once: the broken one cannot update itself.

@@ -14,9 +14,12 @@
   import FilesView from "./FilesView.svelte";
   import ViewsView from "./ViewsView.svelte";
   import StatsView from "./StatsView.svelte";
-  import { startSessions } from "./sessions.svelte";
+  import { flushSessions, startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
+  import ReplacePanel from "./ReplacePanel.svelte";
+  import TrashDialog from "./TrashDialog.svelte";
+  import { backupOnClose } from "$lib/backups";
   import Icon, { type IconName } from "./Icon.svelte";
   import { provideNavigator } from "./navigation";
   import { layout, toggle } from "./layout.svelte";
@@ -256,10 +259,28 @@
     }),
   });
 
+  /** Closes the project: what was typed is written, and a backup is made if the settings ask. */
+  let closing = false;
+  async function close() {
+    if (closing) return;
+    closing = true;
+    try {
+      await flushAll(project);
+      await flushSessions();
+    } catch {
+      // The editors keep trying to write as they close.
+    }
+    await backupOnClose(project);
+    onClose();
+  }
+
   /** The search opened from the section bar, over the section. */
   let searching = $state(false);
   /** The search was opened to choose what a new pane shows. */
   let searchingBeside = $state(false);
+  /** The drawer shows the search, or find and replace across the project. */
+  let replacing = $state(false);
+  let showTrash = $state(false);
 
   /** Sections that can have panes beside them; the others use the whole width. */
   const withPanes = $derived(["manuscript", "codex", "research", "laboratory", "files", "views"].includes(section));
@@ -321,12 +342,21 @@
       e.preventDefault();
       return;
     }
+    // Alt+Cmd/Ctrl+F opens find and replace across the project.
+    if (e.altKey && !e.shiftKey && e.code === "KeyF") {
+      e.preventDefault();
+      searchingBeside = false;
+      searching = !(searching && replacing);
+      replacing = true;
+      return;
+    }
     if (e.altKey) return;
     // Cmd/Ctrl+Shift+F opens the search, as in Obsidian.
     if (e.shiftKey && e.key.toLowerCase() === "f") {
       e.preventDefault();
       searchingBeside = false;
-      searching = !searching;
+      searching = !(searching && !replacing);
+      replacing = false;
       return;
     }
     const step = e.key === "+" || e.key === "=" ? 1 : e.key === "-" || e.key === "_" ? -1 : e.key === "0" ? 0 : null;
@@ -343,6 +373,7 @@
         if (pane) swap(pane);
       } else {
         searchingBeside = true;
+        replacing = false;
         searching = true;
       }
       return true;
@@ -494,6 +525,17 @@
   ondrop={() => (dragActive = dropOver = false)}
 />
 
+{#if showTrash}
+  <TrashDialog
+    {project}
+    onClose={() => (showTrash = false)}
+    onRestored={async () => {
+      await reload();
+      diskRev++;
+    }}
+  />
+{/if}
+
 {#if showConflicts && conflicts.length}
   <ConflictsDialog
     {project}
@@ -529,17 +571,28 @@
         {@render item(s.id, s.id, t(`section.${s.id}` as MessageKey), section === s.id && !searching, () => { searching = false; go(s.id); }, t(`tip.section.${s.id}` as MessageKey))}
       {/each}
       <div class="spacer"></div>
+      {@render item("trash", "trash", t("trash.title"), showTrash, () => (showTrash = true), t("tip.trash"))}
       {@render item("settings", "settings", t("section.settings"), section === "settings", () => go("settings"), t("tip.section.settings"))}
-      {@render item("close", "close", t("app.close"), undefined, onClose, t("tip.close"))}
+      {@render item("close", "close", t("app.close"), undefined, close, t("tip.close"))}
       {@render item("names", layout.wideNav ? "hideNames" : "showNames", t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), undefined, () => toggle("wideNav"))}
     </nav>
   {/if}
   {#if searching && !fullscreen}
     <div class="search-backdrop" role="presentation" onmousedown={() => (searching = false)}></div>
     <div class="search-drawer" class:wide={layout.wideNav} role="dialog" aria-label={t("side.search")}>
-      {#key searchingBeside}
-        <QuickSearch {project} version={rev} {diskRev} beside={searchingBeside} onOpened={() => (searching = false)} />
-      {/key}
+      {#if !searchingBeside}
+        <div class="drawer-tabs" role="tablist">
+          <button role="tab" aria-selected={!replacing} onclick={() => (replacing = false)}>{t("search.tab")}</button>
+          <button role="tab" aria-selected={replacing} title={t("tip.replace")} onclick={() => (replacing = true)}>{t("replace.tab")}</button>
+        </div>
+      {/if}
+      {#if replacing && !searchingBeside}
+        <ReplacePanel {project} version={rev} onOpened={() => (searching = false)} />
+      {:else}
+        {#key searchingBeside}
+          <QuickSearch {project} version={rev} {diskRev} beside={searchingBeside} onOpened={() => (searching = false)} />
+        {/key}
+      {/if}
     </div>
   {/if}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -720,6 +773,24 @@
   }
   .search-drawer.wide {
     left: 180px;
+  }
+  .drawer-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-tabs button {
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    padding: 4px 10px;
+    color: var(--text-muted);
+  }
+  .drawer-tabs button[aria-selected="true"] {
+    color: var(--text);
+    border-bottom-color: var(--accent);
   }
   .section {
     display: flex;
