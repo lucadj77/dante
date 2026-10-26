@@ -43,6 +43,10 @@
   /** In a browser, the folder chosen as `parent`. */
   let parentHandle: FileSystemDirectoryHandle | null = null;
   let busy = $state(false);
+  let formError = $state<HTMLElement | null>(null);
+  $effect(() => {
+    if (error && formError) formError.scrollIntoView({ block: "nearest" });
+  });
   /** Follows the title until the writer picks shapes or colours. */
   let cover = $state<CoverSettings>({ template: "", palette: "" });
 
@@ -223,7 +227,12 @@
 
   async function create() {
     error = "";
-    if (!folderName || (folders && !parent)) return;
+    // The button stays active and says what is missing: a greyed button told the writer nothing.
+    if (!folderName) return;
+    if (folders && !parent) {
+      error = t("welcome.chooseFirst");
+      return;
+    }
     busy = true;
     try {
       if (web && parentHandle) {
@@ -334,9 +343,15 @@
       </div>
       {/if}
       <div class="actions">
-        <button class="primary" type="submit" disabled={busy || !folderName || (folders && !parent)}>{imported ? t("import.create") : t("welcome.create")}</button>
+        <button class="primary" type="submit" disabled={busy}
+          >{busy ? (imported ? t("import.creating") : t("welcome.creating")) : imported ? t("import.create") : t("welcome.create")}</button
+        >
         <button type="button" onclick={cancel}>{t("welcome.cancel")}</button>
       </div>
+      {#if error}
+        <!-- Beside the button: below the cover the form is long, and an error at the foot of the page went unseen. -->
+        <p class="error" bind:this={formError}><ErrorText text={error} /></p>
+      {/if}
     </form>
   {:else}
     <div class="actions">
@@ -372,7 +387,7 @@
   {#if notice}
     <p class="note">{notice}</p>
   {/if}
-  {#if error}
+  {#if error && !creating}
     <p class="error"><ErrorText text={error} /></p>
   {/if}
 </main>
