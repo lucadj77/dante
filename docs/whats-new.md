@@ -10,6 +10,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Tree dots**: hovering over the dot beside a scene shows its stage, for example "Stage: draft". In Settings > Scene tree the dots can be coloured by another property, such as the point of view.
 - **Statistics to the right spot**: a click on a repetition or a long sentence opens the scene at that point and selects the passage.
 - **Shortcuts for Windows and Linux**: the guide and the first steps give every shortcut for both Mac and Windows and Linux (for example Cmd+F / Ctrl+F). On Windows and Linux the button tips now read Ctrl+click and Ctrl+Enter correctly.
+- **Clearer Scrivener import**: when the chosen `.scriv` is an empty file or not a Scrivener project, Dante says so and explains what to choose, instead of a technical error such as "Not a directory". A `.scriv` packed into a single file is imported like a zip.
 
 ## 0.1.45 · October 26, 2026
 

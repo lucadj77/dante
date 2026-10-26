@@ -1,7 +1,8 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import type { DocxContent } from "$lib/core/import/docx";
-import { readScrivener, readScrivenerZip } from "$lib/core/import/scrivener";
+import { readScrivener, readScrivenerZip, ScrivenerError } from "$lib/core/import/scrivener";
 import { unzip } from "$lib/core/import/unzip";
+import type { ProjectFs } from "$lib/core/fs";
 import { inTauri, TauriFs } from "$lib/tauriFs";
 
 export interface PickedProject {
@@ -26,19 +27,42 @@ export async function pickScrivener(untitled: string): Promise<PickedProject | n
   }
   const picked = await open({ multiple: false, filters: [{ name: "Scrivener", extensions: ["scriv", "scrivx", "zip"] }] });
   if (typeof picked !== "string") return null;
-  const { dir, name } = split(picked);
-  if (/\.zip$/i.test(name)) {
-    const bytes = await new TauriFs(dir).readBytes(name);
-    return { content: await readScrivenerZip(await unzip(bytes), untitled), name };
+  return readPicked((root) => new TauriFs(root), picked, untitled);
+}
+
+/**
+ * Reads the Scrivener project at `picked`, a path from the dialog: the .scriv folder (a
+ * package on a Mac), the .scrivx file inside it, or a zip of the project. A .scriv that is
+ * a single file, as when a sync service or a download has packed the project, is read as a
+ * zip when it is one; an empty one, as a cloud copy that was never downloaded, is refused. `at` makes a filesystem rooted at a folder of the computer.
+ */
+export async function readPicked(at: (root: string) => ProjectFs, picked: string, untitled: string): Promise<PickedProject> {
+  const path = picked.replace(/(.)[\\/]+$/, "$1");
+  const { dir, name } = split(path);
+  if (/\.scrivx$/i.test(name)) return { content: await readFolder(at(dir), name, untitled), name: split(dir).name };
+  if (!/\.zip$/i.test(name)) {
+    // The .scrivx file is inside the project's folder, next to the documents.
+    const folder = at(path);
+    const entries = await folder.list("").catch(() => null);
+    const scrivx = entries?.find((e) => !e.isDir && /\.scrivx$/i.test(e.name) && !e.name.startsWith("._"))?.name;
+    if (scrivx) return { content: await readFolder(folder, scrivx, untitled), name };
+    if (entries) throw new ScrivenerError("notProject");
   }
-  // The .scrivx file is inside the project's folder, next to the documents.
-  const folder = /\.scrivx$/i.test(name) ? new TauriFs(dir) : new TauriFs(picked);
-  const scrivx = /\.scrivx$/i.test(name) ? name : (await folder.list("")).find((e) => !e.isDir && /\.scrivx$/i.test(e.name))?.name;
-  if (!scrivx) throw new Error("No .scrivx file in the Scrivener project");
-  const files = async (path: string) => ((await folder.exists(path)) ? folder.readBytes(path) : null);
-  const project = /\.scrivx$/i.test(name) ? split(dir).name : name;
-  const content = await readScrivener(await folder.readText(scrivx), files, scrivx.replace(/\.scrivx$/i, ""), untitled);
-  return { content, name: project };
+  const bytes = await at(dir).readBytes(name);
+  if (!bytes.length) throw new ScrivenerError("empty");
+  if (!isZip(bytes)) throw new ScrivenerError("notProject");
+  return { content: await readScrivenerZip(await unzip(bytes), untitled), name };
+}
+
+/** Reads the project in `folder`, whose binder is the file `scrivx` in it. */
+async function readFolder(folder: ProjectFs, scrivx: string, untitled: string): Promise<DocxContent> {
+  const files = async (file: string) => ((await folder.exists(file)) ? folder.readBytes(file) : null);
+  return readScrivener(await folder.readText(scrivx), files, scrivx.replace(/\.scrivx$/i, ""), untitled);
+}
+
+/** Whether `bytes` start as a zip file does. */
+function isZip(bytes: Uint8Array): boolean {
+  return bytes.length > 3 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 3 && bytes[3] === 4;
 }
 
 function pickZipInBrowser(): Promise<{ bytes: Uint8Array; name: string } | null> {

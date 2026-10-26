@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { zipSync } from "fflate";
+import { readPicked } from "$lib/ui/scrivenerFile";
+import { MemoryFs, type ProjectFs } from "../fs";
 import { rtfParagraphs } from "../import/rtf";
 import { readScrivener, readScrivenerZip } from "../import/scrivener";
 import { defaultRoles, structure } from "../import/structure";
@@ -70,5 +72,40 @@ describe("Scrivener", () => {
     const { unzip } = await import("../import/unzip");
     const content = await readScrivenerZip(await unzip(zip));
     expect(content.blocks.filter((b) => b.kind === "paragraph").map((b) => b.text)).toEqual(["Una busta."]);
+  });
+
+  describe("chosen in the app", () => {
+    /** The computer's disk, with `at` giving a view of one of its folders, as TauriFs does. */
+    const disk = new MemoryFs({ "Libri/Il faro.scriv/Il faro.scrivx": SCRIVX, ...Object.fromEntries(Object.entries(FILES).map(([p, c]) => [`Libri/Il faro.scriv/${p}`, c])) });
+    const at = (root: string): ProjectFs => {
+      const full = (path: string) => [root.replace(/^\//, ""), path].filter(Boolean).join("/");
+      return {
+        list: async (path) => (await disk.list(full(path))).map((e) => ({ ...e, path: path ? `${path}/${e.name}` : e.name })),
+        readText: (path) => disk.readText(full(path)),
+        readBytes: (path) => disk.readBytes(full(path)),
+        exists: (path) => disk.exists(full(path)),
+      } as ProjectFs;
+    };
+    const scenes = (content: { blocks: { kind: string }[] }) => content.blocks.filter((b) => b.kind === "heading").length;
+
+    it("reads the .scriv folder, with or without a final slash, and the .scrivx inside it", async () => {
+      for (const path of ["/Libri/Il faro.scriv", "/Libri/Il faro.scriv/", "/Libri/Il faro.scriv/Il faro.scrivx"]) {
+        const picked = await readPicked(at, path, "Senza titolo");
+        expect(picked.name).toBe("Il faro.scriv");
+        expect(scenes(picked.content)).toBe(5);
+      }
+    });
+
+    it("reads a .scriv that is a single zipped file, and says why when it is empty or not a project", async () => {
+      const zip = zipSync({ "Il faro.scriv/Il faro.scrivx": new TextEncoder().encode(SCRIVX) });
+      await disk.writeBytes("Scaricati/Il faro.scriv", zip);
+      expect(scenes((await readPicked(at, "/Scaricati/Il faro.scriv", "Senza titolo")).content)).toBe(5);
+      await disk.writeText("Scaricati/Altro.scriv", "testo");
+      await expect(readPicked(at, "/Scaricati/Altro.scriv", "Senza titolo")).rejects.toMatchObject({ reason: "notProject" });
+      await disk.writeBytes("Scaricati/Vuoto.scriv", new Uint8Array());
+      await expect(readPicked(at, "/Scaricati/Vuoto.scriv", "Senza titolo")).rejects.toMatchObject({ reason: "empty" });
+      await disk.writeBytes("Scaricati/Vuoto.zip", zipSync({ "Vuoto.scriv": new Uint8Array() }));
+      await expect(readPicked(at, "/Scaricati/Vuoto.zip", "Senza titolo")).rejects.toMatchObject({ reason: "notProject" });
+    });
   });
 });
