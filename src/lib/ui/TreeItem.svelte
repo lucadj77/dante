@@ -4,8 +4,9 @@
 
 <script lang="ts">
   import type { ManuscriptNode } from "$lib/core/manuscript";
+  import type { PageUnit } from "$lib/core/settings";
   import type { TreeMark } from "$lib/core/statistics";
-  import { num, t } from "$lib/state.svelte";
+  import { num, t, tu } from "$lib/state.svelte";
   import type { MessageKey } from "$lib/i18n";
   import TreeItem from "./TreeItem.svelte";
   import { mark, marked } from "./folding.svelte";
@@ -34,8 +35,10 @@
     renaming: string | null;
     /** Where the tree keeps which chapters and parts are folded. */
     foldScope: string;
-    /** Words, goal and stage of work of each item. */
+    /** Length, goal and stage of work of each item. */
     marks: Map<string, TreeMark>;
+    /** What lengths and goals count. */
+    unit: PageUnit;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -167,7 +170,7 @@
           aria-valuemin="0"
           aria-valuemax={info.goal}
           aria-valuenow={Math.min(info.words, info.goal)}
-          title={t("tree.goal", { words: num(info.words), goal: num(info.goal) })}><span style:width="{share * 100}%"></span></span
+          title={tu("tree.goal", p.unit, { words: num(info.words), goal: num(info.goal) })}><span style:width="{share * 100}%"></span></span
         >
       {/if}
       {#if p.loose}

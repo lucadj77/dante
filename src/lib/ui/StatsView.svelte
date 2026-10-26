@@ -2,13 +2,13 @@
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
-  import { parseSettings, SETTINGS_FILE, type NovelSettings } from "$lib/core/settings";
-  import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
+  import { parseSettings, SETTINGS_FILE, type NovelSettings, type PageUnit } from "$lib/core/settings";
+  import { dayKey, isWritingDay, netOf, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
   import { styleReport, type StyleReport } from "$lib/core/style";
   import { showMatch } from "./find.svelte";
-  import { app, num, saveAppSettings, t } from "$lib/state.svelte";
+  import { app, num, saveAppSettings, t, tu } from "$lib/state.svelte";
   import { navigator } from "./navigation";
   import { flushSessions, writing } from "./sessions.svelte";
 
@@ -32,6 +32,7 @@
     void p.rev;
     void p.diskRev;
     void writing.today;
+    void writing.todayCharacters;
     void (async () => {
       try {
         await flushSessions();
@@ -65,18 +66,51 @@
   });
 
   type Goals = NovelSettings["goals"];
-  async function saveGoal<K extends keyof Goals>(key: K) {
+  async function saveGoal(key: Exclude<keyof Goals, "unit">) {
     error = "";
-    const value = {
+    const values: Omit<Goals, "unit"> = {
       words: Math.max(0, Math.round(Number(goals.words) || 0)),
       deadline: goals.deadline || "",
       daily: Math.max(0, Math.round(Number(goals.daily) || 0)),
       days: [...goals.days].sort(),
-    }[key] as Goals[K];
+    };
+    const value = values[key];
     try {
       const fs = p.project.fs;
       const fresh = (await fs.exists(SETTINGS_FILE)) ? parseSettings(await fs.readText(SETTINGS_FILE)) : p.project.settings;
       await p.project.saveSettings({ ...fresh, goals: { ...fresh.goals, [key]: value } });
+      await p.onSaved();
+    } catch (e) {
+      error = failure(e);
+    }
+  }
+
+  /** A note after the goals were converted to the other unit; "" when there is none. */
+  let converted = $state("");
+
+  /**
+   * Measures in words or in characters. The novel's and the daily goal are converted at the
+   * manuscript's own characters per word, so they keep asking for the same amount of text.
+   */
+  async function setUnit(next: PageUnit) {
+    error = "";
+    converted = "";
+    try {
+      const fs = p.project.fs;
+      const fresh = (await fs.exists(SETTINGS_FILE)) ? parseSettings(await fs.readText(SETTINGS_FILE)) : p.project.settings;
+      if (fresh.goals.unit === next) return;
+      // About six characters a word, spaces included, until the manuscript says otherwise.
+      const ratio = stats && stats.words >= 200 ? stats.characters / stats.words : 6;
+      const convert = (value: number, step: number) => {
+        if (!value) return 0;
+        const raw = next === "characters" ? value * ratio : value / ratio;
+        return Math.max(step, Math.round(raw / step) * step);
+      };
+      const big = next === "characters" ? 1000 : 100;
+      const small = next === "characters" ? 50 : 10;
+      const g = fresh.goals;
+      await p.project.saveSettings({ ...fresh, goals: { ...g, unit: next, words: convert(g.words, big), daily: convert(g.daily, small) } });
+      if (g.words || g.daily) converted = t("statsView.goalUnitConverted", { ratio: ratio.toLocaleString(app.settings.language, { maximumFractionDigits: 1 }) });
       await p.onSaved();
     } catch (e) {
       error = failure(e);
@@ -97,11 +131,14 @@
     void stats;
     return p.project.settings.goals;
   });
-  const progress = $derived(stats ? goalProgress(stats.words, goalsSet.words, goalsSet.deadline, new Date(), goalsSet.days) : null);
+  /** What the goals and the writing log count: words, or characters with spaces included. */
+  const goalUnit = $derived(goalsSet.unit);
+  const written = $derived(stats ? (goalUnit === "characters" ? stats.characters : stats.words) : 0);
+  const progress = $derived(stats ? goalProgress(written, goalsSet.words, goalsSet.deadline, new Date(), goalsSet.days) : null);
   const restDay = $derived(!isWritingDay(new Date(), goalsSet.days));
-  const byDay = $derived(wordsByDay(logs));
+  const byDay = $derived(wordsByDay(logs, goalUnit));
   const user = $derived(app.settings.userName.trim());
-  const mine = $derived(wordsByDay(logs.filter((l) => l.user === user)));
+  const mine = $derived(wordsByDay(logs.filter((l) => l.user === user), goalUnit));
   const today = dayKey(new Date());
   const days = $derived(streak(mine, goalsSet.daily, new Date(), goalsSet.days));
 
@@ -129,12 +166,12 @@
         let minutes = 0;
         for (const [key, d] of Object.entries(log.days)) {
           if (week.has(key)) {
-            last7 += d.added - d.removed;
+            last7 += netOf(d, goalUnit);
             minutes += d.minutes;
           }
         }
         const t0 = log.days[today];
-        return { user: log.user || "–", today: t0 ? t0.added - t0.removed : 0, last7, minutes };
+        return { user: log.user || "–", today: t0 ? netOf(t0, goalUnit) : 0, last7, minutes };
       })
       .sort((a, b) => b.last7 - a.last7);
   });
@@ -142,7 +179,7 @@
   // Length of scenes, chapters or parts, in words or characters: a choice of this computer.
   const levels = $derived<LengthLevel[]>(stats?.parts.length ? ["scene", "chapter", "part"] : stats?.chapters.length ? ["scene", "chapter"] : ["scene"]);
   const level = $derived(levels.includes(app.settings.statsLevel) ? app.settings.statsLevel : levels[levels.length - 1]);
-  const unit = $derived(app.settings.statsUnit);
+  const unit = $derived(app.settings.statsUnit || goalUnit);
   const lengths = $derived(stats ? lengthAnalysis(stats, level, unit) : null);
   const longest = $derived(Math.max(1, lengths?.longest?.length ?? 0, ...(lengths?.rows ?? []).map((r) => r.length)));
   const levelName: Record<LengthLevel, "level.scene" | "level.chapter" | "level.part"> = { scene: "level.scene", chapter: "level.chapter", part: "level.part" };
@@ -185,6 +222,15 @@
 
     <section>
       <h2>{t("statsView.goals")}</h2>
+      <div class="choices">
+        <span class="muted small">{t("statsView.goalUnit")}</span>
+        <div class="segmented" role="group" aria-label={t("statsView.goalUnit")} data-tip={t("tip.goalUnit")}>
+          {#each [["words", "stats.words"], ["characters", "stats.characters"]] as const as [id, key] (id)}
+            <button aria-pressed={goalUnit === id} onclick={() => void setUnit(id)}>{t(key)}</button>
+          {/each}
+        </div>
+      </div>
+      {#if converted}<p class="muted small">{converted}</p>{/if}
       <form
         class="goals"
         onsubmit={(e) => {
@@ -193,9 +239,9 @@
           (document.activeElement as HTMLElement | null)?.blur();
         }}
       >
-        <label>{t("statsView.goalWords")} <input type="number" min="0" step="1000" bind:value={goals.words} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("words")} /></label>
+        <label>{tu("statsView.goalWords", goalUnit)} <input type="number" min="0" bind:value={goals.words} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("words")} /></label>
         <label>{t("statsView.deadline")} <input type="date" bind:value={goals.deadline} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("deadline")} /></label>
-        <label>{t("statsView.daily")} <input type="number" min="0" step="50" bind:value={goals.daily} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("daily")} /></label>
+        <label>{tu("statsView.daily", goalUnit)} <input type="number" min="0" bind:value={goals.daily} onfocus={() => (editingGoal = true)} onblur={() => (editingGoal = false)} onchange={() => saveGoal("daily")} /></label>
         <fieldset class="weekdays">
           <legend>{t("statsView.writingDays")}</legend>
           {#each weekdays as w (w.day)}
@@ -204,25 +250,25 @@
         </fieldset>
       </form>
       {#if progress && p.project.settings.goals.words > 0}
-        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress.share * 100)} aria-label={t("statsView.goalWords")}>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress.share * 100)} aria-label={tu("statsView.goalWords", goalUnit)}>
           <span style:width="{progress.share * 100}%"></span>
         </div>
         <p class="line">
-          {t("statsView.progress", { done: n(stats.words), goal: n(p.project.settings.goals.words), share: n(progress.share * 100) })}
+          {tu("statsView.progress", goalUnit, { done: n(written), goal: n(p.project.settings.goals.words), share: n(progress.share * 100) })}
           {#if progress.remaining === 0}
             {t("statsView.reached")}
           {:else if progress.daysLeft !== null && progress.daysLeft > 0 && progress.perDay !== null}
-            {t("statsView.perDay", { words: n(progress.perDay), days: n(progress.writingDaysLeft ?? progress.daysLeft) })}
+            {tu("statsView.perDay", goalUnit, { words: n(progress.perDay), days: n(progress.writingDaysLeft ?? progress.daysLeft) })}
           {:else if progress.daysLeft !== null}
-            {t("statsView.late", { words: n(progress.remaining) })}
+            {tu("statsView.late", goalUnit, { words: n(progress.remaining) })}
           {/if}
         </p>
       {/if}
       <p class="line">
         {#if !user}
-          {t("statsView.noName")}
+          {tu("statsView.noName", goalUnit)}
         {:else}
-          {t("statsView.today", { words: n(mine.get(today) ?? 0) })}{#if goalsSet.daily > 0 && !restDay}{" "}{t("statsView.ofDaily", { goal: n(goalsSet.daily) })}{/if}.
+          {tu("statsView.today", goalUnit, { words: n(mine.get(today) ?? 0) })}{#if goalsSet.daily > 0 && !restDay}{" "}{t("statsView.ofDaily", { goal: n(goalsSet.daily) })}{/if}.
           {#if restDay}{t("statsView.restDay")}{/if}
           {#if days > 0}{t(days === 1 ? "statsView.streakOne" : "statsView.streak", { days })}{/if}
         {/if}
@@ -231,7 +277,7 @@
 
     <section>
       <h2>{t("statsView.recent")}</h2>
-      <p class="muted small">{t("statsView.recentHint")}</p>
+      <p class="muted small">{tu("statsView.recentHint", goalUnit)}</p>
       <div class="chart" role="img" aria-label={t("statsView.recent")}>
         {#if p.project.settings.goals.daily > 0}
           <div class="goal-line" style:bottom="{(p.project.settings.goals.daily / chartMax) * 100}%" data-label={t("statsView.dailyShort", { goal: n(p.project.settings.goals.daily) })}></div>

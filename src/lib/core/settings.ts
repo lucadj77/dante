@@ -198,11 +198,17 @@ export interface NovelSettings {
   };
   /** Writing goals, shared by everyone working on the novel; 0 or "" means none. */
   goals: {
-    /** Length of the finished novel, in words. */
+    /**
+     * What the goals count, and what the status bar, the tree and the writing log show:
+     * words, or characters with spaces included. It also gives the unit of the `goal`
+     * property of scenes and chapters. Files written before it existed counted words.
+     */
+    unit: PageUnit;
+    /** Length of the finished novel, in the unit. */
     words: number;
     /** Date to finish by, as YYYY-MM-DD. */
     deadline: string;
-    /** Words to write each day. */
+    /** Words (or characters) to write each day. */
     daily: number;
     /** Days of the week given to writing, 1 (Monday) to 7 (Sunday); the others are rest days. */
     days: number[];
@@ -434,7 +440,8 @@ export function defaultSettings(language = "en"): NovelSettings {
         restartEachPart: false,
       },
     },
-    goals: { words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
+    // Italian writers and publishers measure in characters; the others in words.
+    goals: { unit: language.startsWith("it") ? "characters" : "words", words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
     cover: { template: "", palette: "" },
     pages: { unit: "characters", size: 1800 },
     export: {
@@ -523,6 +530,8 @@ export function parseSettings(text: string): NovelSettings {
   settings.goals.days = Array.isArray(days)
     ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort()
     : [1, 2, 3, 4, 5, 6, 7];
+  const rawGoals = isObject(raw) && isObject(raw.goals) ? raw.goals : {};
+  settings.goals.unit = rawGoals.unit === "characters" ? "characters" : "words";
   if (settings.pages.unit !== "words") settings.pages.unit = "characters";
   if (!(settings.pages.size > 0)) settings.pages.size = settings.pages.unit === "words" ? 250 : 1800;
   // Before the page size could be chosen, a typeset book was always A5.

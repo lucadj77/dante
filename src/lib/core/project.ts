@@ -30,6 +30,7 @@ import {
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
 import { textStats } from "./stats";
+import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
@@ -40,6 +41,12 @@ import { EXPORT_FOLDER } from "./export/files";
 import { attachmentsFolderName, safeFileName } from "./images";
 import { deleteFromTrash, noteTrashed, restoreFromTrash, TRASH, type TrashItem } from "./trash";
 import { bodyOf, findIn, occurrences, replaceIn, type FindOptions, type Occurrence, type Range } from "./replace";
+
+const NO_TEXT: TextSize = { words: 0, characters: 0 };
+const sizeOf = (body: string): TextSize => {
+  const stats = textStats(body);
+  return { words: stats.words, characters: stats.characters };
+};
 
 /** The matches of a search in one note. */
 export interface NoteMatches {
@@ -224,15 +231,15 @@ export class Project {
   /** Called after files were moved or renamed, with where any old path went. */
   onMoved: ((moved: (path: string) => string) => void) | null = null;
 
-  /** Called after a scene is written, with its words before and after, for the writing log. */
-  onSceneWritten: ((path: string, before: number, after: number) => void) | null = null;
+  /** Called after a scene is written, with its words and characters before and after, for the writing log. */
+  onSceneWritten: ((path: string, before: TextSize, after: TextSize) => void) | null = null;
 
   /** Writes a whole note, keeping the link index current. */
   async writeNote(path: string, text: string): Promise<void> {
     const scene = this.onSceneWritten && isMarkdown(path) && isWithin(path, this.settings.folders.manuscript);
-    const before = scene && (await this.fs.exists(path)) ? textStats(splitNote(await this.fs.readText(path)).body).words : 0;
+    const before = scene && (await this.fs.exists(path)) ? sizeOf(splitNote(await this.fs.readText(path)).body) : NO_TEXT;
     await this.fs.writeText(path, text);
-    if (scene) this.onSceneWritten?.(path, before, textStats(splitNote(text).body).words);
+    if (scene) this.onSceneWritten?.(path, before, sizeOf(splitNote(text).body));
     if (this.indexing) (await this.indexing).set(path, text);
   }
 
@@ -744,15 +751,16 @@ export class Project {
    */
   private async writeKeptHalf(path: string, before: string, after: string): Promise<void> {
     const log = this.onSceneWritten;
-    const words = (body: string) => textStats(body).words;
-    const old = log && (await this.fs.exists(path)) ? words(splitNote(await this.fs.readText(path)).body) : 0;
+    const old = log && (await this.fs.exists(path)) ? sizeOf(splitNote(await this.fs.readText(path)).body) : NO_TEXT;
     this.onSceneWritten = null;
     try {
       await this.writeBody(path, before);
     } finally {
       this.onSceneWritten = log;
     }
-    log?.(path, old, words(before) + words(after));
+    const kept = sizeOf(before);
+    const moved = sizeOf(after);
+    log?.(path, old, { words: kept.words + moved.words, characters: kept.characters + moved.characters });
   }
 
   /**

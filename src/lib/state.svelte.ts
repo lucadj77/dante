@@ -1,4 +1,4 @@
-import { translate, type MessageKey } from "./i18n";
+import { LANGUAGES, translate, type MessageKey } from "./i18n";
 import { formatNumber } from "./core/numbers";
 
 export interface AppSettings {
@@ -13,8 +13,8 @@ export interface AppSettings {
   formatBar: boolean;
   /** Revision mode: changes are written as CriticMarkup signed with the user name. */
   revisions: boolean;
-  /** Length analysis in the statistics: what to measure and at which level. */
-  statsUnit: "words" | "characters";
+  /** Length analysis in the statistics: what to measure ("" for the project's unit) and at which level. */
+  statsUnit: "words" | "characters" | "";
   statsLevel: "scene" | "chapter" | "part";
   /** A light shade on the row the cursor is on. */
   lineHighlight: boolean;
@@ -31,6 +31,8 @@ export interface AppSettings {
   /** The last writing session chosen: its minutes and the words to reach (0 for none). */
   sprintMinutes: number;
   sprintWords: number;
+  /** The same, for projects that count characters. */
+  sprintCharacters: number;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -46,7 +48,7 @@ function defaults(): AppSettings {
     userName: "",
     formatBar: true,
     revisions: false,
-    statsUnit: "words",
+    statsUnit: "",
     statsLevel: "chapter",
     lineHighlight: false,
     checkUpdates: true,
@@ -56,6 +58,7 @@ function defaults(): AppSettings {
     statusBar: true,
     sprintMinutes: 25,
     sprintWords: 0,
+    sprintCharacters: 0,
   };
 }
 
@@ -98,6 +101,12 @@ export function num(n: number, digits = 0): string {
 
 export function t(key: MessageKey, values?: Record<string, string | number>): string {
   return translate(app.settings.language, key, values);
+}
+
+/** A text that speaks of words, or its version for characters (key + "Chars") when the project counts those. */
+export function tu(key: MessageKey, unit: "words" | "characters", values?: Record<string, string | number>): string {
+  const chars = `${key}Chars`;
+  return t(unit === "characters" && chars in LANGUAGES.en.messages ? (chars as MessageKey) : key, values);
 }
 
 const EXPORT_KEY = "dante.last-export-settings";

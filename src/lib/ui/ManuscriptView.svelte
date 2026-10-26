@@ -28,7 +28,7 @@
   import { textStats } from "$lib/core/stats";
   import { pickWordFile } from "./wordFile";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
-  import { sceneWords, treeMarks, type TreeMark } from "$lib/core/statistics";
+  import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
   import type { NoteIndex } from "$lib/core/notes";
   import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
@@ -157,19 +157,22 @@
     void edits;
     void project.index().then((i) => (noteIndex = i));
   });
-  /** Words of each text already counted, so typing in one scene counts only that one again. */
-  const counted = new Map<string, { text: string; words: number }>();
+  /** What lengths and goals count: words, or characters with spaces included. */
+  const unit = $derived(project.settings.goals.unit);
+  /** Length of each text already counted, so typing in one scene counts only that one again. */
+  const counted = new Map<string, { text: string; unit: string; words: number }>();
   function wordsOf(path: string, body: string): number {
     const text = texts[path] ?? body;
     const known = counted.get(path);
-    if (known && known.text === text) return known.words;
-    const words = sceneWords(text);
-    counted.set(path, { text, words });
+    if (known && known.text === text && known.unit === unit) return known.words;
+    const words = sceneSize(text, unit);
+    counted.set(path, { text, unit, words });
     return words;
   }
   const marks = $derived.by((): Map<string, TreeMark> => {
     void edits;
     void tree;
+    void unit;
     return noteIndex ? treeMarks(tree, noteIndex, project.settings, wordsOf) : new Map();
   });
   /** The text selected in the scene with the cursor. */
@@ -185,7 +188,11 @@
     const label = root.kind === "manuscript" ? t("level.novel") : (headingMap.get(root.path) ?? root.title).replace(/\n/g, " · ");
     return { label, words, goal: root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0) };
   });
-  const selectedWords = $derived(selection.path === active && selection.text ? textStats(selection.text).words : 0);
+  const selectedWords = $derived.by(() => {
+    if (selection.path !== active || !selection.text) return 0;
+    const stats = textStats(selection.text);
+    return unit === "characters" ? stats.characters : stats.words;
+  });
   const headingMap = $derived.by(() => {
     void rev;
     void localRev;
@@ -747,6 +754,7 @@
             {renaming}
             {foldScope}
             {marks}
+            {unit}
           />
         {/each}
       </ul>
@@ -969,7 +977,7 @@
       </div>
     </div>
     {#if app.settings.statusBar && !fullscreen}
-      <StatusBar scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
+      <StatusBar {unit} scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
     {/if}
   </main>
 

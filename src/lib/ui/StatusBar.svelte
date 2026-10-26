@@ -1,16 +1,19 @@
 <script lang="ts">
   import { isWritingDay } from "$lib/core/sessions";
-  import { app, num, saveAppSettings, t } from "$lib/state.svelte";
+  import type { PageUnit } from "$lib/core/settings";
+  import { app, num, saveAppSettings, t, tu } from "$lib/state.svelte";
   import Icon from "./Icon.svelte";
-  import { writing } from "./sessions.svelte";
+  import { writtenToday } from "./sessions.svelte";
   import { dismissSprint, sprint, sprintLeft, sprintWords, startSprint, stopSprint } from "./sprint.svelte";
 
   interface Props {
-    /** Words of the scene with the cursor, and its goal (0 for none); null without one. */
+    /** What every number counts: words, or characters with spaces included. */
+    unit: PageUnit;
+    /** Length of the scene with the cursor, and its goal (0 for none); null without one. */
     scene: { words: number; goal: number } | null;
-    /** Words selected in it; 0 when nothing is. */
+    /** Length of the selection in it; 0 when nothing is. */
     selected: number;
-    /** What is on screen when it is more than a scene: its kind and words. */
+    /** What is on screen when it is more than a scene: its kind, length and goal. */
     view: { label: string; words: number; goal: number } | null;
     /** The novel's daily goal, and whether today is a writing day. */
     daily: number;
@@ -20,7 +23,8 @@
 
   let choosing = $state(false);
   let minutes = $state(app.settings.sprintMinutes);
-  let target = $state(app.settings.sprintWords || ("" as number | ""));
+  const remembered = () => (p.unit === "characters" ? app.settings.sprintCharacters : app.settings.sprintWords);
+  let target = $state(remembered() || ("" as number | ""));
 
   const OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90];
   const rest = $derived(!isWritingDay(new Date(), p.days));
@@ -34,31 +38,32 @@
   function begin() {
     const m = Math.min(240, Math.max(1, Math.round(Number(minutes) || 25)));
     const w = Math.max(0, Math.round(Number(target) || 0));
-    saveAppSettings({ ...app.settings, sprintMinutes: m, sprintWords: w });
+    saveAppSettings({ ...app.settings, sprintMinutes: m, ...(p.unit === "characters" ? { sprintCharacters: w } : { sprintWords: w }) });
     choosing = false;
-    startSprint(m, w);
+    startSprint(m, w, p.unit);
   }
 
-  const amount = (words: number, goal: number) => (goal ? t("status.ofGoal", { words: num(words), goal: num(goal) }) : t("status.words", { words: num(words) }));
+  const amount = (words: number, goal: number, unit = p.unit) => (goal ? tu("status.ofGoal", unit, { words: num(words), goal: num(goal) }) : tu("status.words", unit, { words: num(words) }));
+  const today = $derived(writtenToday(p.unit));
 </script>
 
 <footer class="status-bar" aria-label={t("status.bar")}>
   {#if p.scene}
-    <span class="item" data-tip={t("tip.status.scene")}>
+    <span class="item" data-tip={tu("tip.status.scene", p.unit)}>
       <span class="what">{t("kind.scene")}</span>
       {amount(p.scene.words, p.scene.goal)}
       {#if p.scene.goal}<span class="meter" class:reached={p.scene.words >= p.scene.goal}><span style:width="{Math.min(1, p.scene.words / p.scene.goal) * 100}%"></span></span>{/if}
     </span>
   {/if}
   {#if p.selected > 0}
-    <span class="item"><span class="what">{t("status.selected")}</span> {t("status.words", { words: num(p.selected) })}</span>
+    <span class="item"><span class="what">{t("status.selected")}</span> {amount(p.selected, 0)}</span>
   {/if}
   {#if p.view}
     <span class="item"><span class="what label" title={p.view.label}>{p.view.label}</span> {amount(p.view.words, p.view.goal)}</span>
   {/if}
-  <span class="item" data-tip={t("tip.status.today")}>
+  <span class="item" data-tip={tu("tip.status.today", p.unit)}>
     <span class="what">{t("status.today")}</span>
-    {p.daily > 0 && !rest ? t("status.ofGoal", { words: num(writing.today), goal: num(p.daily) }) : t("status.words", { words: num(writing.today) })}
+    {amount(today, rest ? 0 : p.daily)}
   </span>
   <span class="grow"></span>
 
@@ -67,18 +72,21 @@
     <span class="item sprint running" role="timer" aria-live="off">
       <Icon name="timer" />
       <strong>{clock(sprintLeft())}</strong>
-      {sprint.running.target ? t("status.ofGoal", { words: num(words), goal: num(sprint.running.target) }) : t("status.words", { words: num(words) })}
+      {amount(words, sprint.running.target, sprint.running.unit)}
       <button class="small" title={t("tip.sprint.stop")} onclick={stopSprint}>{t("sprint.stop")}</button>
     </span>
   {:else if sprint.done}
     <span class="item sprint done" role="status">
-      {t(sprint.done.target && sprint.done.words >= sprint.done.target ? "sprint.reached" : "sprint.done", { words: num(sprint.done.words), minutes: sprint.done.minutes })}
+      {tu(sprint.done.target && sprint.done.words >= sprint.done.target ? "sprint.reached" : "sprint.done", sprint.done.unit, { words: num(sprint.done.words), minutes: sprint.done.minutes })}
       <button class="small icon-only" aria-label={t("help.close")} onclick={dismissSprint}>×</button>
     </span>
   {/if}
   {#if !sprint.running}
     <div class="sprint-start">
-      <button class="small" aria-expanded={choosing} title={t("tip.sprint")} onclick={() => (choosing = !choosing)}><Icon name="timer" /><span>{t("sprint.title")}</span></button>
+      <button class="small" aria-expanded={choosing} title={tu("tip.sprint", p.unit)} onclick={() => {
+          target = remembered() || "";
+          choosing = !choosing;
+        }}><Icon name="timer" /><span>{t("sprint.title")}</span></button>
       {#if choosing}
         <div class="menu-backdrop" role="presentation" onmousedown={() => (choosing = false)}></div>
         <form
@@ -88,14 +96,14 @@
             begin();
           }}
         >
-          <p class="hint">{t("sprint.hint")}</p>
+          <p class="hint">{tu("sprint.hint", p.unit)}</p>
           <label
             >{t("sprint.minutes")}
             <select bind:value={minutes}>
               {#each OPTIONS as m (m)}<option value={m}>{t("sprint.minutesValue", { n: m })}</option>{/each}
             </select>
           </label>
-          <label>{t("sprint.target")} <input type="number" min="0" placeholder={t("panel.goalNone")} bind:value={target} /></label>
+          <label>{tu("sprint.target", p.unit)} <input type="number" min="0" placeholder={t("panel.goalNone")} bind:value={target} /></label>
           <div class="actions">
             <button class="primary" type="submit">{t("sprint.start")}</button>
             <button type="button" onclick={() => (choosing = false)}>{t("tree.cancel")}</button>

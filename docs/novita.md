@@ -23,6 +23,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Modello delle nuove scene**: in Impostazioni scegli con quali proprietà e quale testo nasce ogni scena nuova, per esempio con lo stato «idea» e qualche domanda.
 - **Stile nelle statistiche**: lunghezza media delle frasi, frasi lunghe, avverbi, parte di dialogo e parole ripetute a poca distanza, con gli esempi che aprono la scena.
 - **Importazione da Scrivener**: dalla schermata iniziale, un progetto Scrivener diventa un progetto Dante con capitoli, scene e sinossi, dopo la stessa anteprima del Word.
+- **Misure in caratteri**: in Statistiche > Obiettivi scegli se contare in parole o in caratteri spazi inclusi. La scelta vale per obiettivi, barra di stato, albero, pannello, sessioni di scrittura e grafico, e gli obiettivi già impostati vengono convertiti. I nuovi progetti in italiano partono dai caratteri.
 
 ## 0.1.44 · 21 ottobre 2026
 

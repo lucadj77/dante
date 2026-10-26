@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneWords, statusTone, treeMarks } from "../statistics";
-import { parseSettings } from "../settings";
+import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneSize, statusTone, treeMarks } from "../statistics";
+import { defaultSettings, parseSettings } from "../settings";
 
 function sample() {
   return new MemoryFs({
@@ -118,6 +118,15 @@ describe("statistics", () => {
     expect(parseSettings("title: x\n").goals.days).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(parseSettings("title: x\n").pages).toEqual({ unit: "characters", size: 1800 });
   });
+
+  it("measures goals in words in files written before the unit could be chosen", () => {
+    expect(parseSettings("title: x\nlanguage: it\n").goals.unit).toBe("words");
+    expect(parseSettings("goals:\n  unit: characters\n").goals.unit).toBe("characters");
+    expect(parseSettings("goals:\n  unit: pages\n").goals.unit).toBe("words");
+    // New Italian projects count characters, spaces included.
+    expect(defaultSettings("it").goals.unit).toBe("characters");
+    expect(defaultSettings("en").goals.unit).toBe("words");
+  });
 });
 
 describe("writing sessions", () => {
@@ -135,7 +144,8 @@ describe("writing sessions", () => {
     const logs = await readLogs(fs);
     expect(logs).toHaveLength(1);
     expect(logs[0].user).toBe("Luca Rossi");
-    expect(logs[0].days[dayKey(new Date())]).toMatchObject({ added: 6, removed: 4 });
+    expect(logs[0].days[dayKey(new Date())]).toMatchObject({ added: 6, removed: 4, charactersAdded: 28, charactersRemoved: 17 });
+    expect(wordsByDay(logs, "characters").get(dayKey(new Date()))).toBe(11);
     expect(fs.files.has(".dante/sessions/luca-rossi.json")).toBe(true);
   });
 
@@ -145,6 +155,8 @@ describe("writing sessions", () => {
       { user: "b", days: { "2026-10-14": { added: 300, removed: 100, minutes: 10 } } },
     ]);
     expect(byDay.get("2026-10-14")).toBe(500);
+    // Days logged before characters were counted have none.
+    expect(wordsByDay([{ user: "a", days: { "2026-10-14": { added: 300, removed: 0, minutes: 10 } } }], "characters").get("2026-10-14")).toBe(0);
     // Today has nothing yet: the streak up to yesterday still counts.
     expect(streak(byDay, 500, new Date(2026, 9, 15))).toBe(2);
     expect(streak(byDay, 600, new Date(2026, 9, 15))).toBe(0);
@@ -172,7 +184,7 @@ describe("tree marks", () => {
     });
     const project = await Project.open(fs);
     const index = await project.index();
-    const marks = treeMarks(project.manuscript, index, project.settings, (path, body) => (path.endsWith("B.md") ? 7 : sceneWords(body)));
+    const marks = treeMarks(project.manuscript, index, project.settings, (path, body) => (path.endsWith("B.md") ? 7 : sceneSize(body)));
     expect(marks.get("Manoscritto/010 Uno/010 A.md")).toEqual({ words: 3, goal: 10, status: "bozza", tone: 1 });
     expect(marks.get("Manoscritto/010 Uno/020 B.md")).toMatchObject({ words: 7, tone: 3 });
     expect(marks.get("Manoscritto/010 Uno/030 C.md")).toMatchObject({ words: 1, status: "altro", tone: null });

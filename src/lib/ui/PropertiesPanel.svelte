@@ -7,9 +7,9 @@
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import { isWritingDay } from "$lib/core/sessions";
-  import { writing } from "./sessions.svelte";
+  import { writtenToday } from "./sessions.svelte";
   import type { MessageKey } from "$lib/i18n";
-  import { num, t } from "$lib/state.svelte";
+  import { num, t, tu } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
   import PropertyField from "./PropertyField.svelte";
   import { emptyValue, KIND_ICONS, propertyDef, withDef, type PropertyDef } from "$lib/core/properties";
@@ -60,6 +60,8 @@
     Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && key !== GOAL && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
   );
   const goal = $derived(goalOf(properties));
+  const unit = $derived(p.project.settings.goals.unit);
+  const today = $derived(writtenToday(unit));
   const synopsis = $derived(typeof properties[SYNOPSIS] === "string" ? (properties[SYNOPSIS] as string) : displayValue(properties[SYNOPSIS]));
 
   async function retitle(title: string) {
@@ -179,7 +181,7 @@
         {/key}
       </label>
       <label class="title-field goal-field">
-        <span>{t("panel.goal")}</span>
+        <span>{tu("panel.goal", unit)}</span>
         {#key node.path + goal}
           <input
             type="number"
@@ -187,7 +189,7 @@
             step="100"
             value={goal || ""}
             placeholder={t("panel.goalNone")}
-            data-tip={t("panel.goalHint")}
+            data-tip={tu("panel.goalHint", unit)}
             onchange={(e) => {
               const value = Math.max(0, Math.round(Number((e.currentTarget as HTMLInputElement).value) || 0));
               if (value !== goal) void update({ [GOAL]: value || undefined });
@@ -296,10 +298,12 @@
     </table>
     <p class="today">
       {!isWritingDay(new Date(), p.project.settings.goals.days)
-        ? t(writing.today ? "panel.todayRest" : "panel.rest", { words: format(writing.today) })
+        ? today
+          ? tu("panel.todayRest", unit, { words: format(today) })
+          : t("panel.rest")
         : p.project.settings.goals.daily > 0
-          ? t("panel.todayGoal", { words: format(writing.today), goal: format(p.project.settings.goals.daily) })
-          : t("panel.today", { words: format(writing.today) })}
+          ? tu("panel.todayGoal", unit, { words: format(today), goal: format(p.project.settings.goals.daily) })
+          : tu("panel.today", unit, { words: format(today) })}
     </p>
   </section>
 </div>

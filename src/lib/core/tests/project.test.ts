@@ -113,7 +113,7 @@ describe("project", () => {
     const fs = sample();
     const p = await Project.open(fs);
     const log: [number, number][] = [];
-    p.onSceneWritten = (_path, before, after) => log.push([before, after]);
+    p.onSceneWritten = (_path, before, after) => log.push([before.words, after.words]);
     // "The train." was saved; "It was late." is typed and split off at once.
     await p.splitScene("Manuscript/010 Return/010 Arrival.md", "The train.\n", "It was late.", "Untitled");
     expect(log).toEqual([[2, 5]]);

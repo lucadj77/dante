@@ -3,7 +3,7 @@ import { folderNotePath, GOAL, headings, type ManuscriptNode } from "./manuscrip
 import { noteTitle, noteType, type NoteIndex, type NoteInfo } from "./notes";
 import { isWithin } from "./path";
 import { isWritingDay } from "./sessions";
-import { projectStatus, type NovelSettings } from "./settings";
+import { projectStatus, type NovelSettings, type PageUnit } from "./settings";
 import { plainText, textStats } from "./stats";
 
 // Numbers about the manuscript for the Statistics section: length, chapters, the notes
@@ -287,10 +287,11 @@ export function goalProgress(words: number, goal: number, deadline: string, toda
   };
 }
 
-/** What the manuscript tree shows beside an item: its words, its goal and the stage of work. */
+/** What the manuscript tree shows beside an item: its length, its goal and the stage of work. */
 export interface TreeMark {
+  /** In the project's unit, words or characters. */
   words: number;
-  /** Words to reach; 0 without a goal. */
+  /** Words (or characters) to reach; 0 without a goal. */
   goal: number;
   /** A scene's stage of work, as written; "" when none. */
   status: string;
@@ -298,7 +299,7 @@ export interface TreeMark {
   tone: number | null;
 }
 
-/** The words a scene or folder note should reach, from its `goal` property. */
+/** The words (or characters, in the project's unit) a scene or folder note should reach, from its `goal` property. */
 export function goalOf(properties: Record<string, unknown>): number {
   const value = Number(properties[GOAL]);
   return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
@@ -312,8 +313,8 @@ export function statusTone(value: string, values: string[]): number | null {
 }
 
 /**
- * Words, goal and stage of every scene, chapter and part. `words` gives the words of a
- * scene's text, which the editor may hold newer than the index.
+ * Length, goal and stage of every scene, chapter and part. `words` gives the length of a
+ * scene's text in the project's unit, from the text the editor may hold newer than the index.
  */
 export function treeMarks(manuscript: ManuscriptNode, index: NoteIndex, settings: NovelSettings, words: (path: string, body: string) => number): Map<string, TreeMark> {
   const status = projectStatus(settings);
@@ -338,7 +339,11 @@ export function treeMarks(manuscript: ManuscriptNode, index: NoteIndex, settings
   return out;
 }
 
-/** The words of a scene as the statistics count them: revisions accepted, no comments. */
-export function sceneWords(body: string): number {
-  return textStats(cleanSource(body)).words;
+/**
+ * How long a scene is as the statistics count it (revisions accepted, no comments), in
+ * words or in characters with spaces included.
+ */
+export function sceneSize(body: string, unit: PageUnit = "words"): number {
+  const stats = textStats(cleanSource(body));
+  return unit === "characters" ? stats.characters : stats.words;
 }

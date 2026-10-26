@@ -23,6 +23,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Template of new scenes**: in Settings choose the properties and the text every new scene starts with, for example the stage «idea» and a few questions.
 - **Style in the statistics**: average sentence length, long sentences, adverbs, share of dialogue and words repeated close together, with examples that open the scene.
 - **Import from Scrivener**: from the start screen, a Scrivener project becomes a Dante project with chapters, scenes and synopses, after the same preview as Word.
+- **Measure in characters**: in Statistics > Goals choose whether to count words or characters with spaces. The choice applies to goals, status bar, tree, panel, writing sessions and chart, and goals already set are converted. New Italian projects start with characters.
 
 ## 0.1.44 · October 21, 2026
 
