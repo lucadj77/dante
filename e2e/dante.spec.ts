@@ -84,3 +84,19 @@ test("shows the scenes on a board, with a card to change them", async ({ page })
   await expect(card.getByRole("button", { name: "Apri la nota" })).toBeVisible();
   await expect(card.getByRole("textbox").first()).toHaveValue(/Renzo intuisce un mistero/);
 });
+
+test("changes theme and page layout from the settings", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.getByRole("tab", { name: "Dante su questo computer" }).click();
+  await page.locator("select:has(option[value=sepia])").selectOption("sepia");
+  await expect(page.locator("html")).toHaveAttribute("data-palette", "sepia");
+  await page.getByRole("combobox", { name: /^Rientro/ }).selectOption("1.5");
+  await page.getByLabel("Testo giustificato, come in un libro").check();
+  await page.locator('nav button[data-section="manuscript"]').click();
+  await page.getByRole("treeitem", { name: "La passeggiata" }).getByRole("button").first().click();
+  const line = page.locator(".cm-line.md-para").first();
+  await expect(line).toHaveCSS("text-indent", "27px");
+  await expect(line).toHaveCSS("text-align", "justify");
+  expect(await page.locator(".cm-line.md-gap").count()).toBeGreaterThan(0);
+});

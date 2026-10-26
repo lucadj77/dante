@@ -147,9 +147,11 @@
         phrases: searchPhrases(),
         links,
         critic: criticHandlerFor(path),
+        language: props.project.settings.language,
         extensions: [shared.extension],
       });
       shared.attach(editor.view);
+      editor.setSpelling(app.settings.spellcheck);
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight });
       collab.ready(editor);
       props.register(path, handle);
@@ -171,6 +173,11 @@
   $effect(() => {
     const modes = { typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight };
     editor?.setModes(modes);
+  });
+
+  $effect(() => {
+    const on = app.settings.spellcheck;
+    editor?.setSpelling(on);
   });
 
   // A match chosen in the project's find and replace.

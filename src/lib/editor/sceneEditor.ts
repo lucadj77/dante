@@ -7,6 +7,7 @@ import { openSearchPanel, search, searchKeymap, SearchQuery, setSearchQuery } fr
 import { formatting, type FormattingLabels } from "./formatting";
 import { cursorLine, focusMode, typewriterMode } from "./modes";
 import { livePreview } from "./livePreview";
+import { textLayout } from "./layout";
 import { tableLabels, type TableLabels } from "./tables";
 import { wikilinks, type LinkHandler } from "./links";
 import { smartTypography } from "./smartTypography";
@@ -42,6 +43,8 @@ export interface SceneEditorOptions {
   critic?: CriticHandler;
   /** The words of the find panel (Cmd+F) in the interface language, by CodeMirror's English phrase. */
   phrases?: Record<string, string>;
+  /** The language of the text, for the spelling checker and hyphenation; the page's when absent. */
+  language?: string;
   /** More behaviour, such as sharing the text with other editors of the same file. */
   extensions?: Extension[];
 }
@@ -63,6 +66,8 @@ export interface SceneEditor {
   setRevisions(author: string | null): void;
   /** Read-only while someone else is editing the same file. */
   setReadOnly(readOnly: boolean): void;
+  /** The system's spelling checker underlines unknown words, or not. */
+  setSpelling(on: boolean): void;
   focus(at: "start" | "end"): void;
   /** Splits at the cursor into a new scene or a new chapter, as the shortcuts do. */
   split(kind: "scene" | "chapter"): void;
@@ -73,6 +78,7 @@ export interface SceneEditor {
 
 export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   const modes = new Compartment();
+  const spelling = new Compartment();
   const revisions = new Compartment();
   const locked = new Compartment();
   const split = (handler?: (before: string, after: string) => void) => (view: EditorView) => {
@@ -119,7 +125,8 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
         options.onSelection(state.selection.ranges.map((r) => state.sliceDoc(r.from, r.to)).join("\n"));
       }
     }),
-    EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
+    spelling.of(spellingAttributes(true)),
+    options.language ? EditorView.contentAttributes.of({ lang: options.language }) : [],
     modes.of([]),
     revisions.of([]),
     locked.of([]),
@@ -129,7 +136,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     criticCommands(options.critic),
     ...(options.extensions ?? []),
   ];
-  if (options.preview) extensions.push(livePreview, criticPreview);
+  if (options.preview) extensions.push(livePreview, criticPreview, textLayout);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
   if (options.placeholder) extensions.push(emptyBodyHint(options.placeholder));
 
@@ -152,6 +159,9 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     },
     setReadOnly(readOnly) {
       view.dispatch({ effects: locked.reconfigure(readOnly ? EditorState.readOnly.of(true) : []) });
+    },
+    setSpelling(on) {
+      view.dispatch({ effects: spelling.reconfigure(spellingAttributes(on)) });
     },
     focus(at) {
       view.focus();
@@ -184,6 +194,11 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
       view.destroy();
     },
   };
+}
+
+/** The engine's spelling checker and, on iPad and phones, its corrections as you type. */
+function spellingAttributes(on: boolean) {
+  return EditorView.contentAttributes.of(on ? { spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" } : { spellcheck: "false", autocorrect: "off", autocapitalize: "sentences" });
 }
 
 /** Properties alone, with no text after them, as a scene made from a template starts. */

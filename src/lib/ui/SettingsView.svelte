@@ -6,6 +6,7 @@
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
   import CoverPicker from "./CoverPicker.svelte";
+  import AppearanceSettings from "./AppearanceSettings.svelte";
   import AuthorsInput from "./AuthorsInput.svelte";
   import { propertyDef, withDef } from "$lib/core/properties";
   import { cleanSnapshots } from "$lib/core/snapshots";
@@ -75,14 +76,6 @@
   );
 
   const levels = $derived<("part" | "chapter")[]>(novel.structure.parts ? ["part", "chapter"] : ["chapter"]);
-  const fonts = [
-    { name: "Georgia", value: "Georgia, 'Iowan Old Style', 'Palatino Linotype', serif" },
-    { name: "Palatino", value: "'Palatino Linotype', Palatino, 'Book Antiqua', serif" },
-    { name: "Garamond", value: "'EB Garamond', Garamond, 'Times New Roman', serif" },
-    { name: "Sans serif", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
-    { name: "Monospace", value: "ui-monospace, 'SF Mono', Menlo, Consolas, monospace" },
-  ];
-
   let cleanBefore = $state(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
   let cleaned = $state("");
   let reportCopied = $state("");
@@ -317,30 +310,7 @@
         {/each}
       </select>
     </label>
-    <label
-      >{t("settings.theme")}
-      <select value={app.settings.theme} onchange={(e) => setApp({ theme: e.currentTarget.value as AppSettings["theme"] })}>
-        <option value="system">{t("settings.themeSystem")}</option>
-        <option value="light">{t("settings.themeLight")}</option>
-        <option value="dark">{t("settings.themeDark")}</option>
-      </select>
-    </label>
-    <label
-      >{t("settings.font")}
-      <select value={app.settings.fontFamily} onchange={(e) => setApp({ fontFamily: e.currentTarget.value })}>
-        {#each fonts as font (font.value)}
-          <option value={font.value}>{font.name}</option>
-        {/each}
-      </select>
-    </label>
-    <label
-      >{t("settings.fontSize")}
-      <input type="number" min="12" max="32" value={app.settings.fontSize} onchange={(e) => setApp({ fontSize: clamp(e.currentTarget.value, 12, 32, app.settings.fontSize) })} />
-    </label>
-    <label
-      >{t("settings.lineWidth")}
-      <input type="number" min="40" max="120" value={app.settings.lineWidth} onchange={(e) => setApp({ lineWidth: clamp(e.currentTarget.value, 40, 120, app.settings.lineWidth) })} />
-    </label>
+    <AppearanceSettings />
 
     {#if onDisk(project.fs)}
       <h3>{t("backup.title")}</h3>

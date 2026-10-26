@@ -250,6 +250,7 @@ this computer for each project, not in the project folder.
 - New scenes start from `Templates/Scene.md` (`Modelli/Scena.md` in Italian).
 - Statistics also look at style: sentence length, adverbs, dialogue, close repetitions.
 - Automatic updates (desktop) and a "What's new" banner; offline Help with the guide.
+- Appearance (`src/lib/themes.ts`, `AppearanceSettings.svelte`): light, sepia, dark and night themes, an accent colour, and the editor's page (any installed font, line spacing, space between paragraphs, first-line indent, justification, `src/lib/editor/layout.ts`). The spelling checker is the system's; it can be turned off and the editor's `lang` is the novel's language.
 - Blank lines between paragraphs that do not start a new scene (a paragraph of only `&nbsp;`).
 - Hanging-indent lists, tables with captions, images with descriptions and sizes, centred and
   right-aligned paragraphs, all carried into the exports.

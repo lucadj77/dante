@@ -3,11 +3,24 @@ import { formatNumber } from "./core/numbers";
 
 export interface AppSettings {
   language: string;
-  theme: "system" | "light" | "dark";
+  /** Light or dark as the system is, or one of the themes. */
+  theme: "system" | "light" | "sepia" | "dark" | "night";
+  /** The colour of buttons, links and selections: one of ACCENTS, or "" for the theme's own. */
+  accent: string;
   fontFamily: string;
   fontSize: number;
   /** Maximum line length in the editor, in characters. */
   lineWidth: number;
+  /** Space between the lines of a paragraph, as a multiple of the font size. */
+  lineHeight: number;
+  /** Height of the empty line between paragraphs, as a share of a line: 1 is a whole line. */
+  paragraphGap: number;
+  /** Indent of the first line of each paragraph, in em; 0 for none. */
+  indent: number;
+  /** Paragraphs justified, as in a book, instead of ragged on the right. */
+  justify: boolean;
+  /** The system's spelling checker in the editor. */
+  spellcheck: boolean;
   userName: string;
   /** The formatting bar under the manuscript toolbar. */
   formatBar: boolean;
@@ -42,9 +55,15 @@ function defaults(): AppSettings {
   return {
     language: browser === "it" ? "it" : "en",
     theme: "system",
+    accent: "",
     fontFamily: "Georgia, 'Iowan Old Style', 'Palatino Linotype', serif",
     fontSize: 18,
     lineWidth: 68,
+    lineHeight: 1.7,
+    paragraphGap: 1,
+    indent: 0,
+    justify: false,
+    spellcheck: true,
     userName: "",
     formatBar: true,
     revisions: false,

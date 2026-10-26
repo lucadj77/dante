@@ -24,6 +24,9 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Style in the statistics**: average sentence length, long sentences, adverbs, share of dialogue and words repeated close together, with examples that open the scene.
 - **Import from Scrivener**: from the start screen, a Scrivener project becomes a Dante project with chapters, scenes and synopses, after the same preview as Word.
 - **Measure in characters**: in Statistics > Goals choose whether to count words or characters with spaces. The choice applies to goals, status bar, tree, panel, writing sessions and chart, and goals already set are converted. New Italian projects start with characters.
+- **Themes and accent colour**: besides light and dark there are Sepia and Night, and you can choose the colour of buttons and links. The system theme now changes along with the computer.
+- **Text like a book**: in Settings > Dante on this computer choose line spacing, space between paragraphs, first-line indent, justified text and any installed font, with a sample below.
+- **Spelling checker**: it can be turned off, and it is told the novel's language.
 
 ## 0.1.44 · October 21, 2026
 

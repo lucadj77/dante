@@ -28,6 +28,7 @@ Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla 
 18. [Dante nel browser](#18-dante-nel-browser)
 19. [Copie di sicurezza](#19-copie-di-sicurezza)
 20. [Aiuto dentro Dante](#20-aiuto-dentro-dante)
+21. [Aspetto e ortografia](#21-aspetto-e-ortografia)
 
 ## 1. Cos'è Dante
 
@@ -79,7 +80,7 @@ Ogni progetto contiene anche un file con il titolo del romanzo e l'estensione **
 
 - **Windows**: l'installatore viene preparato automaticamente su GitHub ed è pubblicato nella versione di anteprima (insieme alla copia portatile, ai pacchetti Linux e al .dmg per Mac) *preview* del repository.
 - **macOS**: nella versione di anteprima *preview* ci sono due file: `Dante-<commit>-mac-apple-silicon.dmg` per i Mac con chip M1 o successivi (dal 2020) e `Dante-<commit>-mac-intel.dmg` per quelli precedenti. Per sapere quale hai, apri il menu Apple > Informazioni su questo Mac: se vedi "Chip Apple" scegli apple-silicon, se vedi "Intel" scegli intel. Serve macOS 10.15 (Catalina) o successivo; su Catalina installa prima gli aggiornamenti di Safari fino alla 15.6 (Preferenze di Sistema > Aggiornamento Software). Il motore che Catalina dà alle app è rimasto quello di Safari 13, troppo vecchio per Dante: su Catalina Dante si riavvia da solo all'apertura per usare quello di Safari aggiornato (una soluzione ancora in prova). Se Dante non riesce ad avviarsi, al posto della finestra vuota mostra un rapporto da copiare e mandare a chi segue Dante, con la versione di macOS e di Safari aggiunte in fondo; lo stesso rapporto si copia in qualunque momento da Impostazioni > Segnalare un problema. Apri il .dmg e trascina Dante nella cartella Applicazioni. L'app non è firmata da Apple (serve un Apple Developer account, 99 $ l'anno), quindi la prima volta macOS la blocca: chiudi l'avviso, poi vai in Impostazioni di Sistema > Privacy e sicurezza e premi **Apri comunque** accanto al messaggio su Dante. Sulle versioni di macOS precedenti a Sequoia basta anche tasto destro sull'app > Apri. Serve una volta sola per ogni .dmg scaricato; le versioni successive arrivano con l'aggiornamento automatico (capitolo 17). Con Dante in Applicazioni funziona il doppio clic sui file .dante. Per lavorare sul codice resta `npm run tauri dev`.
-- Le impostazioni si dividono in due gruppi. Quelle del **romanzo** (titolo, struttura, numerazione, tipi, obiettivi, esportazione) sono salvate in `dante.yaml` dentro il progetto e viaggiano con lui. Quelle dell'**applicazione** (lingua dell'interfaccia, tema, carattere dell'editor, il tuo nome) restano sul computer e valgono per tutti i progetti.
+- Le impostazioni si dividono in due gruppi. Quelle del **romanzo** (titolo, struttura, numerazione, tipi, obiettivi, esportazione) sono salvate in `dante.yaml` dentro il progetto e viaggiano con lui. Quelle dell'**applicazione** (lingua dell'interfaccia, tema, aspetto del testo nell'editor, correttore, il tuo nome) restano sul computer e valgono per tutti i progetti.
 - Un nuovo progetto nasce con le cartelle principali già pronte, chiamate nella lingua del romanzo (capitolo 6).
 - **File di avvio**: Dante scrive `Titolo.dante` nella cartella principale quando crea o apre un progetto che non ne ha uno (lo riconosce da qualunque nome con quell'estensione, quindi un file rinominato non viene duplicato). Il contenuto è solo una nota: conta la cartella in cui si trova. Gli installatori registrano l'estensione: tipo di documento sul Mac, registro su Windows, tipo MIME `application/x-dante-project` con i pacchetti .deb e .rpm su Linux. Con la copia portatile e l'AppImage l'associazione manca, ma *Apri con* sul file funziona. Una seconda copia di Dante avviata dal doppio clic passa il file a quella già aperta e si chiude. Obsidian non mostra il file, perché non è un formato che conosce.
 
@@ -770,3 +771,32 @@ Si legge anche senza connessione, perché è dentro Dante. Dalla schermata inizi
 - Con l'interfaccia in inglese le schede mostrano `first-steps.md` e `whats-new.md`; la guida completa per ora è solo in italiano.
 - I link ad altre pagine del repository (per esempio [Provare Dante](beta.md)) si aprono su GitHub nel browser.
 - **Messaggi di errore**: quando qualcosa non riesce (un file che non si può scrivere, un disco pieno, una cartella sparita, la connessione assente) Dante lo dice con una frase semplice. Il messaggio tecnico resta nascosto dietro **Dettagli**, da copiare se segnali il problema.
+
+## 21. Aspetto e ortografia
+
+Come appaiono Dante e il testo mentre scrivi. Sono scelte di questo computer: valgono per tutti i progetti e non cambiano i file né l'esportazione, che ha le sue impostazioni (capitolo 13).
+
+### Come si fa
+
+Apri **Impostazioni** > **Dante su questo computer**.
+
+- **Tema**: **Di sistema** (chiaro o scuro come il computer, e cambia con lui), **Chiaro (carta)**, **Seppia** (carta calda, per scrivere a lungo di giorno), **Scuro**, **Notte** (quasi nero con il testo più tenue, per scrivere al buio).
+- **Colore d'accento**: il colore di pulsanti attivi, collegamenti e selezioni. Il primo cerchio lascia quello del tema; gli altri sono blu, verde, rosso mattone, viola, verde acqua e ambra, in una versione più chiara nei temi scuri.
+- **Il testo nell'editor**:
+  - **Font dell'editor**: cinque scelte pronte, oppure **Un altro font installato…**, che elenca i font da libro presenti sul computer e con **Altro…** accetta il nome di qualsiasi font installato.
+  - **Dimensione del font** e **Larghezza della riga** (in caratteri).
+  - **Interlinea**: lo spazio tra le righe di un paragrafo, da 1,4 a 2,4; 1,7 è quella abituale.
+  - **Spazio tra i paragrafi**: una riga vuota (come finora), mezza riga o poco. Nel file tra due paragrafi resta comunque una riga vuota: cambia solo quanto è alta sullo schermo.
+  - **Rientro della prima riga**: nessuno, piccolo, medio o grande, come nei libri stampati.
+  - **Testo giustificato, come in un libro**: allinea i paragrafi anche a destra e va a capo con la sillabazione.
+- Sotto c'è un **esempio** del testo con le scelte fatte.
+- **Ortografia**: **Sottolinea le parole che il correttore non conosce** accende o spegne il correttore mentre scrivi.
+
+*Esempio:* per una pagina simile a quella di un romanzo stampato scegli **Seppia**, **Spazio tra i paragrafi: Poco**, **Rientro: Medio** e **Testo giustificato**. I paragrafi si stringono, ognuno comincia rientrato e i margini sono dritti.
+
+### Approfondimento
+
+- Rientro e spazio tra i paragrafi riguardano solo i paragrafi di testo: titoli, elenchi, citazioni, tabelle e paragrafi centrati o a destra restano come sono.
+- La sillabazione del testo giustificato usa la lingua del romanzo; dove il sistema non ha le regole di quella lingua, le righe giustificate possono avere spazi più larghi.
+- **Correttore**: è quello del sistema (macOS, Windows, Linux o il browser), con i suoi dizionari e le parole che gli hai insegnato; è il sistema a scegliere il dizionario. Dante segna il testo con la lingua del romanzo (impostazione **Lingua** del romanzo), che il sistema può usare per scegliere il dizionario giusto. Sul Mac il clic destro su una parola sottolineata dà i suggerimenti e **Impara ortografia**; le lingue si scelgono in Impostazioni di Sistema > Tastiera > Immissione testo > Modifica > Ortografia. Su Windows le lingue sono quelle installate in Impostazioni > Ora e lingua. Un dizionario personale dentro Dante, uguale su tutti i computer, non c'è ancora.
+- Nel file delle impostazioni dell'app: `theme`, `accent`, `fontFamily`, `fontSize`, `lineWidth`, `lineHeight`, `paragraphGap`, `indent`, `justify`, `spellcheck`.

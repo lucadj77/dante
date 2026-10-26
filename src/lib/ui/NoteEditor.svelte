@@ -82,9 +82,11 @@
           collab?.focused();
           props.onFocus?.();
         },
+        language: props.project.settings.language,
         extensions: [shared.extension],
       });
       shared.attach(editor.view);
+      editor.setSpelling(app.settings.spellcheck);
       collab?.ready(editor);
       ready = true;
     }, () => {
@@ -98,6 +100,11 @@
       shared.detach();
       editor?.destroy();
     };
+  });
+
+  $effect(() => {
+    const on = app.settings.spellcheck;
+    editor?.setSpelling(on);
   });
 
   // A match chosen in the project's find and replace.
