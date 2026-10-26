@@ -26,6 +26,11 @@ export interface AppSettings {
   backupOnClose: boolean;
   /** How many backups of each project are kept. */
   backupKeep: number;
+  /** The bar under the text with the words of the scene and of today. */
+  statusBar: boolean;
+  /** The last writing session chosen: its minutes and the words to reach (0 for none). */
+  sprintMinutes: number;
+  sprintWords: number;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -48,6 +53,9 @@ function defaults(): AppSettings {
     backupFolder: "",
     backupOnClose: true,
     backupKeep: 10,
+    statusBar: true,
+    sprintMinutes: 25,
+    sprintWords: 0,
   };
 }
 

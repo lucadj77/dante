@@ -6,6 +6,8 @@
   import { dayKey, isWritingDay, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
+  import { styleReport, type StyleReport } from "$lib/core/style";
+  import { showMatch } from "./find.svelte";
   import { app, num, saveAppSettings, t } from "$lib/state.svelte";
   import { navigator } from "./navigation";
   import { flushSessions, writing } from "./sessions.svelte";
@@ -23,6 +25,7 @@
   let named = $state.raw<Mention[]>([]);
   let words = $state.raw<WordCount[]>([]);
   let logs = $state.raw<WritingLog[]>([]);
+  let style = $state.raw<StyleReport | null>(null);
   let error = $state("");
 
   $effect(() => {
@@ -37,6 +40,7 @@
         stats = s;
         named = mentions(s, index, p.project.settings);
         words = frequentWords(s.scenes.map((x) => x.text), p.project.settings.language, 40);
+        style = styleReport(s.scenes, p.project.settings.language);
         logs = await readLogs(p.project.fs);
       } catch (e) {
         error = failure(e);
@@ -150,6 +154,12 @@
   };
   const sceneTitle = (path: string) => stats?.scenes.find((s) => s.path === path)?.title ?? path;
   let showUnnamed = $state(false);
+
+  /** Opens the scene with the repeated word found in it. */
+  function openRepetition(path: string, word: string) {
+    showMatch(path, { query: word, caseSensitive: false, wholeWord: true });
+    nav?.open(path);
+  }
 </script>
 
 <div class="stats">
@@ -355,6 +365,58 @@
         {/each}
       </ol>
     </section>
+
+    {#if style && style.words > 0}
+      <section>
+        <h2>{t("style.title")}</h2>
+        <p class="muted small">{t("style.hint")}</p>
+        <div class="tiles">
+          {#each [
+            { label: t("style.average"), value: n(style.average, 1), hint: t("style.averageHint") },
+            { label: t("style.long"), value: n(style.longCount), hint: t("style.longHint", { n: 40 }) },
+            { label: t("style.adverbs"), value: n(style.adverbCount), hint: t("style.adverbsHint", { n: n((style.adverbCount / style.words) * 1000, 1) }) },
+            { label: t("style.dialogue"), value: `${n((style.dialogue / style.words) * 100)}%`, hint: t("style.dialogueHint") },
+            { label: t("style.repetitions"), value: n(style.repetitionCount), hint: t("style.repetitionsHint", { n: 30 }) },
+          ] as tile (tile.label)}
+            <div class="tile" data-tip={tile.hint}>
+              <span class="value">{tile.value}</span>
+              <span class="label">{tile.label}</span>
+            </div>
+          {/each}
+        </div>
+        {#if style.repetitions.length}
+          <h3>{t("style.closest")}</h3>
+          <ul class="examples">
+            {#each style.repetitions as r, i (i)}
+              <li>
+                <button class="link" onclick={() => openRepetition(r.path, r.word)}>{r.title}</button>
+                <span class="excerpt">«{r.excerpt}»</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        {#if style.long.length}
+          <h3>{t("style.longest")}</h3>
+          <ul class="examples">
+            {#each style.long.slice(0, 8) as l, i (i)}
+              <li>
+                <button class="link" onclick={() => nav?.open(l.path)}>{l.title}</button>
+                <span class="count">{t("style.words", { n: n(l.words) })}</span>
+                <span class="excerpt">{l.excerpt}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        {#if style.adverbs.length}
+          <h3>{t("style.frequentAdverbs")}</h3>
+          <ol class="words">
+            {#each style.adverbs as w (w.word)}
+              <li><span>{w.word}</span> <span class="count">{n(w.count)}</span></li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
+    {/if}
   {/if}
 </div>
 
@@ -375,6 +437,33 @@
   h2 {
     font-size: 16px;
     margin: 0;
+  }
+  h3 {
+    font-size: 13px;
+    margin: 8px 0 0;
+  }
+  .examples {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .examples li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    align-items: baseline;
+  }
+  .examples .excerpt {
+    color: var(--text-muted);
+    font-family: var(--editor-font);
+  }
+  .examples .count {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
   }
   .tiles {
     display: grid;

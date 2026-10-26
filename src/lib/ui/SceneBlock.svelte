@@ -40,6 +40,8 @@
     onSplitChapter: (path: string, before: string, after: string) => void;
     onLeave: (path: string, direction: "up" | "down") => boolean;
     onFocus: (path: string) => void;
+    /** The text selected in the scene, "" when none. */
+    onSelection?: (path: string, text: string) => void;
     onText: (path: string, text: string) => void;
     onAddAfter: (path: string) => void;
     onRename: (path: string, title: string) => void;
@@ -135,6 +137,7 @@
         onSplitScene: (before, after) => props.onSplitScene(path, before, after),
         onSplitChapter: (before, after) => props.onSplitChapter(path, before, after),
         onLeave: (direction) => props.onLeave(path, direction),
+        onSelection: (text) => props.onSelection?.(path, text),
         onFocus: () => {
           props.onFocus(path);
           collab.focused();

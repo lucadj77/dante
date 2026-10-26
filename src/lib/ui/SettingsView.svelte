@@ -16,8 +16,22 @@
   import { checkForUpdates, updates } from "$lib/updates.svelte";
   import { backupFolder, backupInfo, backupNow, defaultBackupFolder, downloadBackup, type BackupInfo } from "$lib/backups";
   import { onDisk } from "$lib/platform";
+  import { navigator as dante } from "./navigation";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
+  const nav = dante();
+
+  /** Opens the template of new scenes, made first if there is none. */
+  async function editSceneTemplate() {
+    error = "";
+    try {
+      const path = await project.ensureSceneTemplate();
+      await onSaved();
+      nav?.open(path);
+    } catch (e) {
+      error = failure(e);
+    }
+  }
 
   // The novel's settings are edited in a copy, written to the project a moment after each change.
   // svelte-ignore state_referenced_locally
@@ -222,6 +236,10 @@
         ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
       >
     {/if}
+
+    <h3>{t("settings.sceneTemplate")}</h3>
+    <p class="hint">{t("settings.sceneTemplateHint")}</p>
+    <div class="define"><button type="button" onclick={editSceneTemplate}>{t("settings.sceneTemplateEdit")}</button></div>
 
     <h3>{t("property.defined")}</h3>
     <p class="hint">{t("property.definedHint")}</p>

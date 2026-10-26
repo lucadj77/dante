@@ -10,7 +10,7 @@ Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla 
 
 1. [Cos'è Dante](#1-cosè-dante)
 2. [Installazione e primo avvio](#2-installazione-e-primo-avvio)
-3. [Importare un romanzo da Word](#3-importare-un-romanzo-da-word)
+3. [Importare un romanzo da Word o Scrivener](#3-importare-un-romanzo-da-word-o-scrivener)
 4. [L'area di lavoro](#4-larea-di-lavoro)
 5. [Scrivere](#5-scrivere)
 6. [Organizzare il manoscritto](#6-organizzare-il-manoscritto)
@@ -58,6 +58,7 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
    - **Nuovo progetto**: scrivi il titolo, scegli dove salvarlo e premi Crea. Dante crea una cartella con il titolo del romanzo.
    - **Apri cartella…**: apre un progetto già esistente, anche creato su un altro computer.
    - **Importa da Word…**: crea un progetto da un romanzo già scritto in Word (capitolo 3).
+   - **Importa da Scrivener…**: crea un progetto da un progetto Scrivener, con le sinossi (capitolo 3).
    - **Prova il progetto di esempio**: i primi capitoli dei *Promessi sposi* (di *Pride and Prejudice* se l'interfaccia è in inglese), per fare pratica senza rischi. Le modifiche restano in memoria e spariscono quando chiudi il progetto.
 
    ![La schermata iniziale, con i pulsanti in alto e i progetti recenti sotto](img/benvenuto.png)
@@ -82,7 +83,7 @@ Ogni progetto contiene anche un file con il titolo del romanzo e l'estensione **
 - Un nuovo progetto nasce con le cartelle principali già pronte, chiamate nella lingua del romanzo (capitolo 6).
 - **File di avvio**: Dante scrive `Titolo.dante` nella cartella principale quando crea o apre un progetto che non ne ha uno (lo riconosce da qualunque nome con quell'estensione, quindi un file rinominato non viene duplicato). Il contenuto è solo una nota: conta la cartella in cui si trova. Gli installatori registrano l'estensione: tipo di documento sul Mac, registro su Windows, tipo MIME `application/x-dante-project` con i pacchetti .deb e .rpm su Linux. Con la copia portatile e l'AppImage l'associazione manca, ma *Apri con* sul file funziona. Una seconda copia di Dante avviata dal doppio clic passa il file a quella già aperta e si chiude. Obsidian non mostra il file, perché non è un formato che conosce.
 
-## 3. Importare un romanzo da Word
+## 3. Importare un romanzo da Word o Scrivener
 
 ### Come si fa
 
@@ -99,6 +100,10 @@ Il file Word non viene modificato: Dante ne legge una copia.
 **Un esempio.** Nel documento qui sopra i titoli con lo stile Titolo 1 sono «Parte prima: Il paese» e «Parte seconda: Il mare», quelli con lo stile Titolo 2 sono «Capitolo 1: Arrivo» e così via. Dante propone **Parti** per il primo livello e **Capitoli** per il secondo. Dentro il Capitolo 1 una riga con `***` separa due scene, quindi il capitolo diventa due scene. Se invece i capitoli del tuo documento fossero scritti con lo stile Titolo 1, sceglieresti **Capitoli** nel primo menu.
 
 **Aggiungere un file Word a un progetto già iniziato.** Se il romanzo è diviso in più file Word, crea il progetto dal primo e poi aggiungi gli altri uno alla volta: nel manoscritto premi **Importa**, nel gruppo **Aggiungi** sopra l'albero, e scegli il file. Si apre la stessa anteprima; sotto puoi scegliere **Dove va** (in fondo al manoscritto o in fondo a una parte, se il progetto ne ha) e, se il file comincia con del testo prima del primo titolo, spuntare **Il testo prima del primo titolo continua il capitolo…**: quel testo diventa altre scene dell'ultimo capitolo invece di un capitolo nuovo, utile quando un capitolo comincia in un file e finisce nel successivo. Premi **Importa**: quello che c'era resta com'era, il nuovo testo arriva dopo.
+
+**Da Scrivener.** Nella schermata iniziale scegli **Importa da Scrivener…** e seleziona il progetto `.scriv`. Se il Mac non lo lascia scegliere (succede quando Scrivener non è installato) apri la cartella del progetto e scegli il file `.scrivx` che contiene; su Windows scegli sempre il file `.scrivx`. Nel browser scegli uno zip del progetto (sul Mac: tasto destro sul progetto > Comprimi). Si apre la stessa anteprima del Word: le cartelle della **Bozza** (*Draft*) diventano capitoli, o parti e capitoli se sono una dentro l'altra, e i testi diventano scene con il loro titolo. La sinossi di ogni testo e di ogni cartella diventa la sinossi della scena o del capitolo. Il resto del progetto Scrivener (Ricerca, Cestino, note, etichette e stati) non si importa, e il progetto non viene modificato.
+
+*Esempio:* un progetto Scrivener con la Bozza divisa in cartelle «Capitolo 1», «Capitolo 2»… e, dentro ognuna, un testo per scena. Nell'anteprima le cartelle sono **Titolo 1** e i testi **Titolo 2**: Dante propone **Capitoli** e **Scene con titolo**, quindi basta premere **Continua**.
 
 *Esempio:* un file in cui il testo scorre senza titoli e le sezioni sono divise da un numero su una riga da solo ("1", "2", "3"…). Dante riconosce i numeri che crescono e ne fa dei capitoli; nell'anteprima compaiono come **Titolo 2**. Se quelle sezioni per te sono scene, scegli **Scene con titolo** accanto a **Titolo 2**; se vuoi tenerle come capitoli senza il numero come titolo, lasciale così e rinominale poi nell'albero.
 
@@ -172,6 +177,10 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
 
   ![La stessa tabella finita, con la didascalia «I personaggi del capitolo»](img/tabella.png)
 - **Immagini**: premi il pulsante **Immagine** della barra di formattazione e scegli il file, oppure incolla un'immagine (Cmd+V) o trascinala nel testo. Dante la copia nella cartella **Allegati** dentro **Ricerca** e la mostra nel punto in cui si trova il cursore. Porta il mouse sull'immagine per cambiarne la larghezza (**200**, **400**, **600** pixel o **1:1**, la dimensione originale) e l'allineamento (a sinistra, al centro, a destra). Un clic sull'immagine mostra il testo che la inserisce, per modificarlo a mano.
+- **Barra di stato**: sotto il testo una riga mostra le parole della scena con il cursore (con il suo obiettivo, se ne ha uno), quelle del testo selezionato, del capitolo o di ciò che è a schermo, e quelle scritte oggi rispetto all'obiettivo del giorno. Si nasconde da **Altro** > **Barra di stato**.
+- **Sessione di scrittura**: premi **Sessione** a destra nella barra di stato, scegli quanti minuti (da 10 a 90) e, se vuoi, quante parole raggiungere, poi **Inizia**. Nella barra scorrono il tempo che resta e le parole scritte da quando hai cominciato; alla fine Dante dice quante parole hai scritto. **Termina** la chiude prima. Contano le parole aggiunte, tolte quelle cancellate, come nelle statistiche.
+
+  *Esempio:* una sessione da 25 minuti con 500 parole da raggiungere. Mentre scrivi la barra mostra «18:42 · 312 parole su 500»; allo scadere compare «Obiettivo raggiunto: 534 parole in 25 min.», oppure «Sessione finita» se non ci sei arrivato.
 - **Dialoghi e tipografia**: se attivi la correzione mentre scrivi, Dante mette da solo le virgolette o le lineette del dialogo, l'apostrofo tipografico e i puntini di sospensione. Cmd+Z annulla una correzione che non volevi.
 
 ### Approfondimento
@@ -186,6 +195,7 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
 - Qualunque sia il modo in cui hai scritto i dialoghi, lo stile scelto li converte: le battute scritte con caporali o virgolette diventano lineette, e quelle aperte da una lineetta o da un trattino a inizio paragrafo diventano virgolette. Per esempio `- Vieni - disse lui - è tardi.` diventa «Vieni» disse lui «è tardi.».
 - Trattini e lineette nella narrazione restano come li hai scritti, così come i trattini dentro le parole (socio-economico) e le lineette fra numeri (1990–2000). In una battuta aperta da una lineetta contano come chiusura e riapertura solo le lineette dello stesso tipo: un inciso fra trattini dentro una battuta aperta da lineetta resta com'è.
 - Se una scena viene cambiata da un altro programma mentre la stai modificando, la tua versione resta e un avviso propone di ricaricare l'altra.
+- **Scrivener**: Dante legge l'indice del progetto nel file `.scrivx` e il testo di ogni documento dal suo file RTF (`Files/Data/<id>/content.rtf` in Scrivener 3, `Files/Docs/<id>.rtf` nelle versioni precedenti), con grassetto, corsivo, barrato, evidenziato e paragrafi centrati o a destra. Le sinossi vengono da `synopsis.txt` e finiscono nella proprietà `synopsis`. I commenti e le note a piè di pagina di Scrivener non si importano. Ogni elemento della Bozza diventa un titolo, un livello più in basso a ogni cartella: con più di tre livelli quelli in più restano titoli nel testo.
 
 ## 6. Organizzare il manoscritto
 
@@ -211,6 +221,12 @@ Tutto si fa dall'albero nella sezione Manoscritto.
   *Esempio:* con numerazione **Primo, secondo, terzo** e **Tra numero e titolo** su «a capo», nell'albero e nel libro esportato il capitolo diventa «Capitolo primo» con «I bravi» sotto.
 
 Una scena finita fuori da qualsiasi capitolo è segnata nell'albero come **fuori dai capitoli**: trascinala nel capitolo giusto.
+
+- **Stato nell'albero**: accanto a ogni scena un pallino colorato dice a che punto è, secondo la proprietà **stato** (capitolo 8): grigio per idea, arancione per bozza, blu per rivista, verde per finita. Passando col mouse sul pallino si legge lo stato. Un valore che non è tra quelli previsti ha un cerchio vuoto.
+- **Obiettivi di parole**: a una scena o a un capitolo puoi dare un **Obiettivo di parole** nel pannello Proprietà. L'albero mostra allora una piccola barra a destra del nome, che diventa verde quando l'obiettivo è raggiunto; passando col mouse si leggono le parole scritte e quelle da raggiungere.
+- **Modello delle nuove scene**: in **Impostazioni** > **Questo romanzo** > **Nuove scene**, il pulsante **Modifica il modello delle nuove scene** apre il modello (lo crea la prima volta con lo stato «idea»). Ogni scena nuova parte da lì, con le stesse proprietà e lo stesso testo, per esempio qualche domanda da tenere presente. Le scene create dividendone una (Cmd+Invio) tengono invece il testo che segue il cursore.
+
+  *Esempio:* nel modello scrivi le proprietà `stato: idea` e `pov:` e, nel testo, «Chi vuole cosa? Cosa lo ostacola?». Ogni scena nuova nasce con lo stato «idea», il campo del punto di vista pronto e le due domande, da cancellare quando cominci a scrivere.
 
 ### Approfondimento
 
@@ -271,6 +287,7 @@ Le proprietà sono le informazioni su una scena o una nota: punto di vista, data
 
 - **Titolo e nome del file**: il **Titolo** è quello che compare ovunque (albero, intestazioni, esportazione); il **Nome del file** è il nome sul disco. Se il titolo è vuoto, vale il nome del file.
 - **Sinossi**: poche righe su cosa succede nella scena o nel capitolo. Compare anche nelle viste (capitolo 11).
+- **Obiettivo di parole**: quante parole deve avere la scena o il capitolo. Lascialo vuoto se non ti serve; con un obiettivo l'albero e la barra di stato mostrano a che punto sei (capitoli 5 e 6).
 
   <img src="img/proprieta.png" width="280" alt="Le proprietà della scena L'incontro: titolo, sinossi, stato, pov, luogo e data">
 
@@ -286,7 +303,7 @@ Tutte le proprietà con un tipo sono elencate in **Impostazioni → Proprietà c
 
 ### Approfondimento
 
-Le proprietà sono il frontmatter YAML in testa a ogni file, come in Obsidian. Per capitoli e parti stanno nella nota cartella (capitolo 6).
+Le proprietà sono il frontmatter YAML in testa a ogni file, come in Obsidian. Per capitoli e parti stanno nella nota cartella (capitolo 6). L'obiettivo di parole è la proprietà `goal` (per esempio `goal: 3000`); lo stato mostrato nell'albero è la proprietà `stato` (`status` in un romanzo in inglese) e il colore dipende dalla posizione del valore tra quelli ammessi: il primo grigio, l'ultimo verde. Il modello delle nuove scene è il file `Modelli/Scena.md` (`Templates/Scene.md` in inglese); `{{title}}` e `{{date}}` diventano il titolo della scena e la data del giorno, come nei modelli della Bibbia.
 
 ```yaml
 ---
@@ -485,6 +502,9 @@ La sezione **Statistiche** mostra:
 - **Lunghezza**: quanto è lunga ogni scena, ogni capitolo o ogni parte, con la quota sul totale, una barra, la media, la mediana, la più breve e la più lunga. Due gruppi di pulsanti sopra la tabella scelgono la misura (**Parole** o **Caratteri spazi inclusi**) e il livello (**Scene**, **Capitoli**, **Parti**; Parti compare solo se il romanzo ha parti). La scelta resta per le volte successive.
 - **Citazioni**: quante volte le scene nominano ogni personaggio, luogo o altra scheda della Bibbia, con la prima e l'ultima scena in cui compare, e le schede mai nominate.
 - **Parole più usate**: senza articoli, preposizioni e altre parole comunissime.
+- **Stile**: qualche numero su come è scritto il testo, per trovare i passi da rileggere: la lunghezza media delle frasi, le **frasi lunghe** (più di 40 parole), gli **avverbi** in -mente e i più usati, la parte di testo in **dialogo** e le **ripetizioni vicine**, cioè la stessa parola usata di nuovo entro 30 parole. Sotto ci sono le ripetizioni più vicine e le frasi più lunghe, con la scena: un clic la apre, e per una ripetizione evidenzia la parola. Sono stime fatte sulle sole parole, non regole.
+
+  *Esempio:* nel progetto di esempio la frase più lunga è nello *Scartafaccio* e supera le 130 parole: Manzoni imita lo stile del Seicento. Una ripetizione voluta, come «zitto, zitto» o «sempre e sempre», non viene contata.
 
 ![Lunghezza dei capitoli e citazioni dei personaggi nel progetto di esempio](img/statistiche-lunghezza.png)
 
@@ -500,6 +520,8 @@ Per le scene singole, il pannello **Proprietà** mostra parole, caratteri e temp
 - **Obiettivi** in `dante.yaml`: `goals: {words, deadline, daily, days}`, dove `days` elenca i giorni di scrittura da 1 (lunedì) a 7 (domenica). Le parole necessarie sono distribuite solo su quei giorni.
 - **Registro di scrittura**: Dante conta, mentre scrivi, le parole aggiunte e cancellate e i minuti passati a scrivere, giorno per giorno, in `.dante/sessions/<nome>.json`. Parole scritte con altri programmi non entrano nel registro, ma entrano nei totali.
 - **Citazioni**: contano il nome della scheda e i suoi alias scritti esattamente come nella nota, maiuscole comprese.
+- **Stile**: le frasi finiscono a un punto, un punto di domanda o esclamativo o ai puntini; gli avverbi si riconoscono dalla desinenza (-mente in italiano e spagnolo, -ly in inglese, -ment in francese), lasciando fuori le parole comuni che finiscono allo stesso modo senza esserlo, come «mente» o «clemente». Il dialogo è il testo tra caporali o virgolette, o quello delle battute aperte da una lineetta, dove le lineette successive alternano battuta e narrazione. Le ripetizioni contano parole di almeno quattro lettere, senza le parole comunissime e senza quelle ripetute subito o con una sola parola in mezzo.
+- **Sessioni**: il timer della barra di stato non scrive niente nel progetto; le parole che conta sono quelle del registro di scrittura di oggi.
 - **Lunghezza**: al livello Parti, prologo, epilogo e capitoli fuori dalle parti finiscono in un'unica riga "Fuori dalle parti", che non entra in media e mediana. Al livello Scene la colonna Dove indica il capitolo (o la parte) della scena. Misura e livello sono impostazioni del computer (`statsUnit`, `statsLevel`), non di `dante.yaml`: ognuno sceglie la sua.
 
 ## 13. Esportare in Word, PDF ed EPUB

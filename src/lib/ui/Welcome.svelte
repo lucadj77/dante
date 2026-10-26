@@ -20,6 +20,7 @@
   import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
   import WordImport from "./WordImport.svelte";
   import { pickWordFile } from "./wordFile";
+  import { pickScrivener } from "./scrivenerFile";
   import { openHelp } from "./help.svelte";
 
   let { onOpen }: { onOpen: (project: Project) => void } = $props();
@@ -77,6 +78,7 @@
   /** The book as the preview left it. */
   let imported = $state<ImportedBook | null>(null);
   let importedFrom = $state("");
+  let fromScrivener = $state(false);
   const importedCounts = $derived(imported ? counts(imported) : null);
   const novelLanguages = NOVEL_LANGUAGES;
   /** The starting views of a new novel: a board and a table of the scenes. */
@@ -159,19 +161,35 @@
   async function importWord(bytes: Uint8Array, fileName: string) {
     error = "";
     try {
-      const read = await readDocx(bytes, { note: t("import.note") });
-      roles = defaultRoles(read.blocks);
-      blanks = defaultBlankLines(read.blocks);
-      marks = {};
-      content = read;
-      importedFrom = fileName;
-      imported = null;
-      title = "";
-      if (read.author) authors = authorsOf(read.author);
-      previewing = true;
+      preview(await readDocx(bytes, { note: t("import.note") }), fileName);
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
     }
+  }
+
+  /** Reads a Scrivener project and opens its preview, as a Word file's. */
+  async function chooseScrivener() {
+    error = "";
+    try {
+      const picked = await pickScrivener(t("untitled"));
+      if (picked) preview(picked.content, picked.name, true);
+    } catch (e) {
+      error = t("import.failed", { name: "Scrivener", message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  /** Shows the preview of a book read from another program, before the new project's form. */
+  function preview(read: DocxContent, fileName: string, scrivener = false) {
+    fromScrivener = scrivener;
+    roles = defaultRoles(read.blocks);
+    blanks = defaultBlankLines(read.blocks);
+    marks = {};
+    content = read;
+    importedFrom = fileName;
+    imported = null;
+    title = "";
+    if (read.author) authors = authorsOf(read.author);
+    previewing = true;
   }
 
   async function chooseWord() {
@@ -188,7 +206,7 @@
   function previewed(book: ImportedBook) {
     imported = book;
     previewing = false;
-    if (!title.trim()) title = book.title || importedFrom.replace(/\.docx$/i, "");
+    if (!title.trim()) title = book.title || importedFrom.replace(/\.(docx|scriv|zip)$/i, "");
     creating = true;
   }
 
@@ -263,6 +281,7 @@
     bind:blanks
     bind:marks
     action={t("import.continue")}
+    note={fromScrivener ? t("import.howScrivener") : undefined}
     onDone={previewed}
     onCancel={cancel}
   />
@@ -322,6 +341,7 @@
         <button onclick={openFolder}>{t("welcome.open")}</button>
       {/if}
       <button onclick={chooseWord}>{t("import.word")}</button>
+      <button title={web ? t("tip.importScrivenerWeb") : t("tip.importScrivener")} onclick={chooseScrivener}>{t("import.scrivener")}</button>
       <button onclick={openSample}>{t("welcome.sample")}</button>
     </div>
     <p class="help-link"><button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button></p>

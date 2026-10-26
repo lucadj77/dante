@@ -350,6 +350,20 @@ export function statusProperty(language: string): { name: string; values: string
   return { name, values: [...values] };
 }
 
+const STATUS_NAMES = ["status", "stato", "estado", "statut"];
+
+/**
+ * The property that holds the stage of work of a scene in this project: the one of the
+ * novel's language, or one with another of those names that the project already defines.
+ */
+export function projectStatus(settings: Pick<NovelSettings, "language" | "properties">): { name: string; values: string[] } {
+  const status = statusProperty(settings.language);
+  const own = Object.entries(settings.properties).find(([name, def]) => name === status.name || (def.kind === "text" && STATUS_NAMES.includes(name)));
+  if (own) status.name = own[0];
+  if (own && own[1].values.length) status.values = [...own[1].values];
+  return status;
+}
+
 export function defaultPropertyDefs(language: string): Record<string, PropertyDef> {
   const [age, date, place, owner] = PROPERTY_NAMES[language.slice(0, 2)] ?? PROPERTY_NAMES.en;
   const status = statusProperty(language);
@@ -362,6 +376,13 @@ export function defaultPropertyDefs(language: string): Record<string, PropertyDe
     [place]: { kind: "link", values: [], note_type: "place" },
     [owner]: { kind: "link", values: [], note_type: "character" },
   };
+}
+
+const SCENE_TEMPLATE: Record<string, string> = { en: "Scene", it: "Scena", es: "Escena", fr: "Scène" };
+
+/** The name of the template of new scenes, in the Templates folder, in the novel's language. */
+export function sceneTemplateName(language: string): string {
+  return SCENE_TEMPLATE[language.slice(0, 2)] ?? SCENE_TEMPLATE.en;
 }
 
 export function defaultFolders(language: string): NovelSettings["folders"] {

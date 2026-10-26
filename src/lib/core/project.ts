@@ -7,6 +7,7 @@ import {
   loadManuscript,
   parentOf,
   scenesOf,
+  SYNOPSIS,
   TITLE,
   type ContainerKind,
   type ManuscriptNode,
@@ -19,6 +20,8 @@ import {
   defaultSettings,
   knownFolders,
   parseSettings,
+  projectStatus,
+  sceneTemplateName,
   serializeSettings,
   SETTINGS_FILE,
   statusProperty,
@@ -293,9 +296,7 @@ export class Project {
     const template = this.templatePath(typeId);
     let text: string;
     if (await this.fs.exists(template)) {
-      const clean = sanitizeTitle(title) || "Untitled";
-      const date = new Date().toISOString().slice(0, 10);
-      text = (await this.fs.readText(template)).replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
+      text = fillTemplate(await this.fs.readText(template), title);
     } else {
       text = this.typeSkeleton(typeId);
     }
@@ -336,6 +337,22 @@ export class Project {
     const path = this.templatePath(typeId);
     if (!(await this.fs.exists(path))) {
       await this.fs.writeText(path, this.typeSkeleton(typeId));
+      await this.reload();
+    }
+    return path;
+  }
+
+  /** The template new scenes start from, when it exists: `<Templates>/Scena.md` in an Italian novel. */
+  sceneTemplatePath(): string {
+    return join(this.settings.folders.templates, `${sceneTemplateName(this.settings.language)}.md`);
+  }
+
+  /** Opens the template of new scenes, creating it with the first stage of work if needed. */
+  async ensureSceneTemplate(): Promise<string> {
+    const path = this.sceneTemplatePath();
+    if (!(await this.fs.exists(path))) {
+      const status = projectStatus(this.settings);
+      await this.fs.writeText(path, writeProperties("", { [status.name]: status.values[0] ?? "", synopsis: "" }) + "\n");
       await this.reload();
     }
     return path;
@@ -581,9 +598,12 @@ export class Project {
       taken.add(name.toLowerCase());
       return name;
     };
-    const withTitle = (title: string, file: string, body = "") => {
+    const withTitle = (title: string, file: string, body = "", synopsis = "") => {
       const clean = title.trim();
-      return clean && clean !== file ? writeProperties(body, { [TITLE]: clean }) : body;
+      const properties: Properties = {};
+      if (clean && clean !== file) properties[TITLE] = clean;
+      if (synopsis.trim()) properties[SYNOPSIS] = synopsis.trim();
+      return Object.keys(properties).length ? writeProperties(body, properties) : body;
     };
     if (book.hasParts && !this.settings.structure.parts) {
       // With parts on, a folder at the top reads as a part: the chapters already there say they are not.
@@ -602,7 +622,7 @@ export class Project {
       let order = nextOrder(continued);
       for (const scene of opening.scenes) {
         const file = fileName(scene.title, taken);
-        await this.fs.writeText(join(continued.path, formatName(order, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        await this.fs.writeText(join(continued.path, formatName(order, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : "", scene.synopsis));
         order += step;
       }
       book = { ...book, parts: [{ ...book.parts[0], chapters: book.parts[0].chapters.slice(1) }, ...book.parts.slice(1)] };
@@ -625,14 +645,14 @@ export class Project {
           : dir === this.manuscript.path && this.settings.structure.parts
             ? "chapter"
             : null;
-      const note = withTitle(chapter.title, name);
+      const note = withTitle(chapter.title, name, "", chapter.synopsis);
       if (kind || note) await this.fs.writeText(folderNotePath(path), kind ? writeProperties(note, { kind }) : note);
       // A scene may not share its chapter's name, or it would be read as the chapter's note.
       const scenes = new Set([name.toLowerCase()]);
       let sceneOrder = step;
       for (const scene of chapter.scenes) {
         const file = fileName(scene.title, scenes);
-        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : ""));
+        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : "", scene.synopsis));
         sceneOrder += step;
       }
     };
@@ -642,7 +662,7 @@ export class Project {
         const path = join(root.path, formatName(rootOrder, name));
         rootOrder += step;
         await this.fs.mkdir(path);
-        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name), { kind: "part" }));
+        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name, "", part.synopsis), { kind: "part" }));
         const taken = new Set([name.toLowerCase()]);
         let order = step;
         for (const chapter of part.chapters) {
@@ -689,10 +709,13 @@ export class Project {
     return first;
   }
 
-  async createScene(parentPath: string, index: number, title: string, body = ""): Promise<string> {
+  /** A new scene with `body` as its text, or, without one, the scene template's text if there is a template. */
+  async createScene(parentPath: string, index: number, title: string, body?: string): Promise<string> {
     const parent = this.node(parentPath);
     const clean = this.uniqueTitle(parent, sanitizeTitle(title) || "Untitled");
-    return this.insertNew(parent, index, clean, async (path) => this.fs.writeText(path + ".md", body), ".md");
+    let text = body ?? "";
+    if (body === undefined && (await this.fs.exists(this.sceneTemplatePath()))) text = fillTemplate(await this.fs.readText(this.sceneTemplatePath()), clean);
+    return this.insertNew(parent, index, clean, async (path) => this.fs.writeText(path + ".md", text), ".md");
   }
 
   async createContainer(parentPath: string, index: number, title: string, kind?: ContainerKind): Promise<string> {
@@ -882,3 +905,9 @@ export class Project {
   }
 }
 
+/** A template's text for a new note: {{title}} and {{date}} filled in. */
+function fillTemplate(template: string, title: string): string {
+  const clean = sanitizeTitle(title) || "Untitled";
+  const date = new Date().toISOString().slice(0, 10);
+  return template.replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
+}

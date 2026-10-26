@@ -219,6 +219,22 @@ describe("new project", () => {
     // Saved with the project, so it stays when the settings are read again.
     expect((await Project.open(fs)).settings.properties.stato.values).toHaveLength(4);
   });
+
+  it("starts new scenes from the scene template, when there is one", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: T\nlanguage: it\n", "Manoscritto/010 Uno/010 A.md": "a" });
+    const project = await Project.open(fs);
+    const plain = await project.createScene("Manoscritto/010 Uno", 1, "Senza");
+    expect(fs.files.get(plain)).toBe("");
+    const template = await project.ensureSceneTemplate();
+    expect(template).toBe("Modelli/Scena.md");
+    expect(fs.files.get(template)).toContain("stato: idea");
+    fs.files.set(template, "---\nstato: idea\n---\n# {{title}}\n");
+    const made = await project.createScene("Manoscritto/010 Uno", 2, "Notte");
+    expect(fs.files.get(made)).toBe("---\nstato: idea\n---\n# Notte\n");
+    // A split keeps its own text.
+    const split = await project.splitScene(made, "---\nstato: idea\n---\nprima", "dopo", "Seguito");
+    expect(fs.files.get(split)).toBe("dopo");
+  });
 });
 
 describe("trash", () => {

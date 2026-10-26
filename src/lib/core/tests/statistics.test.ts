@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets } from "../statistics";
+import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneWords, statusTone, treeMarks } from "../statistics";
 import { parseSettings } from "../settings";
 
 function sample() {
@@ -158,5 +158,25 @@ describe("writing sessions", () => {
     expect(streak(byDay, 500, new Date(2026, 9, 15))).toBe(3);
     expect(isWritingDay(new Date(2026, 9, 18), [1, 2, 3, 4, 5])).toBe(false);
     expect(isWritingDay(new Date(2026, 9, 18), [])).toBe(true);
+  });
+});
+
+describe("tree marks", () => {
+  it("adds up words, reads the goals and places the stage among the project's", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\nproperties:\n  stato:\n    kind: text\n    values: [idea, bozza, rivista, finita]\n",
+      "Manoscritto/010 Uno/010 Uno.md": "---\ngoal: 5000\n---\n",
+      "Manoscritto/010 Uno/010 A.md": "---\nstato: bozza\ngoal: 10\n---\nTre parole qui.",
+      "Manoscritto/010 Uno/020 B.md": "---\nstato: Finita\n---\nDue parole.",
+      "Manoscritto/010 Uno/030 C.md": "---\nstato: altro\n---\nUna{>>commento lungo<<}.",
+    });
+    const project = await Project.open(fs);
+    const index = await project.index();
+    const marks = treeMarks(project.manuscript, index, project.settings, (path, body) => (path.endsWith("B.md") ? 7 : sceneWords(body)));
+    expect(marks.get("Manoscritto/010 Uno/010 A.md")).toEqual({ words: 3, goal: 10, status: "bozza", tone: 1 });
+    expect(marks.get("Manoscritto/010 Uno/020 B.md")).toMatchObject({ words: 7, tone: 3 });
+    expect(marks.get("Manoscritto/010 Uno/030 C.md")).toMatchObject({ words: 1, status: "altro", tone: null });
+    expect(marks.get("Manoscritto/010 Uno")).toEqual({ words: 11, goal: 5000, status: "", tone: null });
+    expect(statusTone("idea", ["idea", "bozza", "rivista", "finita"])).toBe(0);
   });
 });

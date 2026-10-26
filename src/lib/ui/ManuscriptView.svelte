@@ -24,8 +24,12 @@
   import { panes, SCENE_SHEETS, toggleSceneSheets } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
+  import StatusBar from "./StatusBar.svelte";
+  import { textStats } from "$lib/core/stats";
   import { pickWordFile } from "./wordFile";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { sceneWords, treeMarks, type TreeMark } from "$lib/core/statistics";
+  import type { NoteIndex } from "$lib/core/notes";
   import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
   interface Props {
@@ -144,6 +148,44 @@
     void localRev;
     return project.manuscript;
   });
+  // The index of the notes, for the words, goals and stages shown in the tree.
+  let noteIndex = $state.raw<NoteIndex | null>(null);
+  $effect(() => {
+    void rev;
+    void localRev;
+    void diskRev;
+    void edits;
+    void project.index().then((i) => (noteIndex = i));
+  });
+  /** Words of each text already counted, so typing in one scene counts only that one again. */
+  const counted = new Map<string, { text: string; words: number }>();
+  function wordsOf(path: string, body: string): number {
+    const text = texts[path] ?? body;
+    const known = counted.get(path);
+    if (known && known.text === text) return known.words;
+    const words = sceneWords(text);
+    counted.set(path, { text, words });
+    return words;
+  }
+  const marks = $derived.by((): Map<string, TreeMark> => {
+    void edits;
+    void tree;
+    return noteIndex ? treeMarks(tree, noteIndex, project.settings, wordsOf) : new Map();
+  });
+  /** The text selected in the scene with the cursor. */
+  let selection = $state<{ path: string; text: string }>({ path: "", text: "" });
+  const statusScene = $derived.by(() => {
+    if (!active || !(active in texts)) return null;
+    return { words: wordsOf(active, ""), goal: marks.get(active)?.goal ?? 0 };
+  });
+  const statusView = $derived.by(() => {
+    const root = shownRoot;
+    if (!root || root.kind === "scene") return null;
+    const words = shownScenes.reduce((n, path) => n + wordsOf(path, ""), 0);
+    const label = root.kind === "manuscript" ? t("level.novel") : (headingMap.get(root.path) ?? root.title).replace(/\n/g, " · ");
+    return { label, words, goal: root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0) };
+  });
+  const selectedWords = $derived(selection.path === active && selection.text ? textStats(selection.text).words : 0);
   const headingMap = $derived.by(() => {
     void rev;
     void localRev;
@@ -704,6 +746,7 @@
             onMoveBy={moveBy}
             {renaming}
             {foldScope}
+            {marks}
           />
         {/each}
       </ul>
@@ -821,6 +864,9 @@
             <button role="menuitemcheckbox" aria-checked={panes.list.some((p) => p.path === SCENE_SHEETS)} title={t("tip.panes.sheets")} onclick={() => { moreOpen = false; toggleSceneSheets(); }}
               ><span class="tick">{panes.list.some((p) => p.path === SCENE_SHEETS) ? "✓" : ""}</span><Icon name="sheets" />{t("more.sheets")}</button
             >
+            <button role="menuitemcheckbox" aria-checked={app.settings.statusBar} title={t("tip.statusBar")} onclick={() => saveAppSettings({ ...app.settings, statusBar: !app.settings.statusBar })}
+              ><span class="tick">{app.settings.statusBar ? "✓" : ""}</span><Icon name="status" />{t("more.statusBar")}</button
+            >
             <hr />
             <button
               role="menuitemcheckbox"
@@ -916,11 +962,15 @@
               }}
               onAddAfter={addAfter}
               onRename={rename}
+              onSelection={(path, text) => (selection = { path, text })}
             />
           {/if}
         {/each}
       </div>
     </div>
+    {#if app.settings.statusBar && !fullscreen}
+      <StatusBar scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
+    {/if}
   </main>
 
   <!-- In full screen the panes beside the text wait until it is left. -->

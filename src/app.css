@@ -11,6 +11,11 @@
   --danger: #a33b2b;
   --editor-bg: #fffefb;
   --wikilink: #2f5f9e;
+  /* The stages of work of a scene, from the first to the last. */
+  --status-0: #a7a196;
+  --status-1: #d1912a;
+  --status-2: #3f7fc4;
+  --status-3: #3d9a5c;
   --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
@@ -28,6 +33,10 @@
   --danger: #e07a68;
   --editor-bg: #1f1e1c;
   --wikilink: #8fb4e8;
+  --status-0: #8a857c;
+  --status-1: #e0a648;
+  --status-2: #6ea3e0;
+  --status-3: #5fbf7f;
   color-scheme: dark;
 }
 

@@ -1,9 +1,9 @@
 import { cleanSource } from "./export/book";
-import { headings, type ManuscriptNode } from "./manuscript";
+import { folderNotePath, GOAL, headings, type ManuscriptNode } from "./manuscript";
 import { noteTitle, noteType, type NoteIndex, type NoteInfo } from "./notes";
 import { isWithin } from "./path";
 import { isWritingDay } from "./sessions";
-import type { NovelSettings } from "./settings";
+import { projectStatus, type NovelSettings } from "./settings";
 import { plainText, textStats } from "./stats";
 
 // Numbers about the manuscript for the Statistics section: length, chapters, the notes
@@ -154,7 +154,7 @@ export function lengthAnalysis(stats: ManuscriptStats, level: LengthLevel, unit:
 }
 
 /** Words too common to tell anything about a style, by language. */
-const STOPWORDS: Record<string, string> = {
+export const STOPWORDS: Record<string, string> = {
   en: "the a an and or but if of to in on at by for with from as is was were be been being are am it its this that these those he she they we you i me him her them us my your his their our not no so than then there here what which who whom when where why how all any some can could would should will shall may might must do does did have has had just into out up down over about after before more most also only very said one two",
   it: "il lo la i gli le un uno una e ed o ma se di a da in con su per tra fra del dello della dei degli delle al allo alla ai agli alle dal dallo dalla dai dagli dalle nel nello nella nei negli nelle sul sullo sulla sui sugli sulle col che chi cui non come più anche ancora già poi quando dove perché mentre così sono sei è siamo siete era erano fu stato stata essere ho hai ha abbiamo avete hanno aveva avevano avere mi ti si ci vi lui lei loro noi voi io tu me te sé suo sua suoi sue mio mia miei mie tuo tua nostro vostro questo questa questi queste quello quella quelli quelle tutto tutta tutti tutte niente nulla qualcosa ne lì là qui qua no sì solo poco molto tanto troppo fare fatto disse dice",
   es: "el la los las un una unos unas y o pero si de a en con por para del al que no se lo le les su sus es era fue ser ha había como más ya muy también me te nos os mi tu yo él ella ellos ellas este esta ese esa todo nada",
@@ -285,4 +285,60 @@ export function goalProgress(words: number, goal: number, deadline: string, toda
     writingDaysLeft,
     perDay: writingDaysLeft !== null && remaining > 0 ? Math.ceil(remaining / Math.max(1, writingDaysLeft)) : null,
   };
+}
+
+/** What the manuscript tree shows beside an item: its words, its goal and the stage of work. */
+export interface TreeMark {
+  words: number;
+  /** Words to reach; 0 without a goal. */
+  goal: number;
+  /** A scene's stage of work, as written; "" when none. */
+  status: string;
+  /** Where the stage stands among the project's stages, 0 (first) to 3 (last); null when it is not one of them. */
+  tone: number | null;
+}
+
+/** The words a scene or folder note should reach, from its `goal` property. */
+export function goalOf(properties: Record<string, unknown>): number {
+  const value = Number(properties[GOAL]);
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
+}
+
+/** Where a stage stands among the stages, from 0 to 3, so the first and last always look the same. */
+export function statusTone(value: string, values: string[]): number | null {
+  const i = values.findIndex((v) => v.toLowerCase() === value.trim().toLowerCase());
+  if (i < 0) return null;
+  return values.length > 1 ? Math.round((i / (values.length - 1)) * 3) : 3;
+}
+
+/**
+ * Words, goal and stage of every scene, chapter and part. `words` gives the words of a
+ * scene's text, which the editor may hold newer than the index.
+ */
+export function treeMarks(manuscript: ManuscriptNode, index: NoteIndex, settings: NovelSettings, words: (path: string, body: string) => number): Map<string, TreeMark> {
+  const status = projectStatus(settings);
+  const out = new Map<string, TreeMark>();
+  const visit = (node: ManuscriptNode): number => {
+    if (node.kind === "scene") {
+      const note = index.notes.get(node.path);
+      const value = note?.properties[status.name];
+      const stage = typeof value === "string" ? value.trim() : "";
+      const n = words(node.path, note?.body ?? "");
+      out.set(node.path, { words: n, goal: goalOf(note?.properties ?? {}), status: stage, tone: stage ? statusTone(stage, status.values) : null });
+      return n;
+    }
+    const n = node.children.reduce((sum, child) => sum + visit(child), 0);
+    if (node.kind !== "manuscript") {
+      const note = index.notes.get(node.notePath ?? folderNotePath(node.path));
+      out.set(node.path, { words: n, goal: goalOf(note?.properties ?? {}), status: "", tone: null });
+    }
+    return n;
+  };
+  visit(manuscript);
+  return out;
+}
+
+/** The words of a scene as the statistics count them: revisions accepted, no comments. */
+export function sceneWords(body: string): number {
+  return textStats(cleanSource(body)).words;
 }

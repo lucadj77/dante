@@ -2,7 +2,7 @@ import { completionStatus } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
-import { EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import { Decoration, EditorView, keymap, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { openSearchPanel, search, searchKeymap, SearchQuery, setSearchQuery } from "@codemirror/search";
 import { formatting, type FormattingLabels } from "./formatting";
 import { cursorLine, focusMode, typewriterMode } from "./modes";
@@ -30,6 +30,8 @@ export interface SceneEditorOptions {
   /** Arrow keys past the first or last line move to the neighbouring scene. */
   onLeave?: (direction: "up" | "down") => boolean;
   onFocus?: () => void;
+  /** The selected text, or "" when nothing is selected, whenever the selection changes. */
+  onSelection?: (text: string) => void;
   /** Names of the formatting buttons shown over a selection. */
   formatLabels: FormattingLabels;
   /** Names of the buttons over a table being edited; English when absent. */
@@ -112,6 +114,10 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     EditorView.updateListener.of((update) => {
       if (update.docChanged) options.onChange(update.state.doc.toString());
       if (update.focusChanged && update.view.hasFocus) options.onFocus?.();
+      if (options.onSelection && (update.selectionSet || update.docChanged)) {
+        const { state } = update;
+        options.onSelection(state.selection.ranges.map((r) => state.sliceDoc(r.from, r.to)).join("\n"));
+      }
     }),
     EditorView.contentAttributes.of({ spellcheck: "true", autocorrect: "on", autocapitalize: "sentences" }),
     modes.of([]),
@@ -125,7 +131,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   ];
   if (options.preview) extensions.push(livePreview, criticPreview);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
-  if (options.placeholder) extensions.push(placeholderExt(options.placeholder));
+  if (options.placeholder) extensions.push(emptyBodyHint(options.placeholder));
 
   const view = new EditorView({
     parent: options.parent,
@@ -178,4 +184,52 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
       view.destroy();
     },
   };
+}
+
+/** Properties alone, with no text after them, as a scene made from a template starts. */
+const ONLY_PROPERTIES = /^---\r?\n[\s\S]*?\r?\n---[ \t]*\s*$/;
+
+class HintWidget extends WidgetType {
+  constructor(private content: string | HTMLElement) {
+    super();
+  }
+  eq(other: HintWidget) {
+    return other.content === this.content;
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = "cm-placeholder";
+    span.setAttribute("aria-hidden", "true");
+    span.append(typeof this.content === "string" ? this.content : this.content.cloneNode(true));
+    return span;
+  }
+  ignoreEvent() {
+    return false;
+  }
+}
+
+/**
+ * What an empty scene says, shown while it has no text: even when it has properties, as a
+ * scene made from the template of new scenes does.
+ */
+function emptyBodyHint(content: string | HTMLElement): Extension {
+  const widget = Decoration.widget({ widget: new HintWidget(content), side: 1 });
+  const build = (view: EditorView): DecorationSet => {
+    const doc = view.state.doc;
+    const text = doc.length < 2000 ? doc.toString() : "x";
+    const empty = !text.trim() || ONLY_PROPERTIES.test(text);
+    return empty ? Decoration.set([widget.range(doc.length)]) : Decoration.none;
+  };
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = build(view);
+      }
+      update(update: ViewUpdate) {
+        if (update.docChanged) this.decorations = build(update.view);
+      }
+    },
+    { decorations: (v) => v.decorations },
+  );
 }

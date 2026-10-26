@@ -8,6 +8,8 @@
     collapse: "M7 20l5-5 5 5 M7 4l5 5 5-5",
     expand: "M7 15l5 5 5-5 M7 9l5-5 5 5",
     format: "M7 4h6a4 4 0 0 1 0 8H7z M7 12h7a4 4 0 0 1 0 8H7z",
+    timer: "M12 5a8 8 0 1 0 0 16a8 8 0 1 0 0-16z M12 9v4l2.5 2 M10 2h4 M12 2v3",
+    status: "M4 20h16 M7 16V11 M12 16V7 M17 16V4",
     raw: "M8 6l-6 6 6 6 M16 6l6 6-6 6",
     focus: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
     typewriter: "M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M6 10h1 M10 10h1 M14 10h1 M18 10h1 M7 14h10",

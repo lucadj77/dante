@@ -2,7 +2,8 @@
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import type { Properties } from "$lib/core/frontmatter";
-  import { findNode, folderNotePath, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
+  import { findNode, folderNotePath, GOAL, NUMBERED, SYNOPSIS, TITLE, type ContainerKind } from "$lib/core/manuscript";
+  import { goalOf } from "$lib/core/statistics";
   import type { Project } from "$lib/core/project";
   import { readingMinutes, textStats } from "$lib/core/stats";
   import { isWritingDay } from "$lib/core/sessions";
@@ -56,8 +57,9 @@
   // `kind` and `numbered` live in folder notes and are set with the controls above the list.
   // Title and synopsis have their own fields above the list.
   const entries = $derived(
-    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
+    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && key !== GOAL && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
   );
+  const goal = $derived(goalOf(properties));
   const synopsis = $derived(typeof properties[SYNOPSIS] === "string" ? (properties[SYNOPSIS] as string) : displayValue(properties[SYNOPSIS]));
 
   async function retitle(title: string) {
@@ -174,6 +176,26 @@
               if (value !== synopsis) void update({ [SYNOPSIS]: value === "" ? undefined : value });
             }}
           ></textarea>
+        {/key}
+      </label>
+      <label class="title-field goal-field">
+        <span>{t("panel.goal")}</span>
+        {#key node.path + goal}
+          <input
+            type="number"
+            min="0"
+            step="100"
+            value={goal || ""}
+            placeholder={t("panel.goalNone")}
+            data-tip={t("panel.goalHint")}
+            onchange={(e) => {
+              const value = Math.max(0, Math.round(Number((e.currentTarget as HTMLInputElement).value) || 0));
+              if (value !== goal) void update({ [GOAL]: value || undefined });
+            }}
+            onkeydown={(e) => {
+              if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+            }}
+          />
         {/key}
       </label>
       {#if isContainer && node}

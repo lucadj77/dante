@@ -17,6 +17,12 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Notes section**: Research and Laboratory are now one section, with the two folders one below the other. Views is now called Tables and boards.
 - **Clearer errors**: when something fails Dante explains it in a plain sentence; the technical message is behind Details.
 - **Fix**: on an Italian keyboard Cmd+Shift+7 inserted a comment instead of starting a numbered list; now Cmd+Shift+7, 8, 9 and . do what they should.
+- **Stage and goals in the tree**: beside each scene a coloured dot shows its stage (idea, draft, revised, done). A scene or chapter can have a word goal, in the Properties panel: the tree shows a small bar that turns green when you reach it.
+- **Status bar**: under the text the words of the scene, of the selection, of the chapter and of today, always in sight. It can be hidden from the More menu.
+- **Writing sessions**: from the status bar, a timer of 10 to 90 minutes with a number of words to reach, if you like. At the end Dante tells you how many words you wrote.
+- **Template of new scenes**: in Settings choose the properties and the text every new scene starts with, for example the stage «idea» and a few questions.
+- **Style in the statistics**: average sentence length, long sentences, adverbs, share of dialogue and words repeated close together, with examples that open the scene.
+- **Import from Scrivener**: from the start screen, a Scrivener project becomes a Dante project with chapters, scenes and synopses, after the same preview as Word.
 
 ## 0.1.44 · October 21, 2026
 

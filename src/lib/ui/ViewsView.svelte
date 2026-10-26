@@ -28,7 +28,7 @@
     type ViewRow,
     type ViewSpec,
   } from "$lib/core/views";
-  import { statusProperty } from "$lib/core/settings";
+  import { projectStatus } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
   import { num, t } from "$lib/state.svelte";
   import { confirmDelete } from "./dialogs";
@@ -187,10 +187,7 @@
 
   async function createStarters() {
     // The stage of work goes in the property the novel's language calls for, or one the project already defines.
-    const status = statusProperty(p.project.settings.language);
-    const own = Object.entries(p.project.settings.properties).find(([name, def]) => name === status.name || (def.kind === "text" && ["status", "stato", "estado", "statut"].includes(name)));
-    if (own && own[1].values.length) Object.assign(status, { name: own[0], values: own[1].values });
-    else if (own) status.name = own[0];
+    const status = projectStatus(p.project.settings);
     for (const [name, view] of starterViews(status, { board: t("views.starter.board"), scenes: t("views.starter.scenes") })) await create(name, view);
   }
 

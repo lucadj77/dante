@@ -17,6 +17,12 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Sezione Note**: Ricerca e Laboratorio sono ora una sezione sola, con le due cartelle una sotto l'altra. Viste si chiama Tabelle e bacheche.
 - **Errori più chiari**: quando qualcosa non riesce Dante lo spiega con una frase semplice; il messaggio tecnico è dietro Dettagli.
 - **Correzione**: con la tastiera italiana Cmd+Maiusc+7 inseriva un commento invece di iniziare un elenco numerato; ora Cmd+Maiusc+7, 8, 9 e . fanno quello che devono.
+- **Stato e obiettivi nell'albero**: accanto a ogni scena un pallino colorato mostra lo stato (idea, bozza, rivista, finita). Una scena o un capitolo può avere un obiettivo di parole, nel pannello Proprietà: l'albero mostra una piccola barra che diventa verde quando lo raggiungi.
+- **Barra di stato**: sotto il testo le parole della scena, della selezione, del capitolo e di oggi, sempre in vista. Si nasconde dal menu Altro.
+- **Sessioni di scrittura**: dalla barra di stato, un timer da 10 a 90 minuti con un numero di parole da raggiungere, se vuoi. Alla fine Dante dice quante parole hai scritto.
+- **Modello delle nuove scene**: in Impostazioni scegli con quali proprietà e quale testo nasce ogni scena nuova, per esempio con lo stato «idea» e qualche domanda.
+- **Stile nelle statistiche**: lunghezza media delle frasi, frasi lunghe, avverbi, parte di dialogo e parole ripetute a poca distanza, con gli esempi che aprono la scena.
+- **Importazione da Scrivener**: dalla schermata iniziale, un progetto Scrivener diventa un progetto Dante con capitoli, scene e sinossi, dopo la stessa anteprima del Word.
 
 ## 0.1.44 · 21 ottobre 2026
 

@@ -4,7 +4,8 @@
 
 <script lang="ts">
   import type { ManuscriptNode } from "$lib/core/manuscript";
-  import { t } from "$lib/state.svelte";
+  import type { TreeMark } from "$lib/core/statistics";
+  import { num, t } from "$lib/state.svelte";
   import type { MessageKey } from "$lib/i18n";
   import TreeItem from "./TreeItem.svelte";
   import { mark, marked } from "./folding.svelte";
@@ -33,6 +34,8 @@
     renaming: string | null;
     /** Where the tree keeps which chapters and parts are folded. */
     foldScope: string;
+    /** Words, goal and stage of work of each item. */
+    marks: Map<string, TreeMark>;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -44,6 +47,8 @@
   const isScene = $derived(p.node.kind === "scene");
   // Headings on two lines fit the tree on one.
   const label = $derived((p.headings.get(p.node.path) ?? p.node.title).replace(/\n/g, " · "));
+  const info = $derived(p.marks.get(p.node.path));
+  const share = $derived(info && info.goal ? Math.min(1, info.words / info.goal) : 0);
 
   $effect(() => {
     if (p.renaming === p.node.path) startRename();
@@ -150,7 +155,21 @@
         }}
       />
     {:else}
+      {#if isScene && info?.status}
+        <span class="status" data-tone={info.tone ?? ""} title={t("tree.status", { status: info.status })} aria-label={t("tree.status", { status: info.status })}></span>
+      {/if}
       <span class="label">{label}</span>
+      {#if info && info.goal}
+        <span
+          class="goal"
+          class:reached={share >= 1}
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax={info.goal}
+          aria-valuenow={Math.min(info.words, info.goal)}
+          title={t("tree.goal", { words: num(info.words), goal: num(info.goal) })}><span style:width="{share * 100}%"></span></span
+        >
+      {/if}
       {#if p.loose}
         <span class="loose" title={t("tree.looseHint")}>{t("tree.loose")}</span>
       {/if}
@@ -210,6 +229,52 @@
   .row.scene .label {
     color: var(--text-muted);
     padding-left: 18px;
+  }
+  /* The dot takes the place of the indent, so labels with and without it line up. */
+  .row.scene .status + .label {
+    padding-left: 6px;
+  }
+  .status {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-left: 4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+    box-sizing: border-box;
+  }
+  .status[data-tone="0"] {
+    background: var(--status-0);
+    border-color: var(--status-0);
+  }
+  .status[data-tone="1"] {
+    background: var(--status-1);
+    border-color: var(--status-1);
+  }
+  .status[data-tone="2"] {
+    background: var(--status-2);
+    border-color: var(--status-2);
+  }
+  .status[data-tone="3"] {
+    background: var(--status-3);
+    border-color: var(--status-3);
+  }
+  .goal {
+    flex: none;
+    margin-left: auto;
+    width: 34px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .goal span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+  .goal.reached span {
+    background: var(--status-3);
   }
   .row.drop-before {
     border-top-color: var(--accent);
