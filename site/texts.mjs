@@ -126,7 +126,7 @@ export const texts = {
       linuxNote: 'Make the AppImage executable (chmod +x) and start it.',
       install: 'Installing step by step, and getting past the warning of macOS and Windows',
       all: 'All versions on GitHub',
-      beta: 'The newest trial build, before it becomes a version, is the “preview” release on GitHub.',
+      beta: 'Betas, with the new features before the official version, are the releases marked Pre-release. Once installed, Dante can follow them: Settings > Updates > Beta channel.',
       support: 'Dante is free: if you find it useful, you can buy me a coffee with PayPal.',
       failed: 'The latest version could not be read: download it from the releases page.'
     },
@@ -284,7 +284,7 @@ export const texts = {
       linuxNote: 'Rendi eseguibile l’AppImage (chmod +x) e avvialo.',
       install: 'Come si installa e come si supera l’avviso di macOS e Windows, passo per passo',
       all: 'Tutte le versioni su GitHub',
-      beta: 'L’ultima versione di prova, prima che diventi una versione, è la release «preview» su GitHub.',
+      beta: 'Le beta, con le novità prima della versione ufficiale, sono le release segnate Pre-release. Dante installato può seguirle: Impostazioni > Aggiornamenti > canale Beta.',
       support: 'Dante è gratuito: se ti è utile, puoi offrirmi un caffè con PayPal.',
       failed: 'Non riesco a leggere l’ultima versione: scaricala dalla pagina delle release.'
     },

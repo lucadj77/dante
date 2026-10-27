@@ -14,7 +14,7 @@ Questa è una versione di prova: funziona, ma può contenere errori.
 
 ## Scaricare Dante
 
-Tutti i file sono nella pagina della [versione di anteprima](https://github.com/lucadj77/dante/releases/tag/preview), sotto **Assets**. Scarica solo quello del tuo sistema:
+Tutti i file sono nella pagina delle [versioni](https://github.com/lucadj77/dante/releases), sotto **Assets**: l'[ultima versione stabile](https://github.com/lucadj77/dante/releases/latest), oppure la beta più recente (le versioni con *beta* nel nome, segnate **Pre-release**). Scarica solo il file del tuo sistema:
 
 | Sistema | File da scaricare |
 | --- | --- |
@@ -69,13 +69,15 @@ Se non puoi installare Dante (per esempio su un Mac con Catalina), aprilo con Ch
 
 ## Aggiornamenti
 
-Quando esce una nuova versione, Dante lo dice all'avvio con un riquadro in basso a destra: premi **Novità** per leggere cosa cambia, poi **Aggiorna e riavvia**. Dante salva il testo, scarica la nuova versione, la installa e si riapre. Con **Più tardi** il riquadro torna all'avvio successivo.
+Quando esce una nuova versione, Dante lo dice all'avvio con un riquadro in basso a destra: premi **Novità** per leggere cosa cambia, poi **Aggiorna e riavvia**. Dante salva il testo, scarica la nuova versione, la installa e si riapre. Con **Ricordamelo più tardi** il riquadro torna all'avvio successivo; con **Salta questa versione** aspetta la prossima.
+
+Per provare le novità prima che escano, in **Impostazioni** > **Aggiornamenti** scegli il canale **Beta**: riceverai le versioni ancora in prova, che sono quelle su cui le tue segnalazioni servono di più. Con **Stabile** ricevi solo le versioni ufficiali.
 
 Tutte le novità, versione per versione, sono nella pagina [Novità](novita.md) ([What's new](whats-new.md) in inglese).
 
 Puoi controllare anche a mano: **Impostazioni** > **Aggiornamenti** > **Cerca aggiornamenti**. Lì trovi anche il numero della versione installata.
 
-La versione portatile per Windows non si aggiorna da sola: scarica il nuovo zip dalla [versione di anteprima](https://github.com/lucadj77/dante/releases/tag/preview) e sostituisci la cartella, tenendo la sottocartella `dante-data` con le tue impostazioni.
+La versione portatile per Windows non si aggiorna da sola: scarica il nuovo zip dalla pagina delle [versioni](https://github.com/lucadj77/dante/releases) e sostituisci la cartella, tenendo la sottocartella `dante-data` con le tue impostazioni.
 
 ## Segnalare problemi e idee
 

@@ -691,12 +691,19 @@ La stessa scena può stare al centro e in un pannello: ciò che scrivi in uno co
 
 ### Come si fa
 
-1. A ogni avvio Dante controlla se c'è una nuova versione, e poi di nuovo ogni sei ore se resta aperto. Se non c'è, compare per qualche secondo in basso a destra **Dante 0.1.… è aggiornato**; se il controllo non riesce (per esempio senza connessione) lo dice nello stesso punto. Quando c'è una nuova versione compare un riquadro in basso a destra: **È disponibile Dante 0.1.…**.
+1. A ogni avvio Dante controlla se c'è una nuova versione, e poi di nuovo ogni sei ore se resta aperto. Se non c'è, compare per qualche secondo in basso a destra **Dante 1.… è aggiornato**; se il controllo non riesce (per esempio senza connessione) lo dice nello stesso punto. Quando c'è una nuova versione compare un riquadro in basso a destra: **È disponibile Dante 1.…**.
 
    ![Il riquadro dell'aggiornamento](img/aggiornamento.png)
 2. Per sapere cosa cambia premi **Novità**: il riquadro elenca le novità di ogni versione uscita dopo quella installata, in italiano o in inglese secondo la lingua di Dante. Lo stesso elenco è nella pagina [Novità](novita.md) e nella pagina della versione su GitHub.
 3. Premi **Aggiorna e riavvia**. Dante salva il testo aperto, scarica la nuova versione, la installa e si riapre. Su Windows compare per qualche secondo la finestra dell'installatore.
-4. Con **Più tardi** il riquadro sparisce e torna al prossimo avvio.
+4. Con **Ricordamelo più tardi** il riquadro sparisce e torna al prossimo avvio. Con **Salta questa versione** Dante non te la propone più: aspetta la successiva. Se cambi idea, **Cerca aggiornamenti** nelle Impostazioni la mostra comunque.
+
+In **Impostazioni** > **Dante su questo computer** > **Aggiornamenti** scegli anche il **canale**:
+
+- **Stabile**, la scelta di base: ricevi solo le versioni ufficiali, quando le novità sono già state provate.
+- **Beta**: ricevi prima le novità, in versioni ancora in prova (per esempio *1.1.0-beta.1*), che possono avere qualche difetto. Se installi una beta, Dante resta su questo canale finché non lo cambi.
+
+Tornando da Beta a Stabile Dante non torna indietro: resti sulla beta che hai finché non esce una versione stabile più recente.
 
 Per controllare a mano, sul Mac scegli **Dante** > **Check for Updates…** nella barra dei menu; ovunque puoi aprire **Impostazioni** > **Aggiornamenti** e premere **Cerca aggiornamenti**. Lì c'è anche il numero della versione installata, utile quando segnali un problema, e la casella per non cercare aggiornamenti all'avvio.
 
@@ -704,12 +711,14 @@ La copia portatile per Windows non si aggiorna da sola: scarica il nuovo zip e s
 
 ### Approfondimento
 
-- Ogni versione pubblicata nell'anteprima *preview* ha un numero proprio, `0.1.<numero della compilazione su GitHub>`, che cresce a ogni modifica unita in main. La copia installata lo confronta con quello scritto in `latest.json`, un file della stessa pagina di anteprima.
+- Le versioni seguono il versionamento semantico: 1.0.1 corregge solo difetti, 1.1.0 porta funzioni nuove (prima come beta 1.1.0-beta.1, -beta.2…), 2.0.0 cambierebbe qualcosa di non compatibile. Come escono è spiegato in [Rilasci di Dante](rilascio.md).
+- Ogni versione è una release di GitHub con un file `latest.json` che elenca i file firmati per ogni sistema. Il canale Stabile legge quello dell'ultima release ufficiale; il canale Beta legge l'elenco delle release e prende la versione più alta, beta o stabile. La copia installata confronta il numero con il proprio.
+- Le copie 0.1.x cercano gli aggiornamenti nella vecchia pagina di anteprima *preview*, che riceve il `latest.json` di ogni nuova stabile: così passano alla 1.0 e da lì scelgono il canale.
 - I file dell'aggiornamento sono firmati con una chiave che solo il repository conosce (il segreto `TAURI_SIGNING_PRIVATE_KEY` di GitHub). Dante verifica la firma con la chiave pubblica scritta in `tauri.conf.json` e rifiuta un file non firmato o modificato. Se la chiave privata andasse persa, le copie installate non potrebbero più aggiornarsi da sole e andrebbero reinstallate a mano una volta.
 - Cosa viene sostituito: su Mac l'app in Applicazioni (con il file `.app.tar.gz`), su Windows il programma installato (con l'installatore, che mostra solo una barra di avanzamento), su Linux l'AppImage o il pacchetto .deb/.rpm (per i pacchetti il sistema chiede la password di amministratore). I progetti e le impostazioni non vengono toccati.
 - Dante non cerca aggiornamenti nella copia portatile né quando è avviato con `npm run tauri dev` (anche dal file *Avvia Dante.command*, che scarica già le modifiche con `git pull`), perché in quei casi non c'è un'installazione da sostituire. Lì il controllo all'avvio non mostra niente; dal menu dice che questa copia non si aggiorna da sola.
 - Senza connessione la ricerca all'avvio fallisce in silenzio; quella dalle Impostazioni mostra l'errore.
-- Le novità si scrivono a mano in `docs/novita.md` e `docs/whats-new.md`, sotto **Prossima versione** / **Next version**, nella stessa modifica che introduce la funzione. Quando la compilazione su main pubblica una versione, `.github/news.py` sposta quelle righe sotto il titolo `0.1.N · data` (con un commit su main), le mette nella pagina della versione e le scrive in `latest.json`, da cui le legge il riquadro dell'aggiornamento.
+- Le novità si scrivono a mano in `docs/novita.md` e `docs/whats-new.md`, sotto **Prossima versione** / **Next version** e nel gruppo Nuovo, Cambiato o Corretto, nella stessa modifica che introduce la funzione. Quando esce una versione, `.github/news.py` sposta quelle righe sotto il titolo della versione, le mette nella pagina della release e le scrive in `latest.json`, da cui le legge il riquadro dell'aggiornamento. Una versione stabile come la 1.1.0 raccoglie anche le righe delle sue beta.
 
 ## 18. Dante nel browser
 
