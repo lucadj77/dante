@@ -72,6 +72,7 @@ describe("images in the text", () => {
     expect(await project.addAttachment("foto.png", PNG)).toBe("Ricerca/Allegati/foto.png");
     expect(await project.addAttachment("foto.png", PNG)).toBe("Ricerca/Allegati/foto 2.png");
     expect(project.files).toContain("Ricerca/Allegati/foto 2.png");
+    expect(project.folders.filter((f) => f === "Ricerca/Allegati")).toHaveLength(1);
   });
 });
 

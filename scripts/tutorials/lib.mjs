@@ -206,6 +206,9 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
     const x = Math.min(...boxes.map((b) => b.x)), y = Math.min(...boxes.map((b) => b.y));
     return { x, y, width: Math.max(...boxes.map((b) => b.x + b.width)) - x, height: Math.max(...boxes.map((b) => b.y + b.height)) - y };
   };
+  // PEEK=dir saves the page before each section title and at the end, to check a FAST run
+  let peeks = 0;
+  const peek = async () => { if (process.env.PEEK) await p.screenshot({ path: path.join(process.env.PEEK, `${String(++peeks).padStart(2, '0')}.png`) }); };
   const point = async (loc, dx = 0.5, dy = 0.5) => { const r = await box(loc); await moveTo(r.x + r.width * dx, r.y + r.height * dy); await wait(0.25); return r; };
 
   const t = {
@@ -242,6 +245,7 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
     },
     /** A section title over the whole page; `after` runs once it is gone, so every click is seen. */
     async title(big, small = '', after) {
+      await peek();
       await p.evaluate(([b, s]) => window.__tu.title(b, s), [big, small]);
       await wait(Math.max(2.5, readTime(big + ' ' + small) - 1));
       await p.evaluate(() => window.__tu.title(null));
@@ -269,6 +273,7 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
       await wait(1);
       try {
         await fn(t);
+        await peek();
         await wait(1.5);
       } catch (e) {
         const shot = process.env.SHOT;

@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Attachments shown at once**: the first image added to a novel creates the Attachments folder inside Research, and now the folder shows at once in the Notes section, without reopening the project.
+
 ## 0.1.49 · October 27, 2026
 
 - **Dante's website and a new address for the web version**: Dante has a website, https://dante.lucadj.eu, with screenshots, downloads for every system and, soon, video tutorials. The web version moves to https://dante.lucadj.eu/app/ (the latest official version) and https://dante.lucadj.eu/beta/ (the latest trial one). If you used the old address, open the new one, install Dante from the browser again if you had installed it, and reopen your novels' folders: the texts do not change, the recent list and the settings do.

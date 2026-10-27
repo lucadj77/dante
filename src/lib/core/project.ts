@@ -281,8 +281,10 @@ export class Project {
     await this.fs.mkdir(dir);
     const path = await this.freeName(dir, safeFileName(name));
     await this.fs.writeBytes(path, data);
-    // The new file is known at once, so links to it resolve, without reading the project again.
+    // The new file is known at once, so links to it resolve and the Notes tree shows its folder,
+    // without reading the project again.
     this.files.push(path);
+    if (!this.folders.includes(dir)) this.folders.push(dir);
     return path;
   }
 
