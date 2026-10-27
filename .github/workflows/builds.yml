@@ -1,20 +1,18 @@
 name: Builds
 
 # Builds Dante for Windows (installer and portable zip), Linux (AppImage, .deb, .rpm)
-# and macOS (universal .dmg, Apple Silicon and Intel).
-# Every run keeps the files as artifacts of the run; runs on main (pushed or started by hand)
-# also put them on the "preview" release, where they can be downloaded without unzipping.
+# and macOS (.dmg for Apple Silicon and for Intel), with the version in package.json.
+# Every run keeps the files as artifacts of the run. A run on a tag v<version>, which the
+# Release workflow starts, also publishes the release of that tag: a prerelease for a beta
+# (1.1.0-beta.1), the latest release for a stable version (1.1.0), with the notes of the
+# version from docs/novita.md and docs/whats-new.md. See docs/rilascio.md.
 
-# Every build gets its own version, 0.1.<run number>, so installed copies can tell a newer
-# one apart. With the TAURI_SIGNING_PRIVATE_KEY secret set, the builds also make the signed
-# files the automatic update downloads, and the release gets a latest.json listing them
-# (the address in tauri.conf.json, plugins.updater). Without the secret they are skipped.
+# With the TAURI_SIGNING_PRIVATE_KEY secret set, the builds also make the signed files the
+# automatic update downloads, and the release gets a latest.json listing them, which the
+# installed copies read (src-tauri/src/updates.rs). Without the secret they are skipped.
 
-# Only main and manual runs: Windows and macOS minutes count several times against
-# the monthly Actions allowance, so branches are built on request (Run workflow).
+# Started by hand (Actions > Builds > Run workflow) to try a branch, or by Release on a tag.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -64,23 +62,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: bash .github/ci-config.sh 0.1.${{ github.run_number }}
+      - run: bash .github/ci-config.sh
+      - name: Version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       - run: npx tauri build --bundles nsis --config src-tauri/ci.conf.json
-      - name: Installer and portable zip, named after the commit
+      - name: Installer and portable zip, named after the version
         shell: bash
         run: |
-          short=${GITHUB_SHA::7}
           mkdir -p out portable/Dante/dante-data
-          cp src-tauri/target/release/bundle/nsis/*.exe "out/Dante-setup-$short.exe"
+          cp src-tauri/target/release/bundle/nsis/*.exe "out/Dante-setup-$version.exe"
           # The signature of the installer, for the automatic update.
           for sig in src-tauri/target/release/bundle/nsis/*.exe.sig; do
-            if [ -f "$sig" ]; then cp "$sig" "out/Dante-setup-$short.exe.sig"; fi
+            if [ -f "$sig" ]; then cp "$sig" "out/Dante-setup-$version.exe.sig"; fi
           done
           # The portable copy is the program itself plus a dante-data folder: its
           # presence makes Dante keep settings there instead of in the user profile.
           cp src-tauri/target/release/dante.exe portable/Dante/Dante.exe
           cp .github/portable-readme.txt portable/Dante/dante-data/LEGGIMI.txt
-          (cd portable && 7z a -tzip "../out/Dante-portable-$short.zip" Dante > /dev/null)
+          (cd portable && 7z a -tzip "../out/Dante-portable-$version.zip" Dante > /dev/null)
           ls -l out
       - uses: actions/upload-artifact@v4
         with:
@@ -106,20 +106,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: bash .github/ci-config.sh 0.1.${{ github.run_number }}
+      - run: bash .github/ci-config.sh
+      - name: Version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       - run: npx tauri build --bundles appimage,deb,rpm --config src-tauri/ci.conf.json
-      - name: Packages, named after the commit
+      - name: Packages, named after the version
         run: |
-          short=${GITHUB_SHA::7}
           mkdir -p out
           b=src-tauri/target/release/bundle
-          cp $b/appimage/*.AppImage "out/Dante-$short-x86_64.AppImage"
-          cp $b/deb/*.deb "out/Dante-$short-amd64.deb"
-          cp $b/rpm/*.rpm "out/Dante-$short-x86_64.rpm"
+          cp $b/appimage/*.AppImage "out/Dante-$version-x86_64.AppImage"
+          cp $b/deb/*.deb "out/Dante-$version-amd64.deb"
+          cp $b/rpm/*.rpm "out/Dante-$version-x86_64.rpm"
           # Signatures for the automatic update, where the bundler made them.
           for f in appimage/*.AppImage.sig:x86_64.AppImage.sig deb/*.deb.sig:amd64.deb.sig rpm/*.rpm.sig:x86_64.rpm.sig; do
             for sig in $b/${f%%:*}; do
-              if [ -f "$sig" ]; then cp "$sig" "out/Dante-$short-${f#*:}"; fi
+              if [ -f "$sig" ]; then cp "$sig" "out/Dante-$version-${f#*:}"; fi
             done
           done
           ls -l out
@@ -154,24 +156,26 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: bash .github/ci-config.sh 0.1.${{ github.run_number }}
+      - run: bash .github/ci-config.sh
+      - name: Version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       # Ad-hoc signed only (signingIdentity "-"): no Apple Developer account yet.
       - run: npx tauri build --target ${{ matrix.target }} --bundles app --config src-tauri/ci.conf.json
-      - name: Disk image, named after the commit
+      - name: Disk image, named after the version
         run: |
-          short=${GITHUB_SHA::7}
           mkdir -p out dmg
           cp -R src-tauri/target/${{ matrix.target }}/release/bundle/macos/Dante.app dmg/
           ln -s /Applications dmg/Applications
           # hdiutil underestimates the size of an APFS image ("No space left on device"),
           # so the volume is HFS+ with an explicit size: the app plus some margin.
           size=$(( $(du -sm dmg | cut -f1) + 20 ))
-          hdiutil create -volname Dante -srcfolder dmg -fs HFS+ -size ${size}m -ov -format UDZO "out/Dante-$short-mac-${{ matrix.name }}.dmg"
+          hdiutil create -volname Dante -srcfolder dmg -fs HFS+ -size ${size}m -ov -format UDZO "out/Dante-$version-mac-${{ matrix.name }}.dmg"
           # The automatic update replaces the app with this archive.
           b=src-tauri/target/${{ matrix.target }}/release/bundle/macos
           if [ -f $b/Dante.app.tar.gz.sig ]; then
-            cp $b/Dante.app.tar.gz "out/Dante-$short-mac-${{ matrix.name }}.app.tar.gz"
-            cp $b/Dante.app.tar.gz.sig "out/Dante-$short-mac-${{ matrix.name }}.app.tar.gz.sig"
+            cp $b/Dante.app.tar.gz "out/Dante-$version-mac-${{ matrix.name }}.app.tar.gz"
+            cp $b/Dante.app.tar.gz.sig "out/Dante-$version-mac-${{ matrix.name }}.app.tar.gz.sig"
           fi
           ls -l out
       - uses: actions/upload-artifact@v4
@@ -180,9 +184,12 @@ jobs:
           path: out/*
 
   publish:
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [test-windows, windows, linux, macos]
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -191,63 +198,50 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: src
-      # The notes waiting in docs/novita.md and docs/whats-new.md, as this commit has them,
-      # go under this version's heading on main (only those: later ones keep waiting).
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          path: main
-      - name: Release notes
+      - name: Version and notes
         run: |
-          version="0.1.${{ github.run_number }}"
-          python3 src/.github/news.py pending src/docs > pending.json
-          cat pending.json
-          python3 src/.github/news.py stamp main/docs "$version" "$(cat pending.json)"
-          python3 src/.github/news.py history main/docs "$version" > news.json
-          python3 src/.github/news.py body "$(cat pending.json)" > notes.md
-          cd main
-          if git diff --quiet; then exit 0; fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -qam "Novità di Dante $version [skip ci]"
-          # Someone may have pushed meanwhile: the notes go on top of it.
-          for attempt in 1 2 3; do
-            git push -q origin HEAD:main && exit 0
-            git pull -q --rebase origin main || break
-          done
-          echo "::warning::The release notes could not be written back to main."
-      - uses: actions/upload-artifact@v4
-        with:
-          name: news
-          path: news.json
+          version=${GITHUB_REF_NAME#v}
+          written=$(node -p "require('./src/package.json').version")
+          if [ "$version" != "$written" ]; then
+            echo "::error::The tag says $version, package.json $written"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_ENV"
+          python3 src/.github/news.py history src/docs "$version" > news.json
+          python3 src/.github/news.py body src/docs "$version" > notes.md
+          cat notes.md
       - name: Update manifest
-        run: python3 src/.github/latest-json.py out "0.1.${{ github.run_number }}" "${GITHUB_SHA::7}" "https://github.com/${{ github.repository }}/releases/download/preview" news.json
-      - name: Replace the preview release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+        run: python3 src/.github/latest-json.py out "$version" "https://github.com/${{ github.repository }}/releases/download/$GITHUB_REF_NAME" news.json
+      - name: Publish the release
         run: |
-          gh release delete windows-preview --yes --cleanup-tag || true
-          gh release delete preview --yes --cleanup-tag || true
-          gh release create preview out/* \
-            --prerelease --target "$GITHUB_SHA" \
-            --title "Dante 0.1.${{ github.run_number }} (anteprima)" \
-            --notes "$(cat notes.md)
+          case "$version" in
+            *-*) kind=--prerelease; title="Dante $version (beta)";;
+            *) kind=--latest; title="Dante $version";;
+          esac
+          cat >> notes.md <<EOF
 
           ---
 
-          Versione di prova compilata da ${GITHUB_REF_NAME} (${GITHUB_SHA::7}). Tutte le novità: https://github.com/${{ github.repository }}/blob/main/docs/novita.md (in English: https://github.com/${{ github.repository }}/blob/main/docs/whats-new.md)
+          Tutte le novità: https://github.com/${{ github.repository }}/blob/main/docs/novita.md (in English: https://github.com/${{ github.repository }}/blob/main/docs/whats-new.md)
 
           Windows: Dante-setup è l'installatore; Dante-portable è la versione portatile (estrai lo zip e avvia Dante.exe). Non sono firmati: Windows mostra un avviso di SmartScreen.
           Mac: scegli il .dmg giusto (apple-silicon per i Mac dal 2020 con chip M1 o successivi, intel per quelli precedenti), aprilo e trascina Dante in Applicazioni. Non è firmato da Apple: la prima volta macOS lo blocca, poi Impostazioni di Sistema > Privacy e sicurezza > Apri comunque.
           Linux: l'AppImage funziona su quasi tutte le distribuzioni (rendilo eseguibile e avvialo); il .deb è per Ubuntu e Debian, il .rpm per Fedora e openSUSE.
 
-          Istruzioni complete per chi prova Dante: https://github.com/${{ github.repository }}/blob/main/docs/beta.md
-          I file .sig, .app.tar.gz e latest.json servono all'aggiornamento automatico: non vanno scaricati."
+          I file .sig, .app.tar.gz e latest.json servono all'aggiornamento automatico: non vanno scaricati.
+          EOF
+          gh release create "$GITHUB_REF_NAME" out/* --verify-tag $kind --title "$title" --notes-file notes.md
+      # Copies of Dante 0.1.x look for updates only in the old "preview" release: its
+      # latest.json, pointing to this release's files, brings them to the latest stable version.
+      - name: Bring the 0.1.x copies along
+        if: ${{ !contains(github.ref_name, '-') }}
+        run: |
+          if [ -f out/latest.json ] && gh release view preview > /dev/null 2>&1; then
+            gh release upload preview out/latest.json --clobber
+            gh release edit preview --title "Aggiornamenti per Dante 0.1.x" --notes "Questa pagina serve solo alle copie di Dante 0.1.x, che cercano qui gli aggiornamenti: il suo latest.json le porta all'ultima versione stabile. Per scaricare Dante: https://github.com/${{ github.repository }}/releases/latest"
+          fi
 
-  # The site and the web version on GitHub Pages, with this build in beta/ (web.yml).
+  # The site and the web version on GitHub Pages, with this release in app/ or beta/ (web.yml).
   web:
-    if: github.ref == 'refs/heads/main'
     needs: publish
     permissions:
       contents: read

@@ -1,17 +1,35 @@
 name: Release
 
-# Turns the current "preview" release into an official one, v0.1.N: the same files, already
-# tried, under names with the version instead of the commit, in a release that is not a
-# prerelease and shows as GitHub's latest. Nothing is built again. The files of the
-# automatic update (.sig, .app.tar.gz, latest.json) stay on the preview release, which the
-# installed copies keep checking.
+# Publishes a version of Dante, without a terminal (Actions > Release > Run workflow, choosing
+# the branch). See docs/rilascio.md.
 #
-# Started by hand (Actions > Release > Run workflow). Then the site's app/ gets the new version.
+# - From main, "beta" publishes the next beta of the coming minor version (1.1.0-beta.1, then
+#   -beta.2...) and "stable" the minor version itself (1.1.0). After a stable one the branch
+#   release/1.1 is made from its tag, for the corrections, and main moves on to 1.2.0.
+# - From release/x.y the choice does not matter: it publishes the next correction (1.1.1).
+#
+# The version is worked out from package.json and the tags. The workflow stops when its tag
+# already exists or when docs/novita.md and docs/whats-new.md say nothing for it. Otherwise it
+# writes the notes under the version's heading (news.py release) and the version in
+# package.json, commits both, tags the commit v<version> and starts Builds on that tag: Builds
+# makes the files, publishes the release and then updates the site (web.yml). A tag pushed
+# with the workflow's own token starts no other workflow, hence the explicit start.
 on:
   workflow_dispatch:
+    inputs:
+      kind:
+        description: "From main: beta or stable. From release/x.y: always a correction."
+        type: choice
+        options: [beta, stable]
+        default: beta
 
 permissions:
   contents: write
+  actions: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -19,39 +37,68 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
+      KIND: ${{ inputs.kind }}
+      BRANCH: ${{ github.ref_name }}
     steps:
-      - name: Read the preview release
+      - name: Only from main or release/x.y
         run: |
-          gh release view preview --json name,targetCommitish,body > preview.json
-          version=$(jq -r .name preview.json | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-          commit=$(jq -r .targetCommitish preview.json)
-          if [ -z "$version" ]; then echo "::error::No version in the preview's title"; exit 1; fi
-          if gh release view "v$version" > /dev/null 2>&1; then echo "::error::v$version is already released"; exit 1; fi
+          case "$BRANCH" in
+            main|release/*) ;;
+            *) echo "::error::Release runs from main or release/x.y, not from $BRANCH"; exit 1;;
+          esac
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Version
+        run: |
+          echo "Commit: $(git log -1 --format='%h %s')"
+          base=$(node -p "require('./package.json').version.replace(/-.*/, '')")
+          IFS=. read -r major minor patch <<< "$base"
+          if [ "$BRANCH" = main ]; then
+            if git rev-parse -q --verify "refs/tags/v$base" > /dev/null; then
+              echo "::error::v$base is already out: main should carry the next minor version in package.json"; exit 1
+            fi
+            if [ "$KIND" = stable ]; then
+              version=$base
+            else
+              last=$(git tag -l "v$base-beta.*" | sed "s/^v$base-beta\.//" | sort -n | tail -1)
+              version="$base-beta.$(( ${last:-0} + 1 ))"
+            fi
+          else
+            expected="release/$major.$minor"
+            if [ "$BRANCH" != "$expected" ]; then
+              echo "::error::package.json says $base, which belongs on $expected"; exit 1
+            fi
+            while git rev-parse -q --verify "refs/tags/v$major.$minor.$patch" > /dev/null; do patch=$((patch + 1)); done
+            version="$major.$minor.$patch"
+          fi
+          if git rev-parse -q --verify "refs/tags/v$version" > /dev/null; then
+            echo "::error::v$version already exists"; exit 1
+          fi
           echo "version=$version" >> "$GITHUB_ENV"
-          echo "commit=$commit" >> "$GITHUB_ENV"
-      - name: Download its files
+          echo "### Dante $version" >> "$GITHUB_STEP_SUMMARY"
+          echo "From $BRANCH at $(git log -1 --format='%h %s')" >> "$GITHUB_STEP_SUMMARY"
+      - name: Notes and version, committed and tagged
         run: |
-          mkdir out
-          gh release download preview --dir out --pattern '*.dmg' --pattern '*.exe' --pattern '*.zip' \
-            --pattern '*.AppImage' --pattern '*.deb' --pattern '*.rpm'
-          short=${commit::7}
-          cd out
-          for f in *; do mv "$f" "${f/$short/$version}"; done
-          ls -l
-      - name: Publish v${{ env.version }}
+          python3 .github/news.py release docs "$version"
+          npm version "$version" --no-git-tag-version --allow-same-version > /dev/null
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "Dante $version [skip ci]"
+          git tag "v$version"
+          git push -q origin "HEAD:$BRANCH" "v$version"
+      - name: Branch for the corrections, and main on to the next minor version
+        if: ${{ github.ref_name == 'main' && inputs.kind == 'stable' }}
         run: |
-          # The preview's notes, without the line saying it is a trial build.
-          jq -r .body preview.json | grep -v '^Versione di prova compilata da' > notes.md
-          gh release create "v$version" out/* \
-            --target "$commit" --latest \
-            --title "Dante $version" \
-            --notes-file notes.md
-
-  # The site and the web version: this release goes in app/ (web.yml).
-  web:
-    needs: release
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    uses: ./.github/workflows/web.yml
+          IFS=. read -r major minor patch <<< "$version"
+          git push -q origin "v$version:refs/heads/release/$major.$minor"
+          npm version "$major.$((minor + 1)).0" --no-git-tag-version > /dev/null
+          git commit -qam "Main verso Dante $major.$((minor + 1)).0 [skip ci]"
+          git push -q origin HEAD:main
+      - name: Build and publish
+        run: |
+          gh workflow run builds.yml --ref "v$version"
+          echo "Builds started on v$version: https://github.com/$GH_REPO/actions/workflows/builds.yml" >> "$GITHUB_STEP_SUMMARY"

@@ -896,6 +896,7 @@ name = "dante"
 version = "0.1.0"
 dependencies = [
  "notify",
+ "semver",
  "serde",
  "serde_json",
  "tauri",

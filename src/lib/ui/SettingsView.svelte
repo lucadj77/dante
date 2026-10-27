@@ -14,7 +14,7 @@
   import { app, saveAppSettings, t, type AppSettings } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
   import { WEB_BUILD } from "$lib/build";
-  import { checkForUpdates, updates } from "$lib/updates.svelte";
+  import { checkForUpdates, updateChannel, updates } from "$lib/updates.svelte";
   import { backupFolder, backupInfo, backupNow, defaultBackupFolder, downloadBackup, type BackupInfo } from "$lib/backups";
   import { onDisk } from "$lib/platform";
   import { navigator as dante } from "./navigation";
@@ -368,6 +368,22 @@
       {#if updates.version}<p class="hint">{t("update.version", { version: updates.version })}</p>{/if}
       {#if updates.supported}
         <label class="check"><input type="checkbox" checked={app.settings.checkUpdates} onchange={(e) => setApp({ checkUpdates: e.currentTarget.checked })} /> {t("update.atStart")}</label>
+        {#if inTauri()}
+          <label
+            >{t("update.channel")}
+            <select
+              value={updateChannel()}
+              onchange={(e) => {
+                setApp({ updateChannel: e.currentTarget.value as "stable" | "beta" });
+                void checkForUpdates();
+              }}
+            >
+              <option value="stable">{t("update.channelStable")}</option>
+              <option value="beta">{t("update.channelBeta")}</option>
+            </select>
+          </label>
+          <p class="hint">{t(updateChannel() === "beta" ? "update.channelBetaHint" : "update.channelStableHint")}</p>
+        {/if}
         <div class="clean">
           <button type="button" disabled={updates.state === "checking" || updates.state === "downloading"} onclick={() => void checkForUpdates()}
             >{t("update.check")}</button

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, num, t } from "$lib/state.svelte";
+  import { app, num, saveAppSettings, t } from "$lib/state.svelte";
   import { closeNotice, installUpdate, newsSince, updates } from "$lib/updates.svelte";
 
   /** Saves the open project before the update restarts Dante. */
@@ -45,6 +45,12 @@
         {/if}
       </span>
       <button class="primary" onclick={() => void installUpdate(beforeInstall)}>{t("update.install")}</button>
+      <button
+        onclick={() => {
+          saveAppSettings({ ...app.settings, skippedVersion: updates.available?.version ?? "" });
+          updates.available = null;
+        }}>{t("update.skip")}</button
+      >
       <button onclick={() => (updates.dismissed = true)}>{t("update.later")}</button>
     {/if}
   </div>

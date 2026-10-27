@@ -2,10 +2,11 @@ name: Web
 
 # The site on GitHub Pages (https://dante.lucadj.eu): the presentation site at the root (site/,
 # built by site/build.mjs, English with Italian in it/), the web version of Dante in app/ (the
-# latest official release) and in beta/ (the latest build of main, the "preview" release).
-# Each version is built from its own commit, with its number and its news in version.json.
+# latest stable release) and in beta/ (the highest version released, beta or stable: the same
+# as app/ when no beta is newer). Each version is built from its tag, with its number and its
+# news in version.json.
 #
-# Called by Builds after the preview release and by Release after an official one; it can be
+# Called by Builds after it publishes a release; it can be
 # started by hand too (Actions > Web > Run workflow). Pull requests that touch the site only
 # build it, to check it. The address comes from Settings > Pages (Custom domain): without
 # one the site is at lucadj77.github.io/dante/ and the copies of Dante in /dante/app and /dante/beta.
@@ -53,12 +54,15 @@ jobs:
           # "" with a custom domain, /dante without
           BASE: ${{ steps.pages.outputs.base_path }}
         run: |
-          gh release view preview --json name,targetCommitish > preview.json
-          beta=$(jq -r .name preview.json | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-          beta_commit=$(jq -r .targetCommitish preview.json)
           stable_tag=$(gh release view --json tagName -q .tagName)
           stable=${stable_tag#v}
-          echo "app: $stable ($stable_tag), beta: $beta ($beta_commit), base: '$BASE'"
+          # the highest v<version> among the releases, by semver: sort -V would put 1.1.0-beta.1
+          # after 1.1.0, so the beta's "-" becomes "~", which sorts before the end of a version
+          beta_tag=$(gh release list --limit 50 --exclude-drafts --json tagName -q '.[].tagName' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' \
+            | sed 's/-/~/' | sort -V | tail -1 | sed 's/~/-/')
+          beta=${beta_tag#v}
+          echo "app: $stable ($stable_tag), beta: $beta ($beta_tag), base: '$BASE'"
           # each copy in a folder outside the checkout: inside it, Vite would read the checkout's
           # tsconfig.json, which points to a .svelte-kit folder that was never generated there
           build() {
@@ -68,11 +72,11 @@ jobs:
             mkdir -p "pages/$1"
             cp -R "$w/build/." "pages/$1/"
             # what this copy reads to learn of a newer one: its version and the news up to it
-            python3 .github/news.py history docs "$3" > "news-$1.json"
+            python3 .github/news.py history "$w/docs" "$3" > "news-$1.json"
             python3 .github/web-version.py "$3" "news-$1.json" "pages/$1/version.json"
           }
           build app "$stable_tag" "$stable"
-          build beta "$beta_commit" "$beta"
+          build beta "$beta_tag" "$beta"
           # the beta, once installed from the browser, is told apart from the official one
           python3 - <<'EOF'
           import json

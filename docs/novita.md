@@ -4,6 +4,15 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+### Nuovo
+
+- **Dante 1.0 e due canali di aggiornamento**: Dante passa alla numerazione 1.0, 1.1, 1.2... In Impostazioni > Dante su questo computer > Aggiornamenti scegli il canale: **Stabile** (di base) riceve solo le versioni ufficiali, **Beta** riceve prima le novità, in versioni ancora in prova. Chi installa una beta resta sul canale Beta finché non lo cambia.
+- **Salta questa versione**: l'avviso di aggiornamento ha anche **Salta questa versione**, che non la propone più ai controlli automatici (Cerca aggiornamenti la mostra comunque). **Più tardi** si chiama ora **Ricordamelo più tardi**.
+
+### Cambiato
+
+### Corretto
+
 ## 0.1.49 · 27 ottobre 2026
 
 - **Sito di Dante e nuovo indirizzo della versione web**: Dante ha un sito, https://dante.lucadj.eu, con screenshot, download per ogni sistema e, presto, video tutorial. La versione web si sposta su https://dante.lucadj.eu/app/ (l'ultima versione ufficiale) e https://dante.lucadj.eu/beta/ (l'ultima di prova). Chi usava il vecchio indirizzo deve aprire quello nuovo, reinstallare Dante dal browser se l'aveva installato e riaprire le cartelle dei romanzi: i testi non cambiano, l'elenco dei recenti e le impostazioni sì.

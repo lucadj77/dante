@@ -4,6 +4,15 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+### New
+
+- **Dante 1.0 and two update channels**: Dante moves to version numbers 1.0, 1.1, 1.2... In Settings > Dante on this computer > Updates choose the channel: **Stable** (the default) gets only the official versions, **Beta** gets the new features first, in versions still being tried. Whoever installs a beta stays on the Beta channel until they change it.
+- **Skip this version**: the update notice also has **Skip this version**, which the automatic checks no longer offer (Check for updates still shows it). **Later** is now called **Remind me later**.
+
+### Changed
+
+### Fixed
+
 ## 0.1.49 · October 27, 2026
 
 - **Dante's website and a new address for the web version**: Dante has a website, https://dante.lucadj.eu, with screenshots, downloads for every system and, soon, video tutorials. The web version moves to https://dante.lucadj.eu/app/ (the latest official version) and https://dante.lucadj.eu/beta/ (the latest trial one). If you used the old address, open the new one, install Dante from the browser again if you had installed it, and reopen your novels' folders: the texts do not change, the recent list and the settings do.

@@ -323,19 +323,19 @@ sample project, write, add a scene, export to Word and use a view; the first run
 (macOS 10.15): `src/lib/core/tests/compatibility.test.ts` checks for syntax and APIs it
 lacks.
 
-The version number is given by the build: every run of the Builds workflow on `main` is
-`0.1.<run number>`, written into the app by `.github/ci-config.sh` and into the web version
-by `DANTE_VERSION`. The `0.1.0` in `package.json`, `tauri.conf.json` and `Cargo.toml` is only
-the starting value and is not changed by hand. The Release workflow publishes a tested
-preview as `v0.1.N`. The Rust side (`src-tauri/src/files.rs`) only
+Versions follow semver, with stable and beta channels: the number is in `package.json`
+(`tauri.conf.json` points to it), written by the Release workflow, which tags the commit and
+starts Builds on the tag. How versions, channels, branches and release notes work is in
+[docs/rilascio.md](docs/rilascio.md) (Italian). The Rust side (`src-tauri/src/files.rs`) only
 reads, writes, renames and watches files inside the opened folder.
 
 ## Builds
 
-The Builds workflow (`.github/workflows/builds.yml`) builds, on every push to `main`, two
-macOS `.dmg` (Apple Silicon and Intel, not signed), a Windows installer, a portable Windows zip, and a Linux
-AppImage, `.deb` and `.rpm`, and puts them on the `preview` release with the files the
-automatic update reads. After them it publishes the web version on GitHub Pages.
+The Builds workflow (`.github/workflows/builds.yml`) builds two macOS `.dmg` (Apple Silicon
+and Intel, not signed), a Windows installer, a portable Windows zip, and a Linux AppImage,
+`.deb` and `.rpm`. Started by Release on a tag `v<version>`, it publishes them as that
+release, with the `latest.json` the automatic update reads, and then the web version on
+GitHub Pages. Started by hand on a branch, it only keeps them as artifacts of the run.
 
 The portable copy is `Dante.exe` next to a `dante-data` folder: when that folder exists
 beside the program, the web view keeps its data there (settings, recent projects), so the
