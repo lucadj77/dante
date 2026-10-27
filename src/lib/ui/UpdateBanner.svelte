@@ -84,6 +84,15 @@
   .update > span {
     flex: 1;
   }
+  /* The text takes the whole first line, the three buttons go under it: side by side they
+     squeezed the text into a narrow column. */
+  .update:not(.notice) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .update:not(.notice) > span {
+    flex-basis: 100%;
+  }
   .error {
     display: block;
     margin-top: 4px;

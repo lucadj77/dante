@@ -166,7 +166,9 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
       const view = (await cdp.send('Page.getLayoutMetrics').catch(() => null))?.cssVisualViewport;
       const clip = { x: view?.pageX ?? 0, y: view?.pageY ?? 0, width: 1440, height: 810, scale: 4 / 3 };
       const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true, clip }).catch(() => null);
-      if (!shot || !recording) break;
+      if (!recording) break;
+      // a reload drops a shot or two: wait for the new page instead of stopping
+      if (!shot) { await new Promise((r) => setTimeout(r, 50)); continue; }
       fs.writeFileSync(path.join(dir, `${String(frames.length).padStart(6, '0')}.jpg`), Buffer.from(shot.data, 'base64'));
       frames.push(at);
     }
