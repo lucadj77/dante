@@ -70,7 +70,7 @@ function overlay() {
       #tu-ring { position: fixed; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; background: rgba(217,72,15,.38); z-index: 2147483646; pointer-events: none; opacity: 0 }
       #tu-box { position: fixed; z-index: 2147483600; pointer-events: none; border: 4px solid #d9480f; border-radius: 10px; box-shadow: 0 0 0 100vmax rgba(20,22,28,.38); opacity: 0; transition: opacity .5s, left .6s, top .6s, width .6s, height .6s }
       #tu-note { position: fixed; z-index: 2147483601; pointer-events: none; max-width: 520px; background: #fff; color: #1d232c; font: 600 30px/1.3 Inter, system-ui, sans-serif; padding: 18px 24px; border-radius: 12px; border-left: 7px solid #d9480f; box-shadow: 0 10px 34px rgba(0,0,0,.28); opacity: 0; transition: opacity .5s }
-      #tu-title { position: fixed; inset: 0; z-index: 2147483620; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #faf9f6; opacity: 0; transition: opacity .7s }
+      #tu-title { position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #faf9f6; opacity: 0; transition: opacity .7s }
       #tu-title b { font: 400 76px/1.15 Georgia, serif; color: #1d232c; text-align: center; max-width: 1200px }
       #tu-title i { margin-top: 26px; font: 500 30px/1.3 Inter, system-ui, sans-serif; color: #666; font-style: normal; text-align: center; max-width: 1000px }
       #tu-title::before { content: ''; width: 90px; height: 6px; background: #d9480f; border-radius: 3px; margin-bottom: 36px }
@@ -162,7 +162,10 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
   const capture = async () => {
     while (recording) {
       const at = Date.now() / 1000;
-      const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true, clip: { x: 0, y: 0, width: 1440, height: 810, scale: 4 / 3 } }).catch(() => null);
+      // the clip is measured on the whole document: it follows the page when the document scrolls
+      const view = (await cdp.send('Page.getLayoutMetrics').catch(() => null))?.cssVisualViewport;
+      const clip = { x: view?.pageX ?? 0, y: view?.pageY ?? 0, width: 1440, height: 810, scale: 4 / 3 };
+      const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true, clip }).catch(() => null);
       if (!shot || !recording) break;
       fs.writeFileSync(path.join(dir, `${String(frames.length).padStart(6, '0')}.jpg`), Buffer.from(shot.data, 'base64'));
       frames.push(at);
@@ -176,11 +179,25 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
     await p.mouse.move(x, y, { steps: FAST ? 1 : (steps ?? Math.max(10, Math.round(d / 14))) });
     mx = x; my = y;
   };
+  // The element's box, after scrolling it to the middle of its container when it is not all in
+  // sight, so the viewer sees the page move; a box taller than the window is cut to what shows.
   const box = async (loc) => {
+    await loc.waitFor({ state: 'attached', timeout: 8000 });
+    const hidden = await loc.evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      // something taller than the window moves only when none of it shows
+      if (r.height > innerHeight - 100) return r.bottom < 60 || r.top > innerHeight - 40 ? 'start' : '';
+      return r.top < 60 || r.bottom > innerHeight - 40 || r.left < 0 || r.right > innerWidth ? 'center' : '';
+    });
+    if (hidden) {
+      await loc.evaluate((e, block) => e.scrollIntoView({ block, inline: 'nearest', behavior: 'smooth' }), hidden);
+      await wait(0.9);
+    }
     await loc.scrollIntoViewIfNeeded({ timeout: 8000 });
     const r = await loc.boundingBox({ timeout: 8000 });
     if (!r) throw new Error('element without a box');
-    return r;
+    const top = Math.max(r.y, 4), bottom = Math.min(r.y + r.height, 810 - 4);
+    return { x: r.x, y: top, width: r.width, height: Math.max(bottom - top, 10) };
   };
   // one element, or several: the box around all of them
   const around = async (loc) => {
@@ -223,17 +240,13 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
       await p.evaluate(() => window.__tu.box(null));
       await wait(0.5);
     },
-    /** A section title over the whole page. */
-    async title(big, small = '', behind) {
+    /** A section title over the whole page; `after` runs once it is gone, so every click is seen. */
+    async title(big, small = '', after) {
       await p.evaluate(([b, s]) => window.__tu.title(b, s), [big, small]);
-      const shown = Date.now();
-      await wait(0.8);
-      // what happens behind the title (moving to another section) is not seen
-      if (behind) await behind();
-      const left = Math.max(2.5, readTime(big + ' ' + small) - 1) - (Date.now() - shown) / 1000;
-      if (left > 0) await wait(left);
+      await wait(Math.max(2.5, readTime(big + ' ' + small) - 1));
       await p.evaluate(() => window.__tu.title(null));
-      await wait(0.9);
+      await wait(1.1);
+      if (after) await after();
     },
     /** Enlarges the page around the element while `fn` runs. */
     async zoom(loc, fn, scale = 1.8) {

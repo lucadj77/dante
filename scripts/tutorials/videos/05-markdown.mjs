@@ -16,8 +16,8 @@ const D = {
     props: 'In cima, tra due righe di trattini, le proprietà: sinossi, stato, punto di vista, luogo, data',
     s1: 'I segni di base',
     s1b: 'Pochi segni, al posto dei pulsanti',
-    lines: ['Era *davvero* stanco, e **molto** spaventato.', '> Una citazione comincia con il segno di maggiore.', '- Un elenco comincia con un trattino.'],
-    marks: 'Un asterisco intorno alle parole per il corsivo, due per il grassetto; il maggiore per una citazione, il trattino per un elenco',
+    lines: ['Era *davvero* stanco, e **molto** spaventato.', '- Un elenco comincia con un trattino.', '> Una citazione comincia con il segno di maggiore.'],
+    marks: 'Un asterisco intorno alle parole per il corsivo, due per il grassetto; il trattino per un elenco, il maggiore per una citazione',
     back: 'Tornando alla vista normale, Dante mostra il risultato e nasconde i segni',
     toolbar: 'Non serve impararli: la barra di formattazione li scrive per te',
     s2: 'Commenti e revisioni',
@@ -41,8 +41,8 @@ const D = {
     props: 'At the top, between two lines of dashes, the properties: synopsis, status, point of view, place, date',
     s1: 'The basic marks',
     s1b: 'A few marks instead of buttons',
-    lines: ['He was *truly* tired, and **very** frightened.', '> A quotation starts with a greater-than sign.', '- A list starts with a dash.'],
-    marks: 'One asterisk around words for italics, two for bold; greater-than for a quotation, a dash for a list',
+    lines: ['He was *truly* tired, and **very** frightened.', '- A list starts with a dash.', '> A quotation starts with a greater-than sign.'],
+    marks: 'One asterisk around words for italics, two for bold; a dash for a list, greater-than for a quotation',
     back: 'Back in the normal view, Dante shows the result and hides the marks',
     toolbar: 'No need to learn them: the formatting bar writes them for you',
     s2: 'Comments and revisions',
@@ -92,7 +92,12 @@ export default async function (t) {
   await t.press('Enter', 0.1);
   await t.press('Enter', 0.3);
   for (const [i, line] of d.lines.entries()) {
-    if (i) { await t.press('Enter', 0.1); await t.press('Enter', 0.3); }
+    if (i) {
+      await t.press('Enter', 0.1);
+      // Enter continues a list or a quotation: its mark goes before the blank line
+      if (/^[->]/.test(d.lines[i - 1])) { await t.press('Shift+Home', 0.1); await t.press('Backspace', 0.1); }
+      await t.press('Enter', 0.3);
+    }
     await t.type(line, 60);
   }
   await t.wait(0.8);

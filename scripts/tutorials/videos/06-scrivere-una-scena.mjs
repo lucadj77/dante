@@ -56,7 +56,7 @@ const D = {
     chapter: 'You write straight on, as in a single document: the arrow keys take you from one scene to the next',
     s2: 'Italics and bold',
     s2b: 'From the bar over the selection',
-    line: 'He is just what a young man ought to be',
+    line: 'Dear Lizzy!',
     select: 'Select the text: a small bar appears above it',
     italic: 'Italics, or ⌘I (Ctrl+I on Windows and Linux)',
     s3: 'The formatting bar',

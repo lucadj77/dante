@@ -45,6 +45,7 @@ const D = {
     s7: 'I titoli dei capitoli',
     s7b: 'Impostazioni, Struttura',
     numbering: 'Numerazione: Primo, secondo, terzo',
+    numberingValue: 'ordinal',
     separator: 'Tra numero e titolo: a capo',
     preview: 'L’anteprima mostra il risultato: «Capitolo primo» e il titolo sotto',
     after: 'Lo stesso titolo nell’albero, nel testo e nel libro esportato',
@@ -85,9 +86,10 @@ const D = {
     kind: 'A chapter can be a prologue or an epilogue: choose it in Type, among the chapter’s properties. A prologue takes no chapter number',
     s7: 'Chapter headings',
     s7b: 'Settings, Structure',
-    numbering: 'Numbering: First, second, third',
+    numbering: 'Numbering: One, two, three',
+    numberingValue: 'words',
     separator: 'Between number and title: new line',
-    preview: 'The preview shows the result: “Chapter the first” with the title below',
+    preview: 'The preview shows the result: “Chapter One” with the title below',
     after: 'The same heading in the tree, in the text and in the exported book',
   },
 };
@@ -174,7 +176,7 @@ export default async function (t) {
   const box = p.locator('fieldset', { has: p.locator('legend', { hasText: L('kind.chapter') }) }).first();
   const numbering = box.locator('label', { hasText: L('settings.numbering') }).locator('select').first();
   await t.click(numbering, { after: 0.3 });
-  await numbering.selectOption('ordinal');
+  await numbering.selectOption(d.numberingValue);
   await t.wait(0.8);
   await t.focus(numbering, d.numbering, { side: 'right' });
   const sep = box.locator('label', { hasText: L('heading.separator') }).locator('select').first();
