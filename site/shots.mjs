@@ -18,7 +18,8 @@ async function start(lang, settings = {}) {
   const ctx = await b.newContext({
     viewport: { width: 1440, height: 900 },
     locale: lang === 'it' ? 'it-IT' : 'en-GB',
-    deviceScaleFactor: 1,
+    // twice the pixels, so the enlarged screenshots stay sharp
+    deviceScaleFactor: 2,
     colorScheme: 'light',
     // a Mac, so shortcuts read ⌘
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36'
