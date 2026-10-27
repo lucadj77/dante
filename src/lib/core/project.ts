@@ -18,6 +18,7 @@ import { basename, dirname, extname, isMarkdown, isWithin, join, rebase, stripEx
 import {
   defaultFolders,
   defaultSettings,
+  defaultTypes,
   knownFolders,
   parseSettings,
   projectStatus,
@@ -36,6 +37,7 @@ import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts"
 import { today } from "./critic";
 import { isView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
+import type { ImportedNote } from "./import/scrivener";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
 import { attachmentsFolderName, safeFileName } from "./images";
@@ -683,6 +685,57 @@ export class Project {
           rootOrder += step;
         }
       }
+    }
+    await this.reload();
+  }
+
+  /**
+   * Writes the documents another program keeps beside the book as notes: a folder named
+   * as a type of the Story Bible (Characters, Places…) goes into that type's folder, all
+   * the rest into Research, keeping the folders they were in. Nothing already there is
+   * overwritten: a note with a name in use gets a number.
+   */
+  async importNotes(notes: ImportedNote[]): Promise<void> {
+    if (!notes.length) return;
+    const { folders } = this.settings;
+    /** The type a folder's name says, in any of Dante's languages, by its name or its folder. */
+    const typeFolder = (name: string) => {
+      const wanted = name.trim().toLowerCase();
+      for (const [id, type] of Object.entries(this.settings.types)) {
+        const names = [type.name, type.folder, ...["en", "it", "es", "fr"].flatMap((l) => {
+          const known = defaultTypes(l)[id];
+          return known ? [known.name, known.folder] : [];
+        })];
+        if (names.some((n) => n.toLowerCase() === wanted)) return join(folders.codex, type.folder);
+      }
+      return null;
+    };
+    const taken = new Set<string>();
+    const free = async (dir: string, title: string, extension: string) => {
+      const base = sanitizeTitle(title) || "Untitled";
+      for (let n = 1; ; n++) {
+        const path = join(dir, `${n === 1 ? base : `${base} ${n}`}.${extension}`);
+        if (!taken.has(path.toLowerCase()) && !(await this.fs.exists(path))) {
+          taken.add(path.toLowerCase());
+          return path;
+        }
+      }
+    };
+    for (const note of notes) {
+      const [top, ...rest] = note.folders.map((f) => sanitizeTitle(f) || "Untitled");
+      const codex = top ? typeFolder(top) : null;
+      const dir = codex ? join(codex, ...rest) : join(folders.research, ...(top ? [top, ...rest] : []));
+      await this.fs.mkdir(dir);
+      if (note.file) {
+        await this.fs.writeBytes(await free(dir, note.title, note.file.extension), note.file.bytes);
+        continue;
+      }
+      const path = await free(dir, note.title, "md");
+      const body = note.text ? note.text + "\n" : "";
+      const properties: Properties = {};
+      if (note.title.trim() !== stripExt(basename(path))) properties[TITLE] = note.title.trim();
+      if (note.synopsis?.trim()) properties[SYNOPSIS] = note.synopsis.trim();
+      await this.fs.writeText(path, Object.keys(properties).length ? writeProperties(body, properties) : body);
     }
     await this.reload();
   }

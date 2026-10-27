@@ -6,6 +6,7 @@
 // an outline level; the "Title" style gives the book's title. Of the layout only centred and
 // right-aligned paragraphs are kept, as Dante aligns them.
 
+import type { ImportedNote } from "./scrivener";
 import { readAlignment, setAlignment, type Align } from "../alignment";
 import { SCENE_BREAK } from "./structure";
 import { unzip } from "./unzip";
@@ -20,6 +21,8 @@ export interface DocxContent {
   title: string;
   author: string;
   blocks: DocBlock[];
+  /** Documents beside the book, as Scrivener keeps research and characters; made into notes. */
+  notes?: ImportedNote[];
 }
 
 export interface Format {

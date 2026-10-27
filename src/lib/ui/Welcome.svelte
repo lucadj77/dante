@@ -245,6 +245,7 @@
         // In a browser an imported book can be tried, kept only while the page is open.
         const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences(), starters());
         if (imported) await project.importBook(imported);
+        if (imported && content?.notes) await project.importNotes(content.notes);
         onOpen(project);
         return;
       }
@@ -271,6 +272,7 @@
       starters(),
     );
     if (imported) await project.importBook(imported);
+    if (imported && content?.notes) await project.importNotes(content.notes);
     await addLauncher(project);
     // The first author's name is offered again next time.
     const first = authors.find((a) => a.trim())?.trim();
@@ -310,6 +312,7 @@
         {t("import.found", { file: importedFrom })}
         {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
         {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words) })}
+        {#if content?.notes?.length}{t("import.notes", { n: content.notes.length })}{/if}
         <button type="button" class="link" onclick={() => { creating = false; previewing = true; }}>{t("import.review")}</button>
       </p>
     {/if}

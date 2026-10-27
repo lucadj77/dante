@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { zipSync } from "fflate";
 import { readPicked } from "$lib/ui/scrivenerFile";
 import { MemoryFs, type ProjectFs } from "../fs";
+import { Project } from "../project";
 import { rtfParagraphs } from "../import/rtf";
 import { readScrivener, readScrivenerZip } from "../import/scrivener";
 import { defaultRoles, structure } from "../import/structure";
@@ -22,6 +23,16 @@ const SCRIVX = `<?xml version="1.0" encoding="UTF-8"?>
     </Children></BinderItem>
     <BinderItem UUID="R" Type="ResearchFolder"><Title>Research</Title><Children>
       <BinderItem UUID="N" Type="Text"><Title>Appunti</Title></BinderItem>
+      <BinderItem UUID="P" Type="PDF"><Title>Mappa del porto</Title><MetaData><FileExtension>pdf</FileExtension></MetaData></BinderItem>
+      <BinderItem UUID="F" Type="Folder"><Title>Fari</Title><Children>
+        <BinderItem UUID="N2" Type="Text"><Title>Lanterne</Title></BinderItem>
+      </Children></BinderItem>
+    </Children></BinderItem>
+    <BinderItem UUID="CH" Type="Folder"><Title>Characters</Title><Children>
+      <BinderItem UUID="M" Type="Text"><Title>Marta</Title></BinderItem>
+    </Children></BinderItem>
+    <BinderItem UUID="T" Type="TrashFolder"><Title>Trash</Title><Children>
+      <BinderItem UUID="X" Type="Text"><Title>Scartato</Title></BinderItem>
     </Children></BinderItem>
   </Binder>
   <ProjectProperties><ProjectTitle>Il faro</ProjectTitle><FullName>Marta Rinaldi</FullName></ProjectProperties>
@@ -33,6 +44,11 @@ const FILES: Record<string, string> = {
   "Files/Data/S2/content.rtf": rtf("\\qc * * *\\par\\pard La casa.\\par"),
   "Files/Data/S3/content.rtf": rtf("Una busta.{\\*\\annotation nascosto}\\par"),
   "Files/Data/N/content.rtf": rtf("Non fa parte del libro.\\par"),
+  "Files/Data/N2/content.rtf": rtf("Luce rossa.\\par"),
+  "Files/Data/M/content.rtf": rtf("Torna dopo vent'anni.\\par"),
+  "Files/Data/M/synopsis.txt": "La protagonista.",
+  "Files/Data/P/content.pdf": "%PDF-1.4",
+  "Files/Data/X/content.rtf": rtf("Da buttare.\\par"),
 };
 const files = async (path: string) => (path in FILES ? new TextEncoder().encode(FILES[path]) : null);
 
@@ -65,6 +81,25 @@ describe("Scrivener", () => {
     expect(chapters.map((c) => c.title)).toEqual(["Il ritorno", "La lettera"]);
     expect(chapters[0].scenes.map((s) => s.title)).toEqual(["Arrivo", "Casa & bottega"]);
     expect(chapters[0].scenes[0]).toMatchObject({ synopsis: "Marta torna al paese.", text: expect.stringContaining("Marta arrivò *tardi*.") });
+  });
+
+  it("makes the folders beside the draft notes: Research in Research, characters in the Story Bible", async () => {
+    const content = await readScrivener(SCRIVX, files);
+    expect(content.notes?.map((n) => [n.research, n.folders.join("/"), n.title])).toEqual([
+      [true, "", "Appunti"],
+      [true, "", "Mappa del porto"],
+      [true, "Fari", "Lanterne"],
+      [false, "Characters", "Marta"],
+    ]);
+    const { project } = await Project.create(new MemoryFs({}), { title: "Il faro", authors: [], language: "it" }, null);
+    await project.importNotes(content.notes!);
+    expect(await project.fs.readText("Ricerca/Appunti.md")).toBe("Non fa parte del libro.\n");
+    expect(await project.fs.readText("Ricerca/Fari/Lanterne.md")).toBe("Luce rossa.\n");
+    expect(new TextDecoder().decode(await project.fs.readBytes("Ricerca/Mappa del porto.pdf"))).toBe("%PDF-1.4");
+    expect(await project.fs.readText("Bibbia/Personaggi/Marta.md")).toContain("synopsis: La protagonista.");
+    // A second import leaves the first one's notes as they are.
+    await project.importNotes(content.notes!.slice(0, 1));
+    expect(await project.fs.exists("Ricerca/Appunti 2.md")).toBe(true);
   });
 
   it("reads a zip of the .scriv folder, and Scrivener 2's file names", async () => {
