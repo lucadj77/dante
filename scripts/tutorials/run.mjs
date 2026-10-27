@@ -16,7 +16,9 @@ const video = await import(path.join(HERE, 'videos', file));
 const out = path.join(HERE, 'out', `${file.replace(/\.mjs$/, '')}-${lang}`);
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'meta.json'), JSON.stringify({ n: video.meta.n, title: video.meta.title[lang], subtitle: video.meta.subtitle[lang], lang }, null, 1));
-const { record } = await start({ lang, out, ...(video.setup?.(lang) ?? {}) });
+const { t, record } = await start({ lang, out, ...(video.setup?.(lang) ?? {}) });
+// what the video needs ready before it starts, not recorded
+if (video.prepare) await video.prepare(t);
 const t0 = Date.now();
 await record((t) => video.default(t));
 console.log(`${file} ${lang}: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
