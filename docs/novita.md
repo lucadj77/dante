@@ -10,6 +10,10 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+## 0.1.54 · 27 ottobre 2026
+
+- **Scrivener: anche ricerca e personaggi**: importando da Scrivener, oltre al romanzo entrano anche le altre cartelle. Per ogni cartella scegli se va nella Bibbia (personaggi, luoghi…) o tra le note, in Ricerca o in Laboratorio; Dante propone già la scelta più probabile. I testi diventano note con la loro sinossi, PDF e immagini vengono copiati.
+
 ## 1.0.0 · 27 ottobre 2026
 
 ### Nuovo
