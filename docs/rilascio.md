@@ -78,7 +78,7 @@ Se Builds non riesce (per esempio una compilazione si interrompe), il tag resta:
 | File | Cosa fa |
 | --- | --- |
 | `.github/workflows/release.yml` | calcola la versione, scrive novità e `package.json`, crea il tag, avvia Builds |
-| `.github/workflows/builds.yml` | compila, pubblica la release del tag, aggiorna la `preview` per le copie 0.1.x, avvia Web |
+| `.github/workflows/builds.yml` | compila, pubblica la release del tag, aggiorna la `preview` per le copie 0.1.x, avvia Web su main (l’ambiente github-pages accetta solo main) |
 | `.github/workflows/web.yml` | sito, `/app` e `/beta` |
 | `.github/news.py` | novità: sezione della versione, storico per l'app, testo della release |
 | `.github/latest-json.py` | `latest.json` con i file firmati per ogni sistema |

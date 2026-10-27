@@ -6,7 +6,7 @@ name: Web
 # as app/ when no beta is newer). Each version is built from its tag, with its number and its
 # news in version.json.
 #
-# Called by Builds after it publishes a release; it can be
+# Started on main by Builds after it publishes a release; it can be
 # started by hand too (Actions > Web > Run workflow). Pull requests that touch the site only
 # build it, to check it. The address comes from Settings > Pages (Custom domain): without
 # one the site is at lucadj77.github.io/dante/ and the copies of Dante in /dante/app and /dante/beta.
