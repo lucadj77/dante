@@ -167,12 +167,7 @@ export const texts = {
       newsTitle: 'What’s new',
       newsText: 'What changes in each version.',
       newsLink: 'Read what’s new',
-      newsHref: 'https://github.com/lucadj77/dante/blob/main/docs/whats-new.md',
-      aiTitle: 'For those who work with an AI agent',
-      aiText:
-        'A skill teaches Claude and other agents to read and reorganize a Dante project without breaking it for Dante or Obsidian.',
-      aiLink: 'The skill on GitHub',
-      aiHref: 'https://github.com/lucadj77/dante/tree/main/skills/dante'
+      newsHref: 'https://github.com/lucadj77/dante/blob/main/docs/whats-new.md'
     },
     footer: {
       free: 'Free, with its source code on GitHub.',
@@ -329,12 +324,7 @@ export const texts = {
       newsTitle: 'Novità',
       newsText: 'Cosa cambia a ogni versione.',
       newsLink: 'Leggi le novità',
-      newsHref: 'https://github.com/lucadj77/dante/blob/main/docs/novita.md',
-      aiTitle: 'Per chi lavora con un agente IA',
-      aiText:
-        'Una skill insegna a Claude e ad altri agenti a leggere e riorganizzare un progetto di Dante senza romperlo per Dante o Obsidian.',
-      aiLink: 'La skill su GitHub',
-      aiHref: 'https://github.com/lucadj77/dante/tree/main/skills/dante'
+      newsHref: 'https://github.com/lucadj77/dante/blob/main/docs/novita.md'
     },
     footer: {
       free: 'Gratuito, con il codice sorgente su GitHub.',
