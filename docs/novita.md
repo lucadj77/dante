@@ -4,6 +4,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## Prossima versione
 
+- **Scrivener: anche ricerca e personaggi**: importando da Scrivener, oltre al romanzo entrano anche le altre cartelle. Per ogni cartella scegli se va nella Bibbia (personaggi, luoghi…) o tra le note, in Ricerca o in Laboratorio; Dante propone già la scelta più probabile. I testi diventano note con la loro sinossi, PDF e immagini vengono copiati.
+
 ## 0.1.49 · 27 ottobre 2026
 
 - **Sito di Dante e nuovo indirizzo della versione web**: Dante ha un sito, https://dante.lucadj.eu, con screenshot, download per ogni sistema e, presto, video tutorial. La versione web si sposta su https://dante.lucadj.eu/app/ (l'ultima versione ufficiale) e https://dante.lucadj.eu/beta/ (l'ultima di prova). Chi usava il vecchio indirizzo deve aprire quello nuovo, reinstallare Dante dal browser se l'aveva installato e riaprire le cartelle dei romanzi: i testi non cambiano, l'elenco dei recenti e le impostazioni sì.

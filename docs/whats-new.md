@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Scrivener: research and characters too**: importing from Scrivener now brings the other folders as well as the novel. For each folder you choose whether it goes into the Story Bible (characters, places…) or among the notes, in Research or the Laboratory; Dante suggests the likely choice. Texts become notes with their synopsis, PDFs and pictures are copied.
+
 ## 0.1.49 · October 27, 2026
 
 - **Dante's website and a new address for the web version**: Dante has a website, https://dante.lucadj.eu, with screenshots, downloads for every system and, soon, video tutorials. The web version moves to https://dante.lucadj.eu/app/ (the latest official version) and https://dante.lucadj.eu/beta/ (the latest trial one). If you used the old address, open the new one, install Dante from the browser again if you had installed it, and reopen your novels' folders: the texts do not change, the recent list and the settings do.
