@@ -241,10 +241,15 @@ jobs:
           fi
 
   # The site and the web version on GitHub Pages, with this release in app/ or beta/ (web.yml).
+  # Started on main rather than called from here: the github-pages environment only lets
+  # main deploy, not a tag.
   web:
     needs: publish
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-    uses: ./.github/workflows/web.yml
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - run: gh workflow run web.yml --ref main
