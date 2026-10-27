@@ -59,7 +59,7 @@ La versione portatile non si installa: estrai lo zip dove vuoi (anche su una chi
 
 ## Senza installare
 
-Se non puoi installare Dante (per esempio su un Mac con Catalina), aprilo con Chrome, Edge o Brave all'indirizzo https://lucadj77.github.io/dante/. È lo stesso programma, senza PDF e con alcuni limiti descritti nel capitolo 18 della [guida](guida.md#18-dante-nel-browser).
+Se non puoi installare Dante (per esempio su un Mac con Catalina), aprilo con Chrome, Edge o Brave all'indirizzo https://dante.lucadj.eu/app/ (in https://dante.lucadj.eu/beta/ c'è l'ultima versione di prova). È lo stesso programma, senza PDF e con alcuni limiti descritti nel capitolo 18 della [guida](guida.md#18-dante-nel-browser).
 
 ## Primo avvio
 

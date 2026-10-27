@@ -6,7 +6,7 @@ name: Release
 # automatic update (.sig, .app.tar.gz, latest.json) stay on the preview release, which the
 # installed copies keep checking.
 #
-# Started by hand (Actions > Release > Run workflow).
+# Started by hand (Actions > Release > Run workflow). Then the site's app/ gets the new version.
 on:
   workflow_dispatch:
 
@@ -46,3 +46,12 @@ jobs:
             --target "$commit" --latest \
             --title "Dante $version" \
             --notes-file notes.md
+
+  # The site and the web version: this release goes in app/ (web.yml).
+  web:
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/web.yml

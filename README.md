@@ -13,7 +13,7 @@ installation, updates and how to report problems.
 The design is described in the [design document](https://claude.ai/code/artifact/6ae8607c-9d16-4657-a49c-c0faabf1db0a).
 The five phases it planned are done; the sections below describe what each one brought, then
 what came after. Dante runs as a desktop app for macOS, Windows and Linux and, with the same
-code, as a web app in Chromium browsers (<https://lucadj77.github.io/dante/>).
+code, as a web app in Chromium browsers (<https://dante.lucadj.eu/app/>). The presentation site, <https://dante.lucadj.eu>, is built from [site/](site/README.md).
 
 ## A project on disk
 

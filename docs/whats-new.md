@@ -4,6 +4,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## Next version
 
+- **Dante's website and a new address for the web version**: Dante has a website, https://dante.lucadj.eu, with screenshots, downloads for every system and, soon, video tutorials. The web version moves to https://dante.lucadj.eu/app/ (the latest official version) and https://dante.lucadj.eu/beta/ (the latest trial one). If you used the old address, open the new one, install Dante from the browser again if you had installed it, and reopen your novels' folders: the texts do not change, the recent list and the settings do.
+
 ## 0.1.46 · October 26, 2026
 
 - **Cover with a picture of yours**: in Settings > Cover you can use a photo or drawing of yours instead of the shapes, choose whether to show title, subtitle and authors, and change the colour of the text and of its outline. The cover is shown among recent projects and at the start of Word, PDF and EPUB.
