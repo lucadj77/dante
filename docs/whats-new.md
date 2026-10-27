@@ -10,10 +10,6 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
-## 0.1.54 · October 27, 2026
-
-- **Scrivener: research and characters too**: importing from Scrivener now brings the other folders as well as the novel. For each folder you choose whether it goes into the Story Bible (characters, places…) or among the notes, in Research or the Laboratory; Dante suggests the likely choice. Texts become notes with their synopsis, PDFs and pictures are copied.
-
 ## 1.0.0 · October 27, 2026
 
 ### New
