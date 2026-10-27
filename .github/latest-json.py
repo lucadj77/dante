@@ -1,6 +1,6 @@
 """Writes latest.json, the update manifest the installed copies of Dante read.
 
-Usage: latest-json.py <folder of release files> <version> <commit> <download address> [news.json]
+Usage: latest-json.py <folder of release files> <version> <download address> [news.json]
 
 news.json, written by news.py history, lists the notes of every version in Italian and
 English; Dante's update banner shows those newer than the installed version.
@@ -15,24 +15,24 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-folder, version, commit, base = sys.argv[1:5]
-news = json.loads(Path(sys.argv[5]).read_text(encoding="utf-8")) if len(sys.argv) > 5 else {}
+folder, version, base = sys.argv[1:4]
+news = json.loads(Path(sys.argv[4]).read_text(encoding="utf-8")) if len(sys.argv) > 4 else {}
 
 # The end of each update file's name, as the Builds workflow writes it, and its target.
 TARGETS = {
-    "-setup-{commit}.exe": "windows-x86_64-nsis",
-    "-{commit}-mac-apple-silicon.app.tar.gz": "darwin-aarch64-app",
-    "-{commit}-mac-intel.app.tar.gz": "darwin-x86_64-app",
-    "-{commit}-x86_64.AppImage": "linux-x86_64-appimage",
-    "-{commit}-amd64.deb": "linux-x86_64-deb",
-    "-{commit}-x86_64.rpm": "linux-x86_64-rpm",
+    "-setup-{version}.exe": "windows-x86_64-nsis",
+    "-{version}-mac-apple-silicon.app.tar.gz": "darwin-aarch64-app",
+    "-{version}-mac-intel.app.tar.gz": "darwin-x86_64-app",
+    "-{version}-x86_64.AppImage": "linux-x86_64-appimage",
+    "-{version}-amd64.deb": "linux-x86_64-deb",
+    "-{version}-x86_64.rpm": "linux-x86_64-rpm",
 }
 
 platforms = {}
 for sig in sorted(Path(folder).glob("*.sig")):
     name = sig.name.removesuffix(".sig")
     for ending, target in TARGETS.items():
-        if name == "Dante" + ending.format(commit=commit):
+        if name == "Dante" + ending.format(version=version):
             platforms[target] = {"signature": sig.read_text().strip(), "url": f"{base}/{name}"}
 
 if not platforms:
@@ -41,7 +41,7 @@ if not platforms:
 
 manifest = {
     "version": version,
-    "notes": f"Dante {version} ({commit})",
+    "notes": f"Dante {version}",
     "pub_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "platforms": platforms,
 }

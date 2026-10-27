@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newerVersion, newsSince } from "../../updates.svelte";
+import { compareVersions, isPrerelease, newerVersion, newsSince } from "../../updates.svelte";
 
 describe("update news", () => {
   const raw = {
@@ -17,6 +17,15 @@ describe("update news", () => {
     expect(newerVersion("0.1.30", "0.1.29")).toBe(true);
     expect(newerVersion("0.1.100", "0.1.99")).toBe(true);
     expect(newerVersion("0.1.29", "0.1.29")).toBe(false);
+    expect(newerVersion("1.0.0", "0.1.49")).toBe(true);
+  });
+
+  it("puts a beta before its version, as semver does", () => {
+    const sorted = ["1.1.0", "1.1.0-beta.10", "1.0.3", "1.1.0-beta.2", "1.1.0-beta.1", "1.2.0-beta.1"].sort(compareVersions);
+    expect(sorted).toEqual(["1.0.3", "1.1.0-beta.1", "1.1.0-beta.2", "1.1.0-beta.10", "1.1.0", "1.2.0-beta.1"]);
+    expect(newerVersion("1.1.0", "1.1.0-beta.3")).toBe(true);
+    expect(isPrerelease("1.1.0-beta.1")).toBe(true);
+    expect(isPrerelease("1.1.0")).toBe(false);
   });
 
   it("lists what came after the installed version, in Italian or else English", () => {

@@ -734,9 +734,11 @@ img.zoomable {
   cursor: zoom-in;
 }
 .zoom {
-  max-width: min(92vw, 1600px);
-  max-height: 90vh;
-  padding: 12px;
+  /* as wide as the window allows: a dialog shrinks to its content, so the width is set here */
+  width: min(96vw, 1800px);
+  max-width: none;
+  max-height: 96vh;
+  padding: 10px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--card);
@@ -748,8 +750,8 @@ img.zoomable {
   background: rgba(20, 17, 13, 0.78);
 }
 .zoom img {
-  max-width: 100%;
-  max-height: calc(90vh - 90px);
+  width: 100%;
+  max-height: calc(96vh - 70px);
   margin: 0 auto;
   border-radius: 8px;
   object-fit: contain;

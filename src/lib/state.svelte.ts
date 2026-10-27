@@ -31,8 +31,12 @@ export interface AppSettings {
   statsLevel: "scene" | "chapter" | "part";
   /** A light shade on the row the cursor is on. */
   lineHighlight: boolean;
-  /** Look for a newer version on the preview release at every start. */
+  /** Look for a newer version at every start. */
   checkUpdates: boolean;
+  /** Where updates come from: "stable", "beta", or "" for Stable (Beta if a beta is installed). */
+  updateChannel: "stable" | "beta" | "";
+  /** A version the update bar was told to skip: the checks made by themselves pass over it. */
+  skippedVersion: string;
   /** Where backups go, a folder of this computer; empty for Documents/Dante backup. */
   backupFolder: string;
   /** A backup when a project closes (or Dante quits), if something changed since the last. */
@@ -71,6 +75,8 @@ function defaults(): AppSettings {
     statsLevel: "chapter",
     lineHighlight: false,
     checkUpdates: true,
+    updateChannel: "",
+    skippedVersion: "",
     backupFolder: "",
     backupOnClose: true,
     backupKeep: 10,

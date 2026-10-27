@@ -2,6 +2,7 @@ import type { Update } from "@tauri-apps/plugin-updater";
 import { base } from "$app/paths";
 import { version as builtVersion } from "$app/environment";
 import { WEB_BUILD } from "./build";
+import { app } from "./state.svelte";
 import { inTauri } from "./tauriFs";
 
 /** A newer web version, announced by the site's version.json. */
@@ -11,9 +12,11 @@ export interface WebUpdate {
 }
 
 /**
- * Updates of the app come from the "preview" release on GitHub, whose latest.json names
- * the newest version for each system. Checking and installing go through Tauri's updater
- * plugin, which verifies the download against the public key in tauri.conf.json.
+ * Updates of the app come from the releases on GitHub, each with a latest.json naming its
+ * files for each system. The stable channel reads the latest official release, the beta
+ * channel the highest version, beta or not (check_update in src-tauri/src/updates.rs).
+ * Installing goes through Tauri's updater plugin, which verifies the download against the
+ * public key in tauri.conf.json.
  *
  * The web version asks its own site: version.json names the newest version and its news,
  * and the service worker downloads the new files, which take over when Dante restarts.
@@ -49,6 +52,21 @@ export function closeNotice() {
   updates.notice = "";
 }
 
+export type Channel = "stable" | "beta";
+
+/** True for a beta version, such as 1.1.0-beta.2. */
+export const isPrerelease = (version: string) => /^\d+\.\d+\.\d+-/.test(version);
+
+/**
+ * The channel chosen in the settings; without a choice, Beta for whoever installed a beta
+ * and Stable for everybody else.
+ */
+export function updateChannel(installed = updates.version): Channel {
+  const chosen = app.settings.updateChannel;
+  if (chosen === "stable" || chosen === "beta") return chosen;
+  return isPrerelease(installed) ? "beta" : "stable";
+}
+
 let ready: Promise<void> | null = null;
 
 /** Learns the installed version and whether this copy can update itself. */
@@ -67,9 +85,10 @@ export function loadUpdateInfo(): Promise<void> {
 }
 
 /**
- * Asks the release for a newer version. `quiet` keeps network errors out of the settings
- * (the checks made by themselves); `announce` says the outcome in the corner even when
- * there is nothing to install (the check at start and the one from the menu).
+ * Asks the releases for a newer version. `quiet` marks the checks made by themselves: their
+ * network errors stay out of the settings and a skipped version is not offered again;
+ * `announced` says the outcome in the corner even when there is nothing to install (the
+ * check at start and the one from the menu).
  */
 export async function checkForUpdates(quiet = false, announced = false): Promise<void> {
   await loadUpdateInfo();
@@ -83,8 +102,9 @@ export async function checkForUpdates(quiet = false, announced = false): Promise
   try {
     let found: Update | WebUpdate | null;
     if (inTauri()) {
-      const { check } = await import("@tauri-apps/plugin-updater");
-      found = await check();
+      const [{ Update }, { invoke }] = await Promise.all([import("@tauri-apps/plugin-updater"), import("@tauri-apps/api/core")]);
+      const metadata = await invoke<ConstructorParameters<typeof Update>[0] | null>("check_update", { channel: updateChannel() });
+      found = metadata ? new Update(metadata) : null;
     } else {
       const response = await fetch(`${base}/version.json`, { cache: "no-store" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -92,6 +112,7 @@ export async function checkForUpdates(quiet = false, announced = false): Promise
       const version = typeof json.version === "string" ? json.version : "";
       found = version && newerVersion(version, updates.version) ? { version, rawJson: json } : null;
     }
+    if (found && quiet && found.version === app.settings.skippedVersion) found = null;
     // A version already announced and put off stays put off until the next start.
     if (!found || found.version !== updates.available?.version) updates.dismissed = false;
     updates.available = found;
@@ -180,13 +201,34 @@ export interface VersionNews {
   notes: string[];
 }
 
-const versionKey = (v: string) => v.split(".").map((n) => Number(n) || 0);
+/** -1, 0 or 1 as `a` comes before, with or after `b`, by the rules of semver. */
+export function compareVersions(a: string, b: string): number {
+  const split = (v: string) => {
+    const [core, pre = ""] = v.replace(/\+.*/, "").split(/-(.*)/);
+    return { core: core.split(".").map((n) => Number(n) || 0), pre: pre ? pre.split(".") : [] };
+  };
+  const [x, y] = [split(a), split(b)];
+  for (let i = 0; i < Math.max(x.core.length, y.core.length); i++) {
+    const d = (x.core[i] ?? 0) - (y.core[i] ?? 0);
+    if (d) return Math.sign(d);
+  }
+  // A beta comes before its version: 1.1.0-beta.2 < 1.1.0.
+  if (!x.pre.length || !y.pre.length) return Math.sign(y.pre.length - x.pre.length);
+  for (let i = 0; i < Math.max(x.pre.length, y.pre.length); i++) {
+    const [p, q] = [x.pre[i], y.pre[i]];
+    if (p === undefined || q === undefined) return p === undefined ? -1 : 1;
+    if (p === q) continue;
+    const [m, n] = [/^\d+$/.test(p), /^\d+$/.test(q)];
+    if (m && n) return Math.sign(Number(p) - Number(q));
+    if (m !== n) return m ? -1 : 1;
+    return p < q ? -1 : 1;
+  }
+  return 0;
+}
 
 /** True when version `a` comes after `b`. */
 export function newerVersion(a: string, b: string): boolean {
-  const [x, y] = [versionKey(a), versionKey(b)];
-  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
-  return false;
+  return compareVersions(a, b) > 0;
 }
 
 /**

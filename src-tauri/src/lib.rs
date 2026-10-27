@@ -1,6 +1,7 @@
 mod backup;
 mod files;
 mod pdf;
+mod updates;
 mod web;
 pub mod webkit;
 
@@ -92,7 +93,7 @@ fn quit(app: AppHandle) {
     app.exit(0);
 }
 
-/// Whether this copy can update itself from the preview release. Not while developing (the
+/// Whether this copy can update itself from the releases. Not while developing (the
 /// program is not an installed bundle) nor in the portable copy, which the Windows installer
 /// would replace with an installed one.
 #[tauri::command]
@@ -234,6 +235,7 @@ pub fn run() {
             backup::backup_project,
             backup::list_backups,
             web::download_url,
+            updates::check_update,
             webkit::webkit_info,
             opened_project,
             updates_supported,
