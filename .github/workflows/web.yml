@@ -59,11 +59,14 @@ jobs:
           stable_tag=$(gh release view --json tagName -q .tagName)
           stable=${stable_tag#v}
           echo "app: $stable ($stable_tag), beta: $beta ($beta_commit), base: '$BASE'"
+          # each copy in a folder outside the checkout: inside it, Vite would read the checkout's
+          # tsconfig.json, which points to a .svelte-kit folder that was never generated there
           build() {
-            git worktree add --detach "w-$1" "$2"
-            (cd "w-$1" && npm ci && DANTE_BASE="$BASE/$1" DANTE_VERSION="$3" npm run build:web)
+            w="$RUNNER_TEMP/w-$1"
+            git worktree add --detach "$w" "$2"
+            (cd "$w" && npm ci && DANTE_BASE="$BASE/$1" DANTE_VERSION="$3" npm run build:web)
             mkdir -p "pages/$1"
-            cp -R "w-$1/build/." "pages/$1/"
+            cp -R "$w/build/." "pages/$1/"
             # what this copy reads to learn of a newer one: its version and the news up to it
             python3 .github/news.py history docs "$3" > "news-$1.json"
             python3 .github/web-version.py "$3" "news-$1.json" "pages/$1/version.json"
