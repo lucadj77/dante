@@ -1,0 +1,102 @@
+name: Web
+
+# The site on GitHub Pages (https://dante.lucadj.eu): the presentation site at the root (site/,
+# built by site/build.mjs, English with Italian in it/), the web version of Dante in app/ (the
+# latest official release) and in beta/ (the latest build of main, the "preview" release).
+# Each version is built from its own commit, with its number and its news in version.json.
+#
+# Called by Builds after the preview release and by Release after an official one; it can be
+# started by hand too (Actions > Web > Run workflow). Pull requests that touch the site only
+# build it, to check it. The address comes from Settings > Pages (Custom domain): without
+# one the site is at lucadj77.github.io/dante/ and the copies of Dante in /dante/app and /dante/beta.
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - site/**
+      - .github/workflows/web.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # configure-pages reads the address of the site
+      pages: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PUBLISH: ${{ github.event_name != 'pull_request' }}
+    steps:
+      # main, where the build has already written the news of the new version; all the
+      # history, to build the commits of the two releases
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name != 'pull_request' && 'main' || '' }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Site
+        run: node site/build.mjs pages
+      - id: pages
+        if: env.PUBLISH == 'true'
+        uses: actions/configure-pages@v5
+      - name: Dante in app/ and beta/
+        if: env.PUBLISH == 'true'
+        env:
+          # "" with a custom domain, /dante without
+          BASE: ${{ steps.pages.outputs.base_path }}
+        run: |
+          gh release view preview --json name,targetCommitish > preview.json
+          beta=$(jq -r .name preview.json | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          beta_commit=$(jq -r .targetCommitish preview.json)
+          stable_tag=$(gh release view --json tagName -q .tagName)
+          stable=${stable_tag#v}
+          echo "app: $stable ($stable_tag), beta: $beta ($beta_commit), base: '$BASE'"
+          build() {
+            git worktree add --detach "w-$1" "$2"
+            (cd "w-$1" && npm ci && DANTE_BASE="$BASE/$1" DANTE_VERSION="$3" npm run build:web)
+            mkdir -p "pages/$1"
+            cp -R "w-$1/build/." "pages/$1/"
+            # what this copy reads to learn of a newer one: its version and the news up to it
+            python3 .github/news.py history docs "$3" > "news-$1.json"
+            python3 .github/web-version.py "$3" "news-$1.json" "pages/$1/version.json"
+          }
+          build app "$stable_tag" "$stable"
+          build beta "$beta_commit" "$beta"
+          # the beta, once installed from the browser, is told apart from the official one
+          python3 - <<'EOF'
+          import json
+          from pathlib import Path
+          path = Path("pages/beta/manifest.webmanifest")
+          manifest = json.loads(path.read_text(encoding="utf-8"))
+          manifest["name"] = manifest["short_name"] = "Dante beta"
+          path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+          EOF
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    # a release and a build of main may finish together: one deployment at a time, the last wins
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -10,7 +10,9 @@
 import { base, build, files, version } from "$service-worker";
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
-const CACHE = `dante-${version}`;
+// The site holds more than one copy of Dante (app/ and beta/): each keeps and clears only its own caches.
+const PREFIX = `dante${base}-`;
+const CACHE = `${PREFIX}${version}`;
 /** The page itself, the program and the static files. version.json is always asked anew. */
 const ASSETS = [`${base}/`, ...build, ...files.filter((f) => !f.endsWith("/version.json"))];
 
@@ -21,7 +23,7 @@ sw.addEventListener("install", (event) => {
 sw.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
-      for (const key of await caches.keys()) if (key !== CACHE && key.startsWith("dante-")) await caches.delete(key);
+      for (const key of await caches.keys()) if (key !== CACHE && key.startsWith(PREFIX)) await caches.delete(key);
       await sw.clients.claim();
     })(),
   );

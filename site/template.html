@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{title}}</title>
+    <meta name="description" content="{{description}}" />
+    <link rel="icon" href="{{root}}img/dante.svg" type="image/svg+xml" />
+    <link rel="alternate" hreflang="en" href="https://dante.lucadj.eu/" />
+    <link rel="alternate" hreflang="it" href="https://dante.lucadj.eu/it/" />
+    <meta property="og:title" content="{{title}}" />
+    <meta property="og:description" content="{{description}}" />
+    <meta property="og:image" content="https://dante.lucadj.eu/img/{{lang}}/editor.png" />
+    <link rel="stylesheet" href="{{root}}style.css" />
+  </head>
+  <body>
+    <header class="top" id="top">
+      <div class="wrap">
+        <a class="brand" href="{{root}}"><img src="{{root}}img/dante.svg" alt="" /> Dante</a>
+        <nav>
+          <a href="#download">{{nav.download}}</a>
+          <a href="#web">{{nav.web}}</a>
+          <a href="#tutorial">{{nav.tutorial}}</a>
+          <a href="#guide">{{nav.guide}}</a>
+          <a href="{{guide.newsHref}}">{{nav.news}}</a>
+          <a class="lang" href="{{otherLangHref}}" lang="{{otherLang}}" hreflang="{{otherLang}}"
+            >{{flag}} {{otherLangLabel}}</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="wrap">
+        <div class="hero-text">
+          <img class="logo" src="{{root}}img/dante.svg" alt="" />
+          <h1>{{hero.claim}}</h1>
+          <p>{{hero.text}}</p>
+          <div class="hero-actions">
+            <a id="dl-main" class="btn primary" href="#download"
+              ><span class="label">{{hero.downloadGeneric}}</span></a
+            >
+            <a class="btn" href="#web">{{hero.web}}</a>
+          </div>
+          <p class="hero-note">
+            <span id="dl-status">{{hero.loading}}</span> <span id="dl-hint"></span> ·
+            <a href="{{installHref}}">{{hero.install}}</a>
+          </p>
+        </div>
+        <div class="hero-shot">
+          <picture>
+            <source srcset="{{img}}night.png" media="(prefers-color-scheme: dark)" />
+            <img
+              class="zoomable"
+              src="{{img}}editor.png"
+              alt="{{hero.shot}}"
+              width="1440"
+              height="900"
+              loading="eager"
+            />
+          </picture>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="wrap">
+        <div class="section-head">
+          {{ornament}}
+          <h2>{{features.title}}</h2>
+        </div>
+        <div class="features">{{features.items}}</div>
+      </div>
+    </section>
+
+    <section id="local" class="local">
+      <div class="wrap">
+        <div class="section-head">
+          {{ornament}}
+          <h2>{{local.title}}</h2>
+          <p>{{local.intro}}</p>
+        </div>
+        <div class="local-items">{{local.items}}</div>
+        <p class="local-note">{{local.note}}</p>
+      </div>
+    </section>
+
+    <section id="shots">
+      <div class="wrap">
+        <div class="section-head">
+          {{ornament}}
+          <h2>{{shots.title}}</h2>
+        </div>
+        <div class="shots">{{shots.items}}</div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="wrap">
+        <div class="section-head">
+          {{ornament}}
+          <h2>{{download.title}}</h2>
+          <p id="dl-intro">{{download.intro}}</p>
+          <p><a href="{{installHref}}">{{download.install}}</a></p>
+        </div>
+        <div class="dl-grid">
+          <div class="dl">
+            <h3>{{download.mac}}</h3>
+            <a id="dl-macArm" class="btn block primary" href="{{releases}}/latest"
+              >{{download.macArm}}</a
+            >
+            <a id="dl-macIntel" class="btn block" href="{{releases}}/latest">{{download.macIntel}}</a>
+            <p class="note">{{download.macNote}}</p>
+          </div>
+          <div class="dl">
+            <h3>{{download.win}}</h3>
+            <a id="dl-winSetup" class="btn block primary" href="{{releases}}/latest"
+              >{{download.winSetup}}</a
+            >
+            <a id="dl-winPortable" class="btn block" href="{{releases}}/latest"
+              >{{download.winPortable}}</a
+            >
+            <p class="note">{{download.winNote}}</p>
+          </div>
+          <div class="dl">
+            <h3>{{download.linux}}</h3>
+            <a id="dl-linuxAppImage" class="btn block primary" href="{{releases}}/latest"
+              >{{download.linuxAppImage}}</a
+            >
+            <a id="dl-linuxDeb" class="btn block" href="{{releases}}/latest">{{download.linuxDeb}}</a>
+            <a id="dl-linuxRpm" class="btn block" href="{{releases}}/latest">{{download.linuxRpm}}</a>
+            <p class="note">{{download.linuxNote}}</p>
+          </div>
+        </div>
+        <div class="dl-more">
+          <a href="{{releases}}">{{download.all}}</a>
+          <span>{{download.beta}}</span>
+        </div>
+        <p class="support">
+          <a href="https://paypal.me/DiGialleonardo">{{download.support}}</a>
+        </p>
+      </div>
+    </section>
+
+    <section id="web" class="web">
+      <div class="wrap">
+        <div class="section-head" style="margin-bottom: 0">
+          {{ornament}}
+          <h2>{{web.title}}</h2>
+          <p>{{web.text}}</p>
+          <p class="web-limits">{{web.limits}}</p>
+          <p><a href="{{web.moreHref}}">{{web.more}}</a></p>
+        </div>
+        <div class="web-actions">
+          <a class="btn primary" href="{{root}}app/">{{web.open}}</a>
+          <a class="btn" href="{{root}}beta/">{{web.beta}}</a>
+          <a class="btn" href="#download">{{web.download}}</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="tutorial">
+      <div class="wrap">
+        <div class="section-head">
+          {{ornament}}
+          <h2>{{tutorial.title}}</h2>
+          <p>{{tutorial.text}}</p>
+        </div>
+        {{playlist}} {{videos}}
+      </div>
+    </section>
+
+    <section id="guide">
+      <div class="wrap">
+        <div class="section-head">
+          {{ornament}}
+          <h2>{{guide.title}}</h2>
+        </div>
+        <div class="links">
+          <div class="link-card">
+            <h3>{{guide.guideTitle}}</h3>
+            <p>{{guide.guideText}}</p>
+            <a href="{{guide.guideHref}}">{{guide.guideLink}}</a>
+            <a href="{{guide.guideHrefOther}}">{{guide.guideLinkOther}}</a>
+          </div>
+          <div class="link-card">
+            <h3>{{guide.newsTitle}}</h3>
+            <p>{{guide.newsText}}</p>
+            <a href="{{guide.newsHref}}">{{guide.newsLink}}</a>
+          </div>
+          <div class="link-card">
+            <h3>{{guide.aiTitle}}</h3>
+            <p>{{guide.aiText}}</p>
+            <a href="{{guide.aiHref}}">{{guide.aiLink}}</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <span>{{footer.free}}</span>
+        <a href="https://github.com/lucadj77/dante">{{footer.source}}</a>
+        <a href="https://paypal.me/DiGialleonardo">{{footer.support}}</a>
+        <span class="by">{{footer.by}}</span>
+      </div>
+    </footer>
+    <dialog id="zoom" class="zoom">
+      <button type="button" class="zoom-close" aria-label="{{zoomClose}}" title="{{zoomClose}}">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" fill="none" />
+        </svg>
+      </button>
+      <img alt="" />
+      <p class="zoom-caption"></p>
+    </dialog>
+    <a id="to-top" class="to-top" href="#top" aria-label="{{toTop}}" title="{{toTop}}" hidden
+      ><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5l-7 7 1.5 1.5L11 9v10h2V9l4.5 4.5L19 12z" fill="currentColor" /></svg
+    ></a>
+    <script>
+      window.SITE_TEXTS = {{downloadJson}}
+    </script>
+    <script src="{{root}}site.js"></script>
+  </body>
+</html>

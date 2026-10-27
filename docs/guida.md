@@ -717,7 +717,7 @@ Dante esiste anche come versione web, per chi non può o non vuole installare l'
 
 ### Come si fa
 
-1. Apri **https://lucadj77.github.io/dante/** con **Chrome**, **Edge** o **Brave**. Safari e Firefox aprono Dante, ma non possono lavorare sulle cartelle del computer: lì funzionano solo il progetto di esempio e la prova di un'importazione da Word, che non viene salvata.
+1. Apri **https://dante.lucadj.eu/app/** con **Chrome**, **Edge** o **Brave**. Safari e Firefox aprono Dante, ma non possono lavorare sulle cartelle del computer: lì funzionano solo il progetto di esempio e la prova di un'importazione da Word, che non viene salvata.
 2. Per avere Dante come un'app, con una finestra propria e l'icona nel Dock o nel menu Start, premi l'icona **Installa** a destra nella barra degli indirizzi (in Chrome: un monitor con una freccia). È facoltativo, ma comodo.
 3. Premi **Apri cartella…** e scegli la cartella del romanzo, oppure **Nuovo progetto** e scegli dove crearlo. Il browser chiede il permesso di modificare la cartella: rispondi **Consenti** o, se c'è, **Consenti a ogni visita**, così la volta dopo il progetto si riapre dai recenti senza altre domande.
 4. Da qui Dante funziona come l'app: il testo viene salvato nei file della cartella mentre scrivi.
@@ -746,8 +746,9 @@ Se chiudi la scheda subito dopo aver scritto, il browser può chiedere se vuoi d
 - **Modifiche da fuori**: il browser non avvisa quando un file cambia, quindi Dante ricontrolla la cartella (nomi, dimensioni e date dei file) ogni pochi secondi e quando la scheda torna in primo piano. Le cartelle `.dante`, `export` e `.trash` sono escluse, come nell'app.
 - **Due schede**: Dante "tiene" la cartella aperta con un blocco del browser (*Web Locks*); una seconda scheda o finestra dello stesso browser non può aprirla finché la prima non chiude il progetto o la scheda.
 - **macOS Catalina**: l'ultima versione di Chrome, Edge e Brave per macOS 10.15 è basata su Chromium 128 (2024) e non riceve più aggiornamenti di sicurezza. Dante ci funziona, ma è bene saperlo, perché lo stesso browser serve anche per navigare. Su Catalina Brave pubblica ancora la sua ultima versione; Chrome già installato resta alla 128.
-- **Pubblicazione**: a ogni modifica unita in `main` la compilazione su GitHub prepara la versione web (`npm run build:web`, con `VITE_DANTE_WEB=1`) con lo stesso numero `0.1.N` dell'app, scrive `version.json` con le novità e la pubblica su GitHub Pages (`.github/workflows/builds.yml`, lavoro *web*). Per provarla in locale: `DANTE_BASE=/dante npm run build:web` e servire la cartella `build` all'indirizzo `/dante/`.
-- **Indirizzo**: tutto ciò che sta sotto `lucadj77.github.io` è per il browser lo stesso sito. Se un giorno quell'account pubblicasse altre pagine con GitHub Pages, quelle potrebbero leggere i dati di Dante nel browser. Un dominio proprio (per esempio `dante.<dominio>.it`) toglie il problema e si collega a GitHub Pages senza cambiare il resto.
+- **Due versioni**: in `/app/` c'è l'ultima versione ufficiale, in `/beta/` l'ultima versione di prova, la stessa dell'anteprima dell'app. Installate dal browser sono due app distinte (la seconda si chiama *Dante beta*), ma condividono le impostazioni e l'elenco dei recenti; un romanzo aperto in una non si apre nell'altra finché non lo chiudi.
+- **Pubblicazione**: a ogni modifica unita in `main` e a ogni versione ufficiale GitHub ricostruisce il sito di presentazione e le due versioni web, ciascuna dal suo commit, con lo stesso numero `0.1.N` dell'app e il suo `version.json` con le novità, e le pubblica su GitHub Pages (`.github/workflows/web.yml`). Per provarla in locale: `DANTE_BASE=/app npm run build:web` e servire la cartella `build` all'indirizzo `/app/`.
+- **Indirizzo**: Dante sta su un dominio proprio, `dante.lucadj.eu`, così nessun'altra pagina pubblicata con GitHub Pages può leggere i suoi dati nel browser. Fino a ottobre 2026 l'indirizzo era `lucadj77.github.io/dante/`, che ora porta al sito: per il browser è un altro sito, quindi chi lo usava ritrova i romanzi nelle cartelle ma deve riaprirle e rifare le impostazioni.
 
 ## 19. Copie di sicurezza
 
