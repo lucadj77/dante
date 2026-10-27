@@ -78,6 +78,26 @@ interface Move {
   to: string;
 }
 
+/** Where a group of imported notes goes: a type of the Story Bible, Research, the Laboratory, or nowhere. */
+export type NoteDestination = `codex:${string}` | "research" | "laboratory" | "skip";
+
+/**
+ * The likely place of a group of notes: a folder named as a type of the Story Bible, in
+ * any of Dante's languages, by its name or its folder, goes there; the rest into Research.
+ */
+export function noteDestination(types: Record<string, NoteType>, group: string, research = false): NoteDestination {
+  if (research) return "research";
+  const wanted = group.trim().toLowerCase();
+  for (const [id, type] of Object.entries(types)) {
+    const names = [type.name, type.folder, ...["en", "it", "es", "fr"].flatMap((l) => {
+      const known = defaultTypes(l)[id];
+      return known ? [known.name, known.folder] : [];
+    })];
+    if (names.some((n) => n.toLowerCase() === wanted)) return `codex:${id}`;
+  }
+  return "research";
+}
+
 export class Project {
   settings: NovelSettings = defaultSettings();
   manuscript!: ManuscriptNode;
@@ -690,26 +710,15 @@ export class Project {
   }
 
   /**
-   * Writes the documents another program keeps beside the book as notes: a folder named
-   * as a type of the Story Bible (Characters, Places…) goes into that type's folder, all
-   * the rest into Research, keeping the folders they were in. Nothing already there is
-   * overwritten: a note with a name in use gets a number.
+   * Writes the documents another program keeps beside the book as notes, each group where
+   * `destinations` says (as `noteDestination` guesses when it says nothing): into a type's
+   * folder of the Story Bible, Research or the Laboratory, keeping the folders below. In
+   * Research and the Laboratory a group keeps a folder of its own, except Scrivener's own
+   * Research. Nothing already there is overwritten: a note with a name in use gets a number.
    */
-  async importNotes(notes: ImportedNote[]): Promise<void> {
+  async importNotes(notes: ImportedNote[], destinations: Record<string, NoteDestination> = {}): Promise<void> {
     if (!notes.length) return;
     const { folders } = this.settings;
-    /** The type a folder's name says, in any of Dante's languages, by its name or its folder. */
-    const typeFolder = (name: string) => {
-      const wanted = name.trim().toLowerCase();
-      for (const [id, type] of Object.entries(this.settings.types)) {
-        const names = [type.name, type.folder, ...["en", "it", "es", "fr"].flatMap((l) => {
-          const known = defaultTypes(l)[id];
-          return known ? [known.name, known.folder] : [];
-        })];
-        if (names.some((n) => n.toLowerCase() === wanted)) return join(folders.codex, type.folder);
-      }
-      return null;
-    };
     const taken = new Set<string>();
     const free = async (dir: string, title: string, extension: string) => {
       const base = sanitizeTitle(title) || "Untitled";
@@ -721,10 +730,15 @@ export class Project {
         }
       }
     };
+    const clean = (name: string) => sanitizeTitle(name) || "Untitled";
     for (const note of notes) {
-      const [top, ...rest] = note.folders.map((f) => sanitizeTitle(f) || "Untitled");
-      const codex = top ? typeFolder(top) : null;
-      const dir = codex ? join(codex, ...rest) : join(folders.research, ...(top ? [top, ...rest] : []));
+      const to = destinations[note.group] ?? noteDestination(this.settings.types, note.group, note.research);
+      if (to === "skip") continue;
+      const type = to.startsWith("codex:") ? this.settings.types[to.slice("codex:".length)] : undefined;
+      // The group's own text, or a group that is one document, is a note at the top of where it goes.
+      const own = note.title === note.group && !note.folders.length;
+      const base = type ? join(folders.codex, type.folder) : join(to === "laboratory" ? folders.laboratory : folders.research, ...(note.research || own ? [] : [clean(note.group)]));
+      const dir = join(base, ...note.folders.map(clean));
       await this.fs.mkdir(dir);
       if (note.file) {
         await this.fs.writeBytes(await free(dir, note.title, note.file.extension), note.file.bytes);

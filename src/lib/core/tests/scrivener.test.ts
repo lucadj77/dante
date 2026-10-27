@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { zipSync } from "fflate";
 import { readPicked } from "$lib/ui/scrivenerFile";
 import { MemoryFs, type ProjectFs } from "../fs";
-import { Project } from "../project";
+import { noteDestination, Project } from "../project";
+import { defaultTypes } from "../settings";
 import { rtfParagraphs } from "../import/rtf";
 import { readScrivener, readScrivenerZip } from "../import/scrivener";
 import { defaultRoles, structure } from "../import/structure";
@@ -85,11 +86,11 @@ describe("Scrivener", () => {
 
   it("makes the folders beside the draft notes: Research in Research, characters in the Story Bible", async () => {
     const content = await readScrivener(SCRIVX, files);
-    expect(content.notes?.map((n) => [n.research, n.folders.join("/"), n.title])).toEqual([
-      [true, "", "Appunti"],
-      [true, "", "Mappa del porto"],
-      [true, "Fari", "Lanterne"],
-      [false, "Characters", "Marta"],
+    expect(content.notes?.map((n) => [n.group, n.research, n.folders.join("/"), n.title])).toEqual([
+      ["Research", true, "", "Appunti"],
+      ["Research", true, "", "Mappa del porto"],
+      ["Research", true, "Fari", "Lanterne"],
+      ["Characters", false, "", "Marta"],
     ]);
     const { project } = await Project.create(new MemoryFs({}), { title: "Il faro", authors: [], language: "it" }, null);
     await project.importNotes(content.notes!);
@@ -100,6 +101,20 @@ describe("Scrivener", () => {
     // A second import leaves the first one's notes as they are.
     await project.importNotes(content.notes!.slice(0, 1));
     expect(await project.fs.exists("Ricerca/Appunti 2.md")).toBe(true);
+  });
+
+  it("puts each group of notes where the writer says", async () => {
+    const content = await readScrivener(SCRIVX, files);
+    expect(noteDestination(defaultTypes("it"), "Characters")).toBe("codex:character");
+    expect(noteDestination(defaultTypes("it"), "Luoghi")).toBe("codex:place");
+    expect(noteDestination(defaultTypes("it"), "Idee")).toBe("research");
+    const { project } = await Project.create(new MemoryFs({}), { title: "Il faro", authors: [], language: "it" }, null);
+    await project.importNotes(content.notes!, { Research: "laboratory", Characters: "skip" });
+    expect(await project.fs.exists("Laboratorio/Appunti.md")).toBe(true);
+    expect(await project.fs.exists("Laboratorio/Fari/Lanterne.md")).toBe(true);
+    expect(await project.fs.exists("Bibbia/Personaggi/Marta.md")).toBe(false);
+    await project.importNotes(content.notes!, { Characters: "research" });
+    expect(await project.fs.exists("Ricerca/Characters/Marta.md")).toBe(true);
   });
 
   it("reads a zip of the .scriv folder, and Scrivener 2's file names", async () => {

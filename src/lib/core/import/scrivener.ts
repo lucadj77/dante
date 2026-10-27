@@ -26,9 +26,11 @@ const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
 
 /** A document of the project outside the draft, made into a note or a file of the new project. */
 export interface ImportedNote {
-  /** The folders of the binder it is in, from the top; inside Research, from Research down. */
+  /** The folder (or document) at the top of the binder it comes from, such as "Characters". */
+  group: string;
+  /** The folders it is in below the group's own. */
   folders: string[];
-  /** It is in Scrivener's Research folder. */
+  /** Its group is Scrivener's Research folder. */
   research: boolean;
   title: string;
   /** Markdown text of a text document or of a folder that has one. */
@@ -107,7 +109,7 @@ export async function readScrivener(scrivx: string, files: ScrivenerFiles, name 
     }
     return null;
   };
-  const collect = async (item: XmlElement, folders: string[], research: boolean) => {
+  const collect = async (item: XmlElement, group: string, folders: string[], research: boolean) => {
     const title = titleOf(item) || untitled;
     const inner = itemsIn(item);
     const { paragraphs, synopsis } = await documentOf(item);
@@ -115,22 +117,24 @@ export async function readScrivener(scrivx: string, files: ScrivenerFiles, name 
     const isText = /^(Text|Folder)$/.test(item.attrs.Type ?? "Text") || !!text;
     if (isText) {
       // A folder is a note only when it has words of its own; its documents go inside it.
-      if (text || synopsis || item.attrs.Type !== "Folder") notes.push({ folders, research, title, text, synopsis: synopsis || undefined });
+      if (text || synopsis || item.attrs.Type !== "Folder") notes.push({ group, folders, research, title, text, synopsis: synopsis || undefined });
     } else {
       const file = await fileOf(item);
-      if (file) notes.push({ folders, research, title, file });
+      if (file) notes.push({ group, folders, research, title, file });
     }
-    for (const each of inner) await collect(each, [...folders, title], research);
+    for (const each of inner) await collect(each, group, [...folders, title], research);
   };
   for (const item of childrenNamed(binder, "BinderItem")) {
     if (item === book || item.attrs.Type === "TrashFolder") continue;
-    // Research is a place of its own in Dante too: what is in it goes there without the folder's name.
-    if (item.attrs.Type === "ResearchFolder") {
-      const { paragraphs, synopsis } = await documentOf(item);
-      const text = paragraphs.filter((p) => p.trim()).join("\n\n");
-      if (text) notes.push({ folders: [], research: true, title: titleOf(item) || untitled, text, synopsis: synopsis || undefined });
-      for (const each of itemsIn(item)) await collect(each, [], true);
-    } else await collect(item, [], false);
+    const group = titleOf(item) || untitled;
+    const research = item.attrs.Type === "ResearchFolder";
+    // A folder at the top is the group itself: what is inside it starts without its name.
+    const { paragraphs, synopsis } = await documentOf(item);
+    const text = paragraphs.filter((p) => p.trim()).join("\n\n");
+    if (itemsIn(item).length || research || item.attrs.Type === "Folder") {
+      if (text || synopsis) notes.push({ group, folders: [], research, title: group, text, synopsis: synopsis || undefined });
+      for (const each of itemsIn(item)) await collect(each, group, [], research);
+    } else await collect(item, group, [], research);
   }
   return { title: meta("ProjectTitle") || name, author: meta("FullName") || meta("AuthorName"), blocks, notes };
 }
