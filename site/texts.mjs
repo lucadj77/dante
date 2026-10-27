@@ -28,7 +28,7 @@ export const texts = {
     img: 'img/en/',
     title: 'Dante – a writing app for novelists',
     description:
-      'Dante is a free writing app for Mac, Windows, Linux and the browser. Your novel is a folder of plain text files, with scenes, chapters, a Story Bible, boards and statistics, and it opens in Obsidian too.',
+      'Dante is a free writing app for Mac, Windows, Linux and the browser. Your novel is a folder of plain text files, with scenes, chapters, a Story Bible, boards and statistics, in Markdown, a free standard that any text editor can open.',
     nav: {
       download: 'Download',
       web: 'Try in the browser',
@@ -38,7 +38,7 @@ export const texts = {
     },
     hero: {
       claim: 'Write your novel. Keep your files.',
-      text: 'Dante is a quiet place to write a novel: scenes, chapters and parts on the left, the text in the middle, characters and places beside it. Every scene is a plain Markdown file in a folder of yours, so the same novel opens in Obsidian or any text editor, and travels in Dropbox or Google Drive. Free, for Mac, Windows, Linux and the browser.',
+      text: 'Dante is a quiet place to write a novel: scenes, chapters and parts on the left, the text in the middle, characters and places beside it. Every scene is a plain Markdown file in a folder of yours, a free standard that any text editor can open, so the same novel and travels in Dropbox or Google Drive. Free, for Mac, Windows, Linux and the browser.',
       download: 'Download for',
       downloadGeneric: 'Download',
       version: 'version',
@@ -87,7 +87,7 @@ export const texts = {
         ],
         [
           'Plain text, readable forever',
-          'Markdown files open in any text editor, today and in twenty years. The same folder is an Obsidian vault, with its properties and links.'
+          'Markdown files open in any text editor, today and in twenty years: Markdown is a free standard, tied to no program.'
         ],
         [
           'The folder goes where you want',
@@ -148,11 +148,11 @@ export const texts = {
       playlist: 'All the videos in the YouTube playlist',
       // the groups of the section, in the order they appear
       groups: {
-        start: ['Start here', 'The suggested path to begin.'],
+        start: ['Start here', 'The suggested path to begin, importing included.'],
         write: ['Writing', 'Scenes, chapters, snapshots and the editor.'],
         bible: ['Story Bible and boards', 'Characters, places, links, tables and boards.'],
-        together: ['Together and elsewhere', 'Co-authors, Obsidian, backups.'],
-        export: ['From Word to the book', 'Importing, goals and exporting.']
+        together: ['Together and elsewhere', 'Co-authors, sharing and backups.'],
+        export: ['Goals and exporting', 'Goals, statistics and exporting.']
       }
     },
     guide: {
@@ -186,7 +186,7 @@ export const texts = {
     img: '../img/it/',
     title: 'Dante – un programma di scrittura per romanzieri',
     description:
-      'Dante è un programma gratuito per scrivere romanzi, per Mac, Windows, Linux e il browser. Il romanzo è una cartella di semplici file di testo, con scene, capitoli, Bibbia, bacheche e statistiche, e si apre anche in Obsidian.',
+      'Dante è un programma gratuito per scrivere romanzi, per Mac, Windows, Linux e il browser. Il romanzo è una cartella di semplici file di testo, con scene, capitoli, Bibbia, bacheche e statistiche, in Markdown, uno standard libero che si apre con qualsiasi editor di testo.',
     nav: {
       download: 'Scarica',
       web: 'Prova nel browser',
@@ -196,7 +196,7 @@ export const texts = {
     },
     hero: {
       claim: 'Scrivi il tuo romanzo. I file restano tuoi.',
-      text: 'Dante è un posto tranquillo per scrivere un romanzo: scene, capitoli e parti a sinistra, il testo al centro, personaggi e luoghi accanto. Ogni scena è un semplice file Markdown in una tua cartella, quindi lo stesso romanzo si apre in Obsidian o in qualsiasi editor di testo e viaggia in Dropbox o Google Drive. Gratuito, per Mac, Windows, Linux e il browser.',
+      text: 'Dante è un posto tranquillo per scrivere un romanzo: scene, capitoli e parti a sinistra, il testo al centro, personaggi e luoghi accanto. Ogni scena è un semplice file Markdown in una tua cartella, uno standard libero che si apre con qualsiasi editor di testo, quindi lo stesso romanzo viaggia in Dropbox o Google Drive. Gratuito, per Mac, Windows, Linux e il browser.',
       download: 'Scarica per',
       downloadGeneric: 'Scarica',
       version: 'versione',
@@ -245,7 +245,7 @@ export const texts = {
         ],
         [
           'Testo semplice, leggibile per sempre',
-          'I file Markdown si aprono con qualsiasi editor di testo, oggi e tra vent’anni. La stessa cartella è un vault di Obsidian, con proprietà e collegamenti.'
+          'I file Markdown si aprono con qualsiasi editor di testo, oggi e tra vent’anni: il Markdown è uno standard libero, non legato a nessun programma.'
         ],
         [
           'La cartella va dove vuoi',
@@ -305,11 +305,11 @@ export const texts = {
       soon: 'I primi video arrivano a breve.',
       playlist: 'Tutti i video nella playlist di YouTube',
       groups: {
-        start: ['Inizia qui', 'Il percorso consigliato per cominciare.'],
+        start: ['Inizia qui', 'Il percorso consigliato per cominciare, importazione compresa.'],
         write: ['Scrivere', 'Scene, capitoli, istantanee e l’editor.'],
         bible: ['Bibbia e bacheche', 'Personaggi, luoghi, collegamenti, tabelle e bacheche.'],
-        together: ['Insieme e altrove', 'Coautori, Obsidian, copie di sicurezza.'],
-        export: ['Da Word al libro', 'Importare, obiettivi ed esportare.']
+        together: ['Insieme e altrove', 'Coautori, condivisione e copie di sicurezza.'],
+        export: ['Obiettivi ed esportazione', 'Obiettivi, statistiche ed esportazione.']
       }
     },
     guide: {

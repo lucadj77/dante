@@ -6,13 +6,21 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
-- **Dante 1.0 e due canali di aggiornamento**: Dante passa alla numerazione 1.0, 1.1, 1.2... In Impostazioni > Dante su questo computer > Aggiornamenti scegli il canale: **Stabile** (di base) riceve solo le versioni ufficiali, **Beta** riceve prima le novità, in versioni ancora in prova. Chi installa una beta resta sul canale Beta finché non lo cambia.
-- **Salta questa versione**: l'avviso di aggiornamento ha anche **Salta questa versione**, che non la propone più ai controlli automatici (Cerca aggiornamenti la mostra comunque). **Più tardi** si chiama ora **Ricordamelo più tardi**.
-- **Scrivener: anche ricerca e personaggi**: importando da Scrivener, oltre al romanzo entrano anche le altre cartelle. Per ogni cartella scegli se va nella Bibbia (personaggi, luoghi…) o tra le note, in Ricerca o in Laboratorio; Dante propone già la scelta più probabile. I testi diventano note con la loro sinossi, PDF e immagini vengono copiati.
-
 ### Cambiato
 
 ### Corretto
+
+## 0.1.54 · 27 ottobre 2026
+
+- **Scrivener: anche ricerca e personaggi**: importando da Scrivener, oltre al romanzo entrano anche le altre cartelle. Per ogni cartella scegli se va nella Bibbia (personaggi, luoghi…) o tra le note, in Ricerca o in Laboratorio; Dante propone già la scelta più probabile. I testi diventano note con la loro sinossi, PDF e immagini vengono copiati.
+
+## 1.0.0 · 27 ottobre 2026
+
+### Nuovo
+
+- **Dante 1.0 e due canali di aggiornamento**: Dante passa alla numerazione 1.0, 1.1, 1.2... In Impostazioni > Dante su questo computer > Aggiornamenti scegli il canale: **Stabile** (di base) riceve solo le versioni ufficiali, **Beta** riceve prima le novità, in versioni ancora in prova. Chi installa una beta resta sul canale Beta finché non lo cambia.
+- **Salta questa versione**: l'avviso di aggiornamento ha anche **Salta questa versione**, che non la propone più ai controlli automatici (Cerca aggiornamenti la mostra comunque). **Più tardi** si chiama ora **Ricordamelo più tardi**.
+- **Scrivener: anche ricerca e personaggi**: importando da Scrivener, oltre al romanzo entrano anche le altre cartelle. Per ogni cartella scegli se va nella Bibbia (personaggi, luoghi…) o tra le note, in Ricerca o in Laboratorio; Dante propone già la scelta più probabile. I testi diventano note con la loro sinossi, PDF e immagini vengono copiati.
 
 ## 0.1.49 · 27 ottobre 2026
 
