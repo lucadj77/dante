@@ -23,7 +23,7 @@ export const readTime = (text) => (FAST ? 0.05 : Math.min(10, Math.max(3, 1.6 + 
 
 // The desktop app's welcome, with recent projects and their covers: a pretend Tauri answers its calls,
 // until the page is reloaded as the plain browser app (sessionStorage desktop = 0).
-function fakeTauri(recent) {
+function fakeTauri({ recent, answers }) {
   if (sessionStorage.getItem('desktop') !== '1') return;
   localStorage.setItem('dante.recent-projects', JSON.stringify(recent.map(({ path, title, opened }) => ({ path, title, opened }))));
   const yaml = Object.fromEntries(recent.map((r) => [r.path, `title: ${r.title}\nauthor: ${r.author}\nlanguage: ${r.language}\n`]));
@@ -31,7 +31,7 @@ function fakeTauri(recent) {
     metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } },
     transformCallback: () => 0,
     invoke: async (cmd, args) =>
-      cmd === 'read_text' ? (yaml[args.root] ?? 'title: x\n') : cmd === 'path_exists' ? true : cmd === 'list_dir' ? [] : cmd === 'plugin:app|version' ? '1.0.0' : null,
+      cmd in answers ? answers[cmd] : cmd === 'read_text' ? (yaml[args.root] ?? 'title: x\n') : cmd === 'path_exists' ? true : cmd === 'list_dir' ? [] : cmd === 'plugin:app|version' ? '1.0.0' : null,
   };
 }
 
@@ -121,7 +121,7 @@ function overlay() {
 }
 
 /** Opens Dante in `lang` and returns the helpers of a tutorial. */
-export async function start({ lang, desktop = false, recent = [], settings = {}, folder = 'Romanzi', out }) {
+export async function start({ lang, desktop = false, recent = [], answers = {}, settings = {}, folder = 'Romanzi', out }) {
   const browser = await chromium.launch({ args: ['--font-render-hinting=none'] });
   const ctx = await browser.newContext({
     viewport: { width: 1440, height: 810 },
@@ -142,7 +142,7 @@ export async function start({ lang, desktop = false, recent = [], settings = {},
     sessionStorage.setItem('folder', folder);
     sessionStorage.setItem('init', '1');
   }, { lang, settings, desktop, folder });
-  await p.addInitScript(fakeTauri, recent);
+  await p.addInitScript(fakeTauri, { recent, answers });
   await p.addInitScript(fakePicker);
   await p.addInitScript(overlay);
   await p.goto(URL);

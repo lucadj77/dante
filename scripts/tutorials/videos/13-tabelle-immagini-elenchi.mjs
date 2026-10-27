@@ -136,7 +136,7 @@ export default async function (t) {
     await t.type(step, 60);
   }
   await t.wait(0.6);
-  await t.focus([t.line(d.steps[0]), t.line(d.steps[2])], d.ordered, { side: 'above', pointer: false });
+  await t.focus([main.locator('.cm-line', { hasText: d.steps[0] }).last(), main.locator('.cm-line', { hasText: d.steps[2] }).last()], d.ordered, { side: 'above', pointer: false });
   await t.say(d.book);
 
   await t.title(d.s2, d.s2b, newParagraph);
@@ -152,7 +152,7 @@ export default async function (t) {
   }
   await t.wait(0.6);
   const bar = main.locator('.md-table-bar').first();
-  await t.focus(main.locator('.cm-line', { hasText: d.cells[3][0] }).first(), d.move, { side: 'above', pointer: false });
+  await t.focus(main.locator('.cm-line', { hasText: d.cells[3][0] }).last(), d.move, { side: 'above', pointer: false });
   await t.zoom(bar, () => t.focus(bar, d.bar, { side: 'above' }), 1.4);
   await t.click(bar.locator('button[data-action="caption"]'), { after: 0.6 });
   await t.type(d.caption, 70);
