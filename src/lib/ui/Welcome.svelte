@@ -19,6 +19,8 @@
   import { MemoryFs } from "$lib/core/fs";
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
   import { ScrivenerError } from "$lib/core/import/scrivener";
+  import { noteDestination, type NoteDestination } from "$lib/core/project";
+  import { defaultTypes } from "$lib/core/settings";
   import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
   import WordImport from "./WordImport.svelte";
   import { pickWordFile } from "./wordFile";
@@ -87,6 +89,20 @@
   let importedFrom = $state("");
   let fromScrivener = $state(false);
   const importedCounts = $derived(imported ? counts(imported) : null);
+  /** Where the writer sends each group of notes from Scrivener; the others go where Dante guesses. */
+  let destinations = $state<Record<string, NoteDestination>>({});
+  /** The groups of notes beside the book, as the binder has them, with how many each holds. */
+  const noteGroups = $derived.by(() => {
+    const groups = new Map<string, { research: boolean; count: number }>();
+    for (const note of content?.notes ?? []) {
+      const group = groups.get(note.group) ?? { research: note.research, count: 0 };
+      group.count++;
+      groups.set(note.group, group);
+    }
+    return [...groups].map(([name, g]) => ({ name, ...g }));
+  });
+  const newTypes = $derived(defaultTypes(language));
+  const destinationOf = (group: { name: string; research: boolean }) => destinations[group.name] ?? noteDestination(newTypes, group.name, group.research);
   const novelLanguages = NOVEL_LANGUAGES;
   /** The starting views of a new novel: a board and a table of the scenes. */
   const starters = () => ({ board: t("views.starter.board"), scenes: t("views.starter.scenes") });
@@ -193,6 +209,7 @@
     blanks = defaultBlankLines(read.blocks);
     marks = {};
     content = read;
+    destinations = {};
     importedFrom = fileName;
     imported = null;
     title = "";
@@ -245,6 +262,7 @@
         // In a browser an imported book can be tried, kept only while the page is open.
         const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences(), starters());
         if (imported) await project.importBook(imported);
+        if (imported && content?.notes) await project.importNotes(content.notes, chosenDestinations());
         onOpen(project);
         return;
       }
@@ -255,6 +273,11 @@
     } finally {
       busy = false;
     }
+  }
+
+  /** Every group's place, as chosen or guessed, so the project does not guess again. */
+  function chosenDestinations(): Record<string, NoteDestination> {
+    return Object.fromEntries(noteGroups.map((g) => [g.name, destinationOf(g)]));
   }
 
   /** Makes the new project in `fs`, an empty folder, and opens it. */
@@ -271,6 +294,7 @@
       starters(),
     );
     if (imported) await project.importBook(imported);
+    if (imported && content?.notes) await project.importNotes(content.notes, chosenDestinations());
     await addLauncher(project);
     // The first author's name is offered again next time.
     const first = authors.find((a) => a.trim())?.trim();
@@ -310,6 +334,7 @@
         {t("import.found", { file: importedFrom })}
         {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
         {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words) })}
+        {#if content?.notes?.length}{t("import.notes", { n: content.notes.length })}{/if}
         <button type="button" class="link" onclick={() => { creating = false; previewing = true; }}>{t("import.review")}</button>
       </p>
     {/if}
@@ -329,6 +354,24 @@
           {/each}
         </select>
       </label>
+      {#if imported && noteGroups.length}
+        <fieldset class="destinations">
+          <legend>{t("import.notesWhere")}</legend>
+          {#each noteGroups as group (group.name)}
+            <label
+              ><span>{group.name} <span class="count">({group.count})</span></span>
+              <select value={destinationOf(group)} onchange={(e) => (destinations = { ...destinations, [group.name]: e.currentTarget.value as NoteDestination })}>
+                {#each Object.entries(newTypes) as [id, type] (id)}
+                  <option value={`codex:${id}`}>{t("section.codex")} › {type.folder}</option>
+                {/each}
+                <option value="research">{t("section.notes")} › {t("section.research")}</option>
+                <option value="laboratory">{t("section.notes")} › {t("section.laboratory")}</option>
+                <option value="skip">{t("import.notesSkip")}</option>
+              </select></label
+            >
+          {/each}
+        </fieldset>
+      {/if}
       <div class="field">
         <span class="label">{t("cover.title")}</span>
         <CoverPicker bind:cover text={{ title, authors }} />
@@ -527,6 +570,22 @@
   .help-link {
     margin: 12px 0 0;
     font-size: 13px;
+  }
+  .destinations {
+    display: grid;
+    gap: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem 0.75rem;
+  }
+  .destinations label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .destinations .count {
+    opacity: 0.6;
   }
   .error {
     color: var(--danger);

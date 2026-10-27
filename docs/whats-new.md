@@ -8,6 +8,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 - **Dante 1.0 and two update channels**: Dante moves to version numbers 1.0, 1.1, 1.2... In Settings > Dante on this computer > Updates choose the channel: **Stable** (the default) gets only the official versions, **Beta** gets the new features first, in versions still being tried. Whoever installs a beta stays on the Beta channel until they change it.
 - **Skip this version**: the update notice also has **Skip this version**, which the automatic checks no longer offer (Check for updates still shows it). **Later** is now called **Remind me later**.
+- **Scrivener: research and characters too**: importing from Scrivener now brings the other folders as well as the novel. For each folder you choose whether it goes into the Story Bible (characters, places…) or among the notes, in Research or the Laboratory; Dante suggests the likely choice. Texts become notes with their synopsis, PDFs and pictures are copied.
 
 ### Changed
 

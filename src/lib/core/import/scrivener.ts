@@ -5,6 +5,8 @@
 // and the synopsis Scrivener keeps beside it becomes the synopsis of the scene or chapter.
 // Scrivener 3 keeps a text in Files/Data/<UUID>/content.rtf; Scrivener 2 and the first
 // Windows versions in Files/Docs/<ID>.rtf.
+// The rest of the binder (Research, Characters, Places and any other folder, but not the
+// Trash) becomes notes, kept with the folders they are in; PDFs and pictures come as files.
 
 import type { DocBlock, DocxContent } from "./docx";
 import { rtfParagraphs } from "./rtf";
@@ -22,12 +24,35 @@ export type ScrivenerFiles = (path: string) => Promise<Uint8Array | null>;
 
 const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
 
-/** The binder items inside the draft, the part of the project that is the book. */
-function draft(binder: XmlElement): XmlElement[] {
-  const top = childrenNamed(binder, "BinderItem");
-  const folder = top.find((item) => item.attrs.Type === "DraftFolder") ?? top.find((item) => /^(draft|manuscript|bozza|manoscritto)$/i.test(textOf(child(item, "Title") ?? item).trim()));
-  return folder ? itemsIn(folder) : [];
+/** A document of the project outside the draft, made into a note or a file of the new project. */
+export interface ImportedNote {
+  /** The folder (or document) at the top of the binder it comes from, such as "Characters". */
+  group: string;
+  /** The folders it is in below the group's own. */
+  folders: string[];
+  /** Its group is Scrivener's Research folder. */
+  research: boolean;
+  title: string;
+  /** Markdown text of a text document or of a folder that has one. */
+  text?: string;
+  synopsis?: string;
+  /** A PDF, picture or other file kept as it is. */
+  file?: { bytes: Uint8Array; extension: string };
 }
+
+/** The folder of the binder that is the book. */
+function draftFolder(binder: XmlElement): XmlElement | undefined {
+  const top = childrenNamed(binder, "BinderItem");
+  return top.find((item) => item.attrs.Type === "DraftFolder") ?? top.find((item) => /^(draft|manuscript|bozza|manoscritto)$/i.test(titleOf(item)));
+}
+
+function titleOf(item: XmlElement): string {
+  const own = child(item, "Title");
+  return own ? textOf(own).trim() : "";
+}
+
+/** Files a document that is not a text may be: Scrivener says its extension, older versions do not. */
+const FILE_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "gif", "tiff", "tif", "heic", "webp", "docx", "txt", "md"];
 
 function itemsIn(item: XmlElement): XmlElement[] {
   const children = child(item, "Children");
@@ -59,8 +84,7 @@ export async function readScrivener(scrivx: string, files: ScrivenerFiles, name 
 
   const blocks: DocBlock[] = [];
   const visit = async (item: XmlElement, level: number) => {
-    const own = child(item, "Title");
-    const title = own ? textOf(own).trim() : "";
+    const title = titleOf(item);
     const { paragraphs, synopsis } = await documentOf(item);
     const heading: DocBlock = { kind: "heading", level, text: title || untitled };
     if (synopsis) heading.synopsis = synopsis;
@@ -68,9 +92,51 @@ export async function readScrivener(scrivx: string, files: ScrivenerFiles, name 
     for (const p of paragraphs) blocks.push({ kind: "paragraph", text: p });
     for (const inner of itemsIn(item)) await visit(inner, level + 1);
   };
-  for (const item of draft(binder)) await visit(item, 1);
+  const book = draftFolder(binder);
+  for (const item of book ? itemsIn(book) : []) await visit(item, 1);
   if (!blocks.length) throw new ScrivenerError("noDraft");
-  return { title: meta("ProjectTitle") || name, author: meta("FullName") || meta("AuthorName"), blocks };
+
+  const notes: ImportedNote[] = [];
+  /** The file of a document that is not a text, such as a PDF in Research. */
+  const fileOf = async (item: XmlElement) => {
+    const uuid = item.attrs.UUID;
+    const id = item.attrs.ID;
+    const said = descendants(item, "FileExtension")[0];
+    const extensions = said ? [textOf(said).trim().toLowerCase()] : FILE_EXTENSIONS;
+    for (const extension of extensions) {
+      const bytes = (uuid ? await files(`Files/Data/${uuid}/content.${extension}`) : null) ?? (id ? await files(`Files/Docs/${id}.${extension}`) : null);
+      if (bytes) return { bytes, extension };
+    }
+    return null;
+  };
+  const collect = async (item: XmlElement, group: string, folders: string[], research: boolean) => {
+    const title = titleOf(item) || untitled;
+    const inner = itemsIn(item);
+    const { paragraphs, synopsis } = await documentOf(item);
+    const text = paragraphs.filter((p) => p.trim()).join("\n\n");
+    const isText = /^(Text|Folder)$/.test(item.attrs.Type ?? "Text") || !!text;
+    if (isText) {
+      // A folder is a note only when it has words of its own; its documents go inside it.
+      if (text || synopsis || item.attrs.Type !== "Folder") notes.push({ group, folders, research, title, text, synopsis: synopsis || undefined });
+    } else {
+      const file = await fileOf(item);
+      if (file) notes.push({ group, folders, research, title, file });
+    }
+    for (const each of inner) await collect(each, group, [...folders, title], research);
+  };
+  for (const item of childrenNamed(binder, "BinderItem")) {
+    if (item === book || item.attrs.Type === "TrashFolder") continue;
+    const group = titleOf(item) || untitled;
+    const research = item.attrs.Type === "ResearchFolder";
+    // A folder at the top is the group itself: what is inside it starts without its name.
+    const { paragraphs, synopsis } = await documentOf(item);
+    const text = paragraphs.filter((p) => p.trim()).join("\n\n");
+    if (itemsIn(item).length || research || item.attrs.Type === "Folder") {
+      if (text || synopsis) notes.push({ group, folders: [], research, title: group, text, synopsis: synopsis || undefined });
+      for (const each of itemsIn(item)) await collect(each, group, [], research);
+    } else await collect(item, group, [], research);
+  }
+  return { title: meta("ProjectTitle") || name, author: meta("FullName") || meta("AuthorName"), blocks, notes };
 }
 
 /**

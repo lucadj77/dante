@@ -18,6 +18,7 @@ import { basename, dirname, extname, isMarkdown, isWithin, join, rebase, stripEx
 import {
   defaultFolders,
   defaultSettings,
+  defaultTypes,
   knownFolders,
   parseSettings,
   projectStatus,
@@ -36,6 +37,7 @@ import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts"
 import { today } from "./critic";
 import { isView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
+import type { ImportedNote } from "./import/scrivener";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
 import { attachmentsFolderName, safeFileName } from "./images";
@@ -74,6 +76,26 @@ export class MergeConflictError extends Error {
 interface Move {
   from: string;
   to: string;
+}
+
+/** Where a group of imported notes goes: a type of the Story Bible, Research, the Laboratory, or nowhere. */
+export type NoteDestination = `codex:${string}` | "research" | "laboratory" | "skip";
+
+/**
+ * The likely place of a group of notes: a folder named as a type of the Story Bible, in
+ * any of Dante's languages, by its name or its folder, goes there; the rest into Research.
+ */
+export function noteDestination(types: Record<string, NoteType>, group: string, research = false): NoteDestination {
+  if (research) return "research";
+  const wanted = group.trim().toLowerCase();
+  for (const [id, type] of Object.entries(types)) {
+    const names = [type.name, type.folder, ...["en", "it", "es", "fr"].flatMap((l) => {
+      const known = defaultTypes(l)[id];
+      return known ? [known.name, known.folder] : [];
+    })];
+    if (names.some((n) => n.toLowerCase() === wanted)) return `codex:${id}`;
+  }
+  return "research";
 }
 
 export class Project {
@@ -683,6 +705,51 @@ export class Project {
           rootOrder += step;
         }
       }
+    }
+    await this.reload();
+  }
+
+  /**
+   * Writes the documents another program keeps beside the book as notes, each group where
+   * `destinations` says (as `noteDestination` guesses when it says nothing): into a type's
+   * folder of the Story Bible, Research or the Laboratory, keeping the folders below. In
+   * Research and the Laboratory a group keeps a folder of its own, except Scrivener's own
+   * Research. Nothing already there is overwritten: a note with a name in use gets a number.
+   */
+  async importNotes(notes: ImportedNote[], destinations: Record<string, NoteDestination> = {}): Promise<void> {
+    if (!notes.length) return;
+    const { folders } = this.settings;
+    const taken = new Set<string>();
+    const free = async (dir: string, title: string, extension: string) => {
+      const base = sanitizeTitle(title) || "Untitled";
+      for (let n = 1; ; n++) {
+        const path = join(dir, `${n === 1 ? base : `${base} ${n}`}.${extension}`);
+        if (!taken.has(path.toLowerCase()) && !(await this.fs.exists(path))) {
+          taken.add(path.toLowerCase());
+          return path;
+        }
+      }
+    };
+    const clean = (name: string) => sanitizeTitle(name) || "Untitled";
+    for (const note of notes) {
+      const to = destinations[note.group] ?? noteDestination(this.settings.types, note.group, note.research);
+      if (to === "skip") continue;
+      const type = to.startsWith("codex:") ? this.settings.types[to.slice("codex:".length)] : undefined;
+      // The group's own text, or a group that is one document, is a note at the top of where it goes.
+      const own = note.title === note.group && !note.folders.length;
+      const base = type ? join(folders.codex, type.folder) : join(to === "laboratory" ? folders.laboratory : folders.research, ...(note.research || own ? [] : [clean(note.group)]));
+      const dir = join(base, ...note.folders.map(clean));
+      await this.fs.mkdir(dir);
+      if (note.file) {
+        await this.fs.writeBytes(await free(dir, note.title, note.file.extension), note.file.bytes);
+        continue;
+      }
+      const path = await free(dir, note.title, "md");
+      const body = note.text ? note.text + "\n" : "";
+      const properties: Properties = {};
+      if (note.title.trim() !== stripExt(basename(path))) properties[TITLE] = note.title.trim();
+      if (note.synopsis?.trim()) properties[SYNOPSIS] = note.synopsis.trim();
+      await this.fs.writeText(path, Object.keys(properties).length ? writeProperties(body, properties) : body);
     }
     await this.reload();
   }
