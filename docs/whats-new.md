@@ -6,7 +6,11 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **How Story Bible pictures look**: on the Story Bible board, **Look** next to Pictures chooses whether the picture sits across the top of the card or beside the title, cropped or whole, which part to keep (the top, for portraits) and how big it is.
+
 ### Changed
+
+- **Names button**: it has a new icon, a person above a dotted line, that no longer looks like the others; the menu of a recognised name reminds you that the button turns the names off.
 
 ### Fixed
 

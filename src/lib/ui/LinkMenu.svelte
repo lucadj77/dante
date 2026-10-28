@@ -18,6 +18,7 @@
 
 <script lang="ts">
   import ErrorText from "./ErrorText.svelte";
+  import Icon from "./Icon.svelte";
   import { failure } from "$lib/ui/errors";
   import { onMount } from "svelte";
   import type { Project } from "$lib/core/project";
@@ -149,6 +150,7 @@
       }}>{t("linkMenu.makeLink")}</button
     >
     <p class="note">{t("linkMenu.systemMenu")}</p>
+    <p class="note off">{t("linkMenu.namedOff")} <span class="toggle"><Icon name="named" size={12} /> {t("mode.namedNotes")}</span></p>
   {:else if request.path}
     {@const path = request.path}
     <div class="heading">{title}</div>
@@ -216,6 +218,15 @@
     margin: 2px 10px 4px;
     color: var(--text-muted);
     font-size: 11px;
+  }
+  .note .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    white-space: nowrap;
   }
   .detail {
     color: var(--text-muted);

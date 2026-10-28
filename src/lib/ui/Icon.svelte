@@ -14,7 +14,7 @@
     focus: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
     typewriter: "M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M6 10h1 M10 10h1 M14 10h1 M18 10h1 M7 14h10",
     lineHighlight: "M3 10h18v4H3z M3 5h14 M3 19h12",
-    named: "M4 9h16 M4 15h3 M9 15h3 M14 15h3 M19 15h1",
+    named: "M12 3a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7z M5.5 17a6.5 6.5 0 0 1 13 0 M4 21h.01 M8 21h.01 M12 21h.01 M16 21h.01 M20 21h.01",
     fullscreen: "M3 8V3h5 M21 8V3h-5 M3 16v5h5 M21 16v5h-5",
     alignCenter: "M4 5h16 M7 10h10 M4 15h16 M8 20h8",
     alignRight: "M4 5h16 M10 10h10 M4 15h16 M12 20h8",
