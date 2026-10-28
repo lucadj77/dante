@@ -109,15 +109,7 @@ export default async function (t) {
   await t.say(d.intro);
   await t.click(t.text(L('welcome.sample')), { after: 1.2 });
 
-  await t.title(d.s1, d.s1b);
-  await t.say(d.share);
-  await t.nav('section.settings');
-  await t.wait(0.8);
-  await t.click(t.text(L('settings.tabApp')), { after: 1 });
-  const name = p.locator('label', { hasText: L('settings.userName') }).first();
-  await t.zoom(name, () => t.focus(name, d.name, { side: 'right' }), 1.5);
-
-  // early: Anna's presence in the sample lasts three minutes
+  // first: Anna's presence in the sample lasts three minutes of real time, and recording is slow
   await t.title(d.s4, d.s4b, async () => {
     await t.nav('section.manuscript');
     await t.wait(0.8);
@@ -125,6 +117,14 @@ export default async function (t) {
   });
   const banner = p.getByText(L('presence.editing', { user: 'Anna' })).first();
   await t.focus(banner, d.banner, { side: 'below' });
+
+  await t.title(d.s1, d.s1b);
+  await t.say(d.share);
+  await t.nav('section.settings');
+  await t.wait(0.8);
+  await t.click(t.text(L('settings.tabApp')), { after: 1 });
+  const name = p.locator('label', { hasText: L('settings.userName') }).first();
+  await t.zoom(name, () => t.focus(name, d.name, { side: 'right' }), 1.5);
 
   await t.title(d.s2, d.s2b, async () => {
     await t.nav('section.manuscript');

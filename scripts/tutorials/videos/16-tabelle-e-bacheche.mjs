@@ -45,6 +45,10 @@ const D = {
       table: 'E di nuovo Tabella',
     },
     date: 'data',
+    pick: {
+      kanban: 'La prima volta la bacheca chiede quale proprietà usare per le colonne: qui lo stato',
+      timeline: 'La linea del tempo chiede la proprietà con la data di ogni scena: qui data',
+    },
     s5: 'Le impostazioni',
     s5b: 'Una per una',
     items: 'Mostra: le scene, i capitoli, tutte le note o le schede di un tipo della Bibbia',
@@ -105,6 +109,10 @@ const D = {
       table: 'And back to Table',
     },
     date: 'date',
+    pick: {
+      kanban: 'The first time, the board asks which property to use for its columns: here the status',
+      timeline: 'The timeline asks for the property with each scene’s date: here date',
+    },
     s5: 'The settings',
     s5b: 'One by one',
     items: 'Show: scenes, chapters, every note, or the sheets of a Story Bible type',
@@ -181,10 +189,13 @@ export default async function (t) {
   await t.zoom(kinds, () => t.focus(kinds, d.kindsSay, { side: 'below' }), 1.6);
   for (const kind of ['list', 'cards', 'kanban', 'timeline', 'table']) {
     await t.click(kinds.locator('button', { hasText: L(`views.kind.${kind}`) }).first(), { after: 1.2 });
-    if (kind === 'timeline' && (await body.getByText(L('views.needDate'), { exact: false }).count())) {
-      await toggleSettings();
-      await choose(setting('views.date').locator('select'), d.date);
-      await toggleSettings();
+    // a board and a timeline first ask which property to use
+    const need = { kanban: ['views.needGroup', d.group], timeline: ['views.needDate', d.date] }[kind];
+    if (need && (await body.getByText(L(need[0]), { exact: false }).count())) {
+      const pick = body.getByRole('combobox', { name: L('views.pickProperty') }).first();
+      await t.zoom(pick, () => t.focus(pick, d.pick[kind], { side: 'right' }), 1.5);
+      await choose(pick, need[1]);
+      await t.wait(0.6);
     }
     await t.focus(body, d.kinds[kind], { side: 'right', pointer: false });
   }
