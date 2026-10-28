@@ -27,6 +27,7 @@
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
   import { documents, sharing } from "./documents.svelte";
+  import { blankLineAskFor } from "./blankHabit";
 
   interface Props {
     project: Project;
@@ -148,6 +149,7 @@
         links,
         critic: criticHandlerFor(path),
         language: props.project.settings.language,
+        blankLines: blankLineAskFor(props.project),
         extensions: [shared.extension],
       });
       shared.attach(editor.view);

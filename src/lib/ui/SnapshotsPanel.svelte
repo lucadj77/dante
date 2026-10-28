@@ -80,8 +80,7 @@
     });
 </script>
 
-<section>
-  <h3>{t("snap.title")}</h3>
+<div>
   <form
     class="take"
     onsubmit={(e) => {
@@ -111,7 +110,7 @@
     {/each}
   </ul>
   {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
-</section>
+</div>
 
 {#if comparing}
   <div class="overlay" role="presentation" onclick={() => (comparing = null)}>
@@ -131,13 +130,6 @@
 {/if}
 
 <style>
-  h3 {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    margin: 0 0 8px;
-  }
   .take {
     display: flex;
     gap: 4px;

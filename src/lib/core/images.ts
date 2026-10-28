@@ -240,3 +240,21 @@ export function safeFileName(name: string): string {
   const clean = basename(name).replace(/[\\/:*?"<>|#^\[\]]/g, "-").trim();
   return clean || "image.png";
 }
+
+/**
+ * The first picture of a note, for its card: one embedded in a property (as `image:
+ * "[[faro.jpg]]"`), else the first in its text; null without one.
+ */
+export function firstImage(body: string, properties: Record<string, unknown>): ImageEmbed | null {
+  for (const value of Object.values(properties)) {
+    for (const v of Array.isArray(value) ? value : [value]) {
+      if (typeof v !== "string") continue;
+      const text = v.trim();
+      // A property holds a link, not an embed: "[[faro.jpg]]" is read as "![[faro.jpg]]".
+      const found = findImages(text.startsWith("[[") ? "!" + text : text)[0];
+      if (found) return found;
+      if (!/[\[\]()]/.test(text) && isImagePath(text)) return { from: 0, to: text.length, target: text, wiki: false, alt: "" };
+    }
+  }
+  return findImages(body)[0] ?? null;
+}

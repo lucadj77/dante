@@ -146,6 +146,8 @@
 <h3>{t("appearance.spelling")}</h3>
 <label class="check"><input type="checkbox" checked={app.settings.spellcheck} onchange={(e) => set({ spellcheck: e.currentTarget.checked })} /> {t("appearance.spellcheck")}</label>
 <p class="hint">{t("appearance.spellcheckHint")}</p>
+<label class="check"><input type="checkbox" checked={app.settings.askBlankLines} onchange={(e) => set({ askBlankLines: e.currentTarget.checked })} /> {t("appearance.askBlankLines")}</label>
+<p class="hint">{t("appearance.askBlankLinesHint")}</p>
 
 <style>
   h3 {

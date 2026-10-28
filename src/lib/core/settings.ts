@@ -20,7 +20,25 @@ export interface LevelSettings {
 }
 
 /** How a new part, chapter or scene is set apart from what comes before it. */
-export type Separator = "pageBreak" | "blankLine" | "characters" | "none";
+export type Separator = "pageBreak" | "blankLine" | "twoBlankLines" | "characters" | "none";
+
+/** The sign that, in the scene separator's text, starts a new line, as written by default. */
+export const LINE_SIGN = "\\n";
+
+/**
+ * The scene separator as the export lays it out: each sign starts a new line, and the empty
+ * lines at either end are blank lines around the characters, so "\n* * *\n" is three
+ * asterisks between two blank lines.
+ */
+export function separatorParts(text: string, sign = LINE_SIGN): { before: number; lines: string[]; after: number } {
+  const all = (sign ? text.split(sign) : [text]).flatMap((line) => line.split("\n"));
+  let start = 0;
+  while (start < all.length && !all[start].trim()) start++;
+  if (start === all.length) return { before: Math.max(1, all.length - 1), lines: [], after: 0 };
+  let end = all.length;
+  while (!all[end - 1].trim()) end--;
+  return { before: start, lines: all.slice(start, end).map((l) => l.trim()), after: all.length - end };
+}
 
 /**
  * How dialogue is marked, by the conventions of different countries:
@@ -138,6 +156,8 @@ export interface DocxSettings {
   indent: number;
   /** Characters between scenes, such as "* * *" or "#", when sceneBreak is "characters". */
   sceneSeparator: string;
+  /** What starts a new line in sceneSeparator; "\\n" unless the writer picked another sign. */
+  lineSign: string;
   titlePage: boolean;
   /** Page header: author, title and page number, or the title in a typeset book. */
   header: boolean;
@@ -218,6 +238,8 @@ export interface NovelSettings {
   tree: {
     /** The property whose value colours the dot beside each scene; "" is the stage of work. */
     dot: string;
+    /** Colours chosen for the dots, by property and value (in lower case), as #rrggbb. */
+    colors: Record<string, Record<string, string>>;
   };
   /** What makes a page in the statistics and the export summary. */
   pages: {
@@ -447,7 +469,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     // Italian writers and publishers measure in characters; the others in words.
     goals: { unit: language.startsWith("it") ? "characters" : "words", words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
     cover: { template: "", palette: "", image: "", show: { title: true, subtitle: true, authors: true }, textColor: "", outlineColor: "" },
-    tree: { dot: "" },
+    tree: { dot: "", colors: {} },
     pages: { unit: "characters", size: 1800 },
     export: {
       format: "docx",
@@ -464,6 +486,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         lineSpacing: 2,
         indent: 1.27,
         sceneSeparator: "#",
+        lineSign: LINE_SIGN,
         titlePage: true,
         header: true,
         partBreak: "pageBreak",
@@ -499,6 +522,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** The dots' colours as written in dante.yaml, keeping only real colours. */
+function parseDotColors(value: unknown): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  if (!isObject(value)) return out;
+  for (const [property, colors] of Object.entries(value)) {
+    if (!isObject(colors)) continue;
+    const own: Record<string, string> = {};
+    for (const [v, color] of Object.entries(colors)) if (hexColor(color)) own[v.toLowerCase()] = hexColor(color);
+    if (Object.keys(own).length) out[property] = own;
+  }
+  return out;
+}
+
 /** Fills what the file leaves out with defaults, recursively. */
 function merge<T>(defaults: T, value: unknown): T {
   if (!isObject(defaults) || !isObject(value)) {
@@ -517,6 +553,7 @@ export function parseSettings(text: string): NovelSettings {
   // Types are a free list: the user's replace the defaults instead of being merged into them.
   settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
   settings.properties = parsePropertyDefs(isObject(raw) ? raw.properties : undefined);
+  settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;
   settings.authors = Array.isArray(authors)
@@ -569,6 +606,12 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     // Types are written whole, so a removed type disappears from the file too.
     if (path.length === 1 && path[0] === "types") {
       doc.setIn(path, doc.createNode(value));
+      return;
+    }
+    // Colours are written whole too, so a colour set back to its default leaves the file.
+    if (path.length === 2 && path[0] === "tree" && path[1] === "colors") {
+      if (Object.keys(value as object).length) doc.setIn(path, doc.createNode(value));
+      else doc.deleteIn(path);
       return;
     }
     if (path.length === 1 && path[0] === "properties") {

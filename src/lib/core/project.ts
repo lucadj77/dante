@@ -1,10 +1,12 @@
 import type { ProjectFs } from "./fs";
-import { readProperties, replaceBody, splitNote, writeProperties, type Properties } from "./frontmatter";
+import { readProperties, renameProperty, replaceBody, splitNote, writeProperties, type Properties } from "./frontmatter";
 import {
   enclosing,
   findNode,
   folderNotePath,
+  GOAL,
   loadManuscript,
+  NUMBERED,
   parentOf,
   scenesOf,
   SYNOPSIS,
@@ -30,12 +32,13 @@ import {
   type NovelSettings,
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
+import { moveHistory } from "./history";
 import { textStats } from "./stats";
 import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
-import { isView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
+import { isView, parseView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
 import type { ImportedNote } from "./import/scrivener";
 import { coverFor, type CoverSettings } from "./cover";
@@ -64,6 +67,15 @@ export interface Replaced {
 
 /** Folders never scanned: app data, other tools' data, version control. */
 // Exports are copies of the novel: kept out of links, searches and statistics.
+/** Properties Dante reads by their name, which keep it. */
+export const RESERVED_PROPERTIES = [TITLE, SYNOPSIS, GOAL, NUMBERED, "kind", "type", "aliases", "published_title"];
+
+/** Whether a property may take another name: not one Dante reads by name, nor the stage of work. */
+export function canRenameProperty(settings: NovelSettings, name: string): boolean {
+  const lower = name.trim().toLowerCase();
+  return !!lower && !RESERVED_PROPERTIES.includes(lower) && lower !== projectStatus(settings).name.toLowerCase();
+}
+
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules", EXPORT_FOLDER]);
 
 /** Scenes cannot be merged while one of them has a conflict copy to settle. */
@@ -126,7 +138,7 @@ export class Project {
    */
   static async create(
     fs: ProjectFs,
-    details: { title: string; authors: string[]; language: string; cover?: CoverSettings },
+    details: { title: string; subtitle?: string; authors: string[]; language: string; cover?: CoverSettings; coverImage?: { name: string; data: Uint8Array } },
     /** Names of the first chapter and scene; null starts an empty manuscript, as an import does. */
     names: { chapter: string; scene: string } | null,
     /** Headings and export choices to start from, such as those used last on this computer. */
@@ -135,7 +147,7 @@ export class Project {
     views?: { board: string; scenes: string },
   ): Promise<{ project: Project; scene: string }> {
     await fs.mkdir("");
-    const settings = { ...defaultSettings(details.language), title: details.title, authors: details.authors.map((a) => a.trim()).filter(Boolean), cover: details.cover ?? coverFor(details.title) };
+    const settings = { ...defaultSettings(details.language), title: details.title, subtitle: details.subtitle?.trim() ?? "", authors: details.authors.map((a) => a.trim()).filter(Boolean), cover: details.cover ?? coverFor(details.title) };
     if (preferences) {
       // Through the parser, so stored choices from an older version are completed and checked.
       const merged = parseSettings(
@@ -160,6 +172,11 @@ export class Project {
     await fs.writeText(SETTINGS_FILE, serializeSettings(settings));
     for (const folder of Object.values(settings.folders)) await fs.mkdir(folder);
     const project = await Project.open(fs, details.language);
+    // The cover's picture goes among the attachments, as one chosen later in the settings does.
+    if (details.coverImage) {
+      const image = await project.addAttachment(details.coverImage.name, details.coverImage.data);
+      await project.saveSettings({ ...project.settings, cover: { ...project.settings.cover, image } });
+    }
     if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views)) await project.createView(name, view);
     if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
@@ -337,7 +354,7 @@ export class Project {
 
   /** Adds, changes or (with null) removes a note type. Notes keep what they say. */
   async setType(id: string, type: NoteType | null): Promise<void> {
-    const settings = structuredClone(this.settings);
+    const settings: NovelSettings = JSON.parse(JSON.stringify(this.settings));
     if (type) settings.types[id] = type;
     else delete settings.types[id];
     await this.saveSettings(settings);
@@ -386,6 +403,21 @@ export class Project {
       await this.reload();
     }
     return path;
+  }
+
+  /** Properties every scene is offered, from the template of new scenes; none without it. */
+  async sceneProperties(): Promise<Properties> {
+    const path = this.sceneTemplatePath();
+    return (await this.fs.exists(path)) ? readProperties(await this.fs.readText(path)) : {};
+  }
+
+  /**
+   * Offers a property to every scene of the novel: new scenes start with it, and the others
+   * show it empty, without their files being written until it is given a value.
+   */
+  async addSceneProperty(name: string, value: unknown): Promise<void> {
+    const path = await this.ensureSceneTemplate();
+    await this.setProperties(path, { [name]: value });
   }
 
   /** View files in the Views folder, by name. */
@@ -451,6 +483,56 @@ export class Project {
     const text = (await this.fs.exists(file)) ? await this.fs.readText(file) : "";
     await this.fs.writeText(file, writeProperties(text, changes));
     await this.reload();
+  }
+
+  /**
+   * Gives a property a new name in every note of the project, in its definition, in the
+   * types that suggest it, in the tree's dot and in the views. A note that already has a
+   * property with the new name keeps both, and is returned among `skipped`.
+   */
+  async renameProperty(from: string, to: string): Promise<{ notes: number; skipped: string[] }> {
+    from = from.trim();
+    to = to.trim();
+    if (!from || !to || from === to) return { notes: 0, skipped: [] };
+    if (!canRenameProperty(this.settings, from) || RESERVED_PROPERTIES.includes(to.toLowerCase())) throw new Error(`The property "${from}" cannot be renamed to "${to}"`);
+    await this.beforeMove?.();
+    let notes = 0;
+    const skipped: string[] = [];
+    for (const path of this.files.filter(isMarkdown)) {
+      const text = await this.fs.readText(path);
+      if (!(from in readProperties(text))) continue;
+      const renamed = renameProperty(text, from, to);
+      if (renamed === null) skipped.push(path);
+      else {
+        await this.fs.writeText(path, renamed);
+        notes++;
+      }
+    }
+    const same = (name: string) => name.toLowerCase() === from.toLowerCase();
+    const swap = (name: string) => (same(name) ? to : name);
+    for (const path of this.views) {
+      const view = parseView(await this.fs.readText(path));
+      const sort = view.sort.replace(/^-/, "");
+      const next: ViewSpec = {
+        ...view,
+        filter: Object.fromEntries(Object.entries(view.filter).map(([k, v]) => [swap(k), v])),
+        sort: same(sort) ? (view.sort.startsWith("-") ? "-" : "") + to : view.sort,
+        group_by: swap(view.group_by),
+        fields: view.fields.map(swap),
+        date: swap(view.date),
+        end: swap(view.end),
+      };
+      if (serializeView(next) !== serializeView(view)) await this.fs.writeText(path, serializeView(next));
+    }
+    const settings: NovelSettings = JSON.parse(JSON.stringify(this.settings));
+    const key = Object.keys(settings.properties).find(same);
+    if (key) {
+      settings.properties = Object.fromEntries(Object.entries(settings.properties).map(([k, v]) => [k === key ? to : k, v]));
+    }
+    for (const type of Object.values(settings.types)) type.properties = type.properties.map(swap);
+    if (same(settings.tree.dot)) settings.tree.dot = to;
+    await this.saveSettings(settings);
+    return { notes, skipped };
   }
 
   private propertiesFile(path: string): string {
@@ -967,6 +1049,9 @@ export class Project {
     const snapshotTemps = snapshotMoves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
     for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotMoves[i].from, snapshotTemps[i]);
     for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotTemps[i], snapshotMoves[i].to);
+
+    // The record of comments and revisions follows its scenes too.
+    await moveHistory(this.fs, renames);
 
     const after = before.map((f) => renames.get(f) ?? f);
     for (const file of before) {

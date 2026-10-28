@@ -11,6 +11,8 @@
     y: number;
     /** Puts the cursor inside the link, to change it. */
     edit: () => void;
+    /** A name of the Story Bible found in the text without a link, which `link` makes one. */
+    named?: { name: string; link: () => void };
   }
 </script>
 
@@ -131,6 +133,22 @@
         <FileViewer project={p.project} {path} compact />
       {/if}
     </div>
+  {:else if request.path && request.named}
+    {@const path = request.path}
+    {@const named = request.named}
+    <div class="heading">{t("linkMenu.named", { name: named.name, note: title })}</div>
+    <button role="menuitem" onclick={() => p.onOpen(path, false)}>{t("linkMenu.open")}</button>
+    <button role="menuitem" onclick={() => p.onOpen(path, true)}>{t("linkMenu.beside")}</button>
+    <button role="menuitem" onclick={() => (previewing = true)}>{t("linkMenu.preview")}</button>
+    <hr />
+    <button
+      role="menuitem"
+      onclick={() => {
+        p.onClose();
+        named.link();
+      }}>{t("linkMenu.makeLink")}</button
+    >
+    <p class="note">{t("linkMenu.systemMenu")}</p>
   {:else if request.path}
     {@const path = request.path}
     <div class="heading">{title}</div>
@@ -193,6 +211,11 @@
   }
   button[role="menuitem"]:hover {
     background: var(--bg-hover);
+  }
+  .note {
+    margin: 2px 10px 4px;
+    color: var(--text-muted);
+    font-size: 11px;
   }
   .detail {
     color: var(--text-muted);

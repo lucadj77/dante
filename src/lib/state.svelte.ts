@@ -31,6 +31,10 @@ export interface AppSettings {
   statsLevel: "scene" | "chapter" | "part";
   /** A light shade on the row the cursor is on. */
   lineHighlight: boolean;
+  /** Asks, when an empty line more than usual is left, whether to write a blank line that shows. */
+  askBlankLines: boolean;
+  /** Names of the Story Bible dotted underlined in the text, with their menu on a right click. */
+  namedNotes: boolean;
   /** Look for a newer version at every start. */
   checkUpdates: boolean;
   /** Where updates come from: "stable", "beta", or "" for Stable (Beta if a beta is installed). */
@@ -74,6 +78,8 @@ function defaults(): AppSettings {
     statsUnit: "",
     statsLevel: "chapter",
     lineHighlight: false,
+    namedNotes: true,
+    askBlankLines: true,
     checkUpdates: true,
     updateChannel: "",
     skippedVersion: "",

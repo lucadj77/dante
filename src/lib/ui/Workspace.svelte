@@ -2,7 +2,7 @@
   import { projectKey } from "$lib/platform";
   import { onMount } from "svelte";
   import type { Project } from "$lib/core/project";
-  import { t, zoom } from "$lib/state.svelte";
+  import { app, t, zoom } from "$lib/state.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import { BrowserFs } from "$lib/browserFs";
   import type { MessageKey } from "$lib/i18n";
@@ -29,6 +29,8 @@
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
   import { linkTarget, resolveAlias, resolveLink } from "$lib/core/wikilinks";
   import LinkMenu, { type LinkMenuRequest } from "./LinkMenu.svelte";
+  import { bibleNames, NameMatcher } from "$lib/core/mentions";
+  import { NAMES_EVENT } from "$lib/editor/mentions";
   import { imageMime, nameFromUrl, resolveImagePath, sniffImage } from "$lib/core/images";
   import type { LinkSuggestion } from "$lib/editor/links";
   import { folderNotePath } from "$lib/core/manuscript";
@@ -132,9 +134,19 @@
 
   /** Kept for link suggestions and for telling typed notes apart; refreshed after reloads. */
   let index: NoteIndex | null = null;
+  /** The names of the Story Bible the editors underline; rebuilt with the index. */
+  let names: NameMatcher | null = null;
   $effect(() => {
     void rev;
-    void project.index().then((i) => (index = i));
+    void project.index().then((i) => {
+      index = i;
+      names = new NameMatcher(bibleNames(i, project.settings));
+      window.dispatchEvent(new Event(NAMES_EVENT));
+    });
+  });
+  $effect(() => {
+    void app.settings.namedNotes;
+    window.dispatchEvent(new Event(NAMES_EVENT));
   });
 
   const suggestionCache = new Map<string, LinkSuggestion[]>();
@@ -189,6 +201,7 @@
   provideNavigator({
     open,
     reload,
+    imageUrl,
     aliasOwner(alias, from) {
       const wanted = alias.trim().toLowerCase();
       if (!wanted) return null;
@@ -213,6 +226,11 @@
       },
       choose(target, at, edit) {
         linkMenu = { target, from, path: linked(target, from), x: at.x, y: at.y, edit };
+      },
+      names: () => (app.settings.namedNotes && names ? { matcher: names, own: from } : null),
+      named(found, at, link) {
+        const target = linkTarget(found.path, from, project.files);
+        linkMenu = { target, from, path: found.path, x: at.x, y: at.y, edit: () => {}, named: { name: found.name, link: () => link(target) } };
       },
       async note(target) {
         const path = resolveLink(target, from, project.files.filter(isMarkdown));

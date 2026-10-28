@@ -14,6 +14,7 @@ import { smartTypography } from "./smartTypography";
 import type { Place } from "$lib/core/style";
 import { criticCommands, criticPreview, trackChanges, type CriticHandler } from "./critic";
 import type { TypographySettings } from "$lib/core/settings";
+import { blankLineAsk, type BlankLineAsk } from "./blankAsk";
 
 export interface SceneEditorOptions {
   parent: HTMLElement;
@@ -46,6 +47,8 @@ export interface SceneEditorOptions {
   phrases?: Record<string, string>;
   /** The language of the text, for the spelling checker and hyphenation; the page's when absent. */
   language?: string;
+  /** Asks about an empty line more than the writer usually leaves; never asked when absent. */
+  blankLines?: BlankLineAsk;
   /** More behaviour, such as sharing the text with other editors of the same file. */
   extensions?: Extension[];
 }
@@ -166,6 +169,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   if (options.preview) extensions.push(livePreview, criticPreview, textLayout);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
   if (options.placeholder) extensions.push(emptyBodyHint(options.placeholder));
+  if (options.blankLines && options.preview) extensions.push(blankLineAsk(options.blankLines));
 
   const view = new EditorView({
     parent: options.parent,

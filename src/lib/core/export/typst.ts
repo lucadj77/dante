@@ -1,4 +1,4 @@
-import { PAGE_SIZES, surnames, type DocxSettings, type Separator } from "../settings";
+import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
 import { PARATEXT_LABELS, approxWords } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
 
@@ -158,10 +158,21 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
 
   let started = false;
   /** What separates the next unit from the previous one; true when it starts a page. */
+  const blank = (n: number) => {
+    if (n > 0) emit(`#v(${+(n * (leading + 1)).toFixed(2)}em)`);
+  };
+  /** The separator's characters, with the blank lines written around them. */
+  const characters = () => {
+    const parts = separatorParts(opts.sceneSeparator, opts.lineSign);
+    blank(parts.before);
+    if (parts.lines.length) emit(`#separator[${lines(parts.lines.join("\n"))}]`);
+    blank(parts.after);
+  };
   const separate = (separator: Separator): boolean => {
     if (!started) return true;
-    if (separator === "blankLine") emit(`#v(${+(leading + 1).toFixed(2)}em)`);
-    if (separator === "characters") emit(`#separator[${lines(opts.sceneSeparator)}]`);
+    if (separator === "blankLine") blank(1);
+    if (separator === "twoBlankLines") blank(2);
+    if (separator === "characters") characters();
     if (separator === "pageBreak") emit("#pagebreak(weak: true)");
     return separator === "pageBreak";
   };
@@ -185,7 +196,10 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
         const lead = block.marker ? `#box(width: 1.5em)[#${str(block.marker)}]` : "";
         emit(`#pad(left: ${(block.level + (block.marker ? 0 : 1)) * 1.5}em)[#set par(first-line-indent: 0pt, hanging-indent: ${block.marker ? "1.5em" : "0pt"}, justify: false)\n\n${lead}${runs(block.runs)}\n]\n`);
       }
-      else if (block.type === "break") emit(`#separator[${lines(opts.sceneSeparator)}]\n`);
+      else if (block.type === "break") {
+        characters();
+        emit("");
+      }
       else if (block.type === "blank") emit(`#v(${+(leading + 1).toFixed(2)}em)\n`);
       else if (block.type === "table") {
         const cells = (row: Run[][], head: boolean) => row.map((c) => (head ? `strong[${runs(c)}]` : `[${runs(c)}]`)).join(", ");

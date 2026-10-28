@@ -20,6 +20,8 @@
   import type { MessageKey } from "$lib/i18n";
   import { app, saveAppSettings, t } from "$lib/state.svelte";
   import { editorFor, editors } from "./editors.svelte";
+  import { historyEntry, recordHistory, type HistoryAction } from "$lib/core/history";
+  import { historyChanged } from "./history.svelte";
 
   interface Props {
     project: Project;
@@ -68,9 +70,19 @@
     return parseCritic(group.view.state.doc.toString()).find((i) => i.from === item.from && i.kind === item.kind) ?? null;
   }
 
+  /** Keeps what was settled in the record of the history, in the file of whoever settled it. */
+  function record(path: string, text: string, items: CriticItem[], action: HistoryAction) {
+    const by = signer() || t("history.someone");
+    const entries = items.map((i) => historyEntry(text, i, action, by, path));
+    if (entries.length) void recordHistory(p.project.fs, entries).then(() => historyChanged.rev++, () => {});
+  }
+
   function act(group: Group, item: CriticItem, how: (text: string, item: CriticItem) => Edit) {
     const current = fresh(group, item);
-    if (current) apply(group.view, [how(group.view.state.doc.toString(), current)]);
+    if (!current) return;
+    const text = group.view.state.doc.toString();
+    record(group.path, text, [current], how === acceptEdit ? "accept" : how === rejectEdit ? "reject" : "resolve");
+    apply(group.view, [how(text, current)]);
   }
 
   function settle(how: "accept" | "reject") {
@@ -79,7 +91,9 @@
     for (const group of groups) {
       const text = group.view.state.doc.toString();
       const edit = how === "accept" ? acceptEdit : rejectEdit;
-      apply(group.view, parseCritic(text).filter(isChange).map((i) => edit(text, i)));
+      const items = parseCritic(text).filter(isChange);
+      record(group.path, text, items, how);
+      apply(group.view, items.map((i) => edit(text, i)));
     }
   }
 

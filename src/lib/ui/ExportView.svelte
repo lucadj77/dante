@@ -450,13 +450,22 @@
           <select bind:value={options[item.key]}>
             <option value="pageBreak">{t("export.breakPage")}</option>
             <option value="blankLine">{t("export.breakBlank")}</option>
+            <option value="twoBlankLines">{t("export.breakTwoBlank")}</option>
             <option value="characters">{t("export.breakCharacters")}</option>
             <option value="none">{t("export.breakNone")}</option>
           </select>
         </label>
       {/each}
     </div>
-    <label>{t("export.separator")} <input bind:value={options.sceneSeparator} /></label>
+    <div class="separator">
+      <label>{t("export.separator")} <input bind:value={options.sceneSeparator} /></label>
+      <label class="sign">{t("export.lineSign")} <input bind:value={options.lineSign} maxlength="4" /></label>
+    </div>
+    <p class="hint">
+      {options.lineSign
+        ? t("export.separatorHint", { sign: options.lineSign, example: `${options.lineSign}* * *${options.lineSign}` })
+        : t("export.separatorNoSign")}
+    </p>
     {#if project.settings.structure.parts}
       <fieldset>
         <legend>{t("kind.part")}</legend>
@@ -547,6 +556,17 @@
 </div>
 
 <style>
+  .separator {
+    display: flex;
+    gap: 8px;
+    align-items: end;
+  }
+  .separator label:first-child {
+    flex: 1;
+  }
+  .separator .sign input {
+    width: 4em;
+  }
   .field {
     display: grid;
     gap: 4px;
