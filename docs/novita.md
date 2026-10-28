@@ -6,12 +6,9 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
-- **Aspetto delle immagini nella Bibbia**: nella bacheca della Bibbia, **Aspetto** accanto a Immagini sceglie se l'immagine sta in cima alla scheda o accanto al titolo, se è ritagliata o intera, quale parte tenere (in alto per i ritratti) e quanto è grande.
-
 ### Cambiato
 
 - **Invio come in Word**: Invio inizia un nuovo paragrafo e la riga vuota che nel file separa i paragrafi non si vede più: tra un paragrafo e l'altro resta solo lo spazio, le frecce lo saltano e Backspace all'inizio di un paragrafo lo unisce a quello prima. Invio due volte di seguito lascia una riga bianca che si vede anche nel libro (¶); Maiusc+Invio va a capo nello stesso paragrafo. Si spegne in Impostazioni > Aspetto.
-- **Pulsante Richiami**: ha un'icona nuova, una persona sopra una riga a puntini, che non si confonde con le altre; il menu di un nome riconosciuto ricorda che i richiami si spengono da quel pulsante.
 
 ### Corretto
 
