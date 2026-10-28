@@ -19,7 +19,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
-- **Invio come in Word**: Invio inizia un nuovo paragrafo e la riga vuota che nel file separa i paragrafi non si vede più: tra un paragrafo e l'altro resta solo lo spazio, le frecce lo saltano e Backspace all'inizio di un paragrafo lo unisce a quello prima. Invio due volte di seguito lascia una riga bianca che si vede anche nel libro (¶); Maiusc+Invio va a capo nello stesso paragrafo. Si spegne in Impostazioni > Aspetto.
+- **Invio singolo per un nuovo paragrafo**: Invio inizia un nuovo paragrafo e la riga vuota che nel file separa i paragrafi non si vede più: tra un paragrafo e l'altro resta solo lo spazio, le frecce lo saltano e Backspace all'inizio di un paragrafo lo unisce a quello prima. Invio due volte di seguito lascia una riga bianca che si vede anche nel libro (¶); Maiusc+Invio va a capo nello stesso paragrafo. Si spegne in Impostazioni > Aspetto.
 
 ## 1.1.0-beta.2 · 28 ottobre 2026
 
