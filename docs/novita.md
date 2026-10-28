@@ -6,6 +6,14 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+### Cambiato
+
+### Corretto
+
+## 1.1.0-beta.1 · 28 ottobre 2026
+
+### Nuovo
+
 - **Copertina e sottotitolo già alla creazione**: creando un nuovo romanzo puoi scrivere il sottotitolo e scegliere un'immagine tua per la copertina, senza passare dalle Impostazioni.
 - **Rinominare una proprietà ovunque**: nel pannello Proprietà, aprendo la definizione di una proprietà, **Rinomina** cambia il nome in tutte le scene e le note, nelle viste e nelle impostazioni.
 - **Proprietà per tutte le scene**: creando una proprietà scegli se vale solo per la scena aperta o per tutte le scene del romanzo; nelle altre scene compare pronta da compilare.

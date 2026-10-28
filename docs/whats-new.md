@@ -6,6 +6,14 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+### Changed
+
+### Fixed
+
+## 1.1.0-beta.1 · October 28, 2026
+
+### New
+
 - **Cover and subtitle when creating**: when creating a new novel you can write the subtitle and pick a picture of your own for the cover, without going through Settings.
 - **Rename a property everywhere**: in the Properties panel, opening a property's definition, **Rename** changes its name in every scene and note, in the views and in the settings.
 - **Properties for every scene**: when creating a property, choose whether it is for the open scene only or for every scene of the novel; in the other scenes it shows up ready to fill in.
