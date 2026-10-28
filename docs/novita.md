@@ -6,9 +6,15 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
-- **Larghezza delle colonne nelle viste**: nelle tabelle trascina il bordo destro di un'intestazione per cambiare la larghezza della colonna; nella linea del tempo raggruppata fai lo stesso sul titolo di una colonna. Doppio clic sul bordo torna alle larghezze automatiche. Le larghezze sono salvate con la vista.
-
 ### Cambiato
+
+### Corretto
+
+## 1.1.3 · 28 ottobre 2026
+
+### Nuovo
+
+- **Larghezza delle colonne nelle viste**: nelle tabelle trascina il bordo destro di un'intestazione per cambiare la larghezza della colonna; nella linea del tempo raggruppata fai lo stesso sul titolo di una colonna. Doppio clic sul bordo torna alle larghezze automatiche. Le larghezze sono salvate con la vista.
 
 ### Corretto
 
