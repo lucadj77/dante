@@ -12,6 +12,12 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+## 1.1.0-beta.3 · October 28, 2026
+
+### Changed
+
+- **Enter as in Word**: Enter starts a new paragraph and the empty line that separates paragraphs in the file is no longer shown: only the space between paragraphs remains, the arrows skip it and Backspace at the start of a paragraph joins it to the one before. Enter twice in a row leaves a blank line that shows in the book too (¶); Shift+Enter starts a new line in the same paragraph. It can be turned off in Settings > Appearance.
+
 ## 1.1.0-beta.2 · October 28, 2026
 
 ### New
