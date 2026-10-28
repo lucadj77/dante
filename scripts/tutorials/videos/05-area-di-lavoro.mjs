@@ -1,7 +1,7 @@
-// 4. L'area di lavoro: the four zones, the section bar with names, the right panel's tabs, hiding and
+// 5. L'area di lavoro: the four zones, the section bar with names, the right panel's tabs, hiding and
 // resizing panels, text zoom and the help inside Dante.
 export const meta = {
-  n: 4,
+  n: 5,
   group: 'start',
   title: { it: 'L’area di lavoro', en: 'The workspace' },
   subtitle: { it: 'Dove si trova ogni cosa in Dante', en: 'Where everything is in Dante' },

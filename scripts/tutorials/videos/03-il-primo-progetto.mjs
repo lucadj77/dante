@@ -1,6 +1,6 @@
-// 2. Il primo progetto: a new project, what it already has, your name, the novel's settings, the first scene.
+// 3. Il primo progetto: a new project, what it already has, your name, the novel's settings, the first scene.
 export const meta = {
-  n: 2,
+  n: 3,
   group: 'start',
   title: { it: 'Il primo progetto', en: 'Your first project' },
   subtitle: { it: 'Creare un romanzo e scrivere la prima scena', en: 'Create a novel and write the first scene' },

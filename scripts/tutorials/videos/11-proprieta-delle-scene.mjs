@@ -1,7 +1,7 @@
-// 10. Le proprietà delle scene: what they are for, where a scene's are changed, adding one, and
+// 11. Le proprietà delle scene: what they are for, where a scene's are changed, adding one, and
 // where the novel keeps their type and allowed values.
 export const meta = {
-  n: 10,
+  n: 11,
   group: 'write',
   title: { it: 'Le proprietà delle scene', en: 'Scene properties' },
   subtitle: { it: 'A cosa servono, dove si cambiano', en: 'What they are for, where to change them' },

@@ -1,8 +1,8 @@
-// 14. La Bibbia e i collegamenti: the story bible's types and sheets, a new type, the notes, links
+// 15. La Bibbia e i collegamenti: the story bible's types and sheets, a new type, the notes, links
 // typed with [[, the link menu, a link to a sheet that does not exist yet, the Links tab, and find and
 // replace across the project.
 export const meta = {
-  n: 14,
+  n: 15,
   group: 'bible',
   title: { it: 'La Bibbia e i collegamenti', en: 'The Story Bible and links' },
   subtitle: { it: 'Personaggi, luoghi e trame, legati al testo', en: 'Characters, places and plotlines, tied to the text' },

@@ -1,7 +1,7 @@
-// 19. Esportare il libro: the four formats, the standard manuscript and the typeset book, the structure,
+// 20. Esportare il libro: the four formats, the standard manuscript and the typeset book, the structure,
 // dedication and epigraph, the cover, pending revisions, and the file in the export folder.
 export const meta = {
-  n: 19,
+  n: 20,
   group: 'export',
   title: { it: 'Esportare il libro', en: 'Exporting the book' },
   subtitle: { it: 'Word, PDF ed EPUB dallo stesso romanzo', en: 'Word, PDF and EPUB from the same novel' },

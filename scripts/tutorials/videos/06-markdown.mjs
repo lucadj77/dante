@@ -1,6 +1,6 @@
-// 5. Cos'è il Markdown: the format Dante keeps the novel in, its few marks, and why it is a good one.
+// 6. Cos'è il Markdown: the format Dante keeps the novel in, its few marks, and why it is a good one.
 export const meta = {
-  n: 5,
+  n: 6,
   group: 'start',
   title: { it: 'Cos’è il Markdown', en: 'What is Markdown' },
   subtitle: { it: 'Il formato in cui Dante salva il tuo romanzo', en: 'The format Dante saves your novel in' },

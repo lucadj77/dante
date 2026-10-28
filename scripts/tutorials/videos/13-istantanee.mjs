@@ -1,7 +1,7 @@
-// 12. Istantanee e copie di sicurezza: a named snapshot, comparing it with the text, restoring it, and
+// 13. Istantanee e copie di sicurezza: a named snapshot, comparing it with the text, restoring it, and
 // where the backups of the whole project go.
 export const meta = {
-  n: 12,
+  n: 13,
   group: 'write',
   title: { it: 'Istantanee e copie di sicurezza', en: 'Snapshots and backups' },
   subtitle: { it: 'Tornare indietro senza paura', en: 'Going back without fear' },

@@ -1,4 +1,4 @@
-// 13. Tabelle, immagini ed elenchi nel testo: lists with their levels, a table with its bar and caption,
+// 14. Tabelle, immagini ed elenchi nel testo: lists with their levels, a table with its bar and caption,
 // and an image that lands among the attachments, with a width and a description.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), '../assets');
 
 export const meta = {
-  n: 13,
+  n: 14,
   group: 'write',
   title: { it: 'Tabelle, immagini ed elenchi nel testo', en: 'Tables, images and lists' },
   subtitle: { it: 'Quando il romanzo ha bisogno di più del semplice testo', en: 'When a novel needs more than plain text' },

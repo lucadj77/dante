@@ -1,4 +1,4 @@
-// 20. Installare e aggiornare Dante: the download section of the site, why macOS and Windows warn the
+// 2. Installare e aggiornare Dante: the download section of the site, why macOS and Windows warn the
 // first time, the steps past the warning on screenshots of the two systems, Linux, then, in the app,
 // the update settings with the two channels and the notice of a new version with its news.
 import fs from 'node:fs';
@@ -15,7 +15,7 @@ const ROOT = path.join(HERE, '../../..');
 const SITE = 'http://127.0.0.1:5174/';
 
 export const meta = {
-  n: 20,
+  n: 2,
   group: 'start',
   title: { it: 'Installare e aggiornare Dante', en: 'Installing and updating Dante' },
   subtitle: { it: 'Dal sito al primo avvio, e poi sempre aggiornato', en: 'From the website to the first start, then always up to date' },

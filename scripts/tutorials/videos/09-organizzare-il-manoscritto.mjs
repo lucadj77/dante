@@ -1,7 +1,7 @@
-// 8. Organizzare il manoscritto: new scenes and chapters, splitting, moving, merging, the trash,
+// 9. Organizzare il manoscritto: new scenes and chapters, splitting, moving, merging, the trash,
 // the prologue and how chapter headings are written.
 export const meta = {
-  n: 8,
+  n: 9,
   group: 'write',
   title: { it: 'Organizzare il manoscritto', en: 'Organizing the manuscript' },
   subtitle: { it: 'Scene e capitoli: aggiungere, dividere, spostare, fondere', en: 'Scenes and chapters: add, split, move, merge' },

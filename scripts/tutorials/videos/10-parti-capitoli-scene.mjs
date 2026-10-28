@@ -1,4 +1,4 @@
-// 9. Parti, capitoli e scene: how to divide the novel, the titles of its pieces and how chapter and
+// 10. Parti, capitoli e scene: how to divide the novel, the titles of its pieces and how chapter and
 // part headings look in the book. Starts from a novel imported from Word, which has parts.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), '../assets');
 
 export const meta = {
-  n: 9,
+  n: 10,
   group: 'write',
   title: { it: 'Parti, capitoli e scene', en: 'Parts, chapters and scenes' },
   subtitle: { it: 'Come dividere il romanzo e come appaiono i titoli nel libro', en: 'How to divide the novel and how headings look in the book' },

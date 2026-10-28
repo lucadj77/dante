@@ -1,7 +1,7 @@
-// 15. Tabelle e bacheche: the views of the sample project (board, table, timeline), a condition that
+// 16. Tabelle e bacheche: the views of the sample project (board, table, timeline), a condition that
 // keeps only some scenes, and a new view of the places as cards.
 export const meta = {
-  n: 15,
+  n: 16,
   group: 'bible',
   title: { it: 'Tabelle e bacheche', en: 'Tables and boards' },
   subtitle: { it: 'Il romanzo visto dall’alto', en: 'The novel from above' },

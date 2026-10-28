@@ -1,7 +1,7 @@
-// 17. Dante nel browser e gli aggiornamenti: what changes when Dante runs in Chrome, then, in the app,
+// 18. Dante nel browser e gli aggiornamenti: what changes when Dante runs in Chrome, then, in the app,
 // the update settings with the two channels and the notice of a new version with its news.
 export const meta = {
-  n: 17,
+  n: 18,
   group: 'together',
   title: { it: 'Dante nel browser e gli aggiornamenti', en: 'Dante in the browser and updates' },
   subtitle: { it: 'Lo stesso Dante, ovunque, sempre aggiornato', en: 'The same Dante, anywhere, always up to date' },

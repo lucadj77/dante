@@ -1,4 +1,4 @@
-// 3. Importare da Word o Scrivener: the preview, title levels, blank lines, a misread line, a second
+// 4. Importare da Word o Scrivener: the preview, title levels, blank lines, a misread line, a second
 // Word file added to the project, then a Scrivener project.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), '../assets');
 
 export const meta = {
-  n: 3,
+  n: 4,
   group: 'start',
   title: { it: 'Importare da Word o Scrivener', en: 'Importing from Word or Scrivener' },
   subtitle: { it: 'Portare in Dante un romanzo già scritto', en: 'Bring a novel you have already written into Dante' },

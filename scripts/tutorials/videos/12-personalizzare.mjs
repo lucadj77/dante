@@ -1,7 +1,7 @@
-// 11. Personalizzare l'aspetto: how the text looks in the editor (only on screen, not in the book),
+// 12. Personalizzare l'aspetto: how the text looks in the editor (only on screen, not in the book),
 // the theme, the accent colour and the spelling checker.
 export const meta = {
-  n: 11,
+  n: 12,
   group: 'write',
   title: { it: 'Personalizzare l’aspetto', en: 'Customizing the look' },
   subtitle: { it: 'Il testo nell’editor, il tema, il colore d’accento', en: 'The text in the editor, the theme, the accent color' },

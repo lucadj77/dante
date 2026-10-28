@@ -1,7 +1,7 @@
-// 6. Scrivere una scena: how much of the novel to show, formatting from the selection and from the
+// 7. Scrivere una scena: how much of the novel to show, formatting from the selection and from the
 // bar, blank lines, typography while typing and how to keep straight quotes, the dialogue marks of the export, find in the scene and the status bar.
 export const meta = {
-  n: 6,
+  n: 7,
   group: 'write',
   title: { it: 'Scrivere una scena', en: 'Writing a scene' },
   subtitle: { it: 'Formattare, cercare e contare mentre scrivi', en: 'Formatting, finding and counting as you write' },

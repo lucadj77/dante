@@ -1,7 +1,7 @@
-// 16. Scrivere in due: a shared folder, your name, comments with replies, revisions proposed and
+// 17. Scrivere in due: a shared folder, your name, comments with replies, revisions proposed and
 // accepted, a scene someone else is writing, and a conflicted copy.
 export const meta = {
-  n: 16,
+  n: 17,
   group: 'together',
   title: { it: 'Scrivere in due', en: 'Writing together' },
   subtitle: { it: 'Commenti, revisioni e una cartella condivisa', en: 'Comments, revisions and a shared folder' },
