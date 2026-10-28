@@ -13,6 +13,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Immagine nelle schede della Bibbia**: aggiungendo un'immagine a una scheda, ora compare subito anche nella sua card, senza riaprire la Bibbia.
 - **Linea del tempo troppo larga**: nella 1.1.2 le colonne della linea del tempo raggruppata si allargavano quanto il testo più lungo; ora stanno nella finestra come prima.
 - **Intestazione fissa in Tabelle e bacheche**: scorrendo una vista restano in alto il nome, i pulsanti e le impostazioni, e anche i nomi delle colonne della tabella e delle colonne della bacheca.
 - **Fine paragrafo con le righe vuote nascoste**: il tasto Fine (Cmd+→ su Mac) e un clic dopo la fine di un paragrafo portano il cursore alla fine del paragrafo, e non più nella riga vuota invisibile o all'inizio del paragrafo dopo.
