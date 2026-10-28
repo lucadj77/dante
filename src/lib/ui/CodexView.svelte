@@ -98,6 +98,8 @@
     const templates = p.project.settings.folders.templates;
     void p.project.index().then((index) => {
       notes = [...index.notes.values()].filter((n) => !isWithin(n.path, templates));
+      // A note edited may have another picture: read again once the new text is here.
+      cardImages = {};
     });
   });
 
@@ -218,12 +220,6 @@
       cardImages[note.path] = null;
       if (image) void nav.imageUrl(image.target, image.wiki, note.path).then((url) => (cardImages[note.path] = url));
     }
-  });
-  $effect(() => {
-    // A note edited may have another picture: read again after a change.
-    void p.rev;
-    void saves;
-    cardImages = {};
   });
 
   async function run<T>(operation: () => Promise<T>): Promise<T | undefined> {
