@@ -12,6 +12,9 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Allegati subito visibili**: la prima immagine aggiunta a un romanzo crea la cartella Allegati dentro Ricerca, e ora la cartella compare subito nella sezione Note, senza riaprire il progetto.
+- **Avviso di aggiornamento leggibile**: nell’avviso di una nuova versione il testo e le novità occupano tutta la larghezza, con i tre pulsanti sotto; prima erano schiacciati in una colonna stretta.
+
 ## 1.1.0-beta.3 · 28 ottobre 2026
 
 ### Cambiato
