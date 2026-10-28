@@ -10,6 +10,34 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+## 1.1.4 · 28 ottobre 2026
+
+### Corretto
+
+- **Immagine nelle schede della Bibbia**: aggiungendo un'immagine a una scheda, ora compare subito anche nella sua card, senza riaprire la Bibbia.
+
+## 1.1.3 · 28 ottobre 2026
+
+### Nuovo
+
+- **Larghezza delle colonne nelle viste**: nelle tabelle trascina il bordo destro di un'intestazione per cambiare la larghezza della colonna; nella linea del tempo raggruppata fai lo stesso sul titolo di una colonna. Doppio clic sul bordo torna alle larghezze automatiche. Le larghezze sono salvate con la vista.
+
+### Corretto
+
+- **Linea del tempo troppo larga**: nella 1.1.2 le colonne della linea del tempo raggruppata si allargavano quanto il testo più lungo; ora stanno nella finestra come prima.
+
+## 1.1.2 · 28 ottobre 2026
+
+### Corretto
+
+- **Intestazione fissa in Tabelle e bacheche**: scorrendo una vista restano in alto il nome, i pulsanti e le impostazioni, e anche i nomi delle colonne della tabella e delle colonne della bacheca.
+
+## 1.1.1 · 28 ottobre 2026
+
+### Corretto
+
+- **Fine paragrafo con le righe vuote nascoste**: il tasto Fine (Cmd+→ su Mac) e un clic dopo la fine di un paragrafo portano il cursore alla fine del paragrafo, e non più nella riga vuota invisibile o all'inizio del paragrafo dopo.
+
 ## 1.1.0 · 28 ottobre 2026
 
 ### Nuovo

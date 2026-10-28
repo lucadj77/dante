@@ -1,7 +1,7 @@
-// 19. Esportare il libro: the four formats, the standard manuscript and the typeset book, the structure,
+// 20. Esportare il libro: the four formats, the standard manuscript and the typeset book, the structure,
 // dedication and epigraph, the cover, pending revisions, and the file in the export folder.
 export const meta = {
-  n: 19,
+  n: 20,
   group: 'export',
   title: { it: 'Esportare il libro', en: 'Exporting the book' },
   subtitle: { it: 'Word, PDF ed EPUB dallo stesso romanzo', en: 'Word, PDF and EPUB from the same novel' },
@@ -25,6 +25,9 @@ const D = {
     s3: 'La struttura',
     s3b: 'Parti, capitoli e scene',
     breaks: 'Cosa mettere prima di una parte, prima di un capitolo e tra le scene: una nuova pagina, una riga vuota o un separatore',
+    two: 'Tra le scene si può lasciare anche Due righe vuote: più spazio, senza segni',
+    chars: 'Con Caratteri separatori, il segno si scrive qui',
+    sign: 'Ogni \\n va a capo: «\\n* * *\\n» mette i tre asterischi fra due righe vuote. Il segno a capo si cambia nel campo accanto',
     headings: 'Come si scrivono i titoli: Capitolo primo, Capitolo 1, solo il numero, con o senza il titolo',
     s4: 'Prima e dopo il romanzo',
     s4b: 'Dedica, esergo, ringraziamenti',
@@ -58,6 +61,9 @@ const D = {
     s3: 'The structure',
     s3b: 'Parts, chapters and scenes',
     breaks: 'What goes before a part, before a chapter and between scenes: a new page, a blank line or a separator',
+    two: 'Between scenes you can also leave Two blank lines: more space, no signs',
+    chars: 'With Separator characters, the sign is written here',
+    sign: 'Each \\n starts a new line: “\\n* * *\\n” puts the three asterisks between two blank lines. The line sign can be changed in the field beside it',
     headings: 'How headings are written: Chapter One, Chapter 1, the number only, with or without the title',
     s4: 'Before and after the novel',
     s4b: 'Dedication, epigraph, acknowledgements',
@@ -116,6 +122,22 @@ export default async function (t) {
   await t.title(d.s3, d.s3b, () => show(form.locator('h4', { hasText: L('export.structure') }).first()));
   const breaks = form.locator('h4', { hasText: L('export.structure') }).locator('xpath=following-sibling::div[contains(@class,"row")][1]');
   await t.focus(breaks, d.breaks, { side: 'below', pointer: false });
+  const scenes = breaks.locator('label', { hasText: L('export.sceneBreak') }).locator('select').first();
+  await t.click(scenes, { after: 0.3 });
+  await scenes.selectOption('twoBlankLines');
+  await t.wait(0.8);
+  await t.zoom(scenes, () => t.focus(scenes, d.two, { side: 'below', pointer: false }), 1.5);
+  await t.click(scenes, { after: 0.3 });
+  await scenes.selectOption('characters');
+  await t.wait(0.8);
+  const separator = form.locator('.separator').first();
+  const sep = separator.locator('input').first();
+  await t.focus(sep, d.chars, { side: 'below' });
+  await t.click(sep, { after: 0.2 });
+  await t.press('ControlOrMeta+a', 0.2);
+  await t.type('\\n* * *\\n', 120);
+  await t.wait(0.8);
+  await t.zoom(separator, () => t.focus([separator, separator.locator('xpath=following-sibling::p[1]')], d.sign, { side: 'below', pointer: false }), 1.4);
   const chapter = form.locator('fieldset', { has: p.locator('legend', { hasText: L('kind.chapter') }) }).first();
   await show(chapter);
   await t.focus(chapter, d.headings, { side: 'right', pointer: false });

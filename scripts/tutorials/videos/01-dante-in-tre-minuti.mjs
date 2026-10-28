@@ -36,6 +36,7 @@ const D = {
     lineAt: 'Oh, per amor del cielo',
     typed: ' Don Abbondio si asciugò la fronte.',
     saved: 'Non c’è un pulsante Salva: Dante salva da solo, mentre scrivi',
+    named: 'I nomi dei personaggi sono riconosciuti nel testo, sottolineati a puntini: un clic destro e diventano un collegamento',
     drag: 'Per riordinare il libro basta trascinare una scena',
     from: 'Un vaso di terra cotta', to: 'L’incontro',
     s2: 'La Bibbia del romanzo',
@@ -68,6 +69,7 @@ const D = {
     lineAt: 'Mr. Bennet made no answer.',
     typed: ' He went on reading his newspaper.',
     saved: 'There is no Save button: Dante saves as you write',
+    named: 'Character names are recognised in the text, with a dotted underline: a right click makes them a link',
     drag: 'To reorder the book, just drag a scene',
     from: 'After the ball', to: 'The ball',
     s2: 'The Story Bible',
@@ -105,11 +107,16 @@ export default async function (t) {
   await t.focus(p.locator('aside.tree'), d.tree);
   await t.focus(p.locator('main.center'), d.editor, { side: 'below' });
   await t.focus(p.locator('aside.side'), d.side, { side: 'left' });
-  await t.click(t.line(d.lineAt), { dx: 0.98, after: 0.3 });
+  // the paragraph's last line on screen
+  await t.click(t.line(d.lineAt), { dx: 0.98, dy: 0.92, after: 0.3 });
   await t.press('End', 0.3);
   await t.type(d.typed);
   await t.wait(0.8);
   await t.say(d.saved);
+  // a name on screen, near the line just written
+  const shown = await p.locator('main.center .md-named').evaluateAll((all) => all.findIndex((e) => { const r = e.getBoundingClientRect(); return r.top > 150 && r.bottom < innerHeight - 100; }));
+  const named = p.locator('main.center .md-named').nth(Math.max(shown, 0));
+  await t.zoom(named, () => t.focus(named, d.named, { side: 'below' }), 1.6);
   await t.say(d.drag, { hold: 2.5 });
   const tree = p.locator('aside.tree');
   await t.drag(tree.getByText(d.from, { exact: true }).first(), tree.getByText(d.to, { exact: true }).first(), { dy: 0.2 });

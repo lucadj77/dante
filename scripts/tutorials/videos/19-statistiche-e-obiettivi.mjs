@@ -1,7 +1,7 @@
-// 18. Statistiche e obiettivi: the novel's totals, goals in words or characters with the deadline and
+// 19. Statistiche e obiettivi: the novel's totals, goals in words or characters with the deadline and
 // the writing days, the last 30 days, the length of chapters and scenes, mentions and style.
 export const meta = {
-  n: 18,
+  n: 19,
   group: 'export',
   title: { it: 'Statistiche e obiettivi', en: 'Statistics and goals' },
   subtitle: { it: 'Quanto hai scritto, quanto manca', en: 'How much you have written, how much is left' },

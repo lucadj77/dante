@@ -1,7 +1,7 @@
-// 4. L'area di lavoro: the four zones, the section bar with names, the right panel's tabs, hiding and
+// 5. L'area di lavoro: the four zones, the section bar with names, the right panel's tabs, hiding and
 // resizing panels, text zoom and the help inside Dante.
 export const meta = {
-  n: 4,
+  n: 5,
   group: 'start',
   title: { it: 'L’area di lavoro', en: 'The workspace' },
   subtitle: { it: 'Dove si trova ogni cosa in Dante', en: 'Where everything is in Dante' },
@@ -21,10 +21,11 @@ const D = {
     s2b: 'Con i nomi o solo le icone',
     names: 'Mostra i nomi allarga la barra e scrive il nome di ogni sezione',
     wide: 'Ora ogni icona ha il suo nome. Lo stesso pulsante la stringe di nuovo',
-    bottom: 'In basso: Aiuto, Cestino, Impostazioni e Chiudi progetto',
+    bottom: 'In basso: Aiuto, Cestino, Impostazioni e Chiudi progetto, che si usa anche con ⌘W (Ctrl+W)',
     s3: 'Il pannello a destra',
     s3b: 'Proprietà, Collegamenti, Commenti',
     props: 'Proprietà: titolo, sinossi, stato e le altre informazioni della scena',
+    sections: 'Il pannello è diviso in sezioni: la scena, le proprietà, le istantanee, le statistiche. Un clic sul titolo le chiude e le riapre',
     links: 'Collegamenti: le schede citate nella scena e le note che la citano',
     comments: 'Commenti: le note a margine e le revisioni proposte',
     s4: 'Fare spazio',
@@ -55,10 +56,11 @@ const D = {
     s2b: 'With names or icons only',
     names: 'Show names widens the bar and writes each section’s name',
     wide: 'Now every icon has its name. The same button narrows it again',
-    bottom: 'At the bottom: Help, Trash, Settings and Close project',
+    bottom: 'At the bottom: Help, Trash, Settings and Close project, also ⌘W (Ctrl+W)',
     s3: 'The right panel',
     s3b: 'Properties, Links, Comments',
     props: 'Properties: title, synopsis, status and the scene’s other information',
+    sections: 'The panel is divided into sections: the scene, properties, snapshots, statistics. A click on a heading folds it and opens it again',
     links: 'Links: the notes the scene mentions and the notes that mention it',
     comments: 'Comments: margin notes and suggested changes',
     s4: 'Making room',
@@ -106,6 +108,10 @@ export default async function (t) {
 
   await t.title(d.s3, d.s3b);
   await t.focus(tab('side.properties'), d.props, { side: 'left' });
+  const heading = side.locator('.panel-section .toggle').first();
+  await t.click(heading, { after: 0.8 });
+  await t.focus([heading, side.locator('.panel-section .toggle').nth(1)], d.sections, { side: 'left' });
+  await t.click(heading, { after: 0.8 });
   await t.click(tab('side.links'), { after: 1 });
   await t.focus(side, d.links, { side: 'left' });
   await t.click(tab('side.comments'), { after: 1 });

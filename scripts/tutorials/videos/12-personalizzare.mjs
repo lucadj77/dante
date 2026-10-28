@@ -1,7 +1,7 @@
-// 11. Personalizzare l'aspetto: how the text looks in the editor (only on screen, not in the book),
+// 12. Personalizzare l'aspetto: how the text looks in the editor (only on screen, not in the book),
 // the theme, the accent colour and the spelling checker.
 export const meta = {
-  n: 11,
+  n: 12,
   group: 'write',
   title: { it: 'Personalizzare l’aspetto', en: 'Customizing the look' },
   subtitle: { it: 'Il testo nell’editor, il tema, il colore d’accento', en: 'The text in the editor, the theme, the accent color' },
@@ -36,6 +36,11 @@ const D = {
     s5: 'Il colore d’accento',
     s5b: 'Pulsanti, selezioni, collegamenti',
     accent: 'Il colore di pulsanti, selezioni e collegamenti: quello del tema, o uno a scelta',
+    s5p: 'I paragrafi',
+    s5pb: 'Invio e righe vuote',
+    para: 'Invio singolo per iniziare un nuovo paragrafo: con la spunta, Invio apre un paragrafo nuovo e le righe vuote che li separano nel file non si vedono',
+    paraOff: 'Senza la spunta, l’editor mostra le righe vuote come sono nel file',
+    ask: 'E compare Chiedi delle righe vuote in più: se tra due paragrafi ne lasci più del solito, Dante chiede se vuoi una riga vuota vera, che si vede anche nel libro',
     s6: 'Ortografia',
     s6b: 'Il correttore del sistema',
     spell: 'Il correttore sottolinea le parole che non conosce, nella lingua del romanzo. Si può spegnere',
@@ -72,6 +77,11 @@ const D = {
     s5: 'The accent color',
     s5b: 'Buttons, selections, links',
     accent: 'The color of buttons, selections and links: the theme’s own, or one you choose',
+    s5p: 'Paragraphs',
+    s5pb: 'Enter and blank lines',
+    para: 'A single Enter starts a new paragraph: ticked, Enter opens a new paragraph and the blank lines between them in the file are not shown',
+    paraOff: 'Unticked, the editor shows the blank lines as they are in the file',
+    ask: 'And Ask about extra blank lines appears: if you leave more of them than usual between two paragraphs, Dante asks whether you want a real blank line, one that shows in the book too',
     s6: 'Spelling',
     s6b: 'The system’s checker',
     spell: 'The checker underlines the words it does not know, in the novel’s language. You can turn it off',
@@ -158,6 +168,18 @@ export default async function (t) {
   const swatches = p.getByRole('radiogroup', { name: L('appearance.accent') }).first();
   await t.click(swatches.getByRole('radio', { name: L('appearance.accent.teal') }), { after: 1 });
   await t.zoom(swatches, () => t.focus(swatches, d.accent, { side: 'right' }), 1.6);
+
+  await t.title(d.s5p, d.s5pb, async () => {
+    await p.locator('label', { hasText: L('appearance.paragraphs') }).first().scrollIntoViewIfNeeded();
+    await t.wait(0.6);
+  });
+  const paragraphs = p.locator('label', { hasText: L('appearance.paragraphs') }).first();
+  await t.zoom(paragraphs, () => t.focus(paragraphs, d.para, { side: 'below' }), 1.5);
+  await t.click(paragraphs.locator('input'), { after: 1 });
+  await t.focus(paragraphs, d.paraOff, { side: 'below', pointer: false });
+  const ask = p.locator('label', { hasText: L('appearance.askBlankLines') }).first();
+  await t.zoom(ask, () => t.focus(ask, d.ask, { side: 'below' }), 1.5);
+  await t.click(paragraphs.locator('input'), { after: 1 });
 
   await t.title(d.s6, d.s6b, async () => {
     await p.locator('label', { hasText: L('appearance.spellcheck') }).first().scrollIntoViewIfNeeded();

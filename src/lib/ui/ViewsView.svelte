@@ -164,6 +164,47 @@
     }
   }
 
+  /** Widths while a column's edge is being dragged, saved to the view when it is let go. */
+  let resizing = $state<Record<string, number> | null>(null);
+  const widths = $derived(resizing ?? spec.widths);
+  const tableWidth = $derived(["name", ...fields].every((f) => widths[f]) ? ["name", ...fields].reduce((sum, f) => sum + widths[f], 0) : 0);
+
+  /**
+   * Drags the right edge of a table column, or of a timeline lane (`key` "lane"). The first
+   * drag in a table fixes every column at the width it has, so the others stay put.
+   */
+  function startResize(e: PointerEvent, key: string, columns: string[]) {
+    const edge = e.currentTarget as HTMLElement;
+    const cell = edge.parentElement as HTMLElement;
+    const start = { ...spec.widths };
+    if (key !== "lane") {
+      const cells = [...(cell.parentElement?.children ?? [])] as HTMLElement[];
+      columns.forEach((f, i) => (start[f] ??= Math.round(cells[i]?.getBoundingClientRect().width ?? 120)));
+    }
+    const from = start[key] ?? Math.round(cell.getBoundingClientRect().width);
+    const x = e.clientX;
+    resizing = { ...start, [key]: from };
+    edge.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      resizing = { ...start, [key]: Math.max(key === "lane" ? 160 : 60, Math.round(from + ev.clientX - x)) };
+    };
+    const up = () => {
+      edge.removeEventListener("pointermove", move);
+      const done = resizing;
+      resizing = null;
+      if (done) void save({ widths: done });
+    };
+    edge.addEventListener("pointermove", move);
+    edge.addEventListener("pointerup", up, { once: true });
+    e.preventDefault();
+  }
+
+  /** Double-clicking an edge gives the columns, or the lanes, their natural widths again. */
+  function resetWidths(key: string) {
+    const { lane, ...columns } = spec.widths;
+    void save({ widths: key === "lane" ? columns : lane ? { lane } : {} });
+  }
+
   async function create(name: string, view: ViewSpec): Promise<string | null> {
     error = "";
     try {
@@ -513,7 +554,7 @@
       </header>
 
       {#if settingsOpen && !p.embedded}
-        <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} />
+        <div class="settings"><ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} /></div>
       {/if}
 
       <div class="body" bind:this={body}>
@@ -526,11 +567,21 @@
         {:else if rows.length === 0 && spec.type !== "kanban"}
           <p class="muted">{t("views.empty")}</p>
         {:else if spec.type === "table"}
-          <table>
+          <table class:fixed={tableWidth > 0} style:width={tableWidth ? `${tableWidth}px` : undefined}>
             <thead>
               <tr>
                 {#each ["name", ...fields] as f (f)}
-                  <th class:number={f === "words"}><button data-tip={t("tip.views.sort")} onclick={() => sortBy(f)}>{label(f)}{sortMark(f)}</button></th>
+                  <th class:number={f === "words"} style:width={tableWidth ? `${widths[f]}px` : undefined}
+                    ><button data-tip={t("tip.views.sort")} onclick={() => sortBy(f)}>{label(f)}{sortMark(f)}</button><span
+                      class="edge"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label={t("views.resize")}
+                      data-tip={t("tip.views.resize")}
+                      onpointerdown={(e) => startResize(e, f, ["name", ...fields])}
+                      ondblclick={() => resetWidths(f)}
+                    ></span></th
+                  >
                 {/each}
               </tr>
             </thead>
@@ -634,10 +685,20 @@
 
 {#snippet lanesOf(tl: { moments: Moment[]; undated: ViewRow[] })}
   <!-- One timeline in date order, with a lane for each group side by side. -->
-  <div class="lanes" style:--lanes={groups.length}>
+  <div class="lanes" style:--lanes={groups.length} style:--lane={widths.lane ? `${widths.lane}px` : undefined}>
     <div class="lane-row head">
       <span></span>
-      {#each groups as g (g.key)}<span class="lane-title">{groupName(g.key)} <span class="count">{g.rows.length}</span></span>{/each}
+      {#each groups as g (g.key)}<span class="lane-title"
+          >{groupName(g.key)} <span class="count">{g.rows.length}</span><span
+            class="edge"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t("views.resizeLanes")}
+            data-tip={t("tip.views.resizeLanes")}
+            onpointerdown={(e) => startResize(e, "lane", [])}
+            ondblclick={() => resetWidths("lane")}
+          ></span></span
+        >{/each}
     </div>
     {#each tl.moments as m (m.key + "|" + m.end)}
       <div class="lane-row">
@@ -767,10 +828,26 @@
     background: color-mix(in srgb, var(--accent) 15%, transparent);
     font-weight: 600;
   }
+  /* The view's bar, its settings and the column headings stay put; only the body scrolls. */
   main {
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     min-height: 0;
-    padding: 12px 20px 40px;
+    padding: 12px 20px 0;
+  }
+  main > :global(:not(.body)) {
+    flex: none;
+  }
+  .settings {
+    max-height: 45%;
+    overflow: auto;
+  }
+  .body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-bottom: 40px;
   }
   header {
     display: flex;
@@ -855,6 +932,30 @@
     width: 100%;
     font-size: 14px;
   }
+  table.fixed {
+    table-layout: fixed;
+  }
+  table.fixed td {
+    overflow-wrap: anywhere;
+  }
+  thead th,
+  .lane-title {
+    position: relative;
+  }
+  /* The edge of a column, dragged to change its width. */
+  .edge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    touch-action: none;
+    z-index: 2;
+  }
+  .edge:hover {
+    background: linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat;
+  }
   th,
   td {
     text-align: left;
@@ -862,6 +963,13 @@
     border-bottom: 1px solid var(--border);
     vertical-align: top;
     line-height: 1.5;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg);
+    box-shadow: inset 0 -1px 0 var(--border);
   }
   th button {
     border: none;
@@ -958,7 +1066,6 @@
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    overflow-x: auto;
     padding-bottom: 8px;
   }
   .column {
@@ -1000,8 +1107,14 @@
     cursor: grab;
   }
   .column h3 {
-    margin: 0 0 2px;
+    margin: -8px -8px 2px;
+    padding: 8px;
     font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg-panel);
+    border-radius: 8px 8px 0 0;
   }
   .column .card {
     cursor: grab;
@@ -1043,12 +1156,13 @@
     font-weight: normal;
     color: var(--text-muted);
   }
+  /* As wide as the body, or wider when the lanes need it: the body scrolls sideways then. */
   .lanes {
-    overflow-x: auto;
+    min-width: calc(140px + var(--lanes) * var(--lane, 200px));
   }
   .lane-row {
     display: grid;
-    grid-template-columns: 140px repeat(var(--lanes), minmax(200px, 1fr));
+    grid-template-columns: 140px repeat(var(--lanes), var(--lane, minmax(200px, 1fr)));
     border-top: 1px solid var(--border);
   }
   .lane-row.head {

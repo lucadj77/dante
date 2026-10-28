@@ -10,6 +10,34 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+## 1.1.4 · October 28, 2026
+
+### Fixed
+
+- **Picture on Story Bible cards**: a picture added to an entry now shows on its card right away, without reopening the Story Bible.
+
+## 1.1.3 · October 28, 2026
+
+### New
+
+- **Column width in views**: in tables drag the right edge of a heading to change the column's width; in a grouped timeline do the same on a column's title. Double-click the edge to go back to automatic widths. The widths are saved with the view.
+
+### Fixed
+
+- **Timeline too wide**: in 1.1.2 the columns of a grouped timeline grew as wide as their longest text; now they fit the window as before.
+
+## 1.1.2 · October 28, 2026
+
+### Fixed
+
+- **Fixed header in Tables and boards**: while a view scrolls, its name, buttons and settings stay at the top, and so do the column names of the table and of the board.
+
+## 1.1.1 · October 28, 2026
+
+### Fixed
+
+- **End of a paragraph with hidden blank lines**: the End key (Cmd+→ on Mac) and a click after the end of a paragraph put the cursor at the end of the paragraph, no longer in the invisible blank line or at the start of the next paragraph.
+
 ## 1.1.0 · October 28, 2026
 
 ### New

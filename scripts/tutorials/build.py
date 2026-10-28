@@ -17,13 +17,15 @@ with open(os.path.join(out, 'frames.txt'), 'w') as f:
         f.write(f"file 'frames/{i:06d}.jpg'\nduration {max(nxt - t, 0.001):.4f}\n")
     f.write(f"file 'frames/{len(frames) - 1:06d}.jpg'\n")
 body = os.path.join(out, 'body.mp4')
-run('ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', os.path.join(out, 'frames.txt'),
+# the frames are deleted after a build: without them the recording already edited is kept
+if os.path.isdir(os.path.join(out, 'frames')) or not os.path.exists(body):
+  run('ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', os.path.join(out, 'frames.txt'),
     '-vf', 'scale=1920:1080:flags=lanczos,fps=30,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', body)
 length = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', body],
                               capture_output=True, text=True, check=True).stdout)
 
-if not os.path.exists(os.path.join(out, 'cover-start.png')):
-    run('node', os.path.join(here, 'cover.mjs'), out)
+# made again each time: the number on the cover changes when the videos are reordered
+run('node', os.path.join(here, 'cover.mjs'), out)
 START, END = 4.5, 5.0
 total = START + length + END
 music = os.path.join(out, 'music.wav')

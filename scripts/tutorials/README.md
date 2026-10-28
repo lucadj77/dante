@@ -6,8 +6,8 @@ Short silent tutorials in Italian and English, made the same way as those of Ste
 npm run dev -- --port 5173          # in another terminal
 cd scripts/tutorials
 python3 assets/make.py              # only if the Word and Scrivener files in assets/ change (needs python-docx)
-node run.mjs 6 it                   # frames and timeline.json in out/06-scrivere-una-scena-it
-python3 build.py out/06-scrivere-una-scena-it   # video.mp4 and thumbnail.jpg there
+node run.mjs 7 it                   # frames and timeline.json in out/07-scrivere-una-scena-it
+python3 build.py out/07-scrivere-una-scena-it   # video.mp4 and thumbnail.jpg there
 ```
 
 - `lib.mjs` opens Chromium at 1440×810 with a scale of 4/3, so each frame is 1920×1080, and gives the scripts `focus`, `say`, `title`, `zoom`, `click`, `type`, `drag` and the labels of the interface (`L(key)`). Text stays on screen for a time that grows with its length. The desktop welcome, with recent projects, comes from a pretend Tauri; folder pickers return folders in the browser's private storage.

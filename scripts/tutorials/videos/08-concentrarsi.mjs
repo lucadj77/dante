@@ -1,7 +1,7 @@
-// 7. Concentrarsi sulla pagina: typewriter, focus and line modes, full screen, and a timed writing
+// 8. Concentrarsi sulla pagina: typewriter, focus and line modes, full screen, and a timed writing
 // session (the clock runs faster in the video).
 export const meta = {
-  n: 7,
+  n: 8,
   group: 'write',
   title: { it: 'Concentrarsi sulla pagina', en: 'Focus on the page' },
   subtitle: { it: 'Meno distrazioni, una sessione a tempo', en: 'Fewer distractions, a timed session' },
