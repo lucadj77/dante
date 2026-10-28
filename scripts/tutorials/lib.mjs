@@ -113,8 +113,15 @@ function overlay() {
       },
       zoom(r, scale) {
         if (!r) { document.body.style.transform = ''; return; }
-        document.body.style.transformOrigin = `${r.x + r.width / 2}px ${r.y + r.height / 2}px`;
-        document.body.style.transform = `scale(${scale})`;
+        // enlarged where it is, but moved so that all of it stays in the window, with a margin
+        const W = innerWidth, H = innerHeight, m = 24;
+        const s = Math.max(1, Math.min(scale, (W - 2 * m) / r.width, (H - 2 * m) / r.height));
+        const fit = (at, size, room) => Math.min(Math.max(at + size / 2 - (size * s) / 2, m), room - m - size * s) - at * s;
+        // never past the edges of the page
+        const tx = Math.min(0, Math.max(W - W * s, fit(r.x, r.width, W)));
+        const ty = Math.min(0, Math.max(H - H * s, fit(r.y, r.height, H)));
+        document.body.style.transformOrigin = '0 0';
+        document.body.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
       },
     };
   });
@@ -168,7 +175,7 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
       const view = (await send('Page.getLayoutMetrics').catch(() => null))?.cssVisualViewport;
       const clip = { x: view?.pageX ?? 0, y: view?.pageY ?? 0, width: 1440, height: 810, scale: 4 / 3 };
       const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true, clip }).catch(async (e) => {
-        if (e.message === 'timeout') { cdp.detach().catch(() => {}); cdp = await ctx.newCDPSession(p); }
+        if (e.message === 'timeout') { cdp.detach().catch(() => {}); cdp = await ctx.newCDPSession(p).catch(() => cdp); }
         return null;
       });
       if (!recording) break;
