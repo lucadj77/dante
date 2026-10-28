@@ -32,6 +32,7 @@ import {
   type NovelSettings,
 } from "./settings";
 import { snapshotDir, takeSnapshot } from "./snapshots";
+import { moveHistory } from "./history";
 import { textStats } from "./stats";
 import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
@@ -1048,6 +1049,9 @@ export class Project {
     const snapshotTemps = snapshotMoves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
     for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotMoves[i].from, snapshotTemps[i]);
     for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotTemps[i], snapshotMoves[i].to);
+
+    // The record of comments and revisions follows its scenes too.
+    await moveHistory(this.fs, renames);
 
     const after = before.map((f) => renames.get(f) ?? f);
     for (const file of before) {

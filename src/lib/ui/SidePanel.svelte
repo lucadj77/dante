@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  type Tab = "properties" | "links" | "comments";
+  type Tab = "properties" | "links" | "comments" | "history";
   // The chosen tab stays the same across sections and notes.
   let remembered = $state<{ tab: Tab }>({ tab: "properties" });
 </script>
@@ -10,6 +10,7 @@
   import { t } from "$lib/state.svelte";
   import LinksPanel from "./LinksPanel.svelte";
   import CommentsPanel from "./CommentsPanel.svelte";
+  import HistoryPanel from "./HistoryPanel.svelte";
   import { editorFor, editors } from "./editors.svelte";
   import { parseCritic } from "$lib/core/critic";
   import { findNode, scenesOf } from "$lib/core/manuscript";
@@ -29,7 +30,7 @@
   }
   let p: Props = $props();
 
-  const tabs: Tab[] = ["properties", "links", "comments"];
+  const tabs: Tab[] = ["properties", "links", "comments", "history"];
   // While a pane beside the section has the cursor, the panel shows what the pane shows.
   const pane = $derived(focusedPane());
   const path = $derived(pane ? shownIn(pane) : p.path);
@@ -70,8 +71,10 @@
       {/if}
     {:else if remembered.tab === "links"}
       <LinksPanel project={p.project} {path} version={p.version} />
-    {:else}
+    {:else if remembered.tab === "comments"}
       <CommentsPanel project={p.project} paths={commentPaths} />
+    {:else}
+      <HistoryPanel project={p.project} paths={commentPaths} version={p.version} />
     {/if}
   </div>
 </aside>
