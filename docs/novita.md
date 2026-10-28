@@ -10,6 +10,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Intestazione fissa in Tabelle e bacheche**: scorrendo una vista restano in alto il nome, i pulsanti e le impostazioni, e anche i nomi delle colonne della tabella e delle colonne della bacheca.
+
 ## 1.1.1 · 28 ottobre 2026
 
 ### Corretto

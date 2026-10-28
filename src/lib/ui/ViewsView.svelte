@@ -513,7 +513,7 @@
       </header>
 
       {#if settingsOpen && !p.embedded}
-        <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} />
+        <div class="settings"><ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} /></div>
       {/if}
 
       <div class="body" bind:this={body}>
@@ -767,10 +767,26 @@
     background: color-mix(in srgb, var(--accent) 15%, transparent);
     font-weight: 600;
   }
+  /* The view's bar, its settings and the column headings stay put; only the body scrolls. */
   main {
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     min-height: 0;
-    padding: 12px 20px 40px;
+    padding: 12px 20px 0;
+  }
+  main > :global(:not(.body)) {
+    flex: none;
+  }
+  .settings {
+    max-height: 45%;
+    overflow: auto;
+  }
+  .body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-bottom: 40px;
   }
   header {
     display: flex;
@@ -862,6 +878,13 @@
     border-bottom: 1px solid var(--border);
     vertical-align: top;
     line-height: 1.5;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg);
+    box-shadow: inset 0 -1px 0 var(--border);
   }
   th button {
     border: none;
@@ -958,7 +981,6 @@
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    overflow-x: auto;
     padding-bottom: 8px;
   }
   .column {
@@ -1000,8 +1022,14 @@
     cursor: grab;
   }
   .column h3 {
-    margin: 0 0 2px;
+    margin: -8px -8px 2px;
+    padding: 8px;
     font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg-panel);
+    border-radius: 8px 8px 0 0;
   }
   .column .card {
     cursor: grab;
@@ -1044,7 +1072,8 @@
     color: var(--text-muted);
   }
   .lanes {
-    overflow-x: auto;
+    width: max-content;
+    min-width: 100%;
   }
   .lane-row {
     display: grid;

@@ -10,6 +10,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+- **Fixed header in Tables and boards**: while a view scrolls, its name, buttons and settings stay at the top, and so do the column names of the table and of the board.
+
 ## 1.1.1 · October 28, 2026
 
 ### Fixed
