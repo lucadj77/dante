@@ -6,6 +6,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Cmd+W closes the project**: when the cursor is not in a side pane, Cmd+W (Ctrl+W on Windows and Linux) closes the project and goes back to the start screen; with the cursor in a pane it closes the pane, as before. In the web version use Alt+Cmd+W, since Cmd+W closes the browser tab.
+
 ### Changed
 
 ### Fixed

@@ -6,6 +6,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Cmd+W chiude il progetto**: se il cursore non è in un pannello a fianco, Cmd+W (Ctrl+W su Windows e Linux) chiude il progetto e torna alla schermata iniziale; con il cursore in un pannello chiude il pannello, come prima. Nella versione web usa Alt+Cmd+W, perché Cmd+W chiude la scheda del browser.
+
 ### Cambiato
 
 ### Corretto
