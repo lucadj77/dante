@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Upload finished tutorials to YouTube: python3 youtube.py [--privacy public] out/<video>-<lang> ...
+"""Upload finished tutorials to YouTube: python3 youtube.py [--privacy public] [--replace] out/<video>-<lang> ...
 
-Each video goes up with its thumbnail (the opening cover) into the "Dante - ITA" or "Dante - EN"
+Each video goes up with its thumbnail (the opening cover) into the "Dante ITA" or "Dante EN"
 playlist, in the order of its number. The description lists the video's sections, taken from
-the script. Uploaded ids are kept in youtube.json, so a video already there is updated instead
-of uploaded again. Needs YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN.
+the script. Uploaded ids are kept in youtube.json: a video already there is only put in its playlist,
+--replace uploads it again and deletes the old one. Needs YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN.
 """
-import json, os, re, subprocess, sys
+import json, os, re, sys, time
 import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STORE = os.path.join(HERE, 'youtube.json')
 API = 'https://www.googleapis.com/youtube/v3'
-PLAYLISTS = {'it': 'Dante - ITA', 'en': 'Dante - EN'}
+PLAYLISTS = {'it': 'Dante ITA', 'en': 'Dante EN'}
 SITE = {'it': 'https://dante.lucadj.eu/it/', 'en': 'https://dante.lucadj.eu/'}
 TEXT = {
     'it': {
@@ -88,13 +88,25 @@ def playlist(h, lang, store):
 
 def place(h, pid, vid, n, store, lang):
     """Puts the video in the playlist after the ones with a lower number."""
-    items = check(requests.get(f'{API}/playlistItems?part=snippet&maxResults=50&playlistId={pid}', headers=h)).get('items', [])
+    for attempt in range(6):
+        r = requests.get(f'{API}/playlistItems?part=snippet&maxResults=50&playlistId={pid}', headers=h)
+        # a playlist just created can take a little while to be found
+        if r.status_code != 404:
+            break
+        time.sleep(20)
+    items = check(r).get('items', [])
     if any(i['snippet']['resourceId']['videoId'] == vid for i in items):
         return
     numbers = {v['id']: int(k.split('-')[0]) for k, v in store.get('videos', {}).items() if k.endswith('-' + lang)}
     position = sum(1 for i in items if numbers.get(i['snippet']['resourceId']['videoId'], 0) < n)
-    check(requests.post(f'{API}/playlistItems?part=snippet', headers=h, json={'snippet': {
-        'playlistId': pid, 'position': position, 'resourceId': {'kind': 'youtube#video', 'videoId': vid}}}))
+    body = {'snippet': {'playlistId': pid, 'position': position, 'resourceId': {'kind': 'youtube#video', 'videoId': vid}}}
+    for attempt in range(6):
+        r = requests.post(f'{API}/playlistItems?part=snippet', headers=h, json=body)
+        # a playlist or video just created can take a little while to be found
+        if r.status_code != 404:
+            break
+        time.sleep(20)
+    check(r)
 
 
 def upload(h, path, snippet, status):
@@ -109,9 +121,11 @@ def upload(h, path, snippet, status):
 
 def main():
     args = sys.argv[1:]
-    privacy = 'public'
+    privacy, replace = 'public', False
     if args[:1] == ['--privacy']:
         privacy, args = args[1], args[2:]
+    if args[:1] == ['--replace']:
+        replace, args = True, args[1:]
     store = json.load(open(STORE)) if os.path.exists(STORE) else {}
     store.setdefault('videos', {})
     h = token()
@@ -125,6 +139,11 @@ def main():
                    'defaultLanguage': lang, 'defaultAudioLanguage': lang}
         status = {'privacyStatus': privacy, 'selfDeclaredMadeForKids': False}
         old = store['videos'].get(key)
+        if old and not replace:
+            place(h, playlist(h, lang, store), old['id'], n, store, lang)
+            json.dump(store, open(STORE, 'w'), indent=1, ensure_ascii=False)
+            print(f'ALREADY {key} https://youtu.be/{old["id"]}')
+            continue
         if old:
             # the same number again: a new upload replaces the old one in the playlist
             check(requests.delete(f'{API}/videos?id={old["id"]}', headers=h))
@@ -133,7 +152,10 @@ def main():
             check(requests.post(f'https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={vid}',
                                 headers={**h, 'Content-Type': 'image/jpeg'}, data=f))
         store['videos'][key] = {'id': vid, 'title': title}
-        place(h, playlist(h, lang, store), vid, n, store, lang)
+        json.dump(store, open(STORE, 'w'), indent=1, ensure_ascii=False)
+        pid = playlist(h, lang, store)
+        json.dump(store, open(STORE, 'w'), indent=1, ensure_ascii=False)
+        place(h, pid, vid, n, store, lang)
         json.dump(store, open(STORE, 'w'), indent=1, ensure_ascii=False)
         print(f'UPLOADED {key} https://youtu.be/{vid}')
 

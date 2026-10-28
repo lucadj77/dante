@@ -1,0 +1,166 @@
+{
+ "videos": {
+  "01-it": {
+   "id": "eOCdJwwSa-g",
+   "title": "IT01 Dante - Dante in tre minuti"
+  },
+  "02-it": {
+   "id": "yjg_FdAX5R0",
+   "title": "IT02 Dante - Installare e aggiornare Dante"
+  },
+  "03-it": {
+   "id": "h_0F7-rtoIw",
+   "title": "IT03 Dante - Il primo progetto"
+  },
+  "04-it": {
+   "id": "ulrxPqqIUOo",
+   "title": "IT04 Dante - Importare da Word o Scrivener"
+  },
+  "05-it": {
+   "id": "pKUeh7F5aWg",
+   "title": "IT05 Dante - L’area di lavoro"
+  },
+  "06-it": {
+   "id": "tCLCbqccbdI",
+   "title": "IT06 Dante - Cos’è il Markdown"
+  },
+  "07-it": {
+   "id": "nIrnvtPYjCU",
+   "title": "IT07 Dante - Scrivere una scena"
+  },
+  "08-it": {
+   "id": "xi5oKwZ4A4E",
+   "title": "IT08 Dante - Concentrarsi sulla pagina"
+  },
+  "09-it": {
+   "id": "kJ4zmLHzUww",
+   "title": "IT09 Dante - Organizzare il manoscritto"
+  },
+  "10-it": {
+   "id": "LICzbvS-a1Y",
+   "title": "IT10 Dante - Parti, capitoli e scene"
+  },
+  "11-it": {
+   "id": "bsIjg9lNgfg",
+   "title": "IT11 Dante - Le proprietà delle scene"
+  },
+  "12-it": {
+   "id": "WhPxNidQ5DI",
+   "title": "IT12 Dante - Personalizzare l’aspetto"
+  },
+  "13-it": {
+   "id": "VaQW-t7h6KA",
+   "title": "IT13 Dante - Istantanee e copie di sicurezza"
+  },
+  "14-it": {
+   "id": "LQGOdyp3A3w",
+   "title": "IT14 Dante - Tabelle, immagini ed elenchi nel testo"
+  },
+  "15-it": {
+   "id": "emIA-azTERM",
+   "title": "IT15 Dante - La Bibbia e i collegamenti"
+  },
+  "16-it": {
+   "id": "gfiob5-Zn9c",
+   "title": "IT16 Dante - Tabelle e bacheche"
+  },
+  "17-it": {
+   "id": "DvdlOdDFpdU",
+   "title": "IT17 Dante - Scrivere in due"
+  },
+  "18-it": {
+   "id": "QGsSttJZ_Q8",
+   "title": "IT18 Dante - Dante nel browser"
+  },
+  "19-it": {
+   "id": "NfpFPSdRAuI",
+   "title": "IT19 Dante - Statistiche e obiettivi"
+  },
+  "20-it": {
+   "id": "s4etYHjdDa4",
+   "title": "IT20 Dante - Esportare il libro"
+  },
+  "01-en": {
+   "id": "h3N3oA0RLCg",
+   "title": "EN01 Dante - Dante in three minutes"
+  },
+  "02-en": {
+   "id": "ydDif7jfp2g",
+   "title": "EN02 Dante - Installing and updating Dante"
+  },
+  "03-en": {
+   "id": "ppbrHVCeyJ0",
+   "title": "EN03 Dante - Your first project"
+  },
+  "04-en": {
+   "id": "kmsKu0EvRFM",
+   "title": "EN04 Dante - Importing from Word or Scrivener"
+  },
+  "05-en": {
+   "id": "70uznyOy_LU",
+   "title": "EN05 Dante - The workspace"
+  },
+  "06-en": {
+   "id": "BdSQa-ZWwNk",
+   "title": "EN06 Dante - What is Markdown"
+  },
+  "07-en": {
+   "id": "sHJ5ZtbMQTY",
+   "title": "EN07 Dante - Writing a scene"
+  },
+  "08-en": {
+   "id": "omgY17sHepc",
+   "title": "EN08 Dante - Focus on the page"
+  },
+  "09-en": {
+   "id": "54llGTfTfhQ",
+   "title": "EN09 Dante - Organizing the manuscript"
+  },
+  "10-en": {
+   "id": "X7UYwlXjKhw",
+   "title": "EN10 Dante - Parts, chapters and scenes"
+  },
+  "11-en": {
+   "id": "HK_77HcoSzs",
+   "title": "EN11 Dante - Scene properties"
+  },
+  "12-en": {
+   "id": "vVPvNVSbOA8",
+   "title": "EN12 Dante - Customizing the look"
+  },
+  "13-en": {
+   "id": "4Gfh6nxQNI8",
+   "title": "EN13 Dante - Snapshots and backups"
+  },
+  "14-en": {
+   "id": "tbJ67h-Nej4",
+   "title": "EN14 Dante - Tables, images and lists"
+  },
+  "15-en": {
+   "id": "3qi26aNkk3Q",
+   "title": "EN15 Dante - The Story Bible and links"
+  },
+  "16-en": {
+   "id": "4Co82c5I9tM",
+   "title": "EN16 Dante - Tables and boards"
+  },
+  "17-en": {
+   "id": "lukq2RZI9rM",
+   "title": "EN17 Dante - Writing together"
+  },
+  "18-en": {
+   "id": "5lnbXMcpP6E",
+   "title": "EN18 Dante - Dante in the browser"
+  },
+  "19-en": {
+   "id": "KN7yVqAXFKY",
+   "title": "EN19 Dante - Statistics and goals"
+  },
+  "20-en": {
+   "id": "h1_QN6y3l2o",
+   "title": "EN20 Dante - Exporting the book"
+  }
+ },
+ "playlist-it": "PLD204lrzfl20",
+ "playlist-en": "PLTfQcY6ewoow"
+}
