@@ -6,13 +6,19 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+### Cambiato
+
+### Corretto
+
+## 1.1.0-beta.2 · 28 ottobre 2026
+
+### Nuovo
+
 - **Aspetto delle immagini nella Bibbia**: nella bacheca della Bibbia, **Aspetto** accanto a Immagini sceglie se l'immagine sta in cima alla scheda o accanto al titolo, se è ritagliata o intera, quale parte tenere (in alto per i ritratti) e quanto è grande.
 
 ### Cambiato
 
 - **Pulsante Richiami**: ha un'icona nuova, una persona sopra una riga a puntini, che non si confonde con le altre; il menu di un nome riconosciuto ricorda che i richiami si spengono da quel pulsante.
-
-### Corretto
 
 ## 1.1.0-beta.1 · 28 ottobre 2026
 
