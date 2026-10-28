@@ -10,6 +10,10 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+## 1.1.1 · October 28, 2026
+
+### Fixed
+
 - **End of a paragraph with hidden blank lines**: the End key (Cmd+→ on Mac) and a click after the end of a paragraph put the cursor at the end of the paragraph, no longer in the invisible blank line or at the start of the next paragraph.
 
 ## 1.1.0 · October 28, 2026
