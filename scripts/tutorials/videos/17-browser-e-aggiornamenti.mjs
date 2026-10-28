@@ -95,9 +95,12 @@ export default async function (t) {
   await t.focus(check, d.check, { side: 'right' });
   await t.click(check, { after: 1.5 });
   const banner = p.locator('.update[role=status]').first();
-  await t.focus(banner, d.banner, { side: 'above', pointer: false });
-  await t.click(banner.getByRole('button', { name: L('update.news') }), { after: 1.2 });
-  await t.focus(banner, d.news, { side: 'above', pointer: false });
-  await t.focus(banner.getByRole('button', { name: L('update.install') }), d.install2, { side: 'above' });
+  // the notice is small at the corner of the window: shown larger while it is explained
+  await t.zoom(banner, async () => {
+    await t.focus(banner, d.banner, { side: 'above', pointer: false });
+    await t.click(banner.getByRole('button', { name: L('update.news') }), { after: 1.2 });
+    await t.focus(banner, d.news, { side: 'above', pointer: false });
+    await t.focus(banner.getByRole('button', { name: L('update.install') }), d.install2, { side: 'above' });
+  }, 1.6);
   await t.click(banner.getByRole('button', { name: L('update.later') }), { after: 1 });
 }
