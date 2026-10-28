@@ -12,6 +12,8 @@ site, <https://stella.lucadj.eu/> (repository lucadj77/stella, folder `site/`).
   only once it has an address, until then the section says the videos are coming).
 - `style.css`, `site.js`: style, enlarged screenshots and the download buttons. `fonts/`: Lora
   and Nunito Sans (SIL Open Font License, from @fontsource), served by the site itself.
+- `dcount/index.html`: a hidden page, in Italian, at `/dcount/` with the download counts read
+  from the releases on GitHub (no link from the site, `noindex`), as on Stella's site.
 - `img/en`, `img/it`: the screenshots, taken from the app with the sample project by
   `node site/shots.mjs` (with `npm run dev -- --port 5173` running) and made smaller by
   `python3 site/shrink.py`. The guide's labelled images are a different set, in `docs/img`.
@@ -35,4 +37,4 @@ base path from Pages, so without a custom domain the copies of Dante are built f
 The site uses no cookies, stores nothing in the browser and counts no visits, so it needs no
 banner. Fonts and video covers are inside the site: a visitor contacts YouTube only by opening
 a video, which is a plain link. The only other request is the one to GitHub's API for the latest
-version to download.
+version to download (and, on the hidden `/dcount/` page, for the list of releases).
