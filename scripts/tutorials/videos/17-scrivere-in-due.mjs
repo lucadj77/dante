@@ -35,6 +35,12 @@ const D = {
     proposed: 'In verde quello che aggiungi, barrato quello che togli: il testo vero cambia solo quando qualcuno accetta',
     anna2: 'Anna aveva proposto di correggere «nè» in «né»: una parola tolta, una aggiunta',
     accept: 'Accetta applica la modifica, Rifiuta la scarta. In alto, Accetta tutte e Rifiuta tutte',
+    s3h: 'La cronologia',
+    s3hb: 'Cosa è stato deciso',
+    history: 'Accanto ad Aperti, Cronologia: i commenti chiusi e le modifiche accettate o rifiutate, con chi e quando',
+    entry: 'Per una modifica, il testo prima e dopo e chi l’aveva proposta; per un commento, la discussione',
+    whole: 'Si guarda questa scena o tutto il romanzo',
+    filters: 'E si filtra per persona e per date',
     s4: 'Una scena alla volta',
     s4b: 'Chi la apre per primo la tiene',
     busy: 'Lucia',
@@ -72,6 +78,12 @@ const D = {
     proposed: 'In green what you add, struck through what you remove: the real text changes only when someone accepts',
     anna2: 'Anna had suggested “a few” for “five”: one word removed, one added',
     accept: 'Accept applies the change, Reject discards it. At the top, Accept all and Reject all',
+    s3h: 'History',
+    s3hb: 'What was decided',
+    history: 'Next to Open, History: comments resolved and changes accepted or rejected, with who and when',
+    entry: 'For a change, the text before and after and who suggested it; for a comment, the discussion',
+    whole: 'You look at this scene or at the whole novel',
+    filters: 'And you filter by person and by dates',
     s4: 'One scene at a time',
     s4b: 'Whoever opens it first keeps it',
     busy: 'Talking over the ball',
@@ -91,6 +103,8 @@ export default async function (t) {
   const side = p.locator('aside.side').first();
   const tab = (key) => side.getByRole('tab', { name: new RegExp(`^${L(key)}`) }).first();
   const item = (kind) => side.locator('li', { has: p.locator('.kind', { hasText: L(`comments.kind.${kind}`) }) }).first();
+  // Anna's suggestions, not the one just typed
+  const fromAnna = (kind) => side.locator('li', { has: p.locator('.kind', { hasText: L(`comments.kind.${kind}`) }), hasText: 'Anna' }).first();
 
   await t.say(d.intro);
   await t.click(t.text(L('welcome.sample')), { after: 1.2 });
@@ -140,18 +154,31 @@ export default async function (t) {
   const mode = side.locator('label.mode').first();
   await t.zoom(mode, () => t.focus(mode, d.mode, { side: 'left' }), 1.5);
   await t.click(mode.locator('input'), { after: 0.8 });
-  await t.click(line, { dx: 0.98, after: 0.2 });
+  // the paragraph's last line on screen
+  await t.click(line, { dx: 0.98, dy: 0.92, after: 0.2 });
   await t.press('End', 0.4);
   await t.type(d.typed, 80);
   await t.wait(0.8);
   await t.zoom(line, () => t.focus(line, d.proposed, { side: 'below', pointer: false }), 1.4);
-  const removal = item('deletion');
+  const removal = fromAnna('deletion');
   await removal.scrollIntoViewIfNeeded();
-  await t.focus([removal, item('addition')], d.anna2, { side: 'left' });
+  await t.focus([removal, fromAnna('addition')], d.anna2, { side: 'left' });
   await t.focus(removal.getByRole('button', { name: new RegExp(L('comments.accept')) }), d.accept, { side: 'left' });
   await t.click(removal.getByRole('button', { name: new RegExp(L('comments.accept')) }), { after: 1 });
-  await t.click(item('addition').getByRole('button', { name: new RegExp(L('comments.accept')) }), { after: 1.2 });
+  await t.click(fromAnna('addition').getByRole('button', { name: new RegExp(L('comments.accept')) }), { after: 1.2 });
   await t.click(mode.locator('input'), { after: 0.8 });
+
+  await t.title(d.s3h, d.s3hb);
+  const history = side.getByRole('tab', { name: L('side.history'), exact: true }).first();
+  await t.zoom(history, () => t.focus(history, d.history, { side: 'left' }), 1.5);
+  await t.click(history, { after: 1 });
+  const panel = side.locator('.history').first();
+  await t.focus(panel.locator('li').first(), d.entry, { side: 'left' });
+  const scope = panel.locator('.scope').first();
+  await t.click(scope.locator('input').nth(1), { after: 1 });
+  await t.focus(scope, d.whole, { side: 'left' });
+  await t.focus(panel.locator('.filters').first(), d.filters, { side: 'left' });
+  await t.click(side.getByRole('tab', { name: L('comments.open'), exact: true }).first(), { after: 0.8 });
 
   await t.title(d.s4, d.s4b, () => t.click(t.text(d.busy), { after: 1.2 }));
   const banner = p.getByText(L('presence.editing', { user: 'Anna' })).first();
