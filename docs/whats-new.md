@@ -6,9 +6,13 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Column width in views**: in tables drag the right edge of a heading to change the column's width; in a grouped timeline do the same on a column's title. Double-click the edge to go back to automatic widths. The widths are saved with the view.
+
 ### Changed
 
 ### Fixed
+
+- **Timeline too wide**: in 1.1.2 the columns of a grouped timeline grew as wide as their longest text; now they fit the window as before.
 
 ## 1.1.2 · October 28, 2026
 
