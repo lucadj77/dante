@@ -12,6 +12,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Intestazione fissa in Tabelle e bacheche**: scorrendo una vista restano in alto il nome, i pulsanti e le impostazioni, e anche i nomi delle colonne della tabella e delle colonne della bacheca.
 - **Fine paragrafo con le righe vuote nascoste**: il tasto Fine (Cmd+→ su Mac) e un clic dopo la fine di un paragrafo portano il cursore alla fine del paragrafo, e non più nella riga vuota invisibile o all'inizio del paragrafo dopo.
 - **Allegati subito visibili**: la prima immagine aggiunta a un romanzo crea la cartella Allegati dentro Ricerca, e ora la cartella compare subito nella sezione Note, senza riaprire il progetto.
 - **Avviso di aggiornamento leggibile**: nell’avviso di una nuova versione il testo e le novità occupano tutta la larghezza, con i tre pulsanti sotto; prima erano schiacciati in una colonna stretta.
