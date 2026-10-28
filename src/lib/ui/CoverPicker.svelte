@@ -4,12 +4,19 @@
   import type { Project } from "$lib/core/project";
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
-  import { coverPicture, imageToPng } from "./coverImage";
+  import { base64, coverPicture, imageToPng } from "./coverImage";
+  import { imageMime } from "$lib/core/images";
   import { failure } from "./errors";
   import ErrorText from "./ErrorText.svelte";
 
-  // A picture can be chosen only for a project that exists, which keeps it among its files.
-  let { cover = $bindable(), text, project }: { cover: CoverSettings; text: CoverText; project?: Project } = $props();
+  // A project keeps the picture among its files at once; a novel not yet created holds it in
+  // `pending`, which the new project's form saves once the project exists.
+  let {
+    cover = $bindable(),
+    text,
+    project,
+    pending = $bindable(null),
+  }: { cover: CoverSettings; text: CoverText; project?: Project; pending?: { name: string; data: Uint8Array } | null } = $props();
 
   const chosen = $derived(resolveCover(cover, text.title));
   const show = $derived({ title: true, subtitle: true, authors: true, ...cover.show });
@@ -19,6 +26,10 @@
   /** The picture, read from the project, as a data: URL; "" without one. */
   let picture = $state("");
   $effect(() => {
+    if (!project) {
+      picture = pending ? `data:${imageMime(pending.name)};base64,${base64(pending.data)}` : "";
+      return;
+    }
     const path = cover.image ?? "";
     if (!project || !path) {
       picture = "";
@@ -28,6 +39,7 @@
       if ((cover.image ?? "") === path) picture = url;
     });
   });
+  const hasImage = $derived(!!cover.image || !!pending);
   const preview = $derived(svgUrl(coverSvg(text, cover, picture ? { url: picture } : undefined)));
 
   let input = $state<HTMLInputElement | null>(null);
@@ -38,7 +50,6 @@
   const KEPT = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
 
   async function choose(file: File) {
-    if (!project) return;
     error = "";
     busy = true;
     try {
@@ -49,6 +60,11 @@
         if (!png) throw new Error(t("cover.imageUnreadable"));
         data = png.data;
         name = name.replace(/\.[^.]*$/, "") + ".png";
+      }
+      if (!project) {
+        pending = { name, data };
+        cover = { ...cover, template: chosen.template, palette: chosen.palette };
+        return;
       }
       const path = await project.addAttachment(name, data);
       cover = { ...cover, template: chosen.template, palette: chosen.palette, image: path };
@@ -65,30 +81,34 @@
 <div class="cover-picker">
   <img class="preview" src={preview} alt={t("cover.preview")} />
   <div class="choices">
-    {#if project}
-      <span class="label">{t("cover.image")}</span>
-      <div class="row">
-        <button type="button" disabled={busy} onclick={() => input?.click()}>{cover.image ? t("cover.imageChange") : t("cover.imageChoose")}</button>
-        {#if cover.image}
-          <button type="button" onclick={() => (cover = { ...cover, image: "" })}>{t("cover.imageRemove")}</button>
-          <span class="path" title={cover.image}>{cover.image.split("/").pop()}</span>
-        {/if}
-        <input
-          bind:this={input}
-          type="file"
-          accept="image/*"
-          hidden
-          onchange={(e) => {
-            const el = e.currentTarget;
-            const file = el.files?.[0];
-            el.value = "";
-            if (file) void choose(file);
-          }}
-        />
-      </div>
-      {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
-    {/if}
-    {#if !cover.image}
+    <span class="label">{t("cover.image")}</span>
+    <div class="row">
+      <button type="button" disabled={busy} onclick={() => input?.click()}>{hasImage ? t("cover.imageChange") : t("cover.imageChoose")}</button>
+      {#if hasImage}
+        <button
+          type="button"
+          onclick={() => {
+            cover = { ...cover, image: "" };
+            pending = null;
+          }}>{t("cover.imageRemove")}</button
+        >
+        <span class="path" title={cover.image || pending?.name}>{(cover.image || pending?.name || "").split("/").pop()}</span>
+      {/if}
+      <input
+        bind:this={input}
+        type="file"
+        accept="image/*"
+        hidden
+        onchange={(e) => {
+          const el = e.currentTarget;
+          const file = el.files?.[0];
+          el.value = "";
+          if (file) void choose(file);
+        }}
+      />
+    </div>
+    {#if error}<p class="error" role="alert"><ErrorText text={error} /></p>{/if}
+    {#if !hasImage}
       <span class="label">{t("cover.template")}</span>
       <div class="templates">
         {#each COVER_TEMPLATES as template (template)}

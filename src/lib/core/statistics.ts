@@ -5,6 +5,7 @@ import { isWithin } from "./path";
 import { isWritingDay } from "./sessions";
 import { projectStatus, type NovelSettings, type PageUnit } from "./settings";
 import { plainText, textStats } from "./stats";
+import { propertyDef as propertyDefOf } from "./properties";
 
 // Numbers about the manuscript for the Statistics section: length, chapters, the notes
 // of the Story Bible mentioned in the scenes, the most used words, and goals.
@@ -301,10 +302,66 @@ export interface TreeMark {
   hue?: number | null;
   /** The property the dot shows. */
   property?: string;
+  /** A colour the writer chose for this value, as #rrggbb, in place of the usual one. */
+  color?: string;
 }
 
 /** How many colours the dots have for a property other than the stage of work. */
 export const DOT_HUES = 8;
+
+/** The dots' usual colours for a property other than the stage of work, as the tree draws them. */
+export const DOT_COLORS = ["#d9534f", "#e8913a", "#c7a923", "#4ea65a", "#2fa3a3", "#4a7fd6", "#8c63d6", "#d064a6"];
+
+/** One value of the dot's property, as the legend of colours lists it. */
+export interface DotValue {
+  value: string;
+  /** Its usual colour: a hue (0 to 7) for another property, a tone (0 to 3) for the stage of work. */
+  hue: number | null;
+  tone: number | null;
+  /** The colour chosen for it, as #rrggbb; "" for the usual one. */
+  color: string;
+}
+
+/** The property the tree's dot shows, and whether it is the stage of work. */
+export function dotProperty(settings: NovelSettings): { name: string; isStatus: boolean } {
+  const status = projectStatus(settings);
+  const name = settings.tree?.dot?.trim() || status.name;
+  return { name, isStatus: name.toLowerCase() === status.name.toLowerCase() };
+}
+
+/** The colour chosen for a value of the dot's property; "" for the usual one. */
+export function chosenColor(settings: NovelSettings, property: string, value: string): string {
+  const colors = settings.tree?.colors ?? {};
+  const own = colors[property] ?? Object.entries(colors).find(([k]) => k.toLowerCase() === property.toLowerCase())?.[1];
+  return own?.[value.trim().toLowerCase()] ?? "";
+}
+
+/**
+ * Every value of the dot's property with its colour: the allowed values first, then those
+ * the scenes hold, in reading order, as the tree gives them colours.
+ */
+export function dotLegend(manuscript: ManuscriptNode, marks: Map<string, TreeMark>, settings: NovelSettings): DotValue[] {
+  const { name, isStatus } = dotProperty(settings);
+  const status = projectStatus(settings);
+  const out: DotValue[] = [];
+  const seen = new Set<string>();
+  const push = (value: string, hue: number | null) => {
+    if (!value || seen.has(value.toLowerCase())) return;
+    seen.add(value.toLowerCase());
+    out.push({ value, hue: isStatus ? null : hue, tone: isStatus ? statusTone(value, status.values) : null, color: chosenColor(settings, name, value) });
+  };
+  const defined = isStatus ? status.values : (propertyDefOf(settings.properties, name)?.values ?? []);
+  defined.forEach((v, i) => push(v, i % DOT_HUES));
+  const visit = (node: ManuscriptNode) => {
+    if (node.kind === "scene") {
+      const mark = marks.get(node.path);
+      // A list shows its values together: the legend lists the value as the tree reads it.
+      if (mark?.status) push(mark.status, mark.hue ?? null);
+    } else node.children.forEach(visit);
+  };
+  visit(manuscript);
+  return out;
+}
 
 /** A property value as the tree's tooltip reads it: "[[Renzo|R.]]" is "R.", a list is "a, b". */
 export function dotValue(value: unknown): string {
@@ -362,6 +419,8 @@ export function treeMarks(manuscript: ManuscriptNode, index: NoteIndex, settings
         mark.hue = hue;
         mark.property = property;
       }
+      const color = value ? chosenColor(settings, property, value) : "";
+      if (color) mark.color = color;
       out.set(node.path, mark);
       return n;
     }

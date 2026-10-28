@@ -8,7 +8,7 @@ import { bookToMarkdown, escapeMarkdown } from "../export/markdown";
 import { coverSvg } from "../cover";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
-import { defaultSettings, parseSettings } from "../settings";
+import { defaultSettings, parseSettings, separatorParts } from "../settings";
 
 describe("markdown to blocks", () => {
   it("keeps emphasis and drops markup", () => {
@@ -285,5 +285,34 @@ describe("blank lines", () => {
     const xml = await documentXml(await docxBytes(bookToDocx(book, settings, { words: "words" })));
     expect(xml).toMatch(/Prima\.<\/w:t><\/w:r><\/w:p><w:p><w:pPr><w:pStyle w:val="Normal"\/><\/w:pPr><\/w:p>/);
     expect(new TextDecoder().decode(bookToEpub(book, settings, "id"))).toBeTruthy();
+  });
+});
+
+describe("scene separator", () => {
+  it("reads the line sign as a new line and the empty lines at either end as blank lines", () => {
+    expect(separatorParts("* * *")).toEqual({ before: 0, lines: ["* * *"], after: 0 });
+    expect(separatorParts("\\n* * *\\n")).toEqual({ before: 1, lines: ["* * *"], after: 1 });
+    expect(separatorParts("\\n\\n#\\n~\\n")).toEqual({ before: 2, lines: ["#", "~"], after: 1 });
+    expect(separatorParts("|* * *|", "|")).toEqual({ before: 1, lines: ["* * *"], after: 1 });
+    expect(separatorParts("a\\nb", "")).toEqual({ before: 0, lines: ["a\\nb"], after: 0 });
+    expect(separatorParts("")).toEqual({ before: 1, lines: [], after: 0 });
+  });
+
+  it("writes blank lines around the characters, and two blank lines when chosen", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\nexport:\n  docx:\n    sceneSeparator: '\\n* * *\\n'\n",
+      "Manuscript/010 Uno/010 A.md": "Prima.",
+      "Manuscript/010 Uno/020 B.md": "Dopo.",
+    });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    const settings = project.settings.export.docx;
+    expect(bookToMarkdown(book, settings)).toContain("Prima.\n\n&nbsp;\n\n\\* \\* \\*\n\n&nbsp;\n\nDopo.");
+    const xml = await documentXml(await docxBytes(bookToDocx(book, settings, { words: "words" })));
+    const empty = '<w:p><w:pPr><w:pStyle w:val="SceneBreak"/></w:pPr></w:p>';
+    expect(xml).toContain(`${empty}<w:p><w:pPr><w:pStyle w:val="SceneBreak"/></w:pPr><w:r><w:t xml:space="preserve">* * *</w:t></w:r></w:p>${empty}`);
+    const two = await documentXml(await docxBytes(bookToDocx(book, { ...settings, sceneBreak: "twoBlankLines" }, { words: "words" })));
+    expect(two).toContain(`Prima.</w:t></w:r></w:p>${empty}${empty}`);
+    expect(bookToTypst(book, { ...settings, sceneBreak: "twoBlankLines" }, { words: "parole" })).toMatch(/#v\([\d.]+em\)/);
   });
 });

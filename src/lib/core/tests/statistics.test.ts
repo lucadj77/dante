@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { dayKey, isWritingDay, readLogs, SessionRecorder, streak, wordsByDay } from "../sessions";
-import { dotValue, frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneSize, statusTone, treeMarks } from "../statistics";
+import { dotValue, frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, sceneSheets, sceneSize, statusTone, treeMarks, dotLegend } from "../statistics";
 import { defaultSettings, parseSettings } from "../settings";
 
 function sample() {
@@ -207,5 +207,24 @@ describe("tree marks", () => {
     expect(marks.get("Manoscritto/010 Uno/040 D.md")).toMatchObject({ status: "", hue: null });
     expect(dotValue(["[[Anna]]", "Bruno"])).toBe("Anna, Bruno");
     expect(dotValue("[[Luoghi/Il paese#Chiesa]]")).toBe("Il paese");
+  });
+
+  it("lists the dot's values with their colours, and uses the colours chosen", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\ntree:\n  dot: pov\n  colors:\n    pov:\n      Lucia: '#112233'\n      renzo: rosso\n",
+      "Manoscritto/010 Uno/010 A.md": '---\npov: "[[Renzo]]"\n---\nUno.',
+      "Manoscritto/010 Uno/020 B.md": '---\npov: "[[Lucia]]"\n---\nDue.',
+    });
+    const project = await Project.open(fs);
+    expect(project.settings.tree.colors).toEqual({ pov: { lucia: "#112233" } });
+    const marks = treeMarks(project.manuscript, await project.index(), project.settings, (_, body) => sceneSize(body));
+    expect(marks.get("Manoscritto/010 Uno/020 B.md")).toMatchObject({ status: "Lucia", hue: 1, color: "#112233" });
+    expect(marks.get("Manoscritto/010 Uno/010 A.md")?.color).toBeUndefined();
+    expect(dotLegend(project.manuscript, marks, project.settings)).toEqual([
+      { value: "Renzo", hue: 0, tone: null, color: "" },
+      { value: "Lucia", hue: 1, tone: null, color: "#112233" },
+    ]);
+    await project.saveSettings({ ...project.settings, tree: { dot: "pov", colors: {} } });
+    expect(await fs.readText("dante.yaml")).not.toContain("colors");
   });
 });

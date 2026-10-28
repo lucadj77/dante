@@ -1,5 +1,5 @@
 import { stringify } from "yaml";
-import type { DocxSettings, Separator } from "../settings";
+import { separatorParts, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { setAlignment } from "../alignment";
@@ -88,7 +88,14 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
   const sceneLevel = chapterLevel + 1;
   const separator = (kind: Separator): string | null => {
     if (kind === "none") return null;
-    if (kind === "characters" && opts.sceneSeparator.trim()) return escapeStart(escapeMarkdown(opts.sceneSeparator.trim()));
+    if (kind === "characters") {
+      // Blank lines around the characters are written as Dante writes them in a scene.
+      const parts = separatorParts(opts.sceneSeparator, opts.lineSign);
+      if (parts.lines.length) {
+        const text = parts.lines.map((line) => escapeStart(escapeMarkdown(line))).join("  \n");
+        return [...Array(parts.before).fill(BLANK_LINE), text, ...Array(parts.after).fill(BLANK_LINE)].join("\n\n");
+      }
+    }
     // A blank line or a new page has no Markdown of its own: a rule marks the break.
     return "---";
   };

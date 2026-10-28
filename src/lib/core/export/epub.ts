@@ -1,4 +1,4 @@
-import type { DocxSettings, Separator } from "../settings";
+import { separatorParts, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { zip } from "./zip";
@@ -158,9 +158,15 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
   }
   for (const html of front) add("", html);
 
+  const blank = (n: number) => `<p class="break blank"></p>`.repeat(n);
+  const characters = () => {
+    const parts = separatorParts(opts.sceneSeparator, opts.lineSign);
+    return blank(parts.before) + (parts.lines.length ? `<p class="break">${lines(parts.lines.join("\n"))}</p>` : "") + blank(parts.after);
+  };
   const separator = (kind: Separator): string => {
-    if (kind === "characters") return `<p class="break">${lines(opts.sceneSeparator)}</p>`;
-    if (kind === "blankLine") return `<p class="break blank"></p>`;
+    if (kind === "characters") return characters();
+    if (kind === "blankLine") return blank(1);
+    if (kind === "twoBlankLines") return blank(2);
     if (kind === "pageBreak") return `<div class="pagebreak"></div>`;
     return "";
   };
@@ -177,7 +183,7 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
         if (block.marker) out.push(`<p class="item" style="${left}"><span class="marker">${escapeXml(block.marker)}</span>${inline(block.runs)}</p>`);
         else out.push(`<p class="item more" style="${left}">${inline(block.runs)}</p>`);
       }
-      else if (block.type === "break") out.push(`<p class="break">${lines(opts.sceneSeparator)}</p>`);
+      else if (block.type === "break") out.push(characters());
       else if (block.type === "blank") out.push(`<p class="empty">&#160;</p>`);
       else if (block.type === "table") {
         const style = (i: number) => (block.align[i] ? ` style="text-align: ${block.align[i]}"` : "");

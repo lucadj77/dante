@@ -1,4 +1,4 @@
-import { parseDocument } from "yaml";
+import { isMap, isScalar, parseDocument } from "yaml";
 
 export interface NoteParts {
   /** YAML text between the `---` fences, without them; null when the note has no frontmatter. */
@@ -61,4 +61,30 @@ export function writeProperties(text: string, changes: Properties): string {
 export function replaceBody(text: string, body: string): string {
   const parts = splitNote(text);
   return joinNote({ frontmatter: parts.frontmatter, body });
+}
+
+/**
+ * Gives a property another name, in its place among the others, keeping its value and the
+ * formatting of the rest; null when the note has no such property, or already has one with
+ * the new name (two properties are never merged).
+ */
+export function renameProperty(text: string, from: string, to: string): string | null {
+  const parts = splitNote(text);
+  if (parts.frontmatter === null) return null;
+  const doc = parseDocument(parts.frontmatter);
+  if (doc.errors.length > 0 || !isMap(doc.contents)) return null;
+  const pairs = doc.contents.items;
+  const keyOf = (pair: (typeof pairs)[number]) => (isScalar(pair.key) ? String(pair.key.value) : String(pair.key));
+  const pair = pairs.find((p) => keyOf(p) === from);
+  if (!pair) return null;
+  if (from !== to && pairs.some((p) => p !== pair && keyOf(p) === to)) return null;
+  const key = doc.createNode(to);
+  // A comment above the property belongs to its name: it stays there.
+  if (isScalar(pair.key)) {
+    key.commentBefore = pair.key.commentBefore;
+    key.spaceBefore = pair.key.spaceBefore;
+  }
+  (pair as { key: unknown }).key = key;
+  const yaml = doc.toString({ lineWidth: 0 }).replace(/\n$/, "");
+  return joinNote({ frontmatter: yaml, body: parts.body });
 }

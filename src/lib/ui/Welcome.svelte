@@ -39,6 +39,9 @@
   // New project form.
   let creating = $state(false);
   let title = $state("");
+  let subtitle = $state("");
+  /** The cover's picture chosen in the form, saved among the attachments once the project exists. */
+  let coverImage = $state<{ name: string; data: Uint8Array } | null>(null);
   let authors = $state<string[]>(app.settings.userName ? [app.settings.userName] : []);
   let language = $state(app.settings.language);
   let parent = $state("");
@@ -260,7 +263,7 @@
       }
       if (!desktop) {
         // In a browser an imported book can be tried, kept only while the page is open.
-        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), authors, language, cover: resolveCover(cover, title) }, null, exportPreferences(), starters());
+        const { project } = await Project.create(new MemoryFs({}), { title: title.trim(), subtitle, authors, language, cover: resolveCover(cover, title), coverImage: coverImage ?? undefined }, null, exportPreferences(), starters());
         if (imported) await project.importBook(imported);
         if (imported && content?.notes) await project.importNotes(content.notes, chosenDestinations());
         onOpen(project);
@@ -288,7 +291,7 @@
     }
     const { project } = await Project.create(
       fs,
-      { title: title.trim(), authors, language, cover: resolveCover(cover, title) },
+      { title: title.trim(), subtitle, authors, language, cover: resolveCover(cover, title), coverImage: coverImage ?? undefined },
       imported ? null : { chapter: t("untitled"), scene: t("untitledScene") },
       exportPreferences(),
       starters(),
@@ -345,6 +348,7 @@
       }}
     >
       <label>{t("settings.title")} <input bind:value={title} required /></label>
+      <label>{t("settings.subtitle")} <input bind:value={subtitle} /></label>
       <AuthorsInput bind:authors />
       <label
         >{t("settings.language")}
@@ -374,7 +378,7 @@
       {/if}
       <div class="field">
         <span class="label">{t("cover.title")}</span>
-        <CoverPicker bind:cover text={{ title, authors }} />
+        <CoverPicker bind:cover bind:pending={coverImage} text={{ title, subtitle, authors }} />
       </div>
       {#if folders}
       <div class="where">
