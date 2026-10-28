@@ -158,14 +158,19 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
   let recording = false;
   const dir = out && path.join(out, 'frames');
   if (dir && !FAST) { fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true }); }
-  const cdp = await ctx.newCDPSession(p);
+  let cdp = await ctx.newCDPSession(p);
+  // A reload can leave a screenshot unanswered for good: give up after a while and start a new session.
+  const send = (method, params) => Promise.race([cdp.send(method, params), new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 3000))]);
   const capture = async () => {
     while (recording) {
       const at = Date.now() / 1000;
       // the clip is measured on the whole document: it follows the page when the document scrolls
-      const view = (await cdp.send('Page.getLayoutMetrics').catch(() => null))?.cssVisualViewport;
+      const view = (await send('Page.getLayoutMetrics').catch(() => null))?.cssVisualViewport;
       const clip = { x: view?.pageX ?? 0, y: view?.pageY ?? 0, width: 1440, height: 810, scale: 4 / 3 };
-      const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true, clip }).catch(() => null);
+      const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 92, optimizeForSpeed: true, clip }).catch(async (e) => {
+        if (e.message === 'timeout') { cdp.detach().catch(() => {}); cdp = await ctx.newCDPSession(p); }
+        return null;
+      });
       if (!recording) break;
       // a reload drops a shot or two: wait for the new page instead of stopping
       if (!shot) { await new Promise((r) => setTimeout(r, 50)); continue; }
