@@ -6,12 +6,36 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
-- **Cmd+W closes the project**: when the cursor is not in a side pane, Cmd+W (Ctrl+W on Windows and Linux) closes the project and goes back to the start screen; with the cursor in a pane it closes the pane, as before. In the web version use Alt+Cmd+W, since Cmd+W closes the browser tab.
-
 ### Changed
 
 ### Fixed
 
+## 1.1.0 · October 28, 2026
+
+### New
+
+- **How Story Bible pictures look**: on the Story Bible board, **Look** next to Pictures chooses whether the picture sits across the top of the card or beside the title, cropped or whole, which part to keep (the top, for portraits) and how big it is.
+- **Cover and subtitle when creating**: when creating a new novel you can write the subtitle and pick a picture of your own for the cover, without going through Settings.
+- **Rename a property everywhere**: in the Properties panel, opening a property's definition, **Rename** changes its name in every scene and note, in the views and in the settings.
+- **Properties for every scene**: when creating a property, choose whether it is for the open scene only or for every scene of the novel; in the other scenes it shows up ready to fill in.
+- **Dot colours**: when a property colours the dots of the tree (for example the point of view), its definition shows the colour of each value and lets you change it.
+- **Story Bible mentions**: names and aliases of Story Bible entries written in the text get a dotted underline. Right-click shows the entry and lets you open it or turn the name into a link. The **Names** button in the toolbar turns them on and off; the Links panel lists them separately.
+- **History of comments and revisions**: in the Comments tab, **History** shows who accepted, rejected or closed what and when, with the text before and after, for the scene or the whole novel, filtered by person and dates.
+- **Question about blank lines**: when you leave more empty lines between two paragraphs than usual, Dante asks whether you want a real blank line, one that shows in the book too. Turn it off with **Don't ask again** or in Settings > Appearance.
+- **Pictures on Story Bible cards**: on the Story Bible board the cards show their first picture; the **Pictures** box hides them.
+- **Scene separator over several lines**: in export, between scenes, there is also **Two blank lines**, and in your own separator each `\n` starts a new line: `\n* * *\n` puts three asterisks between two blank lines.
+- **Cmd+W closes the project**: when the cursor is not in a side pane, Cmd+W (Ctrl+W on Windows and Linux) closes the project and goes back to the start screen; with the cursor in a pane it closes the pane, as before. In the web version use Alt+Cmd+W, since Cmd+W closes the browser tab.
+
+### Changed
+
+- **A single Enter for a new paragraph**: Enter starts a new paragraph and the empty line that separates paragraphs in the file is no longer shown: only the space between paragraphs remains, the arrows skip it and Backspace at the start of a paragraph joins it to the one before. Enter twice in a row leaves a blank line that shows in the book too (¶); Shift+Enter starts a new line in the same paragraph. It can be turned off in Settings > Appearance.
+- **Names button**: it has a new icon, a person above a dotted line, that no longer looks like the others; the menu of a recognised name reminds you that the button turns the names off.
+- **Tidier Properties panel**: the panel is split into sections that fold and unfold with a click; **+ New** under the heading opens the form to add a property, and the more visible symbol before a name opens its definition.
+- **Add buttons on one row**: Scene, Chapter, Part and Import always fit on a single row.
+
+### Fixed
+
+- **Card previews**: a picture at the start of the text no longer shows as "!" followed by the file name.
 - **Attachments shown at once**: the first image added to a novel creates the Attachments folder inside Research, and now the folder shows at once in the Notes section, without reopening the project.
 - **Readable update notice**: in the notice of a new version the text and the news take the whole width, with the three buttons below; before, they were squeezed into a narrow column.
 
