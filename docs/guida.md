@@ -310,7 +310,7 @@ Il pannello è diviso in sezioni: la scena (titolo, nome del file, sinossi, obie
 - **Rinominare una proprietà in tutto il romanzo**: nella definizione, scrivi il nome nuovo in **Nome in tutto il romanzo** e premi **Rinomina**. Dante cambia il nome in tutte le scene e le note, nelle tabelle e bacheche e nelle impostazioni. Se una nota ha già una proprietà con il nome nuovo, lì le due restano separate e Dante te lo dice. Lo stato e le proprietà che Dante legge per nome (titolo, sinossi, obiettivo, tipo, alias) non si rinominano.
 - **Colori dei pallini**: aprendo la definizione della proprietà che colora i pallini dell'indice (lo stato, o quella scelta in Impostazioni), sotto **Colori del pallino nell'indice** vedi ogni valore con il suo colore. Un clic sul quadratino del colore lo cambia; **Colore di base** torna a quello di prima.
 
-  <img src="img/tipo-proprieta.png" width="280" alt="Il riquadro che si apre cliccando il simbolo T accanto a «stato»: tipo Testo, valori ammessi idea, bozza, rivista, finita">
+  <img src="img/tipo-proprieta.png" width="280" alt="Il riquadro che si apre cliccando il simbolo T accanto a «stato»: tipo Testo, valori ammessi idea, bozza, rivista, finita, e il colore del pallino per ciascun valore">
 
   *Esempio:* vuoi segnare in quale stagione si svolge ogni scena. Premi **+ Nuova**, scrivi «stagione», scegli **Testo** e **Per tutte le scene del romanzo**, poi **Aggiungi proprietà**. Clicca la **T** accanto al nome e scrivi nei valori ammessi «primavera, estate, autunno, inverno». Da quel momento, in ogni scena, «stagione» è un menu con quei quattro valori, e una vista può raggruppare le scene per stagione. Se poi preferisci chiamarla «periodo», la rinomini dalla stessa definizione.
 
