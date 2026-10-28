@@ -6,6 +6,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Cmd+W chiude il progetto**: se il cursore non è in un pannello a fianco, Cmd+W (Ctrl+W su Windows e Linux) chiude il progetto e torna alla schermata iniziale; con il cursore in un pannello chiude il pannello, come prima. Nella versione web usa Alt+Cmd+W, perché Cmd+W chiude la scheda del browser.
+
 ### Cambiato
 
 - **Invio come in Word**: Invio inizia un nuovo paragrafo e la riga vuota che nel file separa i paragrafi non si vede più: tra un paragrafo e l'altro resta solo lo spazio, le frecce lo saltano e Backspace all'inizio di un paragrafo lo unisce a quello prima. Invio due volte di seguito lascia una riga bianca che si vede anche nel libro (¶); Maiusc+Invio va a capo nello stesso paragrafo. Si spegne in Impostazioni > Aspetto.

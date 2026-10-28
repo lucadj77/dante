@@ -356,6 +356,13 @@
       return;
     }
     if (!(e.metaKey || e.ctrlKey)) return;
+    // Cmd+W closes the pane with the cursor, or the project (on the Mac it comes from the
+    // menu, see onMount). A browser keeps Cmd+W for itself, so Alt+Cmd+W does the same everywhere.
+    if (!e.shiftKey && (e.code === "KeyW" || e.key.toLowerCase() === "w")) {
+      e.preventDefault();
+      closeFocused();
+      return;
+    }
     if (withPanes && paneKey(e)) {
       e.preventDefault();
       return;
@@ -404,21 +411,16 @@
       focusPane(next);
       return true;
     }
-    // Cmd+W closes the pane with the cursor (on the Mac it comes from the menu, see onMount).
-    // A browser keeps Cmd+W for itself, so Alt+Cmd+W does the same everywhere.
-    if (!e.shiftKey && (e.code === "KeyW" || e.key.toLowerCase() === "w")) {
-      closeFocused();
-      return true;
-    }
     return false;
   }
 
+  /** Cmd+W: closes the pane with the cursor or, with the cursor elsewhere, the project. */
   function closeFocused() {
-    const pane = focusedPane();
+    const pane = withPanes ? focusedPane() : null;
     if (pane) {
       closePane(pane.id);
       focusPane(null);
-    }
+    } else void close();
   }
 
   /** Something is being dragged: the right edge takes it to open it beside. */

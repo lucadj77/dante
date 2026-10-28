@@ -102,12 +102,12 @@ fn updates_supported() -> bool {
 }
 
 /// The Mac menu bar, as Tauri makes it but for Cmd+W: the usual "Close Window" would leave
-/// the app without a window, so the shortcut closes the pane beside the text instead
-/// (the page receives it as the "close-pane" event). Elsewhere there is no menu bar and
+/// the app without a window, so the shortcut closes the pane beside the text instead, or
+/// the project when no pane has the cursor (the page receives it as the "close-pane" event). Elsewhere there is no menu bar and
 /// the page sees Ctrl+W itself.
 fn mac_menu(app: &App) -> tauri::Result<()> {
     let h = app.handle();
-    let close_pane = MenuItem::with_id(h, "close-pane", "Close Pane", true, Some("CmdOrCtrl+W"))?;
+    let close_pane = MenuItem::with_id(h, "close-pane", "Close", true, Some("CmdOrCtrl+W"))?;
     let app_menu = Submenu::with_items(
         h,
         "Dante",

@@ -6,6 +6,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Cmd+W closes the project**: when the cursor is not in a side pane, Cmd+W (Ctrl+W on Windows and Linux) closes the project and goes back to the start screen; with the cursor in a pane it closes the pane, as before. In the web version use Alt+Cmd+W, since Cmd+W closes the browser tab.
+
 ### Changed
 
 - **Enter as in Word**: Enter starts a new paragraph and the empty line that separates paragraphs in the file is no longer shown: only the space between paragraphs remains, the arrows skip it and Backspace at the start of a paragraph joins it to the one before. Enter twice in a row leaves a blank line that shows in the book too (¶); Shift+Enter starts a new line in the same paragraph. It can be turned off in Settings > Appearance.

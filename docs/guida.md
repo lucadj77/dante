@@ -72,7 +72,7 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
 
 Un progetto nuovo ha già la proprietà **stato** per le scene (idea, bozza, rivista, finita), il **punto di vista** collegato ai personaggi e due viste pronte nella sezione **Tabelle e bacheche**: una bacheca delle scene per stato e una tabella delle scene (capitolo 11). La prima scena, vuota, mostra in grigio tre righe su come cominciare, che spariscono appena scrivi.
 
-I progetti aperti di recente restano elencati nella schermata iniziale. Per tornarci, usa **Chiudi progetto** nella barra a sinistra. Dante ricorda la dimensione e la posizione della finestra e la riapre com'era.
+I progetti aperti di recente restano elencati nella schermata iniziale. Per tornarci, usa **Chiudi progetto** nella barra a sinistra, oppure Cmd+W / Ctrl+W con il cursore nel testo. Dante ricorda la dimensione e la posizione della finestra e la riapre com'era.
 
 Ogni progetto contiene anche un file con il titolo del romanzo e l'estensione **.dante** (per esempio `Il mio romanzo.dante`). Un **doppio clic** su quel file apre Dante con il romanzo già caricato; se Dante è già aperto, passa a quel romanzo dopo aver salvato il testo. Il file si può rinominare, ma deve restare nella cartella principale del progetto. Funziona con Dante installato, non con la copia portatile né avviato da `npm run tauri dev`.
 
@@ -686,7 +686,7 @@ Su Mac si usa Cmd, su Windows e Linux Ctrl; Alt è il tasto che sul Mac si chiam
 | Cmd+\\ (tastiera italiana: Cmd+ù) | Ctrl+\\ (tastiera italiana: Ctrl+ù) | apre un pannello a fianco, scegliendo con la ricerca cosa mostrare |
 | Alt+Cmd+\\ | Ctrl+Alt+\\ | scambia il pannello con ciò che mostra la sezione |
 | Alt+Cmd+← / Alt+Cmd+→ | Ctrl+Alt+← / Ctrl+Alt+→ | sposta il cursore tra la sezione e i pannelli |
-| Cmd+W | Ctrl+W | chiude il pannello che ha il cursore |
+| Cmd+W | Ctrl+W | chiude il pannello che ha il cursore; se il cursore non è in un pannello, chiude il progetto e torna alla schermata iniziale |
 
 ### Approfondimento
 
@@ -716,7 +716,7 @@ La stessa scena può stare al centro e in un pannello: ciò che scrivi in uno co
 - Ogni file aperto ha un solo documento in memoria, condiviso da tutti gli editor che lo mostrano: il salvataggio, le istantanee automatiche e il ricaricamento dopo una modifica sul disco passano da lì, quindi due editor dello stesso file non si sovrascrivono.
 - Prima di rinominare o spostare file, Dante scrive ciò che gli editor hanno ancora in memoria; i pannelli seguono le voci rinominate e si chiudono da soli se la voce viene eliminata.
 - La disposizione dei pannelli è salvata su questo computer, per ogni progetto, e non nella cartella del romanzo: lo schermo di un coautore non cambia.
-- Su Mac Cmd+W non chiude più la finestra: il menu dell'app lo usa per chiudere il pannello.
+- Su Mac Cmd+W non chiude la finestra: il menu dell'app lo usa per chiudere il pannello o, se il cursore non è in un pannello, il progetto. Prima di chiudere, Dante scrive tutto ciò che hai scritto e, se le impostazioni lo chiedono, fa il backup, come con il pulsante per chiudere il progetto.
 - Fanno eccezione Esporta, Impostazioni e Statistiche, che usano tutta la larghezza: lì i pannelli sono nascosti, non chiusi.
 
 ## 17. Aggiornamenti
@@ -772,7 +772,7 @@ Se chiudi la scheda subito dopo aver scritto, il browser può chiedere se vuoi d
 - **Spostare capitoli e parti è più lento**: il browser non sa rinominare le cartelle, quindi Dante copia i file nella nuova posizione e poi cancella la vecchia. Non chiudere il browser mentre lo fa; se succede, Dante completa lo spostamento alla prossima apertura. Chi collabora via Drive o Dropbox riceve più modifiche del solito.
 - **Le modifiche fatte da fuori** (un coautore, Obsidian, un'altra app) compaiono dopo qualche secondo, oppure quando torni sulla scheda di Dante, non subito come nell'app.
 - **Niente "mostra nel Finder" né "apri con l'app predefinita"**: Dante dice in quale cartella si trova il file e offre di scaricarne una copia. Le esportazioni finiscono nella cartella `export` del progetto, oppure dove scegli con **Salva in un'altra posizione…**.
-- **Cmd+W (Ctrl+W) chiude la scheda del browser**, non il pannello: per chiudere il pannello usa **Alt+Cmd+W** (su Windows e Linux Ctrl+Alt+W).
+- **Cmd+W (Ctrl+W) chiude la scheda del browser**, non il pannello né il progetto: usa invece **Alt+Cmd+W** (su Windows e Linux Ctrl+Alt+W).
 - **Un progetto si apre in una sola scheda alla volta**: se è già aperto altrove, Dante lo dice. Due schede sullo stesso progetto scriverebbero una sopra l'altra.
 - **Immagini da un indirizzo web**: molti siti non permettono al browser di scaricarle. In quel caso salva l'immagine sul computer e trascinala in Dante.
 - **Doppio clic su `Titolo.dante`**: funziona solo con Dante installato dal browser (punto 2) e chiede un clic in più per dare il permesso sulla cartella.
