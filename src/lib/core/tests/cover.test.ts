@@ -48,6 +48,16 @@ describe("cover", () => {
     expect(project.settings.cover).toMatchObject(coverFor("Nebbia"));
   });
 
+  it("keeps the subtitle and the picture chosen when a project is created", async () => {
+    const fs = new MemoryFs();
+    const data = new Uint8Array([137, 80, 78, 71]);
+    const { project } = await Project.create(fs, { title: "Nebbia", subtitle: " Un giallo ", authors: [], language: "it", coverImage: { name: "faro.png", data } }, null);
+    expect(project.settings.subtitle).toBe("Un giallo");
+    expect(project.settings.cover.image).toBe("Ricerca/Allegati/faro.png");
+    expect(await fs.readBytes("Ricerca/Allegati/faro.png")).toEqual(data);
+    expect((await Project.open(fs, "it")).settings.cover.image).toBe("Ricerca/Allegati/faro.png");
+  });
+
   it("hides the texts turned off and draws them in the chosen colours", () => {
     const text = { title: "Nebbia", subtitle: "Un giallo", authors: ["Ada Rossi"] };
     const svg = coverSvg(text, { template: "waves", palette: "sea", show: { title: true, subtitle: false, authors: false }, textColor: "#ffcc00", outlineColor: "#000000" });

@@ -12,6 +12,8 @@
   import { t } from "$lib/state.svelte";
   import { confirmDelete } from "./dialogs";
   import { displayValue } from "./propertyText";
+  import { firstImage } from "$lib/core/images";
+  import { excerpt as textExcerpt } from "$lib/core/views";
   import { navigator } from "./navigation";
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
@@ -156,16 +158,73 @@
       .map(([key, value]) => [key, displayValue(value).replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_m, a, b) => b || a)]);
   }
 
-  /** The start of the text, without Markdown signs. */
-  function excerpt(note: NoteInfo): string {
-    const plain = note.body
-      .replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_m, a, b) => b || a)
-      .replace(/^#+\s*/gm, "")
-      .replace(/[*_=~`>]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    return plain.length > 140 ? plain.slice(0, 140) + "…" : plain;
+  /** The start of the text, without Markdown signs or pictures. */
+  const excerpt = (note: NoteInfo) => textExcerpt(note.body, 140);
+
+  // The cards show each note's first picture, unless the writer turned them off on this computer.
+  const PICTURES_KEY = "dante.codex-pictures";
+  let pictures = $state(true);
+  try {
+    pictures = localStorage.getItem(PICTURES_KEY) !== "off";
+  } catch {
+    // Without storage the pictures show.
   }
+  function setPictures(on: boolean) {
+    pictures = on;
+    try {
+      localStorage.setItem(PICTURES_KEY, on ? "on" : "off");
+    } catch {
+      // Kept for this session only.
+    }
+  }
+  // How the pictures show: above the card or beside the title, cropped to fill or whole,
+  // which part stays when cropped, and how big. Also kept on this computer.
+  const LOOK_KEY = "dante.codex-picture-look";
+  interface PictureLook {
+    place: "top" | "side";
+    fit: "cover" | "contain";
+    focus: "top" | "center" | "bottom";
+    size: "small" | "medium" | "large";
+  }
+  const LOOK: PictureLook = { place: "top", fit: "cover", focus: "center", size: "medium" };
+  let look = $state<PictureLook>({ ...LOOK });
+  try {
+    const saved = JSON.parse(localStorage.getItem(LOOK_KEY) ?? "{}") as Partial<PictureLook>;
+    look = {
+      place: saved.place === "side" ? "side" : "top",
+      fit: saved.fit === "contain" ? "contain" : "cover",
+      focus: saved.focus === "top" || saved.focus === "bottom" ? saved.focus : "center",
+      size: saved.size === "small" || saved.size === "large" ? saved.size : "medium",
+    };
+  } catch {
+    // The usual look.
+  }
+  $effect(() => {
+    const value = JSON.stringify(look);
+    try {
+      localStorage.setItem(LOOK_KEY, value);
+    } catch {
+      // Kept for this session only.
+    }
+  });
+  let lookOpen = $state(false);
+  /** The picture of each card shown, by note, once read. */
+  let cardImages = $state<Record<string, string | null>>({});
+  $effect(() => {
+    if (!pictures || !nav?.imageUrl) return;
+    for (const note of shown) {
+      if (note.path in cardImages) continue;
+      const image = firstImage(note.body, note.properties);
+      cardImages[note.path] = null;
+      if (image) void nav.imageUrl(image.target, image.wiki, note.path).then((url) => (cardImages[note.path] = url));
+    }
+  });
+  $effect(() => {
+    // A note edited may have another picture: read again after a change.
+    void p.rev;
+    void saves;
+    cardImages = {};
+  });
 
   async function run<T>(operation: () => Promise<T>): Promise<T | undefined> {
     error = "";
@@ -336,6 +395,42 @@
       <div class="list-bar">
         <h2>{type?.icon ?? ""} {typeLabel(selectedType ?? "")}</h2>
         <input type="search" bind:value={filter} placeholder={t("codex.filter")} aria-label={t("codex.filter")} />
+        <div class="pictures">
+          <label title={t("codex.picturesTip")}
+            ><input type="checkbox" checked={pictures} onchange={(e) => setPictures(e.currentTarget.checked)} /> {t("codex.pictures")}</label
+          >
+          <button class="small" aria-expanded={lookOpen} title={t("codex.lookTip")} disabled={!pictures} onclick={() => (lookOpen = !lookOpen)}
+            >{t("codex.look")} ▾</button
+          >
+          {#if lookOpen && pictures}
+            <div class="menu-backdrop" role="presentation" onmousedown={() => (lookOpen = false)}></div>
+            <div class="popover" role="group" aria-label={t("codex.look")}>
+              <fieldset>
+                <legend>{t("codex.lookPlace")}</legend>
+                <label><input type="radio" bind:group={look.place} value="top" /> {t("codex.lookPlaceTop")}</label>
+                <label><input type="radio" bind:group={look.place} value="side" /> {t("codex.lookPlaceSide")}</label>
+              </fieldset>
+              <fieldset>
+                <legend>{t("codex.lookFit")}</legend>
+                <label><input type="radio" bind:group={look.fit} value="cover" /> {t("codex.lookFitCover")}</label>
+                <label><input type="radio" bind:group={look.fit} value="contain" /> {t("codex.lookFitContain")}</label>
+              </fieldset>
+              <fieldset disabled={look.fit === "contain"}>
+                <legend>{t("codex.lookFocus")}</legend>
+                <label><input type="radio" bind:group={look.focus} value="top" /> {t("codex.lookFocusTop")}</label>
+                <label><input type="radio" bind:group={look.focus} value="center" /> {t("codex.lookFocusCenter")}</label>
+                <label><input type="radio" bind:group={look.focus} value="bottom" /> {t("codex.lookFocusBottom")}</label>
+              </fieldset>
+              <fieldset>
+                <legend>{t("codex.lookSize")}</legend>
+                <label><input type="radio" bind:group={look.size} value="small" /> {t("codex.lookSmall")}</label>
+                <label><input type="radio" bind:group={look.size} value="medium" /> {t("codex.lookMedium")}</label>
+                <label><input type="radio" bind:group={look.size} value="large" /> {t("codex.lookLarge")}</label>
+              </fieldset>
+              <button class="small" onclick={() => (look = { ...LOOK })}>{t("codex.lookReset")}</button>
+            </div>
+          {/if}
+        </div>
         {#if type && newName !== null}
           <form
             class="new-item"
@@ -394,9 +489,10 @@
       {#if shown.length === 0}
         <p class="empty">{filter ? t("search.none") : t("codex.empty")}</p>
       {/if}
-      <div class="cards">
+      <div class="cards place-{look.place} fit-{look.fit} focus-{look.focus} size-{look.size}">
         {#each shown as note (note.path)}
           <button class="card" onclick={(e) => (e.altKey ? nav?.open(note.path, true) : p.onShow(note.path))}>
+            {#if pictures && cardImages[note.path]}<img class="picture" src={cardImages[note.path]} alt="" />{/if}
             <span class="card-title">{noteTitle(note.path)}</span>
             {#if note.aliases.length}<span class="aliases">{note.aliases.join(", ")}</span>{/if}
             {#each details(note) as [key, value] (key)}
@@ -519,7 +615,8 @@
     font-weight: 500;
     flex: 1;
   }
-  .list-bar input {
+  .list-bar input[type="search"],
+  .new-item input {
     width: 200px;
   }
   .new-item {
@@ -585,6 +682,112 @@
   .card:hover {
     border-color: var(--accent);
     background: var(--bg);
+  }
+  .picture {
+    width: calc(100% + 28px);
+    margin: -12px -14px 6px;
+    height: var(--picture, 140px);
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px 8px 0 0;
+    background: var(--bg-panel);
+  }
+  .size-small {
+    --picture: 90px;
+  }
+  .size-large {
+    --picture: 220px;
+  }
+  .fit-contain .picture {
+    object-fit: contain;
+  }
+  .focus-top .picture {
+    object-position: center top;
+  }
+  .focus-bottom .picture {
+    object-position: center bottom;
+  }
+  /* Beside the title: the picture takes a column of its own, the text the other. */
+  .place-side .card:has(.picture) {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .place-side .card > :not(.picture) {
+    grid-column: 2;
+  }
+  .place-side .picture {
+    grid-column: 1;
+    grid-row: 1 / span 20;
+    width: calc(var(--picture, 140px) * 0.6);
+    height: calc(var(--picture, 140px) * 0.75);
+    margin: 0;
+    border-radius: 6px;
+  }
+  .pictures {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .pictures > label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .popover {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 30;
+    display: grid;
+    gap: 10px;
+    width: 240px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    font-size: 13px;
+    white-space: normal;
+  }
+  .popover fieldset {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+  .popover fieldset:disabled {
+    opacity: 0.5;
+  }
+  .popover legend {
+    padding: 0 0 3px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .popover label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    text-align: left;
+  }
+  .popover input {
+    flex: none;
+    width: auto;
+    margin: 0;
+  }
+  .popover > button {
+    justify-self: start;
+  }
+  .menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 29;
   }
   .card-title {
     font-weight: 600;

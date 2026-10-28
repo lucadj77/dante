@@ -985,18 +985,27 @@
     letter-spacing: 0.06em;
     color: var(--text-muted);
   }
+  /* One row however many buttons there are: a fourth one wrapping alone looked broken. */
   .tree-actions .add {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-    gap: 4px;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 3px;
   }
   .tree-actions .add button {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 6px 4px;
-    font-size: 12px;
+    min-width: 0;
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  .tree-actions .add button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .caption-row {
     display: flex;

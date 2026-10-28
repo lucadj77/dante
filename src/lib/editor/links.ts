@@ -2,6 +2,8 @@ import { acceptCompletion, autocompletion, type Completion, type CompletionConte
 import { ChangeSet, EditorSelection, EditorState, Facet, Prec, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import type { ImageHandler } from "./images";
+import type { NameFound, NameMatcher } from "$lib/core/mentions";
+import { namedNotes } from "./mentions";
 
 export interface LinkSuggestion {
   /** What goes between [[ and ]]: the shortest name that reaches the note. */
@@ -34,6 +36,13 @@ export interface LinkHandler {
   note?(target: string): Promise<string | null>;
   /** Showing and adding images, where the project allows it. */
   images?: ImageHandler;
+  /**
+   * The names of the Story Bible to underline, while the writer wants them, and the note
+   * shown (whose own name is not underlined); null when they are turned off.
+   */
+  names?(): { matcher: NameMatcher; own: string } | null;
+  /** A right click on a name found: the menu of its note; `link` writes the name as a link to `target`. */
+  named?(found: NameFound, at: { x: number; y: number }, link: (target: string) => void): void;
 }
 
 export const linkHandler = Facet.define<LinkHandler, LinkHandler | null>({
@@ -175,6 +184,7 @@ export function wikilinks(handler: LinkHandler | undefined): Extension {
     linkHandler.of(handler),
     Prec.high(clicks),
     aliasLinks,
+    namedNotes,
     autocompletion({ override: [complete], icons: false, activateOnTyping: true }),
     // Tab takes the highlighted suggestion too, as Enter does.
     Prec.highest(keymap.of([{ key: "Tab", run: acceptCompletion }])),

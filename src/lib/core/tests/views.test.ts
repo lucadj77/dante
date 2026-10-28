@@ -82,6 +82,8 @@ describe("excerpts", () => {
   it("read as plain text", () => {
     expect(excerpt("# Title\nThe {--old--}{++new++} *door* to [[Rinaldi House|the house]]{>>@a: x<<}.")).toBe("Title The new door to the house.");
     expect(excerpt("one two three", 9)).toBe("one two…");
+    // A picture at the start is not words: no "!" and no file name.
+    expect(excerpt("![[faro.jpg|Il faro]]\nLucia guarda il lago. ![una barca](img/barca.png) Vedi [il sito](https://x.it).")).toBe("Lucia guarda il lago. Vedi il sito.");
   });
 });
 

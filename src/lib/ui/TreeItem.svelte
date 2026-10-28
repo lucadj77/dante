@@ -160,7 +160,7 @@
     {:else}
       {#if isScene && info?.status}
         {@const tip = info.property ? t("tree.dot", { property: info.property.charAt(0).toLocaleUpperCase() + info.property.slice(1), value: info.status }) : t("tree.status", { status: info.status })}
-        <span class="status" data-tone={info.tone ?? ""} data-hue={info.hue ?? ""} title={tip} aria-label={tip}></span>
+        <span class="status" class:own={!!info.color} style:--own={info.color || null} data-tone={info.tone ?? ""} data-hue={info.hue ?? ""} title={tip} aria-label={tip}></span>
       {/if}
       <span class="label">{label}</span>
       {#if info && info.goal}
@@ -297,6 +297,11 @@
   .status[data-tone="3"] {
     background: var(--status-3);
     border-color: var(--status-3);
+  }
+  /* A colour the writer chose, in the dot's legend among the properties. */
+  .status.own[data-hue] {
+    background: var(--own);
+    border-color: var(--own);
   }
   .goal {
     flex: none;

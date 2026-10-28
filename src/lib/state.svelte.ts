@@ -15,6 +15,8 @@ export interface AppSettings {
   lineHeight: number;
   /** Height of the empty line between paragraphs, as a share of a line: 1 is a whole line. */
   paragraphGap: number;
+  /** Enter starts a new paragraph, and the empty lines between paragraphs are not shown. */
+  paragraphs: boolean;
   /** Indent of the first line of each paragraph, in em; 0 for none. */
   indent: number;
   /** Paragraphs justified, as in a book, instead of ragged on the right. */
@@ -31,6 +33,10 @@ export interface AppSettings {
   statsLevel: "scene" | "chapter" | "part";
   /** A light shade on the row the cursor is on. */
   lineHighlight: boolean;
+  /** Asks, when an empty line more than usual is left, whether to write a blank line that shows. */
+  askBlankLines: boolean;
+  /** Names of the Story Bible dotted underlined in the text, with their menu on a right click. */
+  namedNotes: boolean;
   /** Look for a newer version at every start. */
   checkUpdates: boolean;
   /** Where updates come from: "stable", "beta", or "" for Stable (Beta if a beta is installed). */
@@ -65,6 +71,7 @@ function defaults(): AppSettings {
     lineWidth: 68,
     lineHeight: 1.7,
     paragraphGap: 1,
+    paragraphs: true,
     indent: 0,
     justify: false,
     spellcheck: true,
@@ -74,6 +81,8 @@ function defaults(): AppSettings {
     statsUnit: "",
     statsLevel: "chapter",
     lineHighlight: false,
+    namedNotes: true,
+    askBlankLines: true,
     checkUpdates: true,
     updateChannel: "",
     skippedVersion: "",

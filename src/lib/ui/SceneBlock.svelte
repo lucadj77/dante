@@ -27,6 +27,7 @@
   import { collaboration } from "./collaboration.svelte";
   import { criticHandlerFor } from "./editors.svelte";
   import { documents, sharing } from "./documents.svelte";
+  import { blankLineAskFor } from "./blankHabit";
 
   interface Props {
     project: Project;
@@ -148,10 +149,12 @@
         links,
         critic: criticHandlerFor(path),
         language: props.project.settings.language,
+        blankLines: blankLineAskFor(props.project),
         extensions: [shared.extension],
       });
       shared.attach(editor.view);
       editor.setSpelling(app.settings.spellcheck);
+      editor.setParagraphs(app.settings.paragraphs);
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight });
       collab.ready(editor);
       props.register(path, handle);
@@ -178,6 +181,11 @@
   $effect(() => {
     const on = app.settings.spellcheck;
     editor?.setSpelling(on);
+  });
+
+  $effect(() => {
+    const on = app.settings.paragraphs;
+    editor?.setParagraphs(on);
   });
 
   // A match chosen in the project's find and replace.

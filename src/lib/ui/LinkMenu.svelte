@@ -11,11 +11,14 @@
     y: number;
     /** Puts the cursor inside the link, to change it. */
     edit: () => void;
+    /** A name of the Story Bible found in the text without a link, which `link` makes one. */
+    named?: { name: string; link: () => void };
   }
 </script>
 
 <script lang="ts">
   import ErrorText from "./ErrorText.svelte";
+  import Icon from "./Icon.svelte";
   import { failure } from "$lib/ui/errors";
   import { onMount } from "svelte";
   import type { Project } from "$lib/core/project";
@@ -131,6 +134,23 @@
         <FileViewer project={p.project} {path} compact />
       {/if}
     </div>
+  {:else if request.path && request.named}
+    {@const path = request.path}
+    {@const named = request.named}
+    <div class="heading">{t("linkMenu.named", { name: named.name, note: title })}</div>
+    <button role="menuitem" onclick={() => p.onOpen(path, false)}>{t("linkMenu.open")}</button>
+    <button role="menuitem" onclick={() => p.onOpen(path, true)}>{t("linkMenu.beside")}</button>
+    <button role="menuitem" onclick={() => (previewing = true)}>{t("linkMenu.preview")}</button>
+    <hr />
+    <button
+      role="menuitem"
+      onclick={() => {
+        p.onClose();
+        named.link();
+      }}>{t("linkMenu.makeLink")}</button
+    >
+    <p class="note">{t("linkMenu.systemMenu")}</p>
+    <p class="note off">{t("linkMenu.namedOff")} <span class="toggle"><Icon name="named" size={12} /> {t("mode.namedNotes")}</span></p>
   {:else if request.path}
     {@const path = request.path}
     <div class="heading">{title}</div>
@@ -193,6 +213,20 @@
   }
   button[role="menuitem"]:hover {
     background: var(--bg-hover);
+  }
+  .note {
+    margin: 2px 10px 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .note .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    white-space: nowrap;
   }
   .detail {
     color: var(--text-muted);

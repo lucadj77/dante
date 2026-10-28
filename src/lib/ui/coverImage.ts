@@ -3,7 +3,7 @@ import type { ProjectFs } from "$lib/core/fs";
 import { imageMime } from "$lib/core/images";
 
 /** Bytes as base64, a piece at a time so a large picture does not overflow the call stack. */
-function base64(data: Uint8Array): string {
+export function base64(data: Uint8Array): string {
   let text = "";
   for (let i = 0; i < data.length; i += 0x8000) text += String.fromCharCode(...data.subarray(i, i + 0x8000));
   return btoa(text);

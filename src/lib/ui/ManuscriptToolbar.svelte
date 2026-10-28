@@ -43,6 +43,12 @@
       onmousedown={(e) => e.preventDefault()}
       onclick={() => saveAppSettings({ ...app.settings, lineHighlight: !app.settings.lineHighlight })}><Icon name="lineHighlight" /><span class="label">{t("mode.lineHighlight")}</span></button
     >
+    <button
+      aria-pressed={app.settings.namedNotes}
+      title={t("tip.namedNotes")}
+      onmousedown={(e) => e.preventDefault()}
+      onclick={() => saveAppSettings({ ...app.settings, namedNotes: !app.settings.namedNotes })}><Icon name="named" /><span class="label">{t("mode.namedNotes")}</span></button
+    >
     <button aria-pressed={fullscreen} title={t("tip.fullscreen")} onmousedown={(e) => e.preventDefault()} onclick={onToggleFullscreen}><Icon name="fullscreen" /><span class="label">{t("mode.fullscreen")}</span></button>
   </div>
   <span class="grow"></span>

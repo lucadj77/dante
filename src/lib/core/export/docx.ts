@@ -23,7 +23,7 @@ import {
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
-import { PAGE_SIZES, surnames, type DocxSettings, type Separator } from "../settings";
+import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import type { CellAlign } from "../tables";
 
@@ -189,11 +189,22 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   // Nothing goes before the first opening, so it needs no break.
   let started = false;
 
+  const blank = (n: number) => {
+    for (let i = 0; i < n; i++) body.push(new Paragraph({ style: "SceneBreak", children: [] }));
+  };
+  /** The separator's characters, with the blank lines written around them. */
+  const characters = () => {
+    const parts = separatorParts(opts.sceneSeparator, opts.lineSign);
+    blank(parts.before);
+    if (parts.lines.length) body.push(new Paragraph({ style: "SceneBreak", children: plain(parts.lines.join("\n")) }));
+    blank(parts.after);
+  };
+
   /** Adds what separates the next unit from the previous one; true when it starts a page. */
   const separate = (separator: Separator): boolean => {
     if (!started) return true;
-    if (separator === "blankLine") body.push(new Paragraph({ style: "SceneBreak", children: [] }));
-    if (separator === "characters") body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
+    if (separator === "blankLine" || separator === "twoBlankLines") blank(separator === "blankLine" ? 1 : 2);
+    if (separator === "characters") characters();
     return separator === "pageBreak";
   };
 
@@ -230,7 +241,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
           }),
         );
       } else if (block.type === "break") {
-        body.push(new Paragraph({ style: "SceneBreak", children: plain(opts.sceneSeparator) }));
+        characters();
       } else if (block.type === "blank") {
         body.push(new Paragraph({ style: "Normal", children: [] }));
       } else if (block.type === "table") {

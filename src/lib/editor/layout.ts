@@ -1,6 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder } from "@codemirror/state";
 import { Decoration, ViewPlugin, type DecorationSet, type EditorView, type ViewUpdate } from "@codemirror/view";
+import { hiddenGap } from "./paragraphs";
 
 // Marks the lines the page layout of the settings acts on: the empty lines between
 // paragraphs (their height is the space between paragraphs) and the first line of each
@@ -27,7 +28,8 @@ function decorations(view: EditorView): DecorationSet {
   for (const { from, to } of view.visibleRanges) {
     for (let pos = from; pos <= to; ) {
       const line = state.doc.lineAt(pos);
-      if (line.length === 0) builder.add(line.from, line.from, gap);
+      // An empty line not shown leaves its height to the space above the next paragraph.
+      if (line.length === 0 && !hiddenGap(state, line.from)) builder.add(line.from, line.from, gap);
       else if (starts.has(line.from)) builder.add(line.from, line.from, paragraph);
       pos = line.to + 1;
     }
@@ -42,7 +44,7 @@ export const textLayout = ViewPlugin.fromClass(
       this.decorations = decorations(view);
     }
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged || syntaxTree(update.startState) !== syntaxTree(update.state)) this.decorations = decorations(update.view);
+      if (update.docChanged || update.viewportChanged || update.selectionSet || syntaxTree(update.startState) !== syntaxTree(update.state)) this.decorations = decorations(update.view);
     }
   },
   { decorations: (v) => v.decorations },

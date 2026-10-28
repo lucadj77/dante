@@ -14,6 +14,8 @@ import { smartTypography } from "./smartTypography";
 import type { Place } from "$lib/core/style";
 import { criticCommands, criticPreview, trackChanges, type CriticHandler } from "./critic";
 import type { TypographySettings } from "$lib/core/settings";
+import { blankLineAsk, type BlankLineAsk } from "./blankAsk";
+import { paragraphs } from "./paragraphs";
 
 export interface SceneEditorOptions {
   parent: HTMLElement;
@@ -46,6 +48,8 @@ export interface SceneEditorOptions {
   phrases?: Record<string, string>;
   /** The language of the text, for the spelling checker and hyphenation; the page's when absent. */
   language?: string;
+  /** Asks about an empty line more than the writer usually leaves; never asked when absent. */
+  blankLines?: BlankLineAsk;
   /** More behaviour, such as sharing the text with other editors of the same file. */
   extensions?: Extension[];
 }
@@ -94,6 +98,8 @@ export interface SceneEditor {
   /** Read-only while someone else is editing the same file. */
   setReadOnly(readOnly: boolean): void;
   /** The system's spelling checker underlines unknown words, or not. */
+  /** Enter starts a paragraph and the empty lines between paragraphs are not shown (preview only). */
+  setParagraphs(on: boolean): void;
   setSpelling(on: boolean): void;
   focus(at: "start" | "end"): void;
   /** Splits at the cursor into a new scene or a new chapter, as the shortcuts do. */
@@ -108,6 +114,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   const spelling = new Compartment();
   const revisions = new Compartment();
   const locked = new Compartment();
+  const paragraphMode = new Compartment();
   const split = (handler?: (before: string, after: string) => void) => (view: EditorView) => {
     if (!handler) return false;
     const { from, to } = view.state.selection.main;
@@ -157,6 +164,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     modes.of([]),
     revisions.of([]),
     locked.of([]),
+    paragraphMode.of([]),
     formatting(options.formatLabels),
     options.tableLabels ? tableLabels.of(options.tableLabels) : [],
     wikilinks(options.links),
@@ -166,6 +174,7 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
   if (options.preview) extensions.push(livePreview, criticPreview, textLayout);
   if (options.typography?.whileTyping) extensions.push(smartTypography(options.typography));
   if (options.placeholder) extensions.push(emptyBodyHint(options.placeholder));
+  if (options.blankLines && options.preview) extensions.push(blankLineAsk(options.blankLines));
 
   const view = new EditorView({
     parent: options.parent,
@@ -186,6 +195,10 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     },
     setReadOnly(readOnly) {
       view.dispatch({ effects: locked.reconfigure(readOnly ? EditorState.readOnly.of(true) : []) });
+    },
+    setParagraphs(on) {
+      // The raw view shows the file as it is, empty lines included.
+      view.dispatch({ effects: paragraphMode.reconfigure(on && options.preview ? paragraphs : []) });
     },
     setSpelling(on) {
       view.dispatch({ effects: spelling.reconfigure(spellingAttributes(on)) });
