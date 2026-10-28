@@ -17,7 +17,6 @@ CROPS = {
     'statistiche2-full': ('statistiche-lunghezza', (50, 0, 1020, 660)),
     'esportazione-full': ('esportazione', (50, 30, 700, 640)),
     'struttura-full': ('struttura', (50, 30, 860, 430)),
-    'tipo-proprieta-full': ('tipo-proprieta', (1215, 60, 1500, 560)),
     'scheda': ('scheda', None),
 }
 os.makedirs(OUT, exist_ok=True)

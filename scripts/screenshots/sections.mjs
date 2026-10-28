@@ -24,8 +24,9 @@ if (run('proprieta')) { const { b, page } = await start();
   await open(page, 'L’incontro');
   const sb = await page.locator('aside.side').boundingBox();
   await clip(page, S+'proprieta.png', sb.x, sb.y, sb.width, 560);
-  await page.locator('aside.side').getByRole('button', { name: 'T', exact: true }).first().click(); await page.waitForTimeout(500);
-  await page.screenshot({ path: S+'tipo-proprieta-full.png' });
+  const kind = page.locator('aside.side button.kind').first(); await kind.click(); await page.waitForTimeout(500);
+  const kb = await kind.boundingBox();
+  await clip(page, S+'tipo-proprieta.png', sb.x, kb.y - 10, sb.width, 325);
   await b.close(); }
 
 if (run('bibbia')) { const { b, page } = await start();
@@ -53,7 +54,7 @@ if (run('commenti')) { const { b, page } = await start();
   await b.close(); }
 
 if (run('viste')) { const { b, page } = await start();
-  await nav(page, 'Viste');
+  await nav(page, 'Tabelle e bacheche');
   await page.screenshot({ path: S+'bacheca-full.png' });
   await page.getByText('Tempo della storia', { exact: true }).first().click(); await page.waitForTimeout(900);
   await page.screenshot({ path: S+'linea-tempo-full.png' });
@@ -80,6 +81,7 @@ if (run('export')) { const { b, page } = await start();
 
 if (run('pannelli')) { const { b, page } = await start();
   await open(page, 'L’incontro');
-  await page.getByRole('button', { name: /Schede/ }).first().click(); await page.waitForTimeout(1200);
+  await page.locator('button', { has: page.locator('.label', { hasText: 'Altro' }) }).first().click(); await page.waitForTimeout(300);
+  await page.getByText('Schede della scena', { exact: false }).first().click(); await page.waitForTimeout(1200);
   await page.screenshot({ path: S+'pannelli-full.png' });
   await b.close(); }

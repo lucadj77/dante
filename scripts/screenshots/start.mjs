@@ -9,13 +9,13 @@ if (run('benvenuto')) { const { b, page } = await start({ fakeTauri: true });
   await page.waitForTimeout(800);
   await page.locator('main').first().screenshot({ path: S+'benvenuto.png' });
   await page.getByText('Nuovo progetto').first().click(); await page.waitForTimeout(500);
-  await page.getByLabel('Titolo').fill('Il mio romanzo'); await page.waitForTimeout(400);
+  await page.getByRole('textbox', { name: 'Titolo', exact: true }).fill('Il mio romanzo'); await page.waitForTimeout(400);
   await page.locator('main').first().screenshot({ path: S+'nuovo-progetto.png' });
   await b.close(); }
 
 if (run('aggiornamento')) { const { b, page } = await start({ fakeTauri: true, updates: true, settings: { checkUpdates: true } });
   await page.waitForTimeout(1500);
-  await clip(page, S+'aggiornamento.png', 1035, 795, 455, 85);
+  await page.locator('.update').first().screenshot({ path: S+'aggiornamento.png' });
   await b.close(); }
 
 if (run('word')) { const { b, page } = await start({ sample: false });
@@ -41,7 +41,7 @@ if (run('selezione')) { const { b, page } = await start();
 
 if (run('focus')) { const { b, page } = await start();
   await open(page, 'Perpetua');
-  await page.getByRole('button', { name: 'Focus' }).click();
+  await page.locator('button', { has: page.locator('.label', { hasText: 'Focus' }) }).first().click();
   const p = page.locator('.cm-line', { hasText: '«Niente, niente,»' }).first(); await p.click(); await page.waitForTimeout(600);
   const c = await page.locator('main.center').boundingBox();
   await clip(page, S+'focus.png', c.x, c.y + 140, c.width, 420);
