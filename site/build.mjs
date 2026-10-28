@@ -53,6 +53,8 @@ const ORNAMENT =
 mkdirSync(`${out}/it`, { recursive: true })
 for (const f of ['style.css', 'site.js']) cpSync(`${here}${f}`, `${out}/${f}`)
 for (const d of ['fonts', 'img']) cpSync(`${here}${d}`, `${out}/${d}`, { recursive: true })
+// hidden page with the download counts of the releases (no link from the site, noindex)
+cpSync(`${here}dcount`, `${out}/dcount`, { recursive: true })
 
 // covers of the videos copied into the site while building: visitors download nothing from
 // YouTube until they open a video. If the download fails, YouTube's address stays.
