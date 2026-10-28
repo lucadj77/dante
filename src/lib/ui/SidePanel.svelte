@@ -1,7 +1,7 @@
 <script lang="ts" module>
-  type Tab = "properties" | "links" | "comments" | "history";
+  type Tab = "properties" | "links" | "comments";
   // The chosen tab stays the same across sections and notes.
-  let remembered = $state<{ tab: Tab }>({ tab: "properties" });
+  let remembered = $state<{ tab: Tab; history: boolean }>({ tab: "properties", history: false });
 </script>
 
 <script lang="ts">
@@ -30,7 +30,7 @@
   }
   let p: Props = $props();
 
-  const tabs: Tab[] = ["properties", "links", "comments", "history"];
+  const tabs: Tab[] = ["properties", "links", "comments"];
   // While a pane beside the section has the cursor, the panel shows what the pane shows.
   const pane = $derived(focusedPane());
   const path = $derived(pane ? shownIn(pane) : p.path);
@@ -71,10 +71,17 @@
       {/if}
     {:else if remembered.tab === "links"}
       <LinksPanel project={p.project} {path} version={p.version} />
-    {:else if remembered.tab === "comments"}
-      <CommentsPanel project={p.project} paths={commentPaths} />
     {:else}
-      <HistoryPanel project={p.project} paths={commentPaths} version={p.version} />
+      <!-- The comments still open, or what became of those settled. -->
+      <div class="switch" role="tablist">
+        <button role="tab" aria-selected={!remembered.history} onclick={() => (remembered.history = false)}>{t("comments.open")}</button>
+        <button role="tab" aria-selected={remembered.history} title={t("tip.side.history")} onclick={() => (remembered.history = true)}>{t("side.history")}</button>
+      </div>
+      {#if remembered.history}
+        <HistoryPanel project={p.project} paths={commentPaths} version={p.version} />
+      {:else}
+        <CommentsPanel project={p.project} paths={commentPaths} />
+      {/if}
     {/if}
   </div>
 </aside>
@@ -101,6 +108,27 @@
     font-size: 12px;
     padding: 6px 4px;
     color: var(--text-muted);
+  }
+  .switch {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  .switch button {
+    flex: 1;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 0;
+  }
+  .switch button:first-child {
+    border-radius: 6px 0 0 6px;
+  }
+  .switch button:last-child {
+    margin-left: -1px;
+    border-radius: 0 6px 6px 0;
+  }
+  .switch button[aria-selected="true"] {
+    background: var(--bg-active);
+    color: var(--text);
   }
   .tabs button[aria-selected="true"] {
     color: var(--text);

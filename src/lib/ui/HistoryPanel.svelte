@@ -77,7 +77,7 @@
             {/if}
           </p>
         {/if}
-        {#if entry.author}<p class="by">{t("history.proposed", { name: entry.author, date: entry.date ?? "" })}</p>{/if}
+        {#if entry.author}<p class="by">{t(entry.kind === "comment" || entry.kind === "highlight" ? "history.opened" : "history.proposed", { name: entry.author, date: entry.date ?? "" })}</p>{/if}
         {#each entry.discussion as c, j (j)}
           <p class="said"><b>{c.author ?? "?"}</b> {c.text}</p>
         {/each}

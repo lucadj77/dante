@@ -28,6 +28,12 @@
   let defining = $state<string | null>(null);
   let legend = $state<DotValue[] | null>(null);
 
+  // Another note shows its own properties, with no definition open.
+  $effect(() => {
+    void p.from;
+    defining = null;
+  });
+
   const isDot = (key: string) => dotProperty(p.project.settings).name.toLowerCase() === key.toLowerCase();
 
   // The dot's colours are read when its property's definition opens, and again after a change.

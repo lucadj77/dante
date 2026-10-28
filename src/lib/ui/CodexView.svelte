@@ -551,7 +551,7 @@
     font-weight: 500;
     flex: 1;
   }
-  .list-bar input {
+  .list-bar input:not([type="checkbox"]) {
     width: 200px;
   }
   .new-item {

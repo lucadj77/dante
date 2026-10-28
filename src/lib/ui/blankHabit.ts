@@ -21,6 +21,8 @@ const known = new WeakMap<Project, 0 | 1 | null>();
 
 /** The question about an empty line more than usual, for the scenes of `project`. */
 export function blankLineAskFor(project: Project): BlankLineAsk {
+  // Read now, so the first paragraph typed already knows the habit.
+  habitOf(project);
   return {
     habit: () => habitOf(project),
     enabled: () => app.settings.askBlankLines,
