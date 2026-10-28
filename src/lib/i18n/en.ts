@@ -1107,7 +1107,7 @@ export const en = {
   "blankAsk.insert": "Insert blank line",
   "blankAsk.no": "No",
   "blankAsk.never": "Don't ask again",
-  "appearance.paragraphs": "Enter starts a new paragraph, as in a word processor",
+  "appearance.paragraphs": "A single Enter starts a new paragraph",
   "appearance.paragraphsHint": "The empty line that separates paragraphs in the file is written for you and not shown: only the space between paragraphs remains. Enter twice in a row leaves a blank line that shows in the book too; Shift+Enter starts a new line in the same paragraph. Unticked, the editor shows the empty lines as they are in the file.",
   "appearance.askBlankLines": "Ask about extra empty lines",
   "appearance.askBlankLinesHint": "When you leave more empty lines than usual between two paragraphs, Dante asks whether to write a real blank line, which shows in the exported book too.",
