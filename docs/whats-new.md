@@ -12,6 +12,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+- **End of a paragraph with hidden blank lines**: the End key (Cmd+→ on Mac) and a click after the end of a paragraph put the cursor at the end of the paragraph, no longer in the invisible blank line or at the start of the next paragraph.
 - **Attachments shown at once**: the first image added to a novel creates the Attachments folder inside Research, and now the folder shows at once in the Notes section, without reopening the project.
 - **Readable update notice**: in the notice of a new version the text and the news take the whole width, with the three buttons below; before, they were squeezed into a narrow column.
 

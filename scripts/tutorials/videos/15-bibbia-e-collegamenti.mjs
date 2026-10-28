@@ -1,12 +1,20 @@
 // 15. La Bibbia e i collegamenti: the story bible's types and sheets, a new type, the notes, links
 // typed with [[, the link menu, a link to a sheet that does not exist yet, the Links tab, and find and
 // replace across the project.
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), '../assets');
+
 export const meta = {
   n: 15,
   group: 'bible',
   title: { it: 'La Bibbia e i collegamenti', en: 'The Story Bible and links' },
   subtitle: { it: 'Personaggi, luoghi e trame, legati al testo', en: 'Characters, places and plotlines, tied to the text' },
 };
+
+// the formatting bar, for the image of the sheet
+export const setup = () => ({ settings: { formatBar: true } });
 
 const D = {
   it: {
@@ -18,7 +26,12 @@ const D = {
     cards: 'Ogni scheda mostra le sue proprietà principali. Filtra cerca tra i nomi',
     card: 'Lucia Mondella',
     sheet: 'La scheda: un testo libero, come una scena',
-    props: 'A destra le sue proprietà, con gli altri nomi con cui compare nel testo. I pulsanti + aggiungono quelle suggerite dal tipo',
+    props: 'A destra le sue proprietà. I pulsanti + aggiungono quelle suggerite dal tipo',
+    aliasSay: 'Gli alias sono gli altri nomi con cui la scheda compare nel testo: Lucia Mondella è anche, semplicemente, Lucia. Valgono per i collegamenti e per i richiami',
+    picture: 'Il lago.png',
+    pictureSay: 'Un’immagine nella scheda, dalla barra: per esempio un ritratto o un luogo',
+    cardPicture: 'Nella bacheca la scheda mostra la sua prima immagine',
+    picturesSay: 'Immagini le mostra o le nasconde. Aspetto sceglie dove stanno, se ritagliate o intere, e quanto grandi',
     s2: 'Un nuovo tipo',
     s2b: 'Per esempio, gli animali',
     type: 'Animale',
@@ -56,6 +69,13 @@ const D = {
     s7: 'Chi collega chi',
     s7b: 'La scheda Collegamenti',
     links: 'Nel pannello a destra, Collegamenti: le schede che la scena collega e le note che collegano lei',
+    s7n: 'I richiami',
+    s7nb: 'Nomi riconosciuti nel testo',
+    namedScene: 'L’incontro',
+    namedSay: 'I nomi e gli alias delle schede scritti nel testo, anche senza collegamento, sono sottolineati a puntini',
+    namedMenu: 'Con il tasto destro: la scheda riconosciuta, aprirla o vederne l’anteprima, o trasformare il nome in collegamento',
+    namedButton: 'Il pulsante Richiami, in alto, li accende e li spegne',
+    namedLinks: 'E nei Collegamenti, Nominati nel testo elenca le schede citate per nome',
     s8: 'Trova e sostituisci',
     s8b: 'In tutto il progetto',
     replaceKey: '⌥⌘F (Alt+Ctrl+F) apre Trova e sostituisci in tutto il progetto',
@@ -74,7 +94,12 @@ const D = {
     cards: 'Each sheet shows its main properties. Filter searches the names',
     card: 'Elizabeth Bennet',
     sheet: 'The sheet: free text, like a scene',
-    props: 'On the right, its properties, with the other names it goes by in the text. The + buttons add the ones the type suggests',
+    props: 'On the right, its properties. The + buttons add the ones the type suggests',
+    aliasSay: 'Aliases are the other names the sheet goes by in the text: Elizabeth Bennet is also Elizabeth, Lizzy, Eliza. They count for links and for names recognised in the text',
+    picture: 'The fields.png',
+    pictureSay: 'A picture in the sheet, from the bar: a portrait or a place, for instance',
+    cardPicture: 'On the board the sheet shows its first picture',
+    picturesSay: 'Pictures shows or hides them. Look chooses where they sit, cropped or whole, and how big',
     s2: 'A new type',
     s2b: 'Animals, for instance',
     type: 'Animal',
@@ -112,6 +137,13 @@ const D = {
     s7: 'Who links to whom',
     s7b: 'The Links tab',
     links: 'In the right panel, Links: the sheets the scene links to and the notes that link to it',
+    s7n: 'Names in the text',
+    s7nb: 'Recognised without a link',
+    namedScene: 'The ball',
+    namedSay: 'The names and aliases of the sheets written in the text, even without a link, get a dotted underline',
+    namedMenu: 'Right-click: the recognised sheet, open it or preview it, or turn the name into a link',
+    namedButton: 'The Names button, at the top, turns them on and off',
+    namedLinks: 'And in Links, Named in the text lists the sheets mentioned by name',
     s8: 'Find and replace',
     s8b: 'Across the project',
     replaceKey: '⌥⌘F (Alt+Ctrl+F) opens find and replace across the whole project',
@@ -152,6 +184,28 @@ export default async function (t) {
   await t.click(codex.locator('button.card', { hasText: d.card }).first(), { after: 1.2 });
   await t.focus(codex.locator('.editor').first(), d.sheet, { side: 'below', pointer: false });
   await t.focus(side, d.props, { side: 'left' });
+  const aliases = side.locator('.prop').filter({ has: p.locator('dt .name', { hasText: /^aliases$/ }) }).first();
+  await aliases.scrollIntoViewIfNeeded();
+  await t.zoom(aliases, () => t.focus(aliases, d.aliasSay, { side: 'left' }), 1.5);
+  const editor = codex.locator('.editor').first();
+  await t.click(editor.locator('.cm-line').last(), { dx: 0.98, after: 0.2 });
+  await t.press('ControlOrMeta+End', 0.2);
+  await t.press('Enter', 0.3);
+  const imageButton = codex.locator('.format-row').getByRole('button', { name: L('format.image') }).first();
+  await t.focus(imageButton, d.pictureSay, { side: 'below' });
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), t.click(imageButton, { after: 0.2 })]);
+  await fc.setFiles(path.join(ASSETS, t.lang, d.picture));
+  await t.wait(1.5);
+  await t.click(types.locator('button.type', { hasText: d.characters }).first(), { after: 1.2 });
+  const withPicture = codex.locator('button.card', { hasText: d.card }).first();
+  await t.focus(withPicture, d.cardPicture, { side: 'right' });
+  const pictures = codex.locator('.pictures').first();
+  await t.click(pictures.getByRole('button', { name: new RegExp(L('codex.look')) }), { after: 0.8 });
+  await t.click(pictures.locator('.popover input[value=side]'), { after: 1 });
+  await t.focus([pictures, pictures.locator('.popover')], d.picturesSay, { side: 'left' });
+  await t.press('Escape', 0.3);
+  await p.mouse.click(5, 400);
+  await t.wait(0.6);
 
   await t.title(d.s2, d.s2b);
   const name = types.getByPlaceholder(L('codex.newTypeName'));
@@ -193,7 +247,6 @@ export default async function (t) {
     await t.click(main.getByRole('button', { name: L('level.scene'), exact: true }).first(), { after: 1 });
     await toEnd();
   });
-  await t.press('Enter', 0.1);
   await t.press('Enter', 0.3);
   await t.type(d.before, 70);
   await t.type(d.partial, 160);
@@ -212,6 +265,11 @@ export default async function (t) {
   await t.wait(0.5);
   await t.click(link, { after: 0.8 });
   const menu = p.locator('.float[role=menu]').first();
+  if (!(await menu.count())) {
+    // the cursor was on the link's line: the click went into its text
+    await t.press('ArrowUp', 0.6);
+    await t.click(link, { after: 0.8 });
+  }
   await t.focus(menu, d.menu, { side: 'right' });
   await t.click(menu.getByRole('menuitem', { name: L('linkMenu.preview') }), { after: 1.2 });
   await t.focus(p.locator('.float.preview').first(), d.preview, { side: 'right', pointer: false });
@@ -240,6 +298,27 @@ export default async function (t) {
   await t.click(create3.getByRole('menuitem').first(), { after: 1.5 });
   await t.say(d.created);
 
+  await t.title(d.s7n, d.s7nb, async () => {
+    const close = p.getByRole('button', { name: L('panes.close') }).first();
+    if (await close.count()) await close.click();
+    await t.nav('section.manuscript');
+    await t.wait(0.8);
+    await t.click(p.locator('aside.tree').getByText(d.namedScene, { exact: true }).first(), { after: 1.2 });
+  });
+  const named = main.locator('.md-named').first();
+  await named.scrollIntoViewIfNeeded();
+  await t.wait(0.4);
+  await t.zoom(named, () => t.focus(named, d.namedSay, { side: 'below', pointer: false }), 1.6);
+  // a name broken over two lines: its first piece
+  const r = await named.evaluate((e) => { const b = e.getClientRects()[0]; return { x: b.x, y: b.y, width: b.width, height: b.height }; });
+  await t.moveTo(r.x + r.width / 2, r.y + r.height / 2);
+  await p.mouse.click(r.x + r.width / 2, r.y + r.height / 2, { button: 'right' });
+  await t.wait(0.8);
+  await t.focus(p.locator('.float[role=menu]').first(), d.namedMenu, { side: 'right' });
+  await t.press('Escape', 0.5);
+  const toggle = p.locator('button[aria-pressed]', { hasText: L('mode.namedNotes') }).first();
+  await t.zoom(toggle, () => t.focus(toggle, d.namedButton, { side: 'below' }), 1.6);
+
   await t.title(d.s7, d.s7b, async () => {
     await t.nav('section.manuscript');
     await t.wait(0.8);
@@ -247,6 +326,9 @@ export default async function (t) {
   });
   await t.click(side.getByRole('tab', { name: new RegExp(`^${L('side.links')}`) }).first(), { after: 1 });
   await t.focus(side, d.links, { side: 'left' });
+  const namedList = side.getByText(L('links.named'), { exact: false }).first();
+  await namedList.scrollIntoViewIfNeeded();
+  await t.focus(namedList, d.namedLinks, { side: 'left' });
   await t.click(side.getByRole('tab', { name: new RegExp(`^${L('side.properties')}`) }).first(), { after: 0.6 });
 
   await t.title(d.s8, d.s8b, () => t.press('Alt+ControlOrMeta+f', 1));

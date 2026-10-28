@@ -28,7 +28,7 @@ const D = {
     bar: 'Dal menu Altro, Barra di formattazione la tiene fissa sopra il testo',
     row: 'Grassetto, corsivo, titoli, elenchi, citazioni, allineamento e altro',
     center: 'Allinea al centro, per esempio per una lettera o un biglietto. Un altro clic la riporta a sinistra',
-    blank: 'Una riga vuota tra due paragrafi, senza aprire una nuova scena: ⌥Invio (Alt+Invio su Windows e Linux)',
+    blank: 'Una riga vuota vera tra due paragrafi, senza aprire una nuova scena: Invio due volte, o ¶ nella barra',
     s4: 'I segni del dialogo',
     s4b: 'Si scelgono in Esportazione',
     where: 'In Esportazione, sezione Tipografia',
@@ -75,7 +75,7 @@ const D = {
     bar: 'From the More menu, Formatting bar keeps it above the text',
     row: 'Bold, italics, headings, lists, quotations, alignment and more',
     center: 'Center, for a letter or a note for instance. Another click puts it back on the left',
-    blank: 'A blank line between two paragraphs, without starting a new scene: ⌥Return (Alt+Enter on Windows and Linux)',
+    blank: 'A real blank line between two paragraphs, without starting a new scene: Enter twice, or ¶ in the bar',
     s4: 'Dialogue marks',
     s4b: 'Chosen in Export',
     where: 'In Export, Typography section',
@@ -166,8 +166,9 @@ export default async function (t) {
   await t.click(center, { after: 1 });
   await t.click(line, { dx: 0.98, after: 0.2 });
   await t.press('End', 0.3);
-  await t.press('Alt+Enter', 1);
-  await t.focus(line, d.blank, { side: 'below', hold: 3 });
+  await t.press('Enter', 0.4);
+  await t.press('Enter', 1);
+  await t.focus([line, p.locator('main.center .md-blank-line').last()], d.blank, { side: 'below', hold: 3 });
 
   await t.title(d.s4, d.s4b, () => t.nav('section.export'));
   const quotes = p.locator('label', { hasText: L('export.quotes') }).locator('select').first();
@@ -187,7 +188,6 @@ export default async function (t) {
     await t.click(level('level.scene'), { after: 0.8 });
     await toEnd();
   });
-  await t.press('Enter', 0.1);
   await t.press('Enter', 0.4);
   await t.type('"', 80);
   await t.wait(0.8);
@@ -202,7 +202,6 @@ export default async function (t) {
 
   await t.title(d.s6, d.s6b);
   await t.press('End', 0.2);
-  await t.press('Enter', 0.1);
   await t.press('Enter', 0.4);
   await t.type('"', 80);
   await t.wait(0.6);
@@ -226,7 +225,6 @@ export default async function (t) {
   await t.wait(1);
   await t.click(level('level.scene'), { after: 0.8 });
   await toEnd();
-  await t.press('Enter', 0.1);
   await t.press('Enter', 0.4);
   await t.type(d.straight, 90);
   await t.wait(0.8);

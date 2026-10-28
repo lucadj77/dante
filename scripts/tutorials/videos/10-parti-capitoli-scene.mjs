@@ -43,7 +43,7 @@ const D = {
     chapter: 'Ogni capitolo contiene una o più scene',
     scene: 'La scena è un pezzo di racconto: un luogo, un momento, un punto di vista. Ogni scena è un file',
     free: 'Quanto dividere lo decidi tu: un capitolo può avere anche una sola scena',
-    inside: 'Dentro una scena, per staccare due momenti senza farne due scene: una riga vuota con ⌥Invio, o il separatore *** dalla barra',
+    inside: 'Dentro una scena, per staccare due momenti senza farne due scene: una riga vuota con Invio due volte o ¶, o il separatore *** dalla barra',
     s2: 'Le parti',
     s2b: 'Si accendono nelle impostazioni',
     parts: 'In Impostazioni, Questo romanzo, Struttura: con questa casella i capitoli si raggruppano in parti. Spenta, il romanzo ha solo capitoli',
@@ -87,7 +87,7 @@ const D = {
     chapter: 'Each chapter holds one or more scenes',
     scene: 'A scene is a piece of the story: one place, one moment, one point of view. Each scene is a file',
     free: 'How much to divide is up to you: a chapter can have just one scene',
-    inside: 'Inside a scene, to set two moments apart without making two scenes: a blank line with ⌥Return, or the *** separator from the bar',
+    inside: 'Inside a scene, to set two moments apart without making two scenes: a blank line with Enter twice or ¶, or the *** separator from the bar',
     s2: 'Parts',
     s2b: 'Turned on in Settings',
     parts: 'In Settings, This novel, Structure: with this box chapters are grouped into parts. Off, the novel has only chapters',
@@ -215,12 +215,12 @@ export default async function (t) {
     await t.click(row(new RegExp(`${d.chapterRow}$`)), { after: 0.8 });
   });
   const side = p.locator('aside.side').first();
-  const name = side.getByPlaceholder(L('panel.propertyName')).first();
+  await t.click(side.locator('button.plus').first(), { after: 0.6 });
+  const name = side.locator('form.add input').first();
   await t.click(name, { after: 0.2 });
   await t.type('published_title', 80);
   await t.click(side.getByRole('button', { name: L('panel.addProperty') }).first(), { after: 0.8 });
-  const value = side.locator('label, div', { hasText: /^published_title/ }).locator('input').first()
-    .or(side.locator('input').last()).first();
+  const value = side.locator('.prop', { hasText: 'published_title' }).locator('input').first();
   await t.click(value, { after: 0.2 });
   await t.type(d.published, 80);
   await t.press('Tab', 0.8);

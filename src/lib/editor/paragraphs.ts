@@ -1,7 +1,7 @@
 import { completionStatus } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import { insertNewline } from "@codemirror/commands";
-import { Prec, RangeSetBuilder, StateField, type EditorState, type Extension, type RangeSet, type Transaction, type TransactionSpec } from "@codemirror/state";
+import { EditorSelection, Prec, RangeSetBuilder, StateField, type EditorState, type Extension, type RangeSet, type Transaction, type TransactionSpec } from "@codemirror/state";
 import { Decoration, EditorView, keymap, type DecorationSet } from "@codemirror/view";
 import { BLANK_LINE, isBlankLine } from "$lib/core/blankLines";
 
@@ -138,13 +138,50 @@ function newParagraph(view: EditorView): boolean {
   return !!spec;
 }
 
+/** End stops at the end of the paragraph: the line on screen goes on through the empty lines not shown. */
+function lineEnd(extend: boolean) {
+  return (view: EditorView): boolean => {
+    const { atomic } = view.state.field(field);
+    const selection = EditorSelection.create(
+      view.state.selection.ranges.map((range) => {
+        let head = view.moveToLineBoundary(range, true).head;
+        atomic.between(head, head, (from, to) => {
+          if (head > from && head < to) head = from;
+        });
+        return extend ? EditorSelection.range(range.anchor, head) : EditorSelection.cursor(head);
+      }),
+      view.state.selection.mainIndex,
+    );
+    view.dispatch({ selection, scrollIntoView: true, userEvent: "select" });
+    return true;
+  };
+}
+
+/** A click after the end of a paragraph falls in the empty lines not shown, and the cursor would jump to the next one. */
+const clickAtEnd = EditorView.domEventHandlers({
+  mouseup(event, view) {
+    const { main } = view.state.selection;
+    if (!main.empty) return false;
+    let start = -1;
+    view.state.field(field).atomic.between(main.head, main.head, (from, to) => {
+      if (to === main.head) start = from;
+    });
+    const top = start < 0 ? null : view.coordsAtPos(main.head)?.top;
+    if (top != null && event.clientY < top) view.dispatch({ selection: { anchor: start }, userEvent: "select.pointer" });
+    return false;
+  },
+});
+
 /** Paragraphs as in a word processor: see the comment at the top. */
 export const paragraphs: Extension = [
   field,
+  clickAtEnd,
   Prec.highest(
     keymap.of([
       { key: "Enter", run: newParagraph },
       { key: "Shift-Enter", run: insertNewline },
+      { key: "End", run: lineEnd(false), shift: lineEnd(true) },
+      { mac: "Cmd-ArrowRight", run: lineEnd(false), shift: lineEnd(true) },
     ]),
   ),
 ];
