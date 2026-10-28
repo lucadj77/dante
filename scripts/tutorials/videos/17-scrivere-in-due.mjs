@@ -117,6 +117,15 @@ export default async function (t) {
   const name = p.locator('label', { hasText: L('settings.userName') }).first();
   await t.zoom(name, () => t.focus(name, d.name, { side: 'right' }), 1.5);
 
+  // early: Anna's presence in the sample lasts three minutes
+  await t.title(d.s4, d.s4b, async () => {
+    await t.nav('section.manuscript');
+    await t.wait(0.8);
+    await t.click(t.text(d.busy), { after: 1.2 });
+  });
+  const banner = p.getByText(L('presence.editing', { user: 'Anna' })).first();
+  await t.focus(banner, d.banner, { side: 'below' });
+
   await t.title(d.s2, d.s2b, async () => {
     await t.nav('section.manuscript');
     await t.wait(0.8);
@@ -179,10 +188,6 @@ export default async function (t) {
   await t.focus(scope, d.whole, { side: 'left' });
   await t.focus(panel.locator('.filters').first(), d.filters, { side: 'left' });
   await t.click(side.getByRole('tab', { name: L('comments.open'), exact: true }).first(), { after: 0.8 });
-
-  await t.title(d.s4, d.s4b, () => t.click(t.text(d.busy), { after: 1.2 }));
-  const banner = p.getByText(L('presence.editing', { user: 'Anna' })).first();
-  await t.focus(banner, d.banner, { side: 'below' });
 
   await t.title(d.s5, d.s5b);
   const button = p.getByRole('button', { name: new RegExp(L('conflicts.one')) }).first();
