@@ -1107,6 +1107,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "blankAsk.insert": "Inserisci riga vuota",
   "blankAsk.no": "No",
   "blankAsk.never": "Non chiedere più",
+  "appearance.paragraphs": "Invio inizia un nuovo paragrafo, come in un elaboratore di testi",
+  "appearance.paragraphsHint": "La riga vuota che nel file separa i paragrafi viene scritta da sola e non si vede: tra i paragrafi resta solo lo spazio. Invio due volte di seguito lascia una riga vuota che si vede anche nel libro; Maiusc+Invio va a capo nello stesso paragrafo. Senza la spunta l'editor mostra le righe vuote come sono nel file.",
   "appearance.askBlankLines": "Chiedi delle righe vuote in più",
   "appearance.askBlankLinesHint": "Quando lasci tra due capoversi più righe vuote del solito, Dante chiede se scrivere una riga vuota vera, che si vede anche nel libro esportato.",
 };

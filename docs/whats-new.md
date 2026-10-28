@@ -10,6 +10,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Enter as in Word**: Enter starts a new paragraph and the empty line that separates paragraphs in the file is no longer shown: only the space between paragraphs remains, the arrows skip it and Backspace at the start of a paragraph joins it to the one before. Enter twice in a row leaves a blank line that shows in the book too (¶); Shift+Enter starts a new line in the same paragraph. It can be turned off in Settings > Appearance.
 - **Names button**: it has a new icon, a person above a dotted line, that no longer looks like the others; the menu of a recognised name reminds you that the button turns the names off.
 
 ### Fixed

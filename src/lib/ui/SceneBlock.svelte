@@ -154,6 +154,7 @@
       });
       shared.attach(editor.view);
       editor.setSpelling(app.settings.spellcheck);
+      editor.setParagraphs(app.settings.paragraphs);
       editor.setModes({ typewriter: props.typewriter, focus: props.focusMode, line: app.settings.lineHighlight });
       collab.ready(editor);
       props.register(path, handle);
@@ -180,6 +181,11 @@
   $effect(() => {
     const on = app.settings.spellcheck;
     editor?.setSpelling(on);
+  });
+
+  $effect(() => {
+    const on = app.settings.paragraphs;
+    editor?.setParagraphs(on);
   });
 
   // A match chosen in the project's find and replace.
