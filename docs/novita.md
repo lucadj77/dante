@@ -10,6 +10,10 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+## 1.1.4 · 28 ottobre 2026
+
+### Corretto
+
 - **Immagine nelle schede della Bibbia**: aggiungendo un'immagine a una scheda, ora compare subito anche nella sua card, senza riaprire la Bibbia.
 
 ## 1.1.3 · 28 ottobre 2026

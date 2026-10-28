@@ -10,6 +10,10 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+## 1.1.4 · October 28, 2026
+
+### Fixed
+
 - **Picture on Story Bible cards**: a picture added to an entry now shows on its card right away, without reopening the Story Bible.
 
 ## 1.1.3 · October 28, 2026
