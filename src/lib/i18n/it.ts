@@ -1065,4 +1065,11 @@ export const it: Partial<Record<MessageKey, string>> = {
   "appearance.spelling": "Ortografia",
   "appearance.spellcheck": "Sottolinea le parole che il correttore non conosce",
   "appearance.spellcheckHint": "Il correttore è quello del sistema: i dizionari e le parole che gli aggiungi sono quelli di macOS, Windows o Linux, ed è il sistema a scegliere il dizionario. Dante segna il testo con la lingua del romanzo, che il sistema può usare. Sul Mac il clic destro su una parola dà i suggerimenti e permette di impararla; le lingue sono in Impostazioni di Sistema > Tastiera > Immissione testo.",
+  "blankAsk.question": "Vuoi una riga vuota vera?",
+  "blankAsk.why": "Hai lasciato più righe vuote del solito tra due capoversi. Nel libro esportato le righe vuote in più non si vedono (il formato Markdown le conta come un solo a capo): se vuoi uno stacco visibile, Dante scrive una riga vuota vera, come con Alt+Invio.",
+  "blankAsk.insert": "Inserisci riga vuota",
+  "blankAsk.no": "No",
+  "blankAsk.never": "Non chiedere più",
+  "appearance.askBlankLines": "Chiedi delle righe vuote in più",
+  "appearance.askBlankLinesHint": "Quando lasci tra due capoversi più righe vuote del solito, Dante chiede se scrivere una riga vuota vera, che si vede anche nel libro esportato.",
 };

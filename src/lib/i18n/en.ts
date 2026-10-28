@@ -1065,6 +1065,13 @@ export const en = {
   "appearance.spelling": "Spelling",
   "appearance.spellcheck": "Underline words the spelling checker does not know",
   "appearance.spellcheckHint": "The checker is the system's: its dictionaries and the words you add to it are those of macOS, Windows or Linux, and the system chooses the dictionary. Dante marks the text with the novel's language, which the system may use. On a Mac, right-click a word for suggestions and to learn it; the languages are in System Settings > Keyboard > Text Input.",
+  "blankAsk.question": "Do you want a real blank line?",
+  "blankAsk.why": "You left more empty lines than usual between two paragraphs. In the exported book the extra empty lines do not show (Markdown counts them as one paragraph break): for a visible gap, Dante writes a real blank line, as Alt+Enter does.",
+  "blankAsk.insert": "Insert blank line",
+  "blankAsk.no": "No",
+  "blankAsk.never": "Don't ask again",
+  "appearance.askBlankLines": "Ask about extra empty lines",
+  "appearance.askBlankLinesHint": "When you leave more empty lines than usual between two paragraphs, Dante asks whether to write a real blank line, which shows in the exported book too.",
 } as const;
 
 export type MessageKey = keyof typeof en;

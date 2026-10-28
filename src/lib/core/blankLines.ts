@@ -31,3 +31,30 @@ export function normalizeBlankLines(markdown: string): string {
     .map((line) => (isBlankLine(line) ? " " : line))
     .join("\n");
 }
+
+// Lines that are not running text: their spacing says nothing of how paragraphs are spaced.
+const NOT_TEXT = /^\s*(?:[-*+]\s|\d+[.)]\s|\||>|#|```|\* \* \*|---|\{>>)/;
+
+/**
+ * How many empty lines the writer usually leaves between paragraphs, 0 or 1, from the
+ * texts' gaps between lines of running text; null with too few to tell.
+ */
+export function blankHabit(texts: string[]): 0 | 1 | null {
+  let none = 0;
+  let one = 0;
+  for (const text of texts) {
+    let empty = -1;
+    for (const line of text.split("\n")) {
+      if (!line.trim()) {
+        if (empty >= 0) empty++;
+        continue;
+      }
+      const text = !NOT_TEXT.test(line) && !isBlankLine(line);
+      if (text && empty === 0) none++;
+      else if (text && empty === 1) one++;
+      empty = text ? 0 : -1;
+    }
+  }
+  if (none + one < 5) return null;
+  return none > one ? 0 : 1;
+}

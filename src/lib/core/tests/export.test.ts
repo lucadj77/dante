@@ -9,6 +9,7 @@ import { coverSvg } from "../cover";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings, parseSettings, separatorParts } from "../settings";
+import { blankHabit } from "../blankLines";
 
 describe("markdown to blocks", () => {
   it("keeps emphasis and drops markup", () => {
@@ -314,5 +315,17 @@ describe("scene separator", () => {
     const two = await documentXml(await docxBytes(bookToDocx(book, { ...settings, sceneBreak: "twoBlankLines" }, { words: "words" })));
     expect(two).toContain(`Prima.</w:t></w:r></w:p>${empty}${empty}`);
     expect(bookToTypst(book, { ...settings, sceneBreak: "twoBlankLines" }, { words: "parole" })).toMatch(/#v\([\d.]+em\)/);
+  });
+});
+
+describe("the writer's spacing of paragraphs", () => {
+  it("is read from the gaps between lines of running text", () => {
+    const tight = "Uno.\nDue.\nTre.\n\nQuattro.\nCinque.\nSei.";
+    const spaced = "Uno.\n\nDue.\n\nTre.\n\n\n\nQuattro.\n\nCinque.\n\nSei.\n\nSette.";
+    expect(blankHabit([tight])).toBe(0);
+    expect(blankHabit([spaced])).toBe(1);
+    expect(blankHabit(["Uno.\n\nDue."])).toBeNull();
+    // Lists and headings do not count.
+    expect(blankHabit(["# A\n- a\n- b\n- c\n- d\n- e\n- f"])).toBeNull();
   });
 });
