@@ -5,6 +5,7 @@
   import type { Project } from "$lib/core/project";
   import { t } from "$lib/state.svelte";
   import { navigator } from "./navigation";
+  import { bibleNames, NameMatcher, namedNotes, scenesNaming } from "$lib/core/mentions";
 
   interface Props {
     project: Project;
@@ -18,6 +19,9 @@
   let backlinks = $state<Backlink[]>([]);
   let outgoing = $state<string[]>([]);
   let unresolved = $state<string[]>([]);
+  /** Notes of the Story Bible the note names without a link, or, for one of them, the scenes naming it. */
+  let named = $state<{ path: string; count: number }[]>([]);
+  let isBible = $state(false);
 
   $effect(() => {
     void p.version;
@@ -26,6 +30,7 @@
       backlinks = [];
       outgoing = [];
       unresolved = [];
+      named = [];
       return;
     }
     void p.project.index().then((index) => {
@@ -33,6 +38,10 @@
       backlinks = index.backlinks(path);
       outgoing = index.notes.get(path)?.links ?? [];
       unresolved = index.unresolved(path);
+      const names = bibleNames(index, p.project.settings);
+      isBible = names.some((n) => n.path === path);
+      const note = index.notes.get(path);
+      named = isBible ? scenesNaming(path, index, p.project.settings, names) : note ? namedNotes(note.body, new NameMatcher(names), note.links, path) : [];
     });
   });
 
@@ -87,6 +96,26 @@
           <span class="title">{target}</span>
           <span class="where">{t("links.missing")}</span>
         </span>
+      </li>
+    {/each}
+  </ul>
+</section>
+{/if}
+
+{#if p.path?.toLowerCase().endsWith(".md")}
+<section>
+  <h3 title={isBible ? t("links.namingTip") : t("links.namedTip")}>{isBible ? t("links.naming") : t("links.named")} <span class="count">{named.length}</span></h3>
+  {#if named.length === 0}
+    <p class="muted">{isBible ? t("links.noNaming") : t("links.noNamed")}</p>
+  {/if}
+  <ul>
+    {#each named as item (item.path)}
+      <li>
+        <button class="beside" title={t("tip.openBeside")} aria-label={t("panes.openBeside")} onclick={() => nav?.open(item.path, true)}>⧉</button>
+        <button class="link" onclick={(e) => nav?.open(item.path, e.altKey)}>
+          <span class="title">{title(item.path)}</span>
+          <span class="where">{t("links.times", { n: item.count })} · {dirname(item.path)}</span>
+        </button>
       </li>
     {/each}
   </ul>
