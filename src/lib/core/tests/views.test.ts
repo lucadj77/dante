@@ -168,3 +168,12 @@ describe("order by hand", () => {
     expect(shiftEnd("1950", "1951", "1960")).toBe("1951");
   });
 });
+
+describe("column widths in views", () => {
+  it("keeps the widths set by dragging, and only sensible ones", () => {
+    const view = parseView("type: table\nwidths:\n  name: 320.4\n  pov: 140\n  lane: 260\n  stato: -5\n  data: wide\n");
+    expect(view.widths).toEqual({ name: 320, pov: 140, lane: 260 });
+    expect(parseView(serializeView(view))).toEqual(view);
+    expect(serializeView(defaultView())).not.toContain("widths");
+  });
+});

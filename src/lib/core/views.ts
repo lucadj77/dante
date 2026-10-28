@@ -44,6 +44,8 @@ export interface ViewSpec {
   synopsis: boolean;
   /** Items put in order by dragging them, used when there is no sort; the others follow. */
   order: string[];
+  /** Widths in pixels set by dragging: the table's columns by field ("name" first), "lane" for the timeline's lanes. */
+  widths: Record<string, number>;
 }
 
 /** Fields every item has, besides its properties. */
@@ -51,7 +53,7 @@ export const BUILT_IN = ["name", "folder", "type", "words", "chapter"] as const;
 export const VIEW_EXT = ".yaml";
 
 export function defaultView(type: ViewKind = "table"): ViewSpec {
-  return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true, order: [] };
+  return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true, order: [], widths: {} };
 }
 
 /** The views a new novel starts with: a board of the scenes by stage of work, and a table of them. */
@@ -94,6 +96,12 @@ export function parseView(yaml: string): ViewSpec {
   view.end = text(raw.end);
   view.synopsis = raw.synopsis !== false;
   view.order = list(raw.order);
+  if (raw.widths && typeof raw.widths === "object" && !Array.isArray(raw.widths)) {
+    for (const [key, value] of Object.entries(raw.widths)) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n > 0) view.widths[key] = Math.round(n);
+    }
+  }
   return view;
 }
 
@@ -111,6 +119,7 @@ export function serializeView(view: ViewSpec): string {
   if (view.end) out.end = view.end;
   if (!view.synopsis) out.synopsis = false;
   if (view.order.length) out.order = view.order;
+  if (Object.keys(view.widths).length) out.widths = view.widths;
   return stringify(out, { lineWidth: 0 });
 }
 

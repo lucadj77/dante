@@ -6,12 +6,14 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Larghezza delle colonne nelle viste**: nelle tabelle trascina il bordo destro di un'intestazione per cambiare la larghezza della colonna; nella linea del tempo raggruppata fai lo stesso sul titolo di una colonna. Doppio clic sul bordo torna alle larghezze automatiche. Le larghezze sono salvate con la vista.
 - **Cmd+W chiude il progetto**: se il cursore non è in un pannello a fianco, Cmd+W (Ctrl+W su Windows e Linux) chiude il progetto e torna alla schermata iniziale; con il cursore in un pannello chiude il pannello, come prima. Nella versione web usa Alt+Cmd+W, perché Cmd+W chiude la scheda del browser.
 
 ### Cambiato
 
 ### Corretto
 
+- **Linea del tempo troppo larga**: nella 1.1.2 le colonne della linea del tempo raggruppata si allargavano quanto il testo più lungo; ora stanno nella finestra come prima.
 - **Intestazione fissa in Tabelle e bacheche**: scorrendo una vista restano in alto il nome, i pulsanti e le impostazioni, e anche i nomi delle colonne della tabella e delle colonne della bacheca.
 - **Fine paragrafo con le righe vuote nascoste**: il tasto Fine (Cmd+→ su Mac) e un clic dopo la fine di un paragrafo portano il cursore alla fine del paragrafo, e non più nella riga vuota invisibile o all'inizio del paragrafo dopo.
 - **Allegati subito visibili**: la prima immagine aggiunta a un romanzo crea la cartella Allegati dentro Ricerca, e ora la cartella compare subito nella sezione Note, senza riaprire il progetto.

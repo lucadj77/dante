@@ -6,12 +6,14 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Column width in views**: in tables drag the right edge of a heading to change the column's width; in a grouped timeline do the same on a column's title. Double-click the edge to go back to automatic widths. The widths are saved with the view.
 - **Cmd+W closes the project**: when the cursor is not in a side pane, Cmd+W (Ctrl+W on Windows and Linux) closes the project and goes back to the start screen; with the cursor in a pane it closes the pane, as before. In the web version use Alt+Cmd+W, since Cmd+W closes the browser tab.
 
 ### Changed
 
 ### Fixed
 
+- **Timeline too wide**: in 1.1.2 the columns of a grouped timeline grew as wide as their longest text; now they fit the window as before.
 - **Fixed header in Tables and boards**: while a view scrolls, its name, buttons and settings stay at the top, and so do the column names of the table and of the board.
 - **End of a paragraph with hidden blank lines**: the End key (Cmd+→ on Mac) and a click after the end of a paragraph put the cursor at the end of the paragraph, no longer in the invisible blank line or at the start of the next paragraph.
 - **Attachments shown at once**: the first image added to a novel creates the Attachments folder inside Research, and now the folder shows at once in the Notes section, without reopening the project.
