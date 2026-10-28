@@ -454,6 +454,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "codex.addSuggested": "Aggiungi questa proprietà, suggerita dal tipo",
   "codex.newTypeName": "Nuovo tipo",
   "codex.addType": "Aggiungi",
+  "codex.pictures": "Immagini",
+  "codex.picturesTip": "Mostra nelle schede la prima immagine di ogni nota (da una proprietà o dal testo).",
   "codex.typesHint": "Una nota prende il tipo dalla proprietà type o dalla cartella della Bibbia in cui si trova. I tipi sono salvati con il progetto.",
   "codex.new": "Nuovo: {type}",
   "codex.filter": "Filtra",

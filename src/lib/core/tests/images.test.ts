@@ -4,7 +4,7 @@ import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
 import { bookToTypst } from "../export/typst";
 import { bookToMarkdown } from "../export/markdown";
-import { isImageUrl, nameFromUrl, sniffImage, findImages, imageSize, resolveImagePath, withWidth } from "../images";
+import { isImageUrl, nameFromUrl, sniffImage, findImages, imageSize, resolveImagePath, withWidth, firstImage } from "../images";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
 import { defaultSettings } from "../settings";
@@ -176,5 +176,14 @@ describe("tables and images in the export", () => {
     expect(html).toContain('finito? <img class="inline" src="images/image1.png" alt="" style="width: 20px; max-width: 100%;"/> vi chiederete.');
 
     expect(bookToMarkdown(book, settings)).toContain("Come ci sei finito? ![[Allegati/casa.png|20]] vi chiederete.");
+  });
+});
+
+describe("the picture of a card", () => {
+  it("is the one in a property, else the first in the text", () => {
+    expect(firstImage("Testo ![[a.png]] e ![[b.png]]", {})?.target).toBe("a.png");
+    expect(firstImage("Testo ![[a.png]]", { ritratto: "[[Lucia.jpg]]" })).toMatchObject({ target: "Lucia.jpg", wiki: true });
+    expect(firstImage("", { foto: "Allegati/lago.webp" })).toMatchObject({ target: "Allegati/lago.webp", wiki: false });
+    expect(firstImage("Solo [[Renzo]].", { luogo: "[[Lecco]]" })).toBeNull();
   });
 });

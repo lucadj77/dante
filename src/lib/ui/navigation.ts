@@ -14,6 +14,8 @@ export interface Navigator {
    * two notes never share one; null when it is free.
    */
   aliasOwner?(alias: string, from: string): string | null;
+  /** A URL to show a picture embedded in `from`, read once per file; null when it is not found. */
+  imageUrl?(target: string, wiki: boolean, from: string): Promise<string | null>;
 }
 
 const KEY = Symbol("navigator");

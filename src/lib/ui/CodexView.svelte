@@ -12,6 +12,8 @@
   import { t } from "$lib/state.svelte";
   import { confirmDelete } from "./dialogs";
   import { displayValue } from "./propertyText";
+  import { firstImage } from "$lib/core/images";
+  import { excerpt as textExcerpt } from "$lib/core/views";
   import { navigator } from "./navigation";
   import NoteEditor from "./NoteEditor.svelte";
   import NoteProperties from "./NoteProperties.svelte";
@@ -156,16 +158,42 @@
       .map(([key, value]) => [key, displayValue(value).replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_m, a, b) => b || a)]);
   }
 
-  /** The start of the text, without Markdown signs. */
-  function excerpt(note: NoteInfo): string {
-    const plain = note.body
-      .replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_m, a, b) => b || a)
-      .replace(/^#+\s*/gm, "")
-      .replace(/[*_=~`>]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    return plain.length > 140 ? plain.slice(0, 140) + "…" : plain;
+  /** The start of the text, without Markdown signs or pictures. */
+  const excerpt = (note: NoteInfo) => textExcerpt(note.body, 140);
+
+  // The cards show each note's first picture, unless the writer turned them off on this computer.
+  const PICTURES_KEY = "dante.codex-pictures";
+  let pictures = $state(true);
+  try {
+    pictures = localStorage.getItem(PICTURES_KEY) !== "off";
+  } catch {
+    // Without storage the pictures show.
   }
+  function setPictures(on: boolean) {
+    pictures = on;
+    try {
+      localStorage.setItem(PICTURES_KEY, on ? "on" : "off");
+    } catch {
+      // Kept for this session only.
+    }
+  }
+  /** The picture of each card shown, by note, once read. */
+  let cardImages = $state<Record<string, string | null>>({});
+  $effect(() => {
+    if (!pictures || !nav?.imageUrl) return;
+    for (const note of shown) {
+      if (note.path in cardImages) continue;
+      const image = firstImage(note.body, note.properties);
+      cardImages[note.path] = null;
+      if (image) void nav.imageUrl(image.target, image.wiki, note.path).then((url) => (cardImages[note.path] = url));
+    }
+  });
+  $effect(() => {
+    // A note edited may have another picture: read again after a change.
+    void p.rev;
+    void saves;
+    cardImages = {};
+  });
 
   async function run<T>(operation: () => Promise<T>): Promise<T | undefined> {
     error = "";
@@ -336,6 +364,9 @@
       <div class="list-bar">
         <h2>{type?.icon ?? ""} {typeLabel(selectedType ?? "")}</h2>
         <input type="search" bind:value={filter} placeholder={t("codex.filter")} aria-label={t("codex.filter")} />
+        <label class="pictures" title={t("codex.picturesTip")}
+          ><input type="checkbox" checked={pictures} onchange={(e) => setPictures(e.currentTarget.checked)} /> {t("codex.pictures")}</label
+        >
         {#if type && newName !== null}
           <form
             class="new-item"
@@ -397,6 +428,7 @@
       <div class="cards">
         {#each shown as note (note.path)}
           <button class="card" onclick={(e) => (e.altKey ? nav?.open(note.path, true) : p.onShow(note.path))}>
+            {#if pictures && cardImages[note.path]}<img class="picture" src={cardImages[note.path]} alt="" />{/if}
             <span class="card-title">{noteTitle(note.path)}</span>
             {#if note.aliases.length}<span class="aliases">{note.aliases.join(", ")}</span>{/if}
             {#each details(note) as [key, value] (key)}
@@ -585,6 +617,21 @@
   .card:hover {
     border-color: var(--accent);
     background: var(--bg);
+  }
+  .picture {
+    width: calc(100% + 28px);
+    margin: -12px -14px 6px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+  }
+  .pictures {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
   }
   .card-title {
     font-weight: 600;

@@ -454,6 +454,8 @@ export const en = {
   "codex.addSuggested": "Add this property, suggested by the type",
   "codex.newTypeName": "New type",
   "codex.addType": "Add",
+  "codex.pictures": "Pictures",
+  "codex.picturesTip": "Shows on each card the note's first picture (from a property or the text).",
   "codex.typesHint": "A note gets its type from its type property or from the Story Bible folder it is in. Types are saved with the project.",
   "codex.new": "New {type}",
   "codex.filter": "Filter",

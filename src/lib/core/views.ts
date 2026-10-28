@@ -167,7 +167,10 @@ export function excerpt(body: string, length = 220): string {
     .replace(/\{>>[\s\S]*?<<\}|\{--[\s\S]*?--\}|%%[\s\S]*?%%/g, "")
     .replace(/\{~~[\s\S]*?~>([\s\S]*?)~~\}/g, "$1")
     .replace(/\{(\+\+|==)([\s\S]*?)(\+\+|==)\}/g, "$2")
-    .replace(/!?\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target: string, alias?: string) => alias ?? basename(target))
+    // Embeds are pictures or other notes, not words: they leave the excerpt.
+    .replace(/!\[\[[^\]]*\]\]|!\[[^\]\n]*\]\([^)\n]*\)/g, " ")
+    .replace(/\[([^\]\n]*)\]\([^)\n]*\)/g, "$1")
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target: string, alias?: string) => alias ?? basename(target))
     .replace(/^#{1,6}\s+|^>\s?|^\s*[-*+]\s+/gm, "")
     .replace(/[*_`]+/g, "")
     .replace(/\s+/g, " ")

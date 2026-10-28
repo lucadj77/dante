@@ -189,6 +189,7 @@
   provideNavigator({
     open,
     reload,
+    imageUrl,
     aliasOwner(alias, from) {
       const wanted = alias.trim().toLowerCase();
       if (!wanted) return null;
