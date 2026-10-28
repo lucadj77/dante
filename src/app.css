@@ -146,6 +146,7 @@ select {
 }
 /* The page layout chosen in the settings: space between paragraphs and first-line indent. */
 .cm-line.md-gap { line-height: calc(var(--editor-line-height, 1.7) * var(--editor-gap, 1)); }
+.cm-line.md-after-gap { padding-top: calc(1em * var(--editor-line-height, 1.7) * var(--editor-gap, 1)); }
 .cm-line.md-para { text-indent: var(--editor-indent, 0); }
 .cm-line.md-para.md-align-center,
 .cm-line.md-para.md-align-right { text-indent: 0; }

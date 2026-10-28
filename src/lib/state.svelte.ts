@@ -15,6 +15,8 @@ export interface AppSettings {
   lineHeight: number;
   /** Height of the empty line between paragraphs, as a share of a line: 1 is a whole line. */
   paragraphGap: number;
+  /** Enter starts a new paragraph, and the empty lines between paragraphs are not shown. */
+  paragraphs: boolean;
   /** Indent of the first line of each paragraph, in em; 0 for none. */
   indent: number;
   /** Paragraphs justified, as in a book, instead of ragged on the right. */
@@ -69,6 +71,7 @@ function defaults(): AppSettings {
     lineWidth: 68,
     lineHeight: 1.7,
     paragraphGap: 1,
+    paragraphs: true,
     indent: 0,
     justify: false,
     spellcheck: true,

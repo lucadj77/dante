@@ -98,7 +98,9 @@ test("changes theme and page layout from the settings", async ({ page }) => {
   const line = page.locator(".cm-line.md-para").first();
   await expect(line).toHaveCSS("text-indent", "27px");
   await expect(line).toHaveCSS("text-align", "justify");
-  expect(await page.locator(".cm-line.md-gap").count()).toBeGreaterThan(0);
+  // The empty lines between paragraphs are not shown: the paragraph after one has the space above it.
+  expect(await page.locator(".cm-line.md-after-gap").count()).toBeGreaterThan(0);
+  expect(await page.locator(".cm-line.md-gap").count()).toBe(0);
 });
 
 test("names the stage under each scene's dot, or the property chosen for it", async ({ page }) => {

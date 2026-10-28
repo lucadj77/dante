@@ -25,7 +25,8 @@ export function blankLineAskFor(project: Project): BlankLineAsk {
   habitOf(project);
   return {
     habit: () => habitOf(project),
-    enabled: () => app.settings.askBlankLines,
+    // With paragraphs as in a word processor the empty lines in more are not shown, nor asked about.
+    enabled: () => app.settings.askBlankLines && !app.settings.paragraphs,
     onNever: () => saveAppSettings({ ...app.settings, askBlankLines: false }),
     get labels() {
       return { question: t("blankAsk.question"), why: t("blankAsk.why"), insert: t("blankAsk.insert"), no: t("blankAsk.no"), never: t("blankAsk.never") };
