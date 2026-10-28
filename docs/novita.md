@@ -6,9 +6,24 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Copertina e sottotitolo già alla creazione**: creando un nuovo romanzo puoi scrivere il sottotitolo e scegliere un'immagine tua per la copertina, senza passare dalle Impostazioni.
+- **Rinominare una proprietà ovunque**: nel pannello Proprietà, aprendo la definizione di una proprietà, **Rinomina** cambia il nome in tutte le scene e le note, nelle viste e nelle impostazioni.
+- **Proprietà per tutte le scene**: creando una proprietà scegli se vale solo per la scena aperta o per tutte le scene del romanzo; nelle altre scene compare pronta da compilare.
+- **Colori dei pallini**: se una proprietà colora i pallini dell'albero (per esempio il punto di vista), nella sua definizione vedi il colore di ogni valore e puoi cambiarlo.
+- **Richiami alla Bibbia**: i nomi e gli alias delle schede della Bibbia scritti nel testo sono sottolineati a puntini. Col tasto destro vedi la scheda e puoi aprirla o trasformare il nome in collegamento. Il pulsante **Richiami** nella barra li accende e li spegne; il pannello Collegamenti li elenca a parte.
+- **Cronologia di commenti e revisioni**: nella scheda Commenti, **Cronologia** mostra chi ha accettato, rifiutato o chiuso cosa e quando, con il testo prima e dopo, per la scena o per tutto il romanzo, filtrabile per persona e date.
+- **Domanda sulle righe vuote**: se lasci tra due paragrafi più righe vuote del solito, Dante chiede se vuoi una riga vuota vera, che si vede anche nel libro. Si spegne con **Non chiedere più** o in Impostazioni > Aspetto.
+- **Immagini nelle schede della Bibbia**: nella bacheca della Bibbia le schede mostrano la loro prima immagine; la casella **Immagini** le nasconde.
+- **Separatore di scena su più righe**: in esportazione, tra le scene, c'è anche **Due righe vuote**, e nel separatore scritto da te ogni `\n` va a capo: `\n* * *\n` mette tre asterischi fra due righe vuote.
+
 ### Cambiato
 
+- **Pannello Proprietà più ordinato**: il pannello è diviso in sezioni che si chiudono e si aprono con un clic; **+ Nuova** sotto l'intestazione apre l'aggiunta di una proprietà, e il simbolo prima del nome, più visibile, apre la sua definizione.
+- **Pulsanti Aggiungi su una riga**: Scena, Capitolo, Parte e Importa stanno sempre su una riga sola.
+
 ### Corretto
+
+- **Anteprima delle schede**: un'immagine all'inizio del testo non compare più come «!» seguito dal nome del file.
 
 ## 1.0.0 · 27 ottobre 2026
 

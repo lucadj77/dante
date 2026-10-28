@@ -6,9 +6,24 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Cover and subtitle when creating**: when creating a new novel you can write the subtitle and pick a picture of your own for the cover, without going through Settings.
+- **Rename a property everywhere**: in the Properties panel, opening a property's definition, **Rename** changes its name in every scene and note, in the views and in the settings.
+- **Properties for every scene**: when creating a property, choose whether it is for the open scene only or for every scene of the novel; in the other scenes it shows up ready to fill in.
+- **Dot colours**: when a property colours the dots of the tree (for example the point of view), its definition shows the colour of each value and lets you change it.
+- **Story Bible mentions**: names and aliases of Story Bible entries written in the text get a dotted underline. Right-click shows the entry and lets you open it or turn the name into a link. The **Names** button in the toolbar turns them on and off; the Links panel lists them separately.
+- **History of comments and revisions**: in the Comments tab, **History** shows who accepted, rejected or closed what and when, with the text before and after, for the scene or the whole novel, filtered by person and dates.
+- **Question about blank lines**: when you leave more empty lines between two paragraphs than usual, Dante asks whether you want a real blank line, one that shows in the book too. Turn it off with **Don't ask again** or in Settings > Appearance.
+- **Pictures on Story Bible cards**: on the Story Bible board the cards show their first picture; the **Pictures** box hides them.
+- **Scene separator over several lines**: in export, between scenes, there is also **Two blank lines**, and in your own separator each `\n` starts a new line: `\n* * *\n` puts three asterisks between two blank lines.
+
 ### Changed
 
+- **Tidier Properties panel**: the panel is split into sections that fold and unfold with a click; **+ New** under the heading opens the form to add a property, and the more visible symbol before a name opens its definition.
+- **Add buttons on one row**: Scene, Chapter, Part and Import always fit on a single row.
+
 ### Fixed
+
+- **Card previews**: a picture at the start of the text no longer shows as "!" followed by the file name.
 
 ## 1.0.0 · October 27, 2026
 

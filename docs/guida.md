@@ -64,7 +64,7 @@ Per questo lo stesso progetto si apre anche in Obsidian o in qualsiasi editor di
 
    ![La schermata iniziale, con i pulsanti in alto e i progetti recenti sotto](img/benvenuto.png)
 
-   Con **Nuovo progetto** compare questo modulo. La copertina è un disegno semplice che Dante prepara con il titolo e gli autori: scegli una forma e dei colori, o lasciala com'è. Più tardi, in **Impostazioni**, puoi metterci una tua immagine (capitolo 13).
+   Con **Nuovo progetto** compare questo modulo: titolo, **sottotitolo** (se c'è), autori, lingua e copertina. La copertina è un disegno semplice che Dante prepara con il titolo e gli autori: scegli una forma e dei colori, lasciala com'è, oppure premi **Usa una tua immagine…** e scegli una foto o un disegno dal computer. Tutto si può cambiare più tardi in **Impostazioni** (capitolo 13).
 
    ![Il modulo per un nuovo progetto: titolo, autori, lingua, copertina e cartella](img/nuovo-progetto.png)
 3. Apri le **Impostazioni** (l'ingranaggio nella barra a sinistra). Hanno due schede: **Questo romanzo**, con le scelte salvate nel progetto, e **Dante su questo computer**, con quelle che valgono per tutti i progetti. Nella seconda scrivi **il tuo nome**: serve a firmare commenti e revisioni e a contare le parole che scrivi ogni giorno. Non c'è un pulsante per salvare: ogni modifica si salva da sola dopo un istante.
@@ -190,6 +190,7 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
 - Un'immagine si scrive come in Obsidian: `![[foto.jpg]]`, oppure `![[foto.jpg|300]]` per una larghezza di 300 pixel (`|300x200` fissa anche l'altezza); funziona anche `![descrizione](cartella/foto.jpg)`. L'immagine può stare in qualsiasi cartella del progetto: con `![[nome.jpg]]` Dante la cerca per nome, come Obsidian. Se incolli o trascini nel testo l'indirizzo web di un'immagine, Dante la scarica in **Ricerca/Allegati** e la inserisce da lì. Un indirizzo scritto a mano (`![](https://…/foto.jpg)`) si vede nell'editor ma non passa nell'esportazione finché non premi **⤓** sulla barra dell'immagine, che la scarica nel progetto; un file fuori dal progetto non si vede, perché chi apre il progetto da un altro computer non lo avrebbe: va copiato nel progetto, come fa il pulsante **Immagine**. L'allineamento usa lo stesso tag dei paragrafi allineati. In esportazione un'immagine da sola in un paragrafo diventa una figura, con il suo allineamento; un'immagine dentro una frase resta nella riga, centrata sulle lettere come nell'editor. Un'immagine più larga della pagina viene ridotta alla larghezza del testo; un'immagine che non si trova viene saltata. Le immagini non contano nelle parole e nei caratteri.
 - **Didascalie**, come le scrive Pandoc: la descrizione di un'immagine che sta da sola nel suo paragrafo (`![[casa.png|La casa al mare|300]]`) è la sua didascalia e compare sotto l'immagine. Per una tabella premi **+ Didascalia** nella barra sopra la tabella, oppure scrivi tu, dopo una riga vuota sotto la tabella, una riga che inizia con `Tabella:` (oppure solo `:`), per esempio `Tabella: Le fasi del romanzo`; nell'editor si vede centrata sotto la tabella, senza la parola iniziale. Le didascalie passano in Word, PDF ed EPUB sotto la figura o la tabella, in corsivo, e contano nelle parole dell'esportazione.
 - **Note incorporate**, come in Obsidian: `![[Nota]]` su una riga da sola mostra il testo della nota in un riquadro, in sola lettura; `![[Nota#Titolo]]` mostra solo quella sezione (con le sue sottosezioni), `![[Nota#^id]]` solo il paragrafo che finisce con `^id`. Un clic sul nome in alto apre la nota, un clic nel testo mostra la riga com'è scritta. In esportazione il testo della nota prende il posto della riga, comprese le note che incorpora a sua volta; una nota che incorpora sé stessa viene saltata. Dentro una frase `![[Nota]]` resta un collegamento. Le parole delle note incorporate contano nell'esportazione, non nelle statistiche della scena.
+- **Quando lasci più righe vuote del solito**: se tra due capoversi lasci più righe vuote di quelle che usi di solito (per esempio due invece di una), appena cominci a scrivere il capoverso nuovo compare un riquadro: **Vuoi una riga vuota vera?** Spiega che nel libro esportato le righe in più sparirebbero. **Inserisci riga vuota** la trasforma in una riga vuota vera (come Alt+Invio), **No** lascia tutto com'è, **Non chiedere più** spegne la domanda; si riaccende in **Impostazioni → Aspetto**. Dante capisce la tua abitudine da tutte le scene del romanzo: finché sono troppo poche per capirla, non chiede.
 - Una riga vuota è scritta nel file come un paragrafo che contiene solo `&nbsp;` (uno spazio che non va a capo), con una riga vuota sopra e una sotto. Obsidian, Pandoc e i browser la mostrano come una riga vuota. Dante legge allo stesso modo una riga con solo `<br>` o con solo uno spazio non separabile, come li scrivono altre app. In esportazione diventa un paragrafo vuoto in Word, uno spazio di una riga in PDF ed EPUB, e resta `&nbsp;` in Markdown; non conta nelle parole né nei caratteri. Un separatore di scena (`***`, `---`) dentro una scena, invece, nel libro è stampato come separatore.
 - Le citazioni (righe che iniziano con `>`) si vedono con una linea a sinistra, senza il `>`. Le tabelle (`| A | B |` con sotto una riga `|---|---|`) si vedono come tabelle; un clic in una cella mostra la tabella com'è scritta, per modificarla. Dentro una tabella un collegamento con alias si scrive `[[nota\|alias]]`, come in Obsidian. Le tabelle passano in Word, PDF, EPUB e Markdown, con l'allineamento delle colonne.
 - La correzione tipografica si imposta in **Esportazione → Tipografia**, perché vale sia per il testo esportato sia, se vuoi, mentre scrivi. Ci sono gli stili di dialogo di diversi paesi: «caporali» italiani, « spaziati » francesi, “virgolette alte” americane, „ basse“ tedesche, lineetta italiana (— Vieni — disse), raya spagnola (—Ven —dijo—) e altri. Nell'elenco quello comune nella lingua del romanzo è segnato come tale. Un nuovo progetto parte sempre con **Come scritti nel testo**, anche se per un altro romanzo avevi scelto uno stile: i dialoghi escono come li hai scritti, finché non scegli uno stile per questo romanzo.
@@ -290,6 +291,8 @@ Le istantanee sono file in `.dante/snapshots/` e seguono la loro scena quando vi
 
 Le proprietà sono le informazioni su una scena o una nota: punto di vista, data della storia, stato della revisione, luogo, e così via. Le vedi e le modifichi nel pannello **Proprietà** a destra.
 
+Il pannello è diviso in sezioni: la scena (titolo, nome del file, sinossi, obiettivo), **Proprietà**, **Istantanee** e **Statistiche**. Un clic sul titolo di una sezione la chiude o la riapre, e Dante ricorda come l'hai lasciata.
+
 - **Titolo e nome del file**: il **Titolo** è quello che compare ovunque (albero, intestazioni, esportazione); il **Nome del file** è il nome sul disco. Se il titolo è vuoto, vale il nome del file.
 - **Sinossi**: poche righe su cosa succede nella scena o nel capitolo. Compare anche nelle viste (capitolo 11).
 - **Obiettivo di parole** (o **di caratteri**): quante parole, o quanti caratteri spazi inclusi, deve avere la scena o il capitolo, secondo la misura scelta in Statistiche. Lascialo vuoto se non ti serve; con un obiettivo l'albero e la barra di stato mostrano a che punto sei (capitoli 5 e 6).
@@ -297,12 +300,15 @@ Le proprietà sono le informazioni su una scena o una nota: punto di vista, data
   <img src="img/proprieta.png" width="280" alt="Le proprietà della scena L'incontro: titolo, sinossi, stato, pov, luogo e data">
 
   Qui sopra le proprietà della scena **L'incontro**: lo **stato** è un menu (idea, bozza, rivista, finita), **pov** e **luogo** sono collegamenti alle schede di don Abbondio e del paese (il nome blu sotto il campo apre la scheda), la **data** è quella in cui si svolge la scena nella storia.
-- **Aggiungere una proprietà**: scrivi il nome in fondo al pannello e premi **Aggiungi proprietà**.
-- **Dare un tipo a una proprietà**: clicca il simbolo prima del nome e scegli se è un testo, un numero, una data, una casella, un elenco o un collegamento a una nota. Per un testo o un elenco puoi indicare i valori ammessi: comparirà un menù a tendina. Da quel momento la proprietà funziona così in tutte le note del progetto.
+- **Aggiungere una proprietà**: premi **+ Nuova** accanto al titolo della sezione **Proprietà**. Si apre un riquadro: scrivi il nome (Dante suggerisce quelli già usati nel romanzo), scegli il tipo e, per una scena, **Solo per questa scena** oppure **Per tutte le scene del romanzo**, poi premi **Aggiungi proprietà**.
+- **Per tutte le scene**: la proprietà entra nel modello delle nuove scene e compare, vuota, in ogni scena, con l'etichetta **tutte le scene**. Si scrive nel file di una scena solo quando le dai un valore, così le altre scene restano come sono.
+- **Modificare una proprietà**: il riquadretto con il simbolo prima del nome (**T**, **#**, **↗**…) è un pulsante. Passandoci sopra il mouse leggi il tipo; con un clic si apre la definizione: tipo, valori ammessi, nome e, se è la proprietà che colora i pallini dell'indice, i loro colori. Puoi scegliere se è un testo, un numero, una data, una casella, un elenco o un collegamento a una nota. Per un testo o un elenco puoi indicare i valori ammessi: comparirà un menù a tendina. Da quel momento la proprietà funziona così in tutte le note del progetto.
+- **Rinominare una proprietà in tutto il romanzo**: nella definizione, scrivi il nome nuovo in **Nome in tutto il romanzo** e premi **Rinomina**. Dante cambia il nome in tutte le scene e le note, nelle tabelle e bacheche e nelle impostazioni. Se una nota ha già una proprietà con il nome nuovo, lì le due restano separate e Dante te lo dice. Lo stato e le proprietà che Dante legge per nome (titolo, sinossi, obiettivo, tipo, alias) non si rinominano.
+- **Colori dei pallini**: aprendo la definizione della proprietà che colora i pallini dell'indice (lo stato, o quella scelta in Impostazioni), sotto **Colori del pallino nell'indice** vedi ogni valore con il suo colore. Un clic sul quadratino del colore lo cambia; **Colore di base** torna a quello di prima.
 
   <img src="img/tipo-proprieta.png" width="280" alt="Il riquadro che si apre cliccando il simbolo T accanto a «stato»: tipo Testo, valori ammessi idea, bozza, rivista, finita">
 
-  *Esempio:* vuoi segnare in quale stagione si svolge ogni scena. Scrivi «stagione» in fondo al pannello e premi **Aggiungi proprietà**, poi clicca la **T** accanto al nome e scrivi nei valori ammessi «primavera, estate, autunno, inverno». Da quel momento, in ogni scena, «stagione» è un menu con quei quattro valori, e una vista può raggruppare le scene per stagione.
+  *Esempio:* vuoi segnare in quale stagione si svolge ogni scena. Premi **+ Nuova**, scrivi «stagione», scegli **Testo** e **Per tutte le scene del romanzo**, poi **Aggiungi proprietà**. Clicca la **T** accanto al nome e scrivi nei valori ammessi «primavera, estate, autunno, inverno». Da quel momento, in ogni scena, «stagione» è un menu con quei quattro valori, e una vista può raggruppare le scene per stagione. Se poi preferisci chiamarla «periodo», la rinomini dalla stessa definizione.
 
 Tutte le proprietà con un tipo sono elencate in **Impostazioni → Proprietà con un tipo**.
 
@@ -357,13 +363,25 @@ properties:
 | elenco (`list`) | ≡ | interruttori per i valori ammessi | lista YAML |
 | collegamento (`link`) | ↗ | suggerimenti, anche solo di un tipo di nota | `"[[Nome]]"` |
 
-Un valore che non rispetta la definizione resta com'è ed è segnalato nel pannello. I nuovi progetti in italiano definiscono già età (numero), data (data), luogo (collegamento a un luogo) e proprietario (collegamento a un personaggio).
+Un valore che non rispetta la definizione resta com'è ed è segnalato nel pannello.
+
+Le proprietà **per tutte le scene** sono quelle del modello delle nuove scene (`Modelli/Scena.md`): il pannello mostra quelle che una scena non ha ancora. I colori scelti per i pallini stanno in `dante.yaml`, per proprietà e valore:
+
+```yaml
+tree:
+  dot: pov
+  colors:
+    pov:
+      lucia mondella: "#d064a6"
+```
+
+Rinominare una proprietà riscrive solo il suo nome in testa ai file, lasciando valore, posizione e commenti; nelle tabelle e bacheche cambiano filtri, ordinamento, raggruppamento, colonne e date. I nuovi progetti in italiano definiscono già età (numero), data (data), luogo (collegamento a un luogo) e proprietario (collegamento a un personaggio).
 
 ## 9. Bibbia e Note
 
 ### Come si fa
 
-- **Bibbia**: le schede di personaggi, luoghi, oggetti, eventi, gruppi e trame, raggruppate per tipo. Premi **Nuovo: Personaggio** (o il tipo che ti serve), scrivi il nome e premi Crea: la scheda nasce già con le proprietà suggerite per quel tipo. Con **Filtra** trovi una scheda tra tante.
+- **Bibbia**: le schede di personaggi, luoghi, oggetti, eventi, gruppi e trame, raggruppate per tipo. Premi **Nuovo: Personaggio** (o il tipo che ti serve), scrivi il nome e premi Crea: la scheda nasce già con le proprietà suggerite per quel tipo. Con **Filtra** trovi una scheda tra tante. Ogni scheda mostra in alto la prima immagine della nota: quella di una proprietà (per esempio `ritratto: "[[Lucia.jpg]]"`) o, se non c'è, la prima nel testo. Togli la spunta a **Immagini** per vedere le schede senza.
 
   ![La Bibbia del progetto di esempio: i tipi a sinistra, le schede dei personaggi al centro](img/bibbia.png)
 - **Tipi della Bibbia**: puoi aggiungerne di nuovi (per esempio "Creatura") e, per ogni tipo, **Modifica il tipo** (nome, icona, proprietà suggerite) e **Modifica il modello**, cioè il testo da cui parte ogni nuova scheda.
@@ -380,6 +398,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
    Le scorciatoie restano: Cmd+clic / Ctrl+clic apre subito nell'editor, Alt+clic (Option su Mac) nel pannello.
 - **Collegamento a una nota che non c'è**: il clic chiede se crearla e dove, come scheda di un tipo della Bibbia (personaggio, luogo…), nella Ricerca o nel Laboratorio. La nota nuova si apre nel pannello a fianco, così la scena resta sotto gli occhi.
 - **Chi rimanda a chi**: la scheda **Collegamenti** del pannello destro mostra le note che rimandano a quella aperta (con la riga che le contiene) e quelle a cui rimanda.
+- **Richiami alla Bibbia**: quando nel testo scrivi il nome o un alias di una scheda della Bibbia senza farne un collegamento (per esempio «Lucia»), Dante lo sottolinea a puntini. Con il clic destro sul nome si apre il menu della scheda riconosciuta: **Apri nell'editor**, **Apri nel pannello**, **Anteprima** e **Trasforma in collegamento**. Maiusc + clic destro apre il menu solito (taglia, copia, ortografia). Il pulsante **Richiami** nella barra in alto accende e spegne le sottolineature. Anche la scheda **Collegamenti** ha una sezione in più: in una scena, **Nominati nel testo** elenca le schede nominate senza collegamento; in una scheda della Bibbia, **Nominata nelle scene** elenca le scene che la nominano.
 - **Cercare**: Cmd+Maiusc+F / Ctrl+Maiusc+F (o la lente in alto a sinistra) cerca nei nomi, negli alias e nel testo di tutte le note, con un'anteprima di ogni risultato. Il menu sotto la casella limita la ricerca a una sezione.
 
   <img src="img/cerca.png" width="420" alt="La ricerca di «Lucia»: schede, scene e righe che la nominano">
@@ -395,6 +414,8 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 - Il modello di un tipo è il file `Modelli/<nome del tipo>.md`; `{{title}}` e `{{date}}` vengono sostituiti con il nome della nota e la data del giorno.
 - I collegamenti sono wikilink come in Obsidian: `[[Lucia Mondella]]` o `[[Lucia Mondella|la promessa sposa]]`. Quando rinomini o sposti una nota, Dante aggiorna tutti i collegamenti che la riguardano.
 - Gli alias si scrivono nella proprietà `aliases` della nota: `[[` li suggerisce e le statistiche contano anche quelli.
+- I richiami riconoscono parole intere, scritte con le stesse maiuscole del nome o dell'alias: «Marta» non si trova in «Martina», e un luogo chiamato «Casa» non sottolinea ogni «casa». Non contano i nomi dentro collegamenti, commenti e codice, né un nome che due schede hanno in comune. Il nome della scheda aperta non si sottolinea nella sua stessa scheda.
+- L'immagine di una scheda viene da un'immagine incorporata (`![[foto.jpg]]` o `![](foto.jpg)`) o da una proprietà che contiene un'immagine; l'estratto sotto il titolo salta immagini e collegamenti a indirizzi web.
 - Un collegamento chiuso a mano su un alias viene riscritto come `[[Corrado Olivieri|Corrado]]`: nel testo si legge sempre «Corrado», e il collegamento funziona anche in Obsidian, che non risolve gli alias da solo. Succede solo quando l'alias appartiene a una sola nota e nessuna nota si chiama così; maiuscole e minuscole non contano. Cmd+Z / Ctrl+Z annulla la riscrittura insieme alle parentesi. Un `[[Corrado]]` scritto prima, o fuori da Dante, porta comunque alla scheda dentro Dante.
 - Eliminare un tipo non cancella le sue note, che restano dove sono con le loro proprietà. Quello che si elimina dalle sezioni va in `.trash`.
 - Le pagine HTML aperte in Dante non eseguono i loro script.
@@ -409,6 +430,7 @@ Un valore che non rispetta la definizione resta com'è ed è segnalato nel panne
 3. **Commentare**: seleziona il testo e premi 💬 (o Cmd+Alt+M / Ctrl+Alt+M), scrivi il commento e premi Cmd+Invio / Ctrl+Invio. Nel testo il commento appare come una nuvoletta.
 4. **Proporre modifiche**: scegli **Altro** > **Segna le modifiche come revisioni** nella barra in alto (serve il tuo nome nelle Impostazioni); finché sono attive nella barra resta l'etichetta **Revisioni attive**. Da quel momento quello che scrivi appare sottolineato e quello che cancelli barrato, con il tuo nome, finché qualcuno non decide.
 5. **Decidere**: la scheda **Commenti** del pannello destro elenca commenti e modifiche del testo mostrato. Per ciascuno puoi **Rispondi**, **Risolvi** (chiude la discussione), **Accetta** o **Rifiuta**; in cima ci sono **Accetta tutte** e **Rifiuta tutte**.
+6. **Rileggere cosa è stato deciso**: in cima alla scheda **Commenti**, **Cronologia** mostra cosa è successo a commenti e modifiche chiusi: chi ha accettato, rifiutato o risolto, quando, chi aveva proposto la modifica, il testo prima e dopo e la discussione. Di base vedi la scena aperta; **Tutto il romanzo** mostra tutto, e puoi filtrare per persona e per date. Un clic sul nome della scena la apre.
 
 ![La scena L'incontro con il commento e la revisione di Anna, elencati nella scheda Commenti](img/commenti.png)
 
@@ -437,6 +459,7 @@ Si legge così: `{== ==}` racchiude il testo commentato, `{>> <<}` contiene il c
 - **Presenza**: ogni copia di Dante scrive in `.dante/presence/<nome>.json` cosa sta modificando, e lo aggiorna ogni minuto. Chi apre per primo una scena la tiene; una presenza non aggiornata da tre minuti (per esempio dopo che il computer si è spento) non conta più.
 - **Copie in conflitto**: Dante riconosce i nomi usati da Dropbox ("copia in conflitto di Anna…"), Google Drive ("(1)" accanto all'originale), Syncthing e servizi simili, e le tiene fuori dall'albero. Quello che scarti va in `.trash`; prima di unire, un'istantanea conserva il file com'era. Le revisioni nate da un'unione sono firmate da chi ha scritto la copia.
 - Il registro delle parole scritte è un file per persona, `.dante/sessions/<nome>.json`, così due persone non scrivono mai lo stesso file.
+- Anche la **Cronologia** è un file per persona, `.dante/history/<nome>.jsonl`, una riga per ogni decisione. Si riempie da quando usi questa versione: le decisioni prese prima non ci sono. Se sposti o rinomini una scena, la sua cronologia la segue.
 
 ## 11. Tabelle e bacheche
 
@@ -547,6 +570,8 @@ Per le scene singole, il pannello **Proprietà** mostra parole, caratteri e temp
 
 Le scelte restano salvate nel progetto: la volta dopo basta premere Esporta.
 
+**Tra una scena e l'altra.** Nel menu delle scene scegli cosa separa due scene dello stesso capitolo: **Riga vuota**, **Due righe vuote** oppure un **Separatore di scena** scritto da te. Nel testo del separatore ogni `\n` va a capo, come ricorda la nota sotto il campo: `\n* * *\n` mette tre asterischi fra due righe vuote, `\n\n` lascia due righe vuote. Se nel tuo separatore ti serve proprio la sequenza `\n`, scrivi un altro segno in **Segno a capo** (per esempio `|`); lasciando vuoto quel campo il separatore resta su una riga.
+
 **Copertina.** Con **Apri il libro con la copertina** il file Word, il PDF e l'EPUB iniziano con la copertina del progetto, la stessa che compare tra i progetti recenti. Si prepara in **Impostazioni** > **Questo romanzo** > **Copertina**:
 
 - **Usa una tua immagine…** sceglie una foto o un disegno dal computer. L'immagine riempie tutta la copertina (se non ha le proporzioni di un libro, 2:3, i bordi in più vengono tagliati) e prende il posto delle forme. **Torna alle forme** la toglie.
@@ -570,6 +595,7 @@ Le scelte restano salvate nel progetto: la volta dopo basta premere Esporta.
 - **Tabelle e immagini** passano in tutti i formati. In Word la tabella occupa la larghezza del testo e la riga di intestazione si ripete a ogni pagina. Nel PDF le immagini sono lette dalla cartella del progetto: vanno bene PNG, JPEG, GIF, SVG e WebP. In Word ed EPUB i formati che non accettano (WebP, SVG e altri) sono convertiti in PNG. Nel Markdown esportato le immagini restano riferimenti ai file del progetto.
 - **Copertina**: l'immagine scelta viene copiata nella cartella **Allegati** dentro **Ricerca**, come le immagini del testo, e `dante.yaml` ne tiene il percorso sotto `cover.image`, insieme a `cover.show` (titolo, sottotitolo, autori), `cover.textColor` e `cover.outlineColor`. JPEG, PNG, WebP e GIF restano come sono; gli altri formati sono convertiti in PNG. In Word ed EPUB la copertina diventa un'immagine PNG di 1200 × 1800 pixel; nel PDF l'immagine riempie la prima pagina e i testi sono disegnati sopra.
 - I titoli usano il `title` di ogni capitolo o scena; `published_title` lo sostituisce solo nell'esportazione, utile se il titolo di lavoro è diverso da quello definitivo.
+- Le righe vuote del separatore sono paragrafi vuoti in Word, spazi di una riga in PDF ed EPUB e `&nbsp;` in Markdown, come le righe vuote del testo. Il segno a capo è salvato in `dante.yaml` sotto `export.docx.lineSign`.
 - Tutte le impostazioni di esportazione sono salvate in `dante.yaml` sotto `export`. Un nuovo progetto parte dalle ultime usate.
 
 ## 14. Aprire il progetto in Obsidian
