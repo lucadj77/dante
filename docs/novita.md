@@ -6,9 +6,13 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Larghezza delle colonne nelle viste**: nelle tabelle trascina il bordo destro di un'intestazione per cambiare la larghezza della colonna; nella linea del tempo raggruppata fai lo stesso sul titolo di una colonna. Doppio clic sul bordo torna alle larghezze automatiche. Le larghezze sono salvate con la vista.
+
 ### Cambiato
 
 ### Corretto
+
+- **Linea del tempo troppo larga**: nella 1.1.2 le colonne della linea del tempo raggruppata si allargavano quanto il testo più lungo; ora stanno nella finestra come prima.
 
 ## 1.1.2 · 28 ottobre 2026
 

@@ -491,9 +491,9 @@ Il **Tempo della storia** mette le scene sulla linea del tempo secondo la propri
 
 Dalla vista puoi anche modificare le note:
 
-- **Tabella**: clic su un'intestazione per ordinare; clic su una cella per cambiare il valore nella nota.
+- **Tabella**: clic su un'intestazione per ordinare; clic su una cella per cambiare il valore nella nota. Trascina il bordo destro di un'intestazione per allargare o stringere la colonna; doppio clic sul bordo per tornare alle larghezze automatiche.
 - **Bacheca**: trascina una scheda in un'altra colonna per cambiarne la proprietà (per esempio da "bozza" a "rivista"); **Nuova colonna** aggiunge un gruppo.
-- **Linea del tempo**: trascina un elemento in un altro momento per cambiarne la data. Le note senza data sono elencate sotto.
+- **Linea del tempo**: trascina un elemento in un altro momento per cambiarne la data. Le note senza data sono elencate sotto. Se è raggruppata, trascina il bordo destro del titolo di una colonna per cambiare la larghezza di tutte le colonne; doppio clic sul bordo per tornare a quella automatica.
 
 ### Approfondimento
 
@@ -511,6 +511,7 @@ groups: [idea, bozza, rivista, finita]   # in quest'ordine, anche se vuoti
 fields: [pov, words]    # campi mostrati; anche name, folder, type, words, chapter
 date: data              # solo linea del tempo: la proprietà con la data
 end: fino_a             # solo linea del tempo: fine, facoltativa
+widths: {name: 320, pov: 140, lane: 260}   # larghezze in pixel scelte trascinando; lane = colonne della linea del tempo
 ```
 
 - Quando cambi le impostazioni dall'app il file viene riscritto subito, senza gli eventuali commenti scritti a mano.
