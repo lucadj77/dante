@@ -10,6 +10,10 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+## 1.1.1 · 28 ottobre 2026
+
+### Corretto
+
 - **Fine paragrafo con le righe vuote nascoste**: il tasto Fine (Cmd+→ su Mac) e un clic dopo la fine di un paragrafo portano il cursore alla fine del paragrafo, e non più nella riga vuota invisibile o all'inizio del paragrafo dopo.
 
 ## 1.1.0 · 28 ottobre 2026
