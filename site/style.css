@@ -533,6 +533,24 @@ a:focus-visible {
 }
 
 /* tutorial: i video divisi in gruppi; «Inizia qui» in un riquadro, gli altri in fila sotto */
+.subscribe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 24px;
+  margin: 0 auto 20px;
+  max-width: 760px;
+  padding: 16px 24px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+}
+.subscribe p {
+  flex: 1 1 320px;
+  margin: 0;
+}
 .playlist {
   margin: 0 0 32px;
   text-align: center;

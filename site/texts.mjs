@@ -186,6 +186,9 @@ export const videos = [
   }
 ]
 
+// YouTube channel of the tutorials: sub_confirmation=1 opens YouTube's subscribe dialog; empty: no box.
+export const channel = 'https://www.youtube.com/channel/UCA3NFfBFtkS9fo1-2FVWPbg?sub_confirmation=1'
+
 // YouTube playlist of the tutorials in each language; empty: no link.
 export const playlists = { en: 'https://www.youtube.com/playlist?list=PLTfQcY6ewoow', it: 'https://www.youtube.com/playlist?list=PLD204lrzfl20' }
 
@@ -317,6 +320,8 @@ export const texts = {
       text: 'Short videos to start writing with Dante.',
       soon: 'The first videos are coming soon.',
       playlist: 'All the videos in the YouTube playlist',
+      news: 'New tutorials come out all the time. Subscribe to the YouTube channel to be told each time a new video is published.',
+      subscribe: 'Subscribe to the channel',
       // the groups of the section, in the order they appear
       groups: {
         start: ['Start here', 'The suggested path to begin, importing included.'],
@@ -475,6 +480,8 @@ export const texts = {
       text: 'Video brevi per cominciare a scrivere con Dante.',
       soon: 'I primi video arrivano a breve.',
       playlist: 'Tutti i video nella playlist di YouTube',
+      news: 'Pubblichiamo nuovi tutorial di continuo. Iscriviti al canale YouTube per essere avvisato ogni volta che esce un nuovo video.',
+      subscribe: 'Iscriviti al canale',
       groups: {
         start: ['Inizia qui', 'Il percorso consigliato per cominciare, importazione compresa.'],
         write: ['Scrivere', 'Scene, capitoli, istantanee e l’editor.'],

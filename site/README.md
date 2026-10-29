@@ -10,6 +10,8 @@ site, <https://stella.lucadj.eu/> (repository lucadj77/stella, folder `site/`).
 - `texts.mjs`: every text in both languages, and the list of videos (`videos`: number, group,
   minutes, title and description per language, YouTube address per language; a video appears
   only once it has an address, until then the section says the videos are coming).
+  `channel` is the YouTube channel: above the videos a box says new tutorials keep coming and
+  invites to subscribe (the link opens YouTube's subscribe dialog).
 - `style.css`, `site.js`: style, enlarged screenshots and the download buttons. `fonts/`: Lora
   and Nunito Sans (SIL Open Font License, from @fontsource), served by the site itself.
 - `dcount/index.html`: a hidden page, in Italian, at `/dcount/` with the download counts read
