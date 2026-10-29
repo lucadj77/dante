@@ -288,7 +288,7 @@ export const texts = {
       macArm: 'Apple chip (M1 and later)',
       macIntel: 'Intel processor',
       macNote:
-        'Open the .dmg and drag Dante to Applications. The first time: System Settings → Privacy & Security → Open Anyway. macOS 10.15 or later.',
+        'Open the .dmg and drag Dante to Applications. The first time: System Settings → Privacy & Security → Open Anyway. macOS 10.15 or later. Which one? Apple menu → About This Mac: “Chip Apple M…” or “Processor … Intel”. The Apple chip image does not open on an Intel Mac.',
       win: 'Windows',
       winSetup: 'Installer',
       winPortable: 'Portable (zip, nothing to install)',
@@ -448,7 +448,7 @@ export const texts = {
       macArm: 'Chip Apple (M1 e successivi)',
       macIntel: 'Processore Intel',
       macNote:
-        'Apri il .dmg e trascina Dante in Applicazioni. La prima volta: Impostazioni di Sistema → Privacy e sicurezza → Apri comunque. Serve macOS 10.15 o successivo.',
+        'Apri il .dmg e trascina Dante in Applicazioni. La prima volta: Impostazioni di Sistema → Privacy e sicurezza → Apri comunque. Serve macOS 10.15 o successivo. Quale scegliere? Menu Apple → Informazioni su questo Mac: «Chip Apple M…» o «Processore … Intel». L’immagine per chip Apple non si apre su un Mac Intel.',
       win: 'Windows',
       winSetup: 'Installatore',
       winPortable: 'Versione portatile (zip, non si installa)',
