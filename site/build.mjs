@@ -2,7 +2,7 @@
 // script, fonts and images. Usage: node site/build.mjs <output folder>
 // The web version of Dante goes beside it, in app/ and beta/ (.github/workflows/web.yml).
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { playlists, texts, videos } from './texts.mjs'
+import { channel, playlists, texts, videos } from './texts.mjs'
 
 const here = new URL('.', import.meta.url).pathname
 const out = process.argv[2]
@@ -130,9 +130,11 @@ for (const lang of ['en', 'it']) {
           `<figure><img class="zoomable" src="${t.img}${f}" alt="${esc(c)}" width="1440" height="900" loading="lazy"><figcaption>${esc(c)}</figcaption></figure>`
       )
       .join('\n'),
-    playlist: playlists[lang]
-      ? `<p class="playlist"><a href="${esc(playlists[lang])}">${esc(t.tutorial.playlist)}</a></p>`
-      : '',
+    playlist:
+      (channel
+        ? `<div class="subscribe"><p>${esc(t.tutorial.news)}</p><a class="btn" href="${esc(channel)}">${esc(t.tutorial.subscribe)}</a></div>`
+        : '') +
+      (playlists[lang] ? `<p class="playlist"><a href="${esc(playlists[lang])}">${esc(t.tutorial.playlist)}</a></p>` : ''),
     videos: videoGroups(lang, t),
     downloadJson: JSON.stringify({
       zoomOpen: lang === 'it' ? 'Clic per ingrandire' : 'Click to enlarge',
