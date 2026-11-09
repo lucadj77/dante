@@ -18,7 +18,11 @@ def field(src, name):
     return {'it': m.group(1).replace("\\'", "'"), 'en': m.group(2).replace("\\'", "'")}
 
 
-def minutes(d):
+def minutes(d, n):
+    """The length from the recording, or the one already on the site when the recording is not here."""
+    if not os.path.exists(os.path.join(d, 'video.mp4')):
+        m = re.search(r'\n    n: ' + str(n) + r',\n    group: \'\w+\',\n    minutes: (\d+),', open(TEXTS).read())
+        return int(m.group(1))
     seconds = float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0',
                                              os.path.join(d, 'video.mp4')]))
     return max(1, round(seconds / 60))
@@ -43,7 +47,7 @@ for script in sorted(os.listdir(os.path.join(HERE, 'videos'))):
         '  {\n'
         f'    n: {n},\n'
         f"    group: '{group}',\n"
-        f'    minutes: {minutes(d)},\n'
+        f'    minutes: {minutes(d, n)},\n'
         f'    en: {js(title["en"])},\n'
         f'    it: {js(title["it"])},\n'
         f'    about: {{ en: {js(subtitle["en"])}, it: {js(subtitle["it"])} }},\n'
