@@ -906,6 +906,7 @@ Dante usa lo stesso formato del plugin «Librogame» per Obsidian, quindi un lib
 *Esempio:* nel paragrafo 1 scrivi «Se vuoi entrare vai al **[[Il cortile|2]]**». Nell'albero il paragrafo 2 non è più orfano, e nel suo pannello compare 1 tra i paragrafi da cui si arriva.
 
 - **Callout**: un blocco che comincia con `> [!note]` o `> [!warning]` si vede con il nome in una pillola colorata e lo sfondo dello stesso colore; il marcatore torna testo quando il cursore è sulla sua riga. Vale anche nei romanzi.
+- **Libri game in inglese**: se la lingua del romanzo è l'inglese, lo stato di gioco si legge da frasi come «Note the keyword **lantern**», «Circle the trait **careful**» e «If you have the keyword **lantern**»; i numeri scritti come testo sono quelli dopo «to», «section» o «paragraph» («turn to 12»); i tipi di box di base scrivono nelle proprietà `traits`, `keywords` ed `encounters`; la nota del grafo si chiama «Gamebook graph»; gli articoli davanti ai rimandi si correggono solo nei libri in italiano. Le proprietà del paragrafo (`numero`, `numero_tipo` e le altre) restano le stesse in ogni lingua, perché sono il formato dei file.
 - **Statistiche**: in un libro game le pagine sono contate come nella riga in cima all'albero, quindi tengono conto di **Ogni paragrafo inizia su una pagina nuova**.
 
 Rinominando un paragrafo (dal divisore o dal nome del file) cambia il nome del file e i rimandi che portano lì tengono il loro numero.

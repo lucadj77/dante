@@ -11,13 +11,13 @@ import { addToList, newParagraphText, relabel, removeFromList, setParagraphField
 import { articleFix, fixArticles, startsWithVowel } from "../gamebook/articles";
 import { Project } from "../project";
 import { proseNumbers, reorder, shuffle } from "../gamebook/shuffle";
-import { graphNote, mermaidGraph, titleFromLabel } from "../gamebook/graph";
+import { graphNote, graphNotePath, mermaidGraph, titleFromLabel } from "../gamebook/graph";
 import { buildBook } from "../export/book";
 import { bookToMarkdown } from "../export/markdown";
 import { bookToTypst } from "../export/typst";
 import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
-import { gameState, likelyDuplicate, register, stateProperties } from "../gamebook/check";
+import { gameState, likelyDuplicate, register, stateInText, stateProperties } from "../gamebook/check";
 
 const types = defaultBoxTypes("it");
 const options = { boxTypes: types, unit: "characters" as const };
@@ -460,5 +460,60 @@ describe("gamebook checks", () => {
     const brief = gameState(index, DIR, 1, stateProperties(types)).map((i) => `${i.kind}:${i.value}@${i.path.slice(DIR.length + 1, -3)}`);
     // riflessi is a keyword answering a trait's «riflessi?»; studioso and scudo piccolo are given only where nobody goes.
     expect(brief).toEqual(["unobtainable:studioso@Bivio", "unobtainable:scudo piccolo@Torre"]);
+  });
+});
+
+describe("gamebook in English", () => {
+  const en = defaultBoxTypes("en");
+  const enOptions = { boxTypes: en, unit: "words" as const, language: "en" };
+
+  it("gives the default boxes English properties", () => {
+    expect(en.map((t) => t.property)).toEqual(["", "traits", "keywords", "encounters", "", ""]);
+    expect(defaultBoxTypes("it").map((t) => t.property)).toEqual(["", "carattere", "parole chiave", "incontri", "", ""]);
+  });
+
+  it("reads the game state in English sentences", () => {
+    expect(stateInText("Note the keyword **lantern**. Circle the trait **careful**.", "en").gives).toEqual(["lantern", "careful"]);
+    const asked = stateInText("If you have the keyword **lantern** turn to 7. If you haven't noted the codeword **seal**, turn to 9.", "en").asks;
+    expect(asked.map((a) => [a.emphasized, a.strong, a.negated])).toEqual([[["lantern"], true, false], [["seal"], true, true]]);
+    // English words mean nothing in an Italian book, and the other way round
+    expect(stateInText("Note the keyword **lantern**.", "it").gives).toEqual([]);
+    expect(stateInText("Segna la parola chiave **lanterna**.", "en").gives).toEqual([]);
+  });
+
+  it("checks the game state of an English book", () => {
+    const P = (title: string, n: number, body: string) => ({ path: `Sections/${title}.md`, text: `---\nnumero: ${n}\naliases:\n  - "${n}"\n---\n${body}` });
+    const index = new GamebookIndex(
+      [
+        P("Gate", 1, "Turn to **[[Yard|2]]** or **[[Tower|3]]**."),
+        P("Yard", 2, "Note the keyword **lantern**. Turn to **[[Tower|3]]**."),
+        P("Tower", 3, "If you have the keyword **lantern** turn to **[[End|4]]**."),
+        P("End", 4, "The end."),
+      ],
+      enOptions,
+    );
+    const brief = gameState(index, "Sections", 1, stateProperties(en)).map((i) => `${i.kind}:${i.value}`);
+    expect(brief).toEqual([]);
+    const lost = new GamebookIndex([P("Gate", 1, "If you have the keyword **seal** turn to **[[Yard|2]]**."), P("Yard", 2, "Note the keyword **seal**.")], enOptions);
+    expect(gameState(lost, "Sections", 1, stateProperties(en)).map((i) => `${i.kind}:${i.value}`)).toEqual(["unobtainable:seal"]);
+  });
+
+  it("finds numbers written as text in English", () => {
+    const found = proseNumbers("---\nnumero: 1\n---\nGo back to section 5, or turn to **[[A|3]]**; paragraph 3 is closed. You have 40 coins.", (n) => [3, 5, 40].includes(n), "en");
+    expect(found.map((f) => f.number)).toEqual([5, 3]);
+  });
+
+  it("leaves the words before a reference alone when renumbering", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: en\nfolders:\n  manuscript: Sections\ngamebook:\n  enabled: true\n" });
+    await fs.writeText("Sections/Gate.md", '---\nnumero: 1\naliases:\n  - "1"\n---\nGo with Al **[[Yard|2]]**.');
+    await fs.writeText("Sections/Yard.md", '---\nnumero: 2\naliases:\n  - "2"\n---\nThe end.');
+    const project = await Project.open(fs, "en");
+    await project.renumberParagraphs(new Map([["Sections/Yard.md", 8]]), "Before");
+    expect(await fs.readText("Sections/Gate.md")).toContain("Go with Al **[[Yard|8]]**.");
+  });
+
+  it("names the graph note in the book's language", () => {
+    expect(graphNotePath("it")).toBe("Grafo del libro game.md");
+    expect(graphNotePath("en")).toBe("Gamebook graph.md");
   });
 });

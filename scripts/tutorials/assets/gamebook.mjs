@@ -1,7 +1,8 @@
 // The gamebook of video 21, written for it: «La torre del mago» in Italian, «The Wizard's Tower» in
 // English. Fifteen paragraphs and a page of rules, with a few things left wrong on purpose so the
 // checks have something to show: an orphan (14), a dead end with a number written by hand (9), a
-// keyword asked and never given (sigillo / seal), a keyword spelled two ways (lanterna / lanterma).
+// keyword asked and never given (sigillo / seal), a keyword spelled two ways (lanterna / lanterma,
+// lantern / lanturn). The English book uses the English properties (traits, keywords, encounters).
 // The module is off: the video turns it on.
 
 const par = (number, body, extra = '') => `---\nnumero: ${number}\naliases:\n  - "${number}"\n${extra}note:\n---\n${body}`;
@@ -43,15 +44,15 @@ const en = {
   },
   paragraphs: {
     'The gate': par(1, `The wizard's tower rises black against the sky. The gate stands ajar and creaks in the wind; a moat of dark water runs along the walls.\n\n${box(`🤔 **You must act fast!**\n\nIf you go through the gate turn to ${L('The courtyard', 2)}. If you walk around the walls turn to ${L('The moat', 5)}.`)}`, 'numero_tipo: fisso\n'),
-    'The courtyard': par(2, `The courtyard is empty. By the well you find an old lantern, still full of oil.\n\n${box(`✏️ **Item**\n\nNote the keyword **lantern**.`)}\n\nTwo doors: the tower's, at ${L('The stairs', 3)}, and the low kitchen door, at ${L('The kitchen', 4)}.`, 'parole chiave:\n  - lantern\n'),
-    'The stairs': par(3, `A spiral staircase climbs into the dark. Without a light you cannot even see the first step.\n\nIf you have the keyword **lantern** turn to ${L('The library', 7)}. Otherwise feel your way up: turn to ${L('The dark', 6)}.`, 'parole chiave:\n  - lantern?\n'),
-    'The kitchen': par(4, `In the kitchen a black cat stares at you without moving. You leave it alone and slip out quietly.\n\n${box(`❤️ **Trait**\n\nCircle the trait **careful**.`)}\n\nBack to the tower: turn to ${L('The stairs', 3)}.`, 'carattere:\n  - careful\n'),
+    'The courtyard': par(2, `The courtyard is empty. By the well you find an old lantern, still full of oil.\n\n${box(`✏️ **Item**\n\nNote the keyword **lantern**.`)}\n\nTwo doors: the tower's, at ${L('The stairs', 3)}, and the low kitchen door, at ${L('The kitchen', 4)}.`, 'keywords:\n  - lantern\n'),
+    'The stairs': par(3, `A spiral staircase climbs into the dark. Without a light you cannot even see the first step.\n\nIf you have the keyword **lantern** turn to ${L('The library', 7)}. Otherwise feel your way up: turn to ${L('The dark', 6)}.`),
+    'The kitchen': par(4, `In the kitchen a black cat stares at you without moving. You leave it alone and slip out quietly.\n\n${box(`❤️ **Trait**\n\nCircle the trait **careful**.`)}\n\nBack to the tower: turn to ${L('The stairs', 3)}.`, 'traits:\n  - careful\n'),
     'The moat': par(5, `The water of the moat is still and cold. Further on you see a grate in the wall and, beyond it, a half-fallen wooden bridge.\n\nIf you look at the grate turn to ${L('The grate', 8)}. If you try the bridge turn to ${L('The broken bridge', 9)}.`),
     'The dark': par(6, `On the third step your foot finds nothing. You fall for a long time, then nothing more.\n\n${box(`😢 **The end**\n\nYour adventure ends here.`)}`, 'finale: true\n'),
-    'The library': par(7, `In the lantern's light shelves appear, up to the ceiling. On a lectern lies a book closed with a padlock.\n\nIf you have the keyword **seal** turn to ${L("The wizard's study", 10)}. Otherwise open the window: turn to ${L('The window', 11)}.`, 'parole chiave:\n  - seal?\n'),
-    'The grate': par(8, `The grate gives way at the first pull. Behind it, on a shelf, there is a rusty lantern.\n\n${box(`✏️ **Item**\n\nNote the keyword **lanturn**.`)}\n\nA tunnel goes down: turn to ${L('The well', 15)}.`, 'parole chiave:\n  - lanturn\n'),
+    'The library': par(7, `In the lantern's light shelves appear, up to the ceiling. On a lectern lies a book closed with a padlock.\n\nIf you have the keyword **seal** turn to ${L("The wizard's study", 10)}. Otherwise open the window: turn to ${L('The window', 11)}.`, 'keywords:\n  - seal?\n'),
+    'The grate': par(8, `The grate gives way at the first pull. Behind it, on a shelf, there is a rusty lantern.\n\n${box(`✏️ **Item**\n\nNote the keyword **lanturn**.`)}\n\nA tunnel goes down: turn to ${L('The well', 15)}.`, 'keywords:\n  - lanturn\n'),
     'The broken bridge': par(9, `The bridge shakes under your feet and a plank snaps. There is no other way: go back to section 5.`),
-    "The wizard's study": par(10, `The wizard looks up from his book and smiles, as if he had been waiting for you for a long time.\n\n${box(`✅ **Memorable encounter**\n\nYou have met the wizard of the tower.`)}\n\nIf you agree to become his apprentice turn to ${L('The pact', 12)}.`, 'incontri:\n  - wizard\n'),
+    "The wizard's study": par(10, `The wizard looks up from his book and smiles, as if he had been waiting for you for a long time.\n\n${box(`✅ **Memorable encounter**\n\nYou have met the wizard of the tower.`)}\n\nIf you agree to become his apprentice turn to ${L('The pact', 12)}.`, 'encounters:\n  - wizard\n'),
     'The window': par(11, `From the window you see the courtyard and, below the sill, a row of steps cut into the stone.\n\nIf you go back turn to ${L('The stairs', 3)}. If you want to climb down, count the steps and turn to the section with that number.`, 'rimandi nascosti:\n  - "[[The secret passage|13]]"\n'),
     'The pact': par(12, `The wizard puts a small silver key in your hand. From today the tower is yours too.\n\n${box(`😢 **The end**\n\nYou won: you are the wizard's apprentice.`)}`, 'finale: true\n'),
     'The secret passage': par(13, `The steps end at an oak door. On the other side you hear the pages of a book being turned: turn to ${L("The wizard's study", 10)}.`, 'numero_tipo: relativo\nancora: "[[The window]]"\nscarto: 2\n'),

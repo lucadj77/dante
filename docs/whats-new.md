@@ -6,6 +6,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Gamebooks in English**: in an English gamebook Dante reads the game state from sentences such as “Note the keyword…” and “If you have…”, finds numbers written by hand such as “turn to 12”, gives the boxes properties with English names (traits, keywords, encounters), calls the graph note “Gamebook graph” and leaves the words before references alone (articles are corrected only in Italian books).
+
 ### Changed
 
 ### Fixed

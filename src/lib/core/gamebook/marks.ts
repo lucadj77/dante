@@ -9,7 +9,7 @@ import { GamebookIndex, lengthBand, pagesOf, warnings, type NumberType, type Par
 export function gamebookOf(notes: NoteIndex, settings: NovelSettings): GamebookIndex | null {
   if (!settings.gamebook.enabled) return null;
   const files = [...notes.notes.values()].filter((n) => isWithin(n.path, settings.folders.manuscript)).map((n) => ({ path: n.path, text: n.text }));
-  return new GamebookIndex(files, { boxTypes: settings.gamebook.boxes, unit: settings.pages.unit });
+  return new GamebookIndex(files, { boxTypes: settings.gamebook.boxes, unit: settings.pages.unit, language: settings.language });
 }
 
 export interface ParagraphMark {

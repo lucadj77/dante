@@ -38,7 +38,7 @@ import { addToList, newParagraphText, relabel, removeFromList, setParagraphField
 import { fixArticles } from "./gamebook/articles";
 import type { GamebookIndex } from "./gamebook/paragraphs";
 import { gamebookOf } from "./gamebook/marks";
-import { GRAPH_NOTE, graphNote, mermaidGraph } from "./gamebook/graph";
+import { graphNote, graphNotePath, mermaidGraph } from "./gamebook/graph";
 
 /** Where the operations on a whole gamebook are recorded, to undo them. */
 const OPERATIONS = ".dante/gamebook/operations.json";
@@ -591,7 +591,7 @@ export class Project {
       // Through a placeholder, so that two paragraphs that swap numbers do not catch each other's references.
       for (const e of list) next = relabel(next, e.name, e.from, -1 - e.to);
       for (const e of list) next = relabel(next, e.name, -1 - e.to, e.to);
-      next = fixArticles(next, numberOf).text;
+      if (this.settings.language.toLowerCase().startsWith("it")) next = fixArticles(next, numberOf).text;
       if (next !== text) {
         await this.fs.writeText(file, next);
         written++;
@@ -607,7 +607,7 @@ export class Project {
   async writeGamebookGraph(scope: string, intro: string): Promise<string> {
     const index = gamebookOf(await this.index(), this.settings);
     if (!index) throw new Error("gamebook.off");
-    const path = GRAPH_NOTE;
+    const path = graphNotePath(this.settings.language);
     const existing = (await this.fs.exists(path)) ? await this.fs.readText(path) : null;
     const next = graphNote(existing, mermaidGraph(index, scope, this.settings.gamebook.start), intro);
     if (next !== existing) await this.fs.writeText(path, next);

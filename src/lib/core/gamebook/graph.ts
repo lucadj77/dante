@@ -5,6 +5,12 @@
 import type { GamebookIndex, Paragraph } from "./paragraphs";
 
 export const GRAPH_NOTE = "Grafo del libro game.md";
+export const GRAPH_NOTE_EN = "Gamebook graph.md";
+
+/** The note of the graph, named in the book's language: Italian, or English for the others. */
+export function graphNotePath(language: string): string {
+  return language.toLowerCase().startsWith("it") ? GRAPH_NOTE : GRAPH_NOTE_EN;
+}
 
 /** The flowchart of one folder of paragraphs, in Mermaid's language. */
 export function mermaidGraph(index: GamebookIndex, scope: string, start: number): string {

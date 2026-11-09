@@ -67,11 +67,13 @@ export interface GamebookLinks {
   failed(error: unknown): void;
   /** The words of the two ways to create a paragraph, in the writer's language. */
   labels: { create(title: string, number: number): string; createDetail: string; more(title: string): string; moreDetail: string };
+  /** Whether the book is in Italian, where the article before a reference agrees with its number. */
+  italian?: boolean;
 }
 
 /**
  * Writes a reference to `choice` over from..to, in bold as the plugin writes it, with the
- * article before it agreeing with the number.
+ * article before it agreeing with the number in an Italian book.
  */
 export function insertReference(view: EditorView, from: number, to: number, choice: ParagraphChoice) {
   const state = view.state;
@@ -81,7 +83,7 @@ export function insertReference(view: EditorView, from: number, to: number, choi
   const insert = boldBefore && boldAfter ? link : `**${link}**`;
   const line = state.doc.lineAt(from);
   const before = state.doc.sliceString(line.from, from);
-  const fix = articleFix(before, choice.number);
+  const fix = view.state.facet(linkHandler)?.gamebook?.italian === false ? null : articleFix(before, choice.number);
   const changes = fix ? [{ from: line.from + fix.from, to: from, insert: fix.text }, { from, to, insert }] : [{ from, to, insert }];
   const set = ChangeSet.of(changes, state.doc.length);
   view.dispatch({ changes: set, selection: { anchor: set.mapPos(to, 1) + (boldBefore && boldAfter ? 2 : 0) }, userEvent: "input.complete", scrollIntoView: true });

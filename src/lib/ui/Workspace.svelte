@@ -327,6 +327,7 @@
         more: (title) => (title ? t("gamebook.complete.more", { title }) : t("gamebook.complete.moreEmpty")),
         moreDetail: t("gamebook.complete.moreDetail"),
       },
+      italian: project.settings.language.toLowerCase().startsWith("it"),
     };
   }
 
