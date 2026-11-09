@@ -192,3 +192,72 @@ export function proseNumbers(text: string, isParagraph: (n: number) => boolean):
   }
   return out;
 }
+
+/**
+ * New numbers in the order the reader meets the paragraphs: the first one, then the
+ * paragraphs it leads to in the order they appear in its text, then theirs, and so on
+ * (hidden references after the ones in the text). Fixed paragraphs stay, a relative one
+ * keeps its distance from its anchor, and those nobody reaches come last, in their order.
+ */
+export function reorder(paragraphs: Paragraph[], options: { start?: number } = {}): ShuffleResult {
+  const byTitle = new Map(paragraphs.map((p) => [p.title, p]));
+  for (const p of paragraphs) {
+    if (p.numberType === "relative" && p.anchor && !byTitle.has(p.anchor)) return { ok: false, errors: [{ kind: "noAnchor", path: p.path, anchor: p.anchor }] };
+  }
+  const cycle = findCycle(paragraphs, byTitle);
+  if (cycle) return { ok: false, errors: [{ kind: "anchorCycle", paths: cycle }] };
+
+  const sorted = [...paragraphs].sort((a, b) => a.number - b.number);
+  const first = sorted.find((p) => p.number === options.start) ?? sorted[0];
+  // The order of reading: breadth first, from the first paragraph.
+  const order: Paragraph[] = [];
+  const seen = new Set<string>();
+  const queue = first ? [first] : [];
+  if (first) seen.add(first.path);
+  while (queue.length) {
+    const p = queue.shift()!;
+    order.push(p);
+    const refs = [...p.references].sort((a, b) => (a.hidden === b.hidden ? a.from - b.from : a.hidden ? 1 : -1));
+    for (const r of refs) {
+      const to = byTitle.get(r.target);
+      if (to && !seen.has(to.path)) {
+        seen.add(to.path);
+        queue.push(to);
+      }
+    }
+  }
+  for (const p of sorted) if (!seen.has(p.path)) order.push(p);
+
+  const blocks = blocksOf(paragraphs, byTitle);
+  const blockOf = new Map<string, Block>();
+  for (const b of blocks) for (const m of b.members) blockOf.set(m.paragraph.path, b);
+  const fixedRoot = (b: Block) => b.root.numberType === "fixed";
+  const numbers = new Map<string, number>();
+  const taken = new Map<number, string[]>();
+  for (const b of blocks) {
+    if (!fixedRoot(b)) continue;
+    for (const m of b.members) {
+      const n = b.root.number + m.offset;
+      numbers.set(m.paragraph.path, n);
+      taken.set(n, [...(taken.get(n) ?? []), m.paragraph.path]);
+    }
+  }
+  const clashes = [...taken].filter(([, paths]) => paths.length > 1);
+  if (clashes.length) return { ok: false, errors: clashes.map(([number, paths]) => ({ kind: "fixedClash", number, paths })) };
+  const used = new Set(taken.keys());
+  let next = 1;
+  for (const p of order) {
+    if (numbers.has(p.path)) continue;
+    const b = blockOf.get(p.path)!;
+    const own = b.members.find((m) => m.paragraph.path === p.path)!.offset;
+    // The paragraph takes the first free number from `next` on where its whole block fits.
+    let x = next;
+    while (b.members.some((m) => x - own + m.offset < 1 || used.has(x - own + m.offset))) x++;
+    for (const m of b.members) {
+      numbers.set(m.paragraph.path, x - own + m.offset);
+      used.add(x - own + m.offset);
+    }
+    while (used.has(next)) next++;
+  }
+  return { ok: true, numbers, spread: spread(paragraphs, byTitle, numbers) };
+}

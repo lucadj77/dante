@@ -4,13 +4,15 @@
   import type { Project, GamebookOperation } from "$lib/core/project";
   import type { NoteIndex } from "$lib/core/notes";
   import { gamebookOf } from "$lib/core/gamebook/marks";
-  import { proseNumbers, shuffle, type ShuffleError, type ShuffleResult } from "$lib/core/gamebook/shuffle";
+  import { proseNumbers, reorder, shuffle, type ShuffleError, type ShuffleResult } from "$lib/core/gamebook/shuffle";
   import { titleOf } from "$lib/core/gamebook/paragraphs";
   import { num, t } from "$lib/state.svelte";
   import { failure } from "./errors";
   import ErrorText from "./ErrorText.svelte";
 
   interface Props {
+    /** Shuffle at random, or put the paragraphs in the order the reader meets them. */
+    mode: "shuffle" | "reorder";
     project: Project;
     notes: NoteIndex;
     /** The folder whose paragraphs are shuffled. */
@@ -30,7 +32,12 @@
   const start = p.project.settings.gamebook.start;
   const numbers = new Set(paragraphs.map((x) => x.number));
 
-  let result = $state.raw<ShuffleResult>(shuffle(paragraphs, { start }));
+  // svelte-ignore state_referenced_locally
+  const mode = p.mode;
+  /** The keys of the texts that change with the mode. */
+  const k = (key: "title" | "intro" | "apply" | "snapshot") => (mode === "reorder" ? (`gamebook.reorder.${key}` as const) : (`gamebook.shuffle.${key}` as const));
+  const compute = () => (mode === "reorder" ? reorder(paragraphs, { start }) : shuffle(paragraphs, { start }));
+  let result = $state.raw<ShuffleResult>(compute());
   let busy = $state(false);
   let error = $state("");
   let operations = $state.raw<GamebookOperation[]>([]);
@@ -68,7 +75,7 @@
     busy = true;
     error = "";
     try {
-      await p.run(() => p.project.renumberParagraphs(chosen, t("gamebook.shuffle.snapshot")));
+      await p.run(() => p.project.renumberParagraphs(chosen, t(k("snapshot"))));
       p.onClose();
     } catch (e) {
       error = failure(e);
@@ -97,18 +104,18 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label={t("gamebook.shuffle.title")}
+    aria-label={t(k("title"))}
     tabindex="-1"
     onclick={(e) => e.stopPropagation()}
     onkeydown={(e) => e.key === "Escape" && p.onClose()}
   >
-    <h2>{t("gamebook.shuffle.title")}</h2>
-    <p class="muted">{t("gamebook.shuffle.intro", { start })}</p>
+    <h2>{t(k("title"))}</h2>
+    <p class="muted">{t(k("intro"), { start })}</p>
 
     {#if result.ok}
       <div class="head">
         <span>{t("gamebook.shuffle.summary", { moved, total: paragraphs.length, spread: result.spread })}</span>
-        <button type="button" onclick={() => (result = shuffle(paragraphs, { start }))}>{t("gamebook.shuffle.again")}</button>
+        {#if mode === "shuffle"}<button type="button" onclick={() => (result = compute())}>{t("gamebook.shuffle.again")}</button>{/if}
       </div>
       <div class="table">
         <table>
@@ -169,7 +176,7 @@
     {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
     <div class="actions">
       <button type="button" onclick={p.onClose}>{t("tree.cancel")}</button>
-      <button type="button" class="primary" disabled={busy || !result.ok} onclick={() => void apply()}>{t("gamebook.shuffle.apply")}</button>
+      <button type="button" class="primary" disabled={busy || !result.ok} onclick={() => void apply()}>{t(k("apply"))}</button>
     </div>
   </div>
 </div>

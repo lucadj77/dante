@@ -10,6 +10,8 @@
   interface Props {
     title: string;
     hidden: boolean;
+    /** Created from the tree: there is no paragraph to write the reference in. */
+    noReference?: boolean;
     paragraphs: ParagraphChoice[];
     firstFree: number;
     /** Creates the paragraph and writes the reference; throws to keep the window open with the reason. */
@@ -99,8 +101,10 @@
       </label>
     </fieldset>
 
-    <label class="row"><input type="checkbox" bind:checked={hidden} /> {t("gamebook.new.hidden")}</label>
-    <p class="muted">{t(hidden ? "gamebook.new.hiddenHint" : "gamebook.new.textHint")}</p>
+    {#if !p.noReference}
+      <label class="row"><input type="checkbox" bind:checked={hidden} /> {t("gamebook.new.hidden")}</label>
+      <p class="muted">{t(hidden ? "gamebook.new.hiddenHint" : "gamebook.new.textHint")}</p>
+    {/if}
 
     {#if error}<p class="error"><ErrorText text={error} /></p>{/if}
     <div class="actions">

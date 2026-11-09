@@ -10,7 +10,7 @@ import { MemoryFs } from "../fs";
 import { addToList, newParagraphText, relabel, removeFromList, setParagraphFields } from "../gamebook/edit";
 import { articleFix, fixArticles, startsWithVowel } from "../gamebook/articles";
 import { Project } from "../project";
-import { proseNumbers, shuffle } from "../gamebook/shuffle";
+import { proseNumbers, reorder, shuffle } from "../gamebook/shuffle";
 import { graphNote, mermaidGraph, titleFromLabel } from "../gamebook/graph";
 
 const types = defaultBoxTypes("it");
@@ -331,5 +331,27 @@ describe("gamebook graph", () => {
     expect(note.startsWith("Intro\n\n```mermaid\nflowchart TD")).toBe(true);
     const kept = graphNote("Mio testo\n\n```mermaid\nflowchart TD\n  a --> b\n```\n\nAltro", "flowchart LR", "Intro");
     expect(kept).toBe("Mio testo\n\n```mermaid\nflowchart LR\n```\n\nAltro");
+  });
+});
+
+describe("gamebook reorder", () => {
+  it("numbers the paragraphs in reading order, keeping fixed and relative ones", () => {
+    const index = new GamebookIndex(
+      [
+        par("Inizio", 1, "Vai al **[[Sud|9]]** o al **[[Nord|5]]**.", 'rimandi nascosti: "[[Segreto|2]]"\n'),
+        par("Nord", 5, "Vai al **[[Fine|3]]**."),
+        par("Sud", 9, "Vai al **[[Nord|5]]**."),
+        par("Fine", 3, "", "numero_tipo: fisso\n"),
+        par("Segreto", 2, ""),
+        par("Dopo segreto", 7, "", 'numero_tipo: relativo\nancora: "[[Segreto]]"\nscarto: 1\n'),
+        par("Perso", 4, ""),
+      ],
+      options,
+    );
+    const result = reorder(index.inScope(DIR), { start: 1 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const n = (t: string) => result.numbers.get(`${DIR}/${t}.md`);
+    expect([n("Inizio"), n("Sud"), n("Nord"), n("Fine"), n("Segreto"), n("Dopo segreto"), n("Perso")]).toEqual([1, 2, 4, 3, 5, 6, 7]);
   });
 });

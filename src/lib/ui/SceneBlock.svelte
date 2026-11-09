@@ -121,7 +121,8 @@
   function emptyHint(): HTMLElement {
     const box = document.createElement("span");
     box.className = "empty-hint";
-    for (const key of ["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const) {
+    const keys = props.project.settings.gamebook.enabled ? (["editor.emptyScene1", "editor.emptyParagraph2", "editor.emptyParagraph3"] as const) : (["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const);
+    for (const key of keys) {
       const line = document.createElement("span");
       line.textContent = t(key);
       box.append(line);

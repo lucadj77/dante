@@ -25,6 +25,7 @@
   import { scalar } from "$lib/core/gamebook/edit";
   import { dirname } from "$lib/core/path";
   import ShuffleDialog from "./ShuffleDialog.svelte";
+  import NewParagraphDialog from "./NewParagraphDialog.svelte";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
@@ -329,6 +330,14 @@
     void run(() => project.createScene(parent.path, index + 1, t("untitledScene")), "start");
   }
 
+  /** In a gamebook: the folder a paragraph made from the tree goes in, while its window is open. */
+  let newParagraphIn = $state<string | null>(null);
+  function openNewParagraph() {
+    const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    const node = selected && index ? index.get(selected) : undefined;
+    newParagraphIn = node?.scope ?? index?.scopes()[0] ?? tree.path;
+  }
+
   /** In a gamebook: writes the graph note again and opens it. */
   async function openGraph() {
     const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
@@ -349,7 +358,9 @@
 
   /** In a gamebook: the folder whose numbers the shuffle window mixes, while it is open. */
   let shuffling = $state<string | null>(null);
-  function openShuffle() {
+  let shuffleMode = $state<"shuffle" | "reorder">("shuffle");
+  function openShuffle(mode: "shuffle" | "reorder") {
+    shuffleMode = mode;
     const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
     if (!index) return;
     const node = selected ? index.get(selected) : undefined;
@@ -807,9 +818,11 @@
             <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
           </div>
           {:else}
-          <div class="add">
+          <div class="add gamebook-add">
+            <button title={t("gamebook.newParagraphTip")} aria-label={t("gamebook.new.title")} onclick={openNewParagraph}><Icon name="scene" /><span>{t("gamebook.paragraphShort")}</span></button>
             <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
-            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={openShuffle}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
+            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
+            <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><span class="glyph" aria-hidden="true">⇣</span><span>{t("gamebook.reorder.button")}</span></button>
             <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><span class="glyph" aria-hidden="true">🕸</span><span>{t("gamebook.graph.button")}</span></button>
           </div>
           {/if}
@@ -1068,8 +1081,25 @@
     </SidePanel>
 {/snippet}
 
+{#if newParagraphIn !== null}
+  {@const scope = newParagraphIn}
+  {@const book = noteIndex ? gamebookOf(noteIndex, project.settings) : null}
+  <NewParagraphDialog
+    title=""
+    hidden={false}
+    noReference
+    paragraphs={(book?.inScope(scope) ?? []).map((x) => ({ title: x.title, number: x.number, empty: x.empty }))}
+    firstFree={book?.firstFreeNumber(scope) ?? 1}
+    onCreate={async (title, spec) => {
+      const made = await project.createParagraph(scope, title, spec);
+      await run(async () => made.path, "start");
+    }}
+    onClose={() => (newParagraphIn = null)}
+  />
+{/if}
 {#if shuffling !== null && noteIndex}
   <ShuffleDialog
+    mode={shuffleMode}
     {project}
     notes={noteIndex}
     scope={shuffling}
@@ -1127,6 +1157,10 @@
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 3px;
+  }
+  .tree-actions .add.gamebook-add {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .tree-actions .add button {
     display: flex;
