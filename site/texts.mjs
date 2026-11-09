@@ -183,6 +183,15 @@ export const videos = [
     it: 'Esportare il libro',
     about: { en: 'Word, PDF and EPUB from the same novel', it: 'Word, PDF ed EPUB dallo stesso romanzo' },
     url: { en: 'https://www.youtube.com/watch?v=h1_QN6y3l2o', it: 'https://www.youtube.com/watch?v=s4etYHjdDa4' }
+  },
+  {
+    n: 21,
+    group: 'gamebook',
+    minutes: 14,
+    en: 'Writing a gamebook',
+    it: 'Scrivere un libro game',
+    about: { en: 'Sections, choices and references, from first to last', it: 'Paragrafi, scelte e rimandi, dal primo all’ultimo' },
+    url: { en: 'https://www.youtube.com/watch?v=Qamnhi3P_Gw', it: 'https://www.youtube.com/watch?v=fnHVx7WO6U8' }
   }
 ]
 
@@ -328,7 +337,9 @@ export const texts = {
         write: ['Writing', 'Scenes, chapters, snapshots and the editor.'],
         bible: ['Story Bible and boards', 'Characters, places, links, tables and boards.'],
         together: ['Together and elsewhere', 'Writing with co-authors, and Dante in the browser.'],
-        export: ['Goals and exporting', 'Goals, statistics and exporting.']
+        export: ['Goals and exporting', 'Goals, statistics and exporting.'],
+        // the note on the beta goes once gamebooks are in the stable version
+        gamebook: ['Gamebooks', 'Numbered sections, choices and references. For now only in the beta version of Dante.']
       }
     },
     guide: {
@@ -487,7 +498,8 @@ export const texts = {
         write: ['Scrivere', 'Scene, capitoli, istantanee e l’editor.'],
         bible: ['Bibbia e bacheche', 'Personaggi, luoghi, collegamenti, tabelle e bacheche.'],
         together: ['Insieme e altrove', 'Scrivere con i coautori, e Dante nel browser.'],
-        export: ['Obiettivi ed esportazione', 'Obiettivi, statistiche ed esportazione.']
+        export: ['Obiettivi ed esportazione', 'Obiettivi, statistiche ed esportazione.'],
+        gamebook: ['Libri game', 'Paragrafi numerati, scelte e rimandi. Per ora solo nella versione beta di Dante.']
       }
     },
     guide: {

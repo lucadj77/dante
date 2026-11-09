@@ -170,18 +170,20 @@ export interface ProseNumber {
   context: string;
 }
 
-// "vai al 25", "torna al paragrafo 12", "il 7": an article or "paragrafo" before a number.
+// "vai al 25", "torna al paragrafo 12", "il 7": an article or "paragrafo" before a number;
+// in English "turn to 25", "go back to section 12", "paragraph 7".
 const PROSE = /(^|[^\p{L}\p{N}_])((?:al|il|l['’]|all['’]|dal|dall['’]|del|dell['’]|nel|nell['’]|sul|sull['’]|paragrafo|paragrafi|par\.)[ \t]*)(\d{1,4})(?![\p{N}])/giu;
+const PROSE_EN = /(^|[^\p{L}\p{N}_])((?:to|sections?|paragraphs?|para\.|§)[ \t]*)(\d{1,4})(?![\p{N}])/giu;
 
 /**
  * The numbers in the text, outside references, that come after an article or "paragrafo"
  * and are the number of a paragraph: a shuffle will not change them, so they are worth a look.
  */
-export function proseNumbers(text: string, isParagraph: (n: number) => boolean): ProseNumber[] {
+export function proseNumbers(text: string, isParagraph: (n: number) => boolean, language = "it"): ProseNumber[] {
   const { body } = readDocument(text);
   const links = findWikiLinks(body).map((l) => [l.from, l.to] as const);
   const out: ProseNumber[] = [];
-  for (const m of body.matchAll(PROSE)) {
+  for (const m of body.matchAll(language.toLowerCase().startsWith("en") ? PROSE_EN : PROSE)) {
     const at = m.index! + m[1].length + m[2].length;
     if (links.some(([from, to]) => at >= from && at < to)) continue;
     const n = Number(m[3]);

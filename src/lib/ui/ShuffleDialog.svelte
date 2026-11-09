@@ -46,7 +46,7 @@
 
   /** The numbers in the prose that a shuffle leaves as they are. */
   const prose = paragraphs
-    .flatMap((x) => proseNumbers(p.notes.notes.get(x.path)?.text ?? "", (n) => numbers.has(n)).map((found) => ({ paragraph: x, ...found })))
+    .flatMap((x) => proseNumbers(p.notes.notes.get(x.path)?.text ?? "", (n) => numbers.has(n), p.project.settings.language).map((found) => ({ paragraph: x, ...found })))
     .slice(0, 200);
 
   const rows = $derived(

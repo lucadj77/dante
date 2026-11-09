@@ -22,6 +22,7 @@ TEXT = {
         'about': 'Dante è un’app gratuita per scrivere romanzi: scene, capitoli, schede dei personaggi, revisioni ed esportazione in Word, PDF ed EPUB. Il romanzo resta in file Markdown, uno standard libero che si apre con qualsiasi editor di testo. Funziona su Mac, Windows, Linux e nel browser.',
         'download': 'Guida completa e download: {site}',
         'playlist': 'Le guide video di Dante, l’app gratuita per scrivere romanzi.',
+        'beta': 'Nota: questa funzione per ora è solo nella versione beta di Dante. Per averla scegli il canale Beta in Impostazioni › Dante su questo computer › Aggiornamenti; arriverà presto anche nella versione stabile.',
     },
     'en': {
         'lead': 'A video of the Dante guide: {subtitle}.',
@@ -30,6 +31,7 @@ TEXT = {
         'about': 'Dante is a free app for writing novels: scenes, chapters, character sheets, revisions and export to Word, PDF and EPUB. The novel stays in Markdown files, a free standard any text editor can open. It runs on Mac, Windows, Linux and in the browser.',
         'download': 'Full guide and downloads: {site}',
         'playlist': 'The video guides of Dante, the free app for writing novels.',
+        'beta': 'Note: for now this feature is only in the beta version of Dante. To get it, choose the Beta channel in Settings › Dante on this computer › Updates; it will soon come to the stable version too.',
     },
 }
 
@@ -67,13 +69,24 @@ def sections(n, lang):
     return list(out.values())
 
 
+def in_beta(n):
+    """True when the script's meta says `beta: true`: what it shows is only in the beta version yet."""
+    script = next(f for f in os.listdir(os.path.join(HERE, 'videos')) if f.startswith(f'{n:02d}-'))
+    src = open(os.path.join(HERE, 'videos', script)).read()
+    return bool(re.search(r'^  beta: true,$', src, re.M))
+
+
 def description(meta, lang):
     t = TEXT[lang]
     sub = meta['subtitle']
-    lines = [t['lead'].format(subtitle=sub[0].lower() + sub[1:]), '', t['inside']]
+    lines = [t['lead'].format(subtitle=sub[0].lower() + sub[1:]), '']
+    if in_beta(meta['n']):
+        lines += [t['beta'], '']
+    lines += [t['inside']]
     lines += [f'- {s}' for s in sections(meta['n'], lang)]
     lines += ['', t['guide'].format(site=SITE[lang]), '', t['about'], '', t['download'].format(site=SITE[lang])]
-    return '\n'.join(lines)
+    # YouTube refuses angle brackets in a description
+    return '\n'.join(lines).replace('<', '‹').replace('>', '›')
 
 
 def playlist(h, lang, store):

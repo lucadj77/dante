@@ -14,6 +14,7 @@ import { captionStart, splitRow, parseTable, type CellAlign } from "../tables";
 import { resolveLink } from "../wikilinks";
 import { isBlankLine, normalizeBlankLines } from "../blankLines";
 import { findBoxes, type BoxType } from "../gamebook/boxes";
+import { CALLOUT_OPEN, calloutColor, calloutTitle } from "../callouts";
 import type { GamebookExportSettings } from "../settings";
 
 // A gamebook's references, through typography and the parser: LINK_OPEN, the number of the
@@ -118,6 +119,11 @@ export function applyBoxes(blocks: Block[], colors: string[]): Block[] {
   return out;
 }
 
+/** Callouts number their frames from here, apart from a gamebook's boxes. */
+const CALLOUT_BASE = 1_000_000;
+/** Callouts seen so far, so that each frame has an id of its own, also between scenes. */
+let calloutCount = 0;
+
 // The manuscript as a format-neutral document, built once and rendered by each
 // exporter (DOCX now; EPUB and PDF later).
 
@@ -153,6 +159,8 @@ export interface BoxMark {
   id: number;
   /** The box type's colour, as "#3b82c4". */
   color: string;
+  /** Set when the frame is a callout (`> [!tip] Title`): its first block is the title line. */
+  callout?: { type: string; title: string; written: string };
 }
 
 export type Block = (
@@ -396,7 +404,19 @@ export function markdownToBlocks(markdown: string, aligns?: Map<number, Align>, 
         const level = Number(name.slice(-1));
         blocks.push({ type: "heading", level, runs: inlineRuns(source, child, child.from, child.to) });
       } else if (name === "Blockquote") {
-        visit(child, true);
+        const lines = source.slice(child.from, child.to).split("\n");
+        const open = CALLOUT_OPEN.exec(lines[0]);
+        if (!open) {
+          visit(child, true);
+          continue;
+        }
+        // A callout goes into a frame of its colour, its title in bold on the first line.
+        const [, type, written] = open;
+        const title = calloutTitle(type, written);
+        const box: BoxMark = { id: CALLOUT_BASE + calloutCount++, color: calloutColor(type), callout: { type, title, written: written.trim() } };
+        const inner = lines.slice(1).map((line) => line.replace(/^>[ \t]?/, "")).join("\n");
+        blocks.push({ type: "paragraph", runs: [{ text: title, bold: true }], box });
+        for (const block of markdownToBlocks(inner, undefined, images)) blocks.push({ ...block, box });
       } else if (name === "Table") {
         let from = child.from;
         const lines = source.slice(child.from, child.to).split("\n").map((text) => {
@@ -561,6 +581,8 @@ export async function buildBook(
     const colors = gx.boxes === "gray" ? marked.colors.map(() => "#868e96") : marked.colors;
     const blocks = gamebook
       ? applyLinks(applyBoxes(parsed, colors), gx.bold, gx.links).map((b) => {
+          // Callouts keep their frame whatever the settings for boxes say.
+          if (b.box?.callout) return b;
           const sized = b.box && gx.boxSize ? sizeRuns(b, gx.boxSize) : b;
           return sized.box && gx.boxes !== "none" ? { ...sized, box: { ...sized.box, id: sized.box.id + boxBase } } : { ...sized, box: undefined };
         })

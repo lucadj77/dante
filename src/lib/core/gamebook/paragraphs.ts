@@ -83,6 +83,8 @@ function targetOf(value: string): string | null {
 export interface ReadOptions {
   boxTypes: BoxType[];
   unit: PageUnit;
+  /** The book's language, for the phrases that give and ask in the text. Italian when missing. */
+  language?: string;
 }
 
 export function readParagraph(path: string, text: string, options: ReadOptions): Paragraph | null {
@@ -128,7 +130,7 @@ export function readParagraph(path: string, text: string, options: ReadOptions):
     bareLinks,
     lists,
     note: unquote(readScalar(frontmatter, KEYS.note) ?? ""),
-    said: stateInText(body),
+    said: stateInText(body, options.language),
   };
 }
 

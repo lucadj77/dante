@@ -329,3 +329,55 @@ describe("the writer's spacing of paragraphs", () => {
     expect(blankHabit(["# A\n- a\n- b\n- c\n- d\n- e\n- f"])).toBeNull();
   });
 });
+
+describe("callouts", () => {
+  it("frames a callout in its colour, with its title in bold on the first line", () => {
+    const blocks = markdownToBlocks("Prima.\n\n> [!tip] Consiglio\n> Usa una *matita*.\n> - una\n> - due\n\n> Una citazione.");
+    expect(blocks[0]).toEqual({ type: "paragraph", runs: [{ text: "Prima." }] });
+    const framed = blocks.filter((b) => b.box);
+    expect(framed.map((b) => b.type)).toEqual(["paragraph", "paragraph", "item", "item"]);
+    expect(new Set(framed.map((b) => b.box!.id)).size).toBe(1);
+    expect(framed[0].box).toMatchObject({ color: "#1f9d8a", callout: { type: "tip", title: "Consiglio", written: "Consiglio" } });
+    expect(framed[0].type === "paragraph" && framed[0].runs).toEqual([{ text: "Consiglio", bold: true }]);
+    expect(framed[1].type === "paragraph" && framed[1].runs.map((r) => r.text).join("")).toBe("Usa una matita.");
+    // A plain quote stays a quote.
+    expect(blocks.at(-1)).toEqual({ type: "quote", runs: [{ text: "Una citazione." }] });
+  });
+
+  it("names a callout without a title after its type, and gives each callout a frame of its own", () => {
+    const blocks = markdownToBlocks("> [!WARNING]-\n> Attento.\n\n> [!note]\n> Due.");
+    const titles = blocks.filter((b) => b.box && b.type === "paragraph" && b.runs[0]?.bold).map((b) => b.type === "paragraph" && b.runs[0].text);
+    expect(titles).toEqual(["Warning", "Note"]);
+    expect(blocks[0].box!.id).not.toBe(blocks[2].box!.id);
+  });
+
+  it("keeps callouts as frames in EPUB and Word, and writes them back as callouts in Markdown", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\n",
+      "Manuscript/010 Uno/010 Scena.md": "Prima.\n\n> [!note] Consiglio\n> Usa una matita.\n>\n> Poi cancella.\n\n> [!quote]\n> Detto.\n\nDopo.",
+    });
+    const project = await Project.open(fs);
+    const book = await buildBook(project);
+    const md = bookToMarkdown(book, project.settings.export.docx);
+    expect(md).toContain("Prima.\n\n> [!note] Consiglio\n> Usa una matita.\n>\n> Poi cancella.\n\n> [!quote]\n> Detto.\n\nDopo.");
+    const epub = new TextDecoder().decode(bookToEpub(book, project.settings.export.docx, "id"));
+    expect(epub).toContain('<div class="box" style="border-color: #3b82c4');
+    expect(epub).toMatch(/<strong>Consiglio<\/strong>/);
+    expect(epub).not.toContain("!note");
+    const xml = await documentXml(await docxBytes(bookToDocx(book, project.settings.export.docx, { words: "words" })));
+    expect(xml).toContain('w:fill="');
+    expect(xml).not.toContain("!note");
+  });
+
+  it("keeps callouts framed in a gamebook even when its boxes have no frame", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n  export:\n    boxes: none\n",
+      "Paragrafi/Ingresso.md": "---\nnumero: 1\n---\n> [!note] Consiglio\n> Usa una matita.",
+    });
+    const project = await Project.open(fs, "it");
+    expect(project.settings.gamebook.export.boxes).toBe("none");
+    const book = await buildBook(project);
+    const blocks = book.entries.flatMap((e) => e.scenes.flatMap((s) => s.blocks));
+    expect(blocks.some((b) => b.box?.callout?.title === "Consiglio")).toBe(true);
+  });
+});

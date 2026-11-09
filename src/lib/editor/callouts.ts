@@ -1,43 +1,20 @@
 import { RangeSetBuilder, type EditorState, type Extension } from "@codemirror/state";
+import { calloutColor } from "$lib/core/callouts";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 // Callouts, the quotes that open with `> [!note]` or `> [!warning]`: the marker reads as a
 // coloured pill with the callout's name, and the quote gets the same colour. The marker comes
 // back as text when the cursor is on its line, so it can be changed.
 
+export { calloutColor };
+
 const OPEN = /^>\s*\[!([\w-]+)\]([+-]?)/;
 
-const COLORS: Record<string, string> = {
-  note: "#3b82c4",
-  info: "#3b82c4",
-  todo: "#3b82c4",
-  abstract: "#1f9d8a",
-  summary: "#1f9d8a",
-  tip: "#1f9d8a",
-  hint: "#1f9d8a",
-  success: "#2f9e44",
-  check: "#2f9e44",
-  done: "#2f9e44",
-  question: "#d9822b",
-  help: "#d9822b",
-  warning: "#d9822b",
-  caution: "#d9822b",
-  attention: "#d9822b",
-  important: "#8b5cc4",
-  failure: "#d64545",
-  danger: "#d64545",
-  error: "#d64545",
-  bug: "#d64545",
-  example: "#8b5cc4",
-  quote: "#868e96",
-};
+
 
 /** The room `md-after-gap` leaves above a line. */
 const GAP = "calc(1em * var(--editor-line-height, 1.7) * var(--editor-gap, 1))";
 
-export function calloutColor(type: string): string {
-  return COLORS[type.toLowerCase()] ?? "#868e96";
-}
 
 /** The colour, faint, for the background: macOS 10.15 cannot mix colours in CSS. */
 export function faint(hex: string): string {

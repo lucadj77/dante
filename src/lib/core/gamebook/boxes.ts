@@ -40,14 +40,14 @@ export interface Box {
 export const OPEN_LINE = '::: {custom-style="box"} ';
 export const CLOSE_LINE = ":::";
 
-/** The plugin's six types, with the frontmatter keys Missione Cavaliere uses. */
+/** The plugin's six types, with the frontmatter keys Missione Cavaliere uses (in English, English keys). */
 export function defaultBoxTypes(language = "it"): BoxType[] {
   const it = language.startsWith("it");
   return [
     { id: "choice", emoji: "🤔", name: it ? "Scelta" : "Choice", color: "#3b82c4", text: it ? "**Devi agire in fretta!**" : "**You must act fast!**", property: "", ending: false },
-    { id: "trait", emoji: "❤️", name: it ? "Carattere" : "Trait", color: "#c8445a", text: it ? "**Carattere**" : "**Trait**", property: "carattere", ending: false },
-    { id: "item", emoji: "✏️", name: it ? "Oggetto" : "Item", color: "#d39a2b", text: it ? "**Oggetto**" : "**Item**", property: "parole chiave", ending: false },
-    { id: "encounter", emoji: "✅", name: it ? "Incontro" : "Encounter", color: "#3f9b5a", text: it ? "**Incontro memorabile**" : "**Memorable encounter**", property: "incontri", ending: false },
+    { id: "trait", emoji: "❤️", name: it ? "Carattere" : "Trait", color: "#c8445a", text: it ? "**Carattere**" : "**Trait**", property: it ? "carattere" : "traits", ending: false },
+    { id: "item", emoji: "✏️", name: it ? "Oggetto" : "Item", color: "#d39a2b", text: it ? "**Oggetto**" : "**Item**", property: it ? "parole chiave" : "keywords", ending: false },
+    { id: "encounter", emoji: "✅", name: it ? "Incontro" : "Encounter", color: "#3f9b5a", text: it ? "**Incontro memorabile**" : "**Memorable encounter**", property: it ? "incontri" : "encounters", ending: false },
     { id: "ending", emoji: "😢", name: it ? "Fine" : "Ending", color: "#7a6a8f", text: it ? "**Fine**" : "**The end**", property: "", ending: true },
     { id: "confirm", emoji: "🆗", name: it ? "Corretto" : "Confirmed", color: "#2f9c9c", text: it ? "**Corretto**" : "**Confirmed**", property: "", ending: false },
   ];

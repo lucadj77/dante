@@ -222,7 +222,7 @@
         {/each}
         <section>
           <h2>{t("gamebookView.state")}</h2>
-          <p class="muted small">{t("gamebookView.stateHint", { properties: properties.map((x) => `«${x}»`).join(", ") })}</p>
+          <p class="muted small">{t("gamebookView.stateHint", { properties: properties.map((x) => t("gamebookView.quoted", { x })).join(", ") })}</p>
           {#each ["neverGiven", "unobtainable", "neverAsked"] as const as kind (kind)}
             {@const list = issues.filter((s) => s.kind === kind)}
             {#if list.length}
@@ -252,7 +252,7 @@
               <div class="duplicates">
                 <strong>{t("gamebookView.duplicates")}</strong>
                 <ul>
-                  {#each r.duplicates as d, i (i)}<li>«{d.a}» / «{d.b}»</li>{/each}
+                  {#each r.duplicates as d, i (i)}<li>{t("gamebookView.quoted", { x: d.a })} / {t("gamebookView.quoted", { x: d.b })}</li>{/each}
                 </ul>
               </div>
             {/if}

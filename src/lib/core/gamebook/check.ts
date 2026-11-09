@@ -79,26 +79,57 @@ export interface SaidState {
 }
 
 const EMPHASIS = /(\*{1,3})([^*\n]+?)\1/g;
-const GIVE = /(^|[^\p{L}])(segna|cerchia|annota)(?![\p{L}])/iu;
-const ASK = /(^|[^\p{L}])(se|hai|possiedi|avevi)(?![\p{L}])/iu;
-// The phrases that show a sentence speaks of the reader's sheet, not of the story.
-const SHEET = /parol[ae] chiave|caratteristic|tratt[oi]|cerchiat|segnat|tra le note|scheda|tra gli oggetti/iu;
-const HAVE = /(^|[^\p{L}])(hai|possiedi|avevi)(?![\p{L}])/iu;
-const NEGATION = /(^|[^\p{L}])(non|nessun[oa]?|senza|né)(?![\p{L}])/iu;
+interface Phrases {
+  /** A word that tells to write something on the sheet. */
+  give: RegExp;
+  /** A word that asks whether the reader has something. */
+  ask: RegExp;
+  /** The phrases that show a sentence speaks of the reader's sheet, not of the story. */
+  sheet: RegExp;
+  /** The verbs after which a value in bold counts even without a word on the sheet. */
+  have: RegExp;
+  negation: RegExp;
+}
+
+// Each language writes the sheet its own way: «Segna la parola chiave **x**», «Note the keyword **x**».
+const PHRASES: Record<"it" | "en", Phrases> = {
+  it: {
+    give: /(^|[^\p{L}])(segna|cerchia|annota)(?![\p{L}])/iu,
+    ask: /(^|[^\p{L}])(se|hai|possiedi|avevi)(?![\p{L}])/iu,
+    sheet: /parol[ae] chiave|caratteristic|tratt[oi]|cerchiat|segnat|tra le note|scheda|tra gli oggetti/iu,
+    have: /(^|[^\p{L}])(hai|possiedi|avevi)(?![\p{L}])/iu,
+    negation: /(^|[^\p{L}])(non|nessun[oa]?|senza|né)(?![\p{L}])/iu,
+  },
+  en: {
+    give: /(^|[^\p{L}])(note|circle|write|mark|tick|record)(?![\p{L}])/iu,
+    ask: /(^|[^\p{L}])(if|have|has|possess|possesses|had|got)(?![\p{L}])/iu,
+    sheet: /key ?words?|code ?words?|(^|[^\p{L}])traits?(?![\p{L}])|ticked|noted|circled|marked|written down|adventure sheet|action chart|(^|[^\p{L}])sheet|on your list|among your items|in your backpack/iu,
+    have: /(^|[^\p{L}])(have|has|possess|possesses|had|got)(?![\p{L}])/iu,
+    negation: /(^|[^\p{L}])(not|no|without|nor|never)(?![\p{L}])|n['’]t(?![\p{L}])/iu,
+  },
+};
+
+/** The phrases of the book's language: English for English books, Italian for the others. */
+function phrasesOf(language: string): Phrases {
+  return language.toLowerCase().startsWith("en") ? PHRASES.en : PHRASES.it;
+}
 
 /**
  * Reads the game state in the prose, the way Missione Cavaliere writes it: «Segna la parola
- * chiave **lavanda**» gives, «Se hai la parola chiave **lavanda**, leggi…» asks. Which words of
- * an asking sentence are values is decided later, against the values the book gives somewhere.
+ * chiave **lavanda**» gives, «Se hai la parola chiave **lavanda**, leggi…» asks; in an English
+ * book «Note the keyword **lavender**» gives and «If you have the keyword **lavender**» asks.
+ * Which words of an asking sentence are values is decided later, against the values the book
+ * gives somewhere.
  */
-export function stateInText(body: string): SaidState {
+export function stateInText(body: string, language = "it"): SaidState {
+  const { give: GIVE, ask: ASK, sheet: SHEET, have: HAVE, negation: NEGATION } = phrasesOf(language);
   const gives: string[] = [];
   const asks: SaidState["asks"] = [];
   const text = body.replace(/\[\[[^\]]*\]\]/g, " ").replace(/([.!;:])\s+/g, "$1\n");
   for (const sentence of text.split(/\n+/)) {
     const strong = SHEET.test(sentence);
     const emphasized = [...sentence.matchAll(EMPHASIS)].map((m) => keyOf(m[2]));
-    // Without a word on the sheet, only a value in bold after «hai» or «possiedi» counts.
+    // Without a word on the sheet, only a value in bold after «hai» or «possiedi» («have») counts.
     if (!strong && !(emphasized.length && HAVE.test(sentence))) continue;
     if (strong && GIVE.test(sentence)) {
       for (const m of sentence.matchAll(EMPHASIS)) {
