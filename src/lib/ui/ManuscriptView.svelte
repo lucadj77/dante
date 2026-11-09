@@ -36,6 +36,8 @@
   import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
   import type { NoteIndex } from "$lib/core/notes";
   import { gamebookMarks, gamebookOf } from "$lib/core/gamebook/marks";
+  import { gameState, stateProperties } from "$lib/core/gamebook/check";
+  import type { MessageKey } from "$lib/i18n";
   import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
   interface Props {
@@ -52,8 +54,10 @@
     onShow: (path: string) => void;
     /** The panes beside the text, if any are open. */
     beside?: Snippet | null;
+    /** In a gamebook, opens the checks of the whole book. */
+    onGamebookChecks?: () => void;
   }
-  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow, beside = null }: Props = $props();
+  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow, beside = null, onGamebookChecks }: Props = $props();
 
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
@@ -191,7 +195,20 @@
     void tree;
     if (!gamebook || !noteIndex) return null;
     const index = gamebookOf(noteIndex, project.settings);
-    return index ? gamebookMarks(index, project.settings) : null;
+    if (!index) return null;
+    const found = gamebookMarks(index, project.settings);
+    const issues = index.scopes().flatMap((s) => gameState(index, s, project.settings.gamebook.start, stateProperties(project.settings.gamebook.boxes)));
+    return { ...found, issues: issues.filter((i) => i.kind !== "neverAsked").length };
+  });
+  /** What the status bar says of the gamebook: the problems, by kind. */
+  const statusGamebook = $derived.by(() => {
+    if (!game) return null;
+    const counts = new Map<string, number>();
+    for (const m of game.marks.values()) for (const w of m.warnings) counts.set(w, (counts.get(w) ?? 0) + 1);
+    const parts = [...counts].map(([w, n]) => `${t(`gamebookView.warning.${w}` as MessageKey)}: ${n}`);
+    if (game.issues) parts.push(`${t("gamebookView.state")}: ${game.issues}`);
+    const problems = [...counts.values()].reduce((a, b) => a + b, 0) + game.issues;
+    return { problems, details: parts.join("\n") || t("gamebookView.allGood"), onOpen: () => onGamebookChecks?.() };
   });
   /** The text selected in the scene with the cursor. */
   let selection = $state<{ path: string; text: string }>({ path: "", text: "" });
@@ -1032,7 +1049,7 @@
       </div>
     </div>
     {#if app.settings.statusBar && !fullscreen}
-      <StatusBar {unit} scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
+      <StatusBar {unit} gamebook={statusGamebook} scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
     {/if}
   </main>
 

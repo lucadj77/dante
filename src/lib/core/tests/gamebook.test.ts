@@ -17,6 +17,7 @@ import { bookToMarkdown } from "../export/markdown";
 import { bookToTypst } from "../export/typst";
 import { bookToDocx, docxBytes } from "../export/docx";
 import { bookToEpub } from "../export/epub";
+import { gameState, likelyDuplicate, register, stateProperties } from "../gamebook/check";
 
 const types = defaultBoxTypes("it");
 const options = { boxTypes: types, unit: "characters" as const };
@@ -386,5 +387,35 @@ describe("gamebook export", () => {
     const docx = new TextDecoder().decode(await docxBytes(bookToDocx(built, project.settings.export.docx, { words: "parole" })));
     expect(docx.length).toBeGreaterThan(1000);
     expect(bookToEpub(built, project.settings.export.docx, "id").length).toBeGreaterThan(1000);
+  });
+});
+
+describe("gamebook checks", () => {
+  it("lists the values of a property and the likely typos, never x and x?", () => {
+    const files = [
+      par("A", 1, "", "carattere:\n  - diplomatico\n  - Coraggioso\n"),
+      par("B", 2, "", "carattere:\n  - diplomatico?\n  - coragioso\n"),
+    ];
+    const index = new GamebookIndex(files, options);
+    const r = register(index.all(), "carattere");
+    expect(r.entries.map((e) => e.value)).toEqual(["Coraggioso", "coragioso", "diplomatico", "diplomatico?"]);
+    expect(r.duplicates).toEqual([{ a: "Coraggioso", b: "coragioso" }]);
+    expect(likelyDuplicate("re", "tre")).toBe(false);
+  });
+
+  it("finds what is asked before it can be given, given nowhere or asked nowhere", () => {
+    const files = [
+      par("Inizio", 1, "Vai al **[[Porta|2]]** o al **[[Biblioteca|3]]**.", "carattere:\n  - mondano\n"),
+      par("Porta", 2, "Se sei studioso vai al **[[Studio|4]]**.", "carattere:\n  - studioso?\n"),
+      par("Biblioteca", 3, "Vai alla **[[Porta|2]]**.", "carattere:\n  - studioso\n"),
+      par("Studio", 4, "Hai la chiave? **[[Fine|5]]**", "parole chiave:\n  - chiave?\n"),
+      par("Fine", 5, "", "finale: true\nincontri:\n  - mago?\n"),
+      par("Sola", 6, "Vai alla **[[Fine|5]]**.", "parole chiave:\n  - chiave\n"),
+    ];
+    const index = new GamebookIndex(files, options);
+    const issues = gameState(index, DIR, 1, stateProperties(types));
+    const brief = issues.map((i) => `${i.kind}:${i.value}@${i.path.slice(DIR.length + 1, -3)}`);
+    // studioso is given on one way to Porta: fine. chiave is given only by Sola, which nobody reaches.
+    expect(brief).toEqual(["neverGiven:mago?@Fine", "unobtainable:chiave?@Studio", "neverAsked:mondano@Inizio"]);
   });
 });

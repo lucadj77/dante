@@ -14,6 +14,7 @@
   import FilesView from "./FilesView.svelte";
   import ViewsView from "./ViewsView.svelte";
   import StatsView from "./StatsView.svelte";
+  import GamebookView from "./GamebookView.svelte";
   import { flushSessions, startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
@@ -60,19 +61,23 @@
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
-  type Section = "manuscript" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
-  const sections: { id: Section & IconName }[] = [
+  type Section = "manuscript" | "gamebook" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
+  const sections = $derived<{ id: Section & IconName }[]>([
     { id: "manuscript" },
+    // A gamebook's table and checks, only when the module is on.
+    ...(project.settings.gamebook.enabled ? [{ id: "gamebook" as const }] : []),
     { id: "codex" },
     // Research and Laboratory, side by side in one tree.
     { id: "notes" },
     { id: "views" },
     { id: "stats" },
     { id: "export" },
-  ];
+  ]);
   let section = $state<Section>("manuscript");
   /** Sections with panels on the sides, which can be hidden. */
-  const panels = $derived(section !== "export" && section !== "settings" && section !== "views" && section !== "stats");
+  const panels = $derived(section !== "export" && section !== "settings" && section !== "views" && section !== "stats" && section !== "gamebook");
+  /** The tab of the gamebook section. */
+  let gamebookTab = $state<"table" | "checks" | "register">("table");
   /** What each section shows, so coming back to it finds the same note. */
   let opened = $state<Partial<Record<Section, string | null>>>({});
   /** Root of the "files" section. */
@@ -730,6 +735,10 @@
         reveal={opened.manuscript ?? null}
         onShow={(path) => (opened.manuscript = path)}
         beside={showPanes ? besidePanes : null}
+        onGamebookChecks={() => {
+          gamebookTab = "checks";
+          go("gamebook");
+        }}
       />
     {:else if section === "codex"}
       <CodexView {project} {rev} {diskRev} open={opened.codex ?? null} onShow={(path) => (opened.codex = path)} onReload={reload} beside={showPanes ? besidePanes : null} />
@@ -764,6 +773,8 @@
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
       <SettingsView {project} onSaved={reload} />
+    {:else if section === "gamebook"}
+      <GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />
     {:else if section === "stats"}
       <StatsView {project} {rev} {diskRev} onSaved={reload} />
     {:else if section === "views"}
