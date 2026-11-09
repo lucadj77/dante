@@ -405,6 +405,18 @@ describe("gamebook export", () => {
     const html = Object.entries(pages).filter(([name]) => name.endsWith(".xhtml")).map(([, data]) => new TextDecoder().decode(data)).join("");
     expect(html).toContain('id="p8"');
     expect(html).toContain('href="#p8"');
+
+    project.settings.gamebook.export = { ...project.settings.gamebook.export, justify: false, indent: 0, spacing: 6, boxSize: 9, numberBold: false, numberFont: "Arial" };
+    const styled = await buildBook(project);
+    const styledTypst = bookToTypst(styled, project.settings.export.docx, { words: "parole" });
+    expect(styledTypst).toContain("justify: false");
+    expect(styledTypst).toContain("+ 6pt, first-line-indent: 0cm");
+    expect(styledTypst).toContain("text(size: 9pt");
+    expect(styledTypst).toContain('weight: "regular"');
+    const styledXml = new TextDecoder().decode(unzipSync(await docxBytes(bookToDocx(styled, project.settings.export.docx, { words: "parole" })))["word/styles.xml"]);
+    expect(styledXml).toContain('w:after="120"');
+    const css = new TextDecoder().decode(unzipSync(bookToEpub(styled, project.settings.export.docx, "id"))["OEBPS/style.css"]);
+    expect(css).toContain("text-align: left; text-indent: 0cm; margin-bottom: 6pt;");
   });
 });
 

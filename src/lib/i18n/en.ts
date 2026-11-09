@@ -1340,6 +1340,17 @@ export const en = {
   "export.gb.links": "Clickable references: clicking a number leads to the paragraph",
   "export.gb.bold": "References in bold",
   "export.gb.linksHint": "Clickable references work in Word, PDF and EPUB; in Markdown references stay numbers. A new page for each paragraph also counts for the estimate of pages.",
+  "export.gb.text": "Paragraph text",
+  "export.gb.justify": "Text alignment",
+  "export.gb.justified": "Justified",
+  "export.gb.ragged": "Left",
+  "export.gb.indent": "First-line indent (cm)",
+  "export.gb.spacing": "Space after each paragraph of text (pt)",
+  "export.gb.boxSize": "Box text (pt, 0 = as the text)",
+  "export.gb.number": "Paragraph number",
+  "export.gb.numberBold": "Number in bold",
+  "export.gb.numberFont": "Number font (empty = the text's)",
+  "export.gb.textHint": "Font, size and line spacing of the text are chosen below, in Page and text.",
 } as const;
 
 export type MessageKey = keyof typeof en;

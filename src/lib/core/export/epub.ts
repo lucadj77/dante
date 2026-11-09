@@ -14,6 +14,18 @@ export function escapeXml(text: string): string {
 
 const lines = (text: string) => text.split("\n").map(escapeXml).join("<br/>");
 
+/** A gamebook's choices for its text and numbers, after the stylesheet so that they win. */
+function gamebookCss(book: Book): string {
+  const gx = book.gamebook;
+  if (!gx) return "";
+  const font = gx.numberFont ? ` font-family: "${gx.numberFont.replace(/["\\]/g, "")}", serif;` : "";
+  return `
+/* Libro game */
+p { text-align: ${gx.justify ? "justify" : "left"}; text-indent: ${gx.indent}cm; margin-bottom: ${gx.spacing}pt; }
+.number { font-weight: ${gx.numberBold ? "bold" : "normal"};${font} }
+`;
+}
+
 /** Stands for the file of a gamebook's paragraph until the chapters are laid out. */
 const LINK_HREF = "dante-link:";
 
@@ -31,6 +43,7 @@ function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
       if (r.italic) out = `<em>${out}</em>`;
       if (r.bold) out = `<strong>${out}</strong>`;
       if (r.strike) out = `<s>${out}</s>`;
+      if (r.size) out = `<span style="font-size: ${r.size}pt">${out}</span>`;
       // A gamebook's reference: the file is filled in once every paragraph has its file.
       if (r.link) out = `<a href="${LINK_HREF}${r.link}">${out}</a>`;
       return out;
@@ -336,7 +349,7 @@ ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
       { name: "META-INF/container.xml", data: container },
       { name: "OEBPS/content.opf", data: opf },
       { name: "OEBPS/nav.xhtml", data: nav },
-      { name: "OEBPS/style.css", data: css.trim() ? css : EPUB_CSS },
+      { name: "OEBPS/style.css", data: (css.trim() ? css : EPUB_CSS) + gamebookCss(book) },
       ...(cover ? [{ name: `OEBPS/${coverFile}`, data: cover.data }] : []),
       ...chapters.map((c) => ({ name: `OEBPS/${c.file}`, data: c.html })),
       ...[...images.values()].map((img) => ({ name: `OEBPS/${img.file}`, data: img.data })),

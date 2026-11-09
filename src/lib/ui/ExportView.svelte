@@ -467,6 +467,26 @@
           </select>
         </label>
       </div>
+      <p class="sub">{t("export.gb.text")}</p>
+      <div class="row">
+        <label
+          >{t("export.gb.justify")}
+          <select bind:value={gbx.justify}>
+            <option value={true}>{t("export.gb.justified")}</option>
+            <option value={false}>{t("export.gb.ragged")}</option>
+          </select>
+        </label>
+        <label>{t("export.gb.indent")} <input class="short" type="number" min="0" max="5" step="0.1" bind:value={gbx.indent} /></label>
+        <label>{t("export.gb.spacing")} <input class="short" type="number" min="0" max="48" step="1" bind:value={gbx.spacing} /></label>
+        <label>{t("export.gb.boxSize")} <input class="short" type="number" min="0" max="48" step="0.5" bind:value={gbx.boxSize} /></label>
+      </div>
+      <p class="sub">{t("export.gb.number")}</p>
+      <label class="check"><input type="checkbox" bind:checked={gbx.numberBold} /> {t("export.gb.numberBold")}</label>
+      <div class="field">
+        <span class="label">{t("export.gb.numberFont")}</span>
+        <FontPicker bind:value={gbx.numberFont} />
+      </div>
+      <p class="hint">{t("export.gb.textHint")}</p>
       <label class="check"><input type="checkbox" bind:checked={gbx.links} /> {t("export.gb.links")}</label>
       <label class="check"><input type="checkbox" bind:checked={gbx.bold} /> {t("export.gb.bold")}</label>
       <p class="hint">{t("export.gb.linksHint")}</p>
@@ -516,7 +536,7 @@
           <option value={2}>2</option>
         </select>
       </label>
-      <label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>
+      {#if !gamebook}<label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>{/if}
     </div>
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
@@ -734,6 +754,11 @@
   }
   fieldset label.check {
     margin: 0;
+  }
+  .sub {
+    margin: 8px 0 0;
+    font-weight: 600;
+    font-size: 13px;
   }
   h4 {
     font-size: 13px;

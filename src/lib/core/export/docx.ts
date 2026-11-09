@@ -27,7 +27,7 @@ import {
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
-import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
+import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type GamebookExportSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import type { CellAlign } from "../tables";
 
@@ -124,7 +124,7 @@ function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | 
       ? imageRun(r.image, maxWidth, fontSize)
       : r.lineBreak
       ? new TextRun({ break: 1 })
-      : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined });
+      : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined, size: r.size ? r.size * 2 : undefined });
   const out: (TextRun | ImageRun | InternalHyperlink)[] = [];
   for (let i = 0; i < items.length; i++) {
     const link = items[i].link;
@@ -158,11 +158,13 @@ function textParagraphs(text: string, style: string): Paragraph[] {
     .map((p) => new Paragraph({ style, children: plain(p) }));
 }
 
-function styles(opts: DocxSettings, typeset: boolean): IParagraphStyleOptions[] {
+function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSettings): IParagraphStyleOptions[] {
   const size = opts.fontSize * 2;
   const line = Math.round(240 * opts.lineSpacing);
-  const indent = Math.round(opts.indent * TWIPS_PER_CM);
-  const body = typeset ? AlignmentType.JUSTIFIED : AlignmentType.LEFT;
+  // A gamebook's paragraphs have their own indent, alignment and space after.
+  const indent = Math.round((gx ? gx.indent : opts.indent) * TWIPS_PER_CM);
+  const body = (gx ? gx.justify : typeset) ? AlignmentType.JUSTIFIED : AlignmentType.LEFT;
+  const after = gx ? gx.spacing * 20 : 0;
   const centered = { alignment: AlignmentType.CENTER, indent: { firstLine: 0 } };
   return [
     {
@@ -170,7 +172,7 @@ function styles(opts: DocxSettings, typeset: boolean): IParagraphStyleOptions[] 
       name: "Normal",
       quickFormat: true,
       run: { font: opts.font, size },
-      paragraph: { alignment: body, indent: { firstLine: indent }, spacing: { line, before: 0, after: 0 } },
+      paragraph: { alignment: body, indent: { firstLine: indent }, spacing: { line, before: 0, after } },
     },
     { id: "FirstParagraph", name: "First Paragraph", basedOn: "Normal", next: "Normal", quickFormat: true, paragraph: { indent: { firstLine: 0 } } },
     { id: "BlockText", name: "Block Text", basedOn: "Normal", next: "Normal", paragraph: { indent: { left: indent, right: indent, firstLine: 0 } } },
@@ -327,7 +329,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       if (scene.heading && book.gamebook) {
         // A gamebook's number: bookmarked, so that the references lead here.
         const gx = book.gamebook;
-        const text = plain(scene.heading, { size: gx.size * 2 });
+        const text = plain(scene.heading, { size: gx.size * 2, bold: gx.numberBold, italics: false, font: gx.numberFont || undefined });
         body.push(new Paragraph({
           heading: HEADINGS[sceneLevel],
           alignment: gx.align === "left" ? AlignmentType.LEFT : AlignmentType.CENTER,
@@ -462,7 +464,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         document: { run: { font: opts.font, size: opts.fontSize * 2 } },
         ...headingStyles(opts, typeset),
       },
-      paragraphStyles: styles(opts, typeset),
+      paragraphStyles: styles(opts, typeset, book.gamebook),
     },
     sections,
   });

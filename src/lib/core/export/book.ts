@@ -56,6 +56,14 @@ function linkRuns(items: Run[], bold: boolean, clickable: boolean): Run[] {
   return out;
 }
 
+/** A block with its text at `size` points. */
+function sizeRuns(b: Block, size: number): Block {
+  const fix = (items: Run[]) => items.map((r) => ({ ...r, size }));
+  if (b.type === "table") return { ...b, header: b.header.map(fix), rows: b.rows.map((row) => row.map(fix)) };
+  if ("runs" in b) return { ...b, runs: fix(b.runs) };
+  return b;
+}
+
 /** The blocks with their references' markers turned into links. */
 export function applyLinks(blocks: Block[], bold: boolean, clickable: boolean): Block[] {
   const fix = (items: Run[]) => linkRuns(items, bold, clickable);
@@ -125,6 +133,8 @@ export interface Run {
   image?: BookImage;
   /** In a gamebook, the anchor of the paragraph a reference leads to, as "p12". */
   link?: string;
+  /** Size in points, where it differs from the text's, as in a gamebook's boxes. */
+  size?: number;
 }
 
 /** An image of the text, with the size it shows at, in pixels (96 to the inch). */
@@ -550,7 +560,10 @@ export async function buildBook(
     const parsed = markdownToBlocks(typeset(text), aligns, images);
     const colors = gx.boxes === "gray" ? marked.colors.map(() => "#868e96") : marked.colors;
     const blocks = gamebook
-      ? applyLinks(applyBoxes(parsed, colors), gx.bold, gx.links).map((b) => (b.box && gx.boxes !== "none" ? { ...b, box: { ...b.box, id: b.box.id + boxBase } } : { ...b, box: undefined }))
+      ? applyLinks(applyBoxes(parsed, colors), gx.bold, gx.links).map((b) => {
+          const sized = b.box && gx.boxSize ? sizeRuns(b, gx.boxSize) : b;
+          return sized.box && gx.boxes !== "none" ? { ...sized, box: { ...sized.box, id: sized.box.id + boxBase } } : { ...sized, box: undefined };
+        })
       : parsed;
     boxBase += marked.colors.length;
     words += countWords(blocks);

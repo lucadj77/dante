@@ -219,10 +219,21 @@ export interface GamebookExportSettings {
   bold: boolean;
   /** Boxes in their type's colour, in grey, or as plain text. */
   boxes: "color" | "gray" | "none";
+  /** The text of the paragraphs justified, or ragged on the right. */
+  justify: boolean;
+  /** First-line indent of the text, in centimetres. */
+  indent: number;
+  /** Space after each paragraph of text, in points. */
+  spacing: number;
+  /** Size of the text in boxes, in points; 0 for the size of the text. */
+  boxSize: number;
+  /** The number in bold, and in a font of its own ("" for the font of the text). */
+  numberBold: boolean;
+  numberFont: string;
 }
 
 export function defaultGamebookExport(): GamebookExportSettings {
-  return { heading: "number", prefix: "", align: "center", size: 18, separator: "pageBreak", symbol: "✦", links: true, bold: true, boxes: "color" };
+  return { heading: "number", prefix: "", align: "center", size: 18, separator: "pageBreak", symbol: "✦", links: true, bold: true, boxes: "color", justify: true, indent: 0.5, spacing: 0, boxSize: 0, numberBold: true, numberFont: "" };
 }
 
 export function defaultGamebook(language = "it"): GamebookSettings {
@@ -628,6 +639,10 @@ export function parseSettings(text: string): NovelSettings {
   if (!["pageBreak", "blankLine", "characters"].includes(gx.separator)) gx.separator = "pageBreak";
   if (!["color", "gray", "none"].includes(gx.boxes)) gx.boxes = "color";
   if (!(gx.size >= 6 && gx.size <= 72)) gx.size = 18;
+  if (!(gx.indent >= 0 && gx.indent <= 5)) gx.indent = 0.5;
+  if (!(gx.spacing >= 0 && gx.spacing <= 48)) gx.spacing = 0;
+  if (!(gx.boxSize >= 0 && gx.boxSize <= 48)) gx.boxSize = 0;
+  if (typeof gx.numberFont !== "string") gx.numberFont = "";
   settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;

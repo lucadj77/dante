@@ -39,6 +39,7 @@ function run(r: Run, maxWidth = 6.5): string {
   if (r.lineBreak) return "#linebreak()";
   if (r.code) return `#raw(${str(r.text)})`;
   let out = str(r.text);
+  if (r.size) out = `text(size: ${r.size}pt, ${out})`;
   if (r.italic) out = `emph(${out})`;
   if (r.bold) out = `strong(${out})`;
   if (r.strike) out = `strike(${out})`;
@@ -90,7 +91,10 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   emit(`#set document(title: ${str(title)}, author: (${book.authors.map((a) => `${str(a)},`).join(" ")}))`);
   emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: ${cm(margin)}, header: none, footer: none)`);
   emit(`#set text(font: ${fonts(opts.font)}, size: ${size}pt, lang: ${str(book.language.slice(0, 2) || "en")}, hyphenate: ${typeset}, top-edge: "ascender", bottom-edge: "descender")`);
-  emit(`#set par(justify: ${typeset}, leading: ${+leading.toFixed(2)}em, spacing: ${+leading.toFixed(2)}em, first-line-indent: ${cm(opts.indent)})`);
+  // A gamebook's paragraphs have their own alignment, indent and space after.
+  const gx = book.gamebook;
+  const spacing = `${+leading.toFixed(2)}em${gx?.spacing ? ` + ${gx.spacing}pt` : ""}`;
+  emit(`#set par(justify: ${gx ? gx.justify : typeset}, leading: ${+leading.toFixed(2)}em, spacing: ${spacing}, first-line-indent: ${cm(gx ? gx.indent : opts.indent)})`);
   // The text keeps the quotes the author or the typography settings chose.
   emit(`#set smartquote(enabled: false)`);
   const headingSizes = typeset ? [1.5, 1.3, 1, 1, 1, 1] : [1, 1, 1, 1, 1, 1];
@@ -250,7 +254,8 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       started = true;
       if (scene.heading && book.gamebook) {
         const gx = book.gamebook;
-        const body = `#text(size: ${gx.size}pt)[${lines(scene.heading)}]`;
+        const font = gx.numberFont ? `font: ${fonts(gx.numberFont)}, ` : "";
+        const body = `#text(${font}size: ${gx.size}pt, weight: ${gx.numberBold ? '"bold"' : '"regular"'}, style: "normal")[${lines(scene.heading)}]`;
         emit(`#heading(level: ${sceneLevel}, outlined: false)[${gx.align === "left" ? `#align(left)[${body}]` : body}]${scene.anchor ? ` <${scene.anchor}>` : ""}`);
       } else if (scene.heading) emit(`#heading(level: ${sceneLevel})[${lines(scene.heading)}]`);
       blocks(scene.blocks, sceneLevel);
