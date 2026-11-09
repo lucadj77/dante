@@ -103,13 +103,30 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
     let previous: Block | undefined;
     // A gamebook's box goes back to the plugin's fenced div, which Pandoc reads as a style.
     let open: number | null = null;
+    // A callout goes back to "> [!type] Title" and its blocks to quoted lines.
+    let callout: number | null = null;
+    /** True right after the callout's first line, which the first block follows without a ">" line. */
+    let calloutHead = false;
     for (const block of items) {
+      const c = block.box?.callout;
+      if (c && callout !== block.box!.id) {
+        if (open !== null) {
+          out[out.length - 1] += "\n:::";
+          open = null;
+        }
+        add(`> [!${c.type}]${c.written ? ` ${c.written}` : ""}`);
+        callout = block.box!.id;
+        calloutHead = true;
+        previous = block;
+        continue;
+      }
+      if (!c) callout = null;
       // As the plugin writes it: the open line right above the first line, ":::" right under the last.
       if (open !== null && block.box?.id !== open) {
         out[out.length - 1] += "\n:::";
         open = null;
       }
-      const opening = !!block.box && open === null;
+      const opening = !!block.box && !c && open === null;
       const before = out.length;
       if (block.type === "heading") add(heading(sceneLevel + block.level, block.runs.map((r) => r.text).join("")));
       else if (block.type === "quote") add(`> ${runs(block.runs)}`.replace(/\n/g, "\n> "));
@@ -136,6 +153,11 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
       }
       else if (block.runs.length && block.runs.every((r) => r.code)) add("```\n" + block.runs.map((r) => r.text).join("").replace(/\n$/, "") + "\n```");
       else add(setAlignment(runs(block.runs), block.align ?? null));
+      if (c && out.length > before) {
+        const quoted = out.splice(before).join("\n\n").split("\n").map((line) => (line ? `> ${line}` : ">")).join("\n");
+        out[out.length - 1] += `${calloutHead ? "\n" : "\n>\n"}${quoted}`;
+        calloutHead = false;
+      }
       if (opening && out.length > before) {
         out[before] = `::: {custom-style="box"}\n${out[before]}`;
         open = block.box!.id;

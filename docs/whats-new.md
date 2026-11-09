@@ -10,6 +10,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+- **Callouts in the export**: blocks that start with `> [!note] Title` become a coloured frame with the title in bold in Word, PDF and EPUB; before, they came out as quotes starting with “!note”. In exported Markdown they stay callouts.
+
 ## 1.2.0-beta.1 · November 9, 2026
 
 ### New
