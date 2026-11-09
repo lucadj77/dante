@@ -630,7 +630,7 @@ Due accortezze:
 
 Obsidian crea la sua cartella `.obsidian/`, che Dante ignora. Un file rinominato in Obsidian senza prefisso numerico finisce in fondo al suo capitolo.
 
-Anche un assistente di intelligenza artificiale che lavora sui file (Claude Code, Codex, Cursor e simili) può leggere e modificare un progetto di Dante. Perché rispetti le stesse regole (numeri nei nomi, note cartella, collegamenti, commenti e revisioni, file in `.dante/` da non toccare), dagli la skill in [`skills/dante`](../skills/dante/SKILL.md): un file di istruzioni in inglese, con uno script che mostra il manoscritto in ordine e segnala i problemi di struttura. In Claude Code basta copiare la cartella `skills/dante` in `.claude/skills/` del progetto o della tua cartella utente; con altri assistenti si incolla o si allega `SKILL.md`.
+Anche un assistente di intelligenza artificiale che lavora sui file (Claude Code, Codex, Cursor e simili) può leggere e modificare un progetto di Dante. Perché rispetti le stesse regole (numeri nei nomi, note cartella, collegamenti, commenti e revisioni, file in `.dante/` da non toccare), dagli la skill in [`skills/dante`](../skills/dante/SKILL.md): un file di istruzioni in inglese, valido per romanzi e libri game in qualsiasi lingua, con tre file di approfondimento (impostazioni, formattazione, libri game) e uno script che mostra il manoscritto in ordine, con parole e caratteri spazi inclusi, e segnala i problemi di struttura. In Claude Code basta copiare la cartella `skills/dante` in `.claude/skills/` del progetto o della tua cartella utente; nelle app di Claude si carica la cartella compressa in zip tra le skill; con altri assistenti si incolla o si allega `SKILL.md`.
 
 ## 15. Scorciatoie da tastiera
 

@@ -1,76 +1,101 @@
 ---
 name: dante-novel-project
-description: Read, write and reorganize a novel kept as a Dante project (a folder with dante.yaml and numbered Markdown scenes) without breaking it for Dante or Obsidian.
+description: Read, write, revise and reorganize a novel or gamebook kept as a Dante project (a folder with dante.yaml and Markdown scenes or numbered paragraphs) without breaking it. Use when a folder holds dante.yaml or the user mentions Dante.
 ---
 
-# Working on a Dante novel project
+# Working on a Dante project
 
 [Dante](https://github.com/lucadj77/dante) is a writing app for novelists. A Dante project is
 an ordinary folder of Markdown files: the files on disk are the only source of truth, and the
-app rebuilds everything (tree, chapter numbers, statistics, views) from them. The same folder
-opens in Obsidian and is often shared through Dropbox or Google Drive with co-authors.
+app rebuilds everything (tree, chapter numbers, statistics, views, checks) from them. The
+folder is often shared with co-authors through Dropbox or Google Drive, and may be open in
+Dante while you work.
 
-This means you can work on a novel by editing files directly, but only if you follow the
-conventions below. Breaking them does not corrupt anything, but it scrambles the order of the
-book, turns scenes into chapter properties, loses links or overwrites a co-author's work.
+You can therefore work on a book by reading and editing files directly, as long as you follow
+the conventions below. Breaking them does not corrupt anything, but it scrambles the order of
+the book, turns scenes into chapter properties, loses links, or overwrites a co-author's work.
+
+This file covers what every task needs. Read the reference files when the task touches them:
+
+| File | Read it when |
+| --- | --- |
+| `references/dante-yaml.md` | changing `dante.yaml`: headings, goals, pages, cover, tree colours, export, typography |
+| `references/markup.md` | writing or converting text with images, tables, alignment, blank lines, callouts, embeds, diagrams |
+| `references/gamebook.md` | `dante.yaml` has `gamebook: enabled: true`, or the user talks about a gamebook, paragraphs, choices |
+
+`scripts/outline.py` prints the manuscript in reading order with lengths and warnings (see
+"Tools" at the end). Run it before and after any structural change.
 
 ## Recognizing a project
 
-A folder is a Dante project when it holds `dante.yaml` (and usually a `Title.dante` launcher
-file, whose content does not matter). Always read `dante.yaml` first: folder names are in the
-novel's language and can be renamed, so never assume `Manuscript/`.
+A folder is a Dante project when it holds `dante.yaml` (often next to a `<Title>.dante`
+launcher file, whose content does not matter). Always read `dante.yaml` first: folder names
+are in the book's language and can be renamed, so never assume `Manuscript/`.
 
 ```yaml
 title: The Return
+subtitle: A novel
 authors: [Ada Rossi]
-language: it                # the novel's language (BCP 47), not the interface's
+language: en                # the book's language (BCP 47), not the interface's
 folders:
-  manuscript: Manoscritto   # scenes and chapters
-  codex: Bibbia             # the Story Bible: characters, places… (called codex in the file)
-  research: Ricerca
-  laboratory: Laboratorio   # drafts, ideas, discarded material
-  views: Viste              # view definitions (YAML)
-  templates: Modelli        # templates of note types
+  manuscript: Manuscript    # scenes and chapters (or a gamebook's paragraphs)
+  codex: Story Bible        # characters, places… (called codex in the file)
+  research: Research
+  laboratory: Laboratory    # drafts, outlines, discarded material
+  views: Views              # tables and boards (YAML)
+  templates: Templates      # templates of scenes and note types
 structure:
   parts: false              # true: the first level of folders in the manuscript are parts
+goals: { unit: characters, words: 480000, deadline: 2027-03-31, daily: 3000, days: [1, 2, 3, 4, 5] }
 ```
 
-Default folder names: English `Manuscript`, `Story Bible`, `Research`, `Laboratory`, `Views`,
-`Templates`; Italian `Manoscritto`, `Bibbia`, `Ricerca`, `Laboratorio`, `Viste`, `Modelli`;
-Spanish and French have their own. A missing key falls back to the default of the language.
+Default folder names by language (a missing key falls back to them):
 
-If `scripts/outline.py` sits next to this file, run `python3 scripts/outline.py <project>` to
-get the manuscript in reading order with titles, kinds, word counts and structural warnings,
-and `--text` to print the whole novel in order. Otherwise build the order yourself as
-described below.
+| | manuscript | codex | research | laboratory | views | templates |
+| --- | --- | --- | --- | --- | --- | --- |
+| en | Manuscript | Story Bible | Research | Laboratory | Views | Templates |
+| it | Manoscritto | Bibbia | Ricerca | Laboratorio | Viste | Modelli |
+| es | Manuscrito | Biblia | Investigación | Laboratorio | Vistas | Plantillas |
+| fr | Manuscrit | Bible | Recherche | Laboratoire | Vues | Modèles |
+
+Speak to the writer in their language, and write property names and values in the language
+the project already uses (`status: draft` in an English book, `stato: bozza` in an Italian one).
+Only the properties listed under "Properties with a meaning for Dante" are English everywhere.
 
 ## The golden rules
 
-1. **Never touch Dante's own data**: `.dante/` (snapshots, presence, writing log), `.trash/`,
-   `export/` (generated books), `.obsidian/`. Read them if useful; do not edit or delete.
+1. **Never touch Dante's own data**: `.dante/` (snapshots, presence, writing log, history,
+   trash log, gamebook operations), `.trash/`, `export/` (generated books), and other apps'
+   hidden folders. Read them if useful; do not edit or delete, except as described below
+   (adding a snapshot, moving to the trash).
 2. **Check presence before editing a scene** (see "Co-authors"): if someone else has that file
    open in Dante, do not write it.
-3. **Keep order in names**: every scene file and chapter folder in the manuscript starts with
-   a number and a space (`010 Arrival.md`). Never drop, reformat or duplicate the prefix.
+3. **Keep order in names**: every scene file and chapter folder in a novel's manuscript starts
+   with a number and a space (`010 Arrival.md`). Never drop, reformat or duplicate the prefix.
+   (Gamebooks are different: the number is a property, never in the name. See
+   `references/gamebook.md`.)
 4. **Titles are not in the text**: do not write `# Chapter 3` or `# Scene title` at the top of a
-   scene. Chapter and part headings ("Chapter 3: The letter") are computed by Dante from
-   `dante.yaml`, the folder order and the titles.
+   scene. Headings such as "Chapter 3: The letter" are computed from `dante.yaml`, the folder
+   order and the titles.
 5. **Respect typography as typed**: Dante converts quotes, dialogue dashes, apostrophes and
    ellipses only when exporting, by the project's settings. Do not "fix" `"…"`, `«…»`, `—`
    or `'` in the files unless you are asked to.
-6. **Keep frontmatter valid YAML**: quote any value containing `: `, `#`, or starting with `[`,
-   `{`, `*`, `&`, `!`, `|`, `>`, `%`, `@`; links in properties are always quoted (`"[[Lucia]]"`).
-   Never remove properties you do not understand.
+6. **Keep frontmatter valid YAML**: quote any value containing `: ` or ` #`, or starting with
+   `[`, `{`, `*`, `&`, `!`, `|`, `>`, `%`, `@`, `` ` ``; links in properties are always quoted
+   (`"[[Lucia]]"`). Never remove properties you do not understand.
 7. **Leave CriticMarkup alone unless asked**: `{++ ++}`, `{-- --}`, `{~~ ~> ~~}`, `{== ==}`,
    `{>> <<}` are co-authors' revisions and comments. Do not accept, reject, or delete them on
    your own, and do not edit text inside someone else's pending revision.
 8. **Renaming or moving fixes links**: when a note or scene changes name, update every
    `[[wikilink]]` that pointed to it across the project (see "Links").
-9. **Delete by moving to `.trash/`** at the top of the project, never with a real delete.
+9. **Delete by moving to `.trash/`**, never with a real delete (see "Deleting").
 10. **When the writer wants to review your changes**, write them as signed revisions
     (see "Comments and revisions") instead of editing the text silently.
+11. **Measure the way the project does**: when you report a length or set a goal, use the
+    project's unit (`goals.unit`: `words`, or `characters` with spaces included). When unsure,
+    give both. Italian publishing counts characters with spaces, so many projects do.
 
-## The manuscript
+## The manuscript of a novel
 
 ```text
 Manuscript/
@@ -89,20 +114,20 @@ Manuscript/
   every folder is a chapter; with `parts: true`, folders directly in the manuscript are parts
   and folders inside them chapters. A folder note can say otherwise with `kind`.
 - **Order**: siblings are sorted by the number before the first space, as a number
-  (`5` < `010` < `100`), not by text. Names without a number go last. Numbers go in steps
-  of 10 and are usually three digits wide (`010`, `020`, … `990`, then `1000`); `000` is
-  fine for a prologue. The number never appears in the book.
+  (`5` < `010` < `100`), not as text. Names without a number go last. Numbers go in steps of
+  10 and are usually three digits wide (`010`, `020`, … `990`, then `1000`); `000` is fine for
+  a prologue. The number never appears in the book.
 - **Folder note**: a note inside a folder with exactly the folder's name
-  (`010 Return/010 Return.md`) holds the chapter's or part's properties. It is not a scene.
-  Consequently **a scene must never have the same name as its folder**. Folder notes exist
-  only when there is something to store; do not create empty ones.
+  (`010 Return/010 Return.md`) holds the chapter's or part's properties. It is not a scene and
+  its body is not part of the book. Consequently **a scene must never have the same name as
+  its folder**. Folder notes exist only when there is something to store (a part always has
+  one; a chapter only for `kind`, `title`, `synopsis`, `goal`…): do not create empty ones.
 - **Hidden**: files and folders whose names start with `.` or `_` are not part of the
   manuscript. Conflict copies (see below) are not scenes either.
 - **Loose scenes**: a scene directly in the manuscript or in a part, outside chapters, is
   allowed but flagged; the export appends it to the previous chapter. Avoid creating them.
 - **Reading order**: depth first, folders and scenes sorted together by number. A chapter's
-  text is its scenes in order; there is no chapter-level text besides the folder note's
-  properties.
+  text is its scenes in order.
 
 ### Scene files
 
@@ -113,15 +138,28 @@ synopsis: "Two thugs stop the priest: the wedding must not happen."
 status: draft
 pov: "[[Don Abbondio]]"
 date: 1628-11-07
+goal: 3000
 ---
-The scene's prose starts here, in Markdown paragraphs separated by a blank line.
+The scene's prose starts here, in Markdown paragraphs separated by one empty line.
 
-A line with only `***`, `---` or `* * *` is a break inside the scene.
+A second paragraph. *Italic*, **bold**, ==highlight==, ~~strike~~.
+
+***
+
+A line with only `***`, `---` or `* * *` is a break inside the scene, printed as a separator.
 ```
 
-The body is plain prose in Markdown: paragraphs, `*italic*`, `**bold**`, `~~strike~~`,
-`==highlight==`, block quotes, lists, tables, images and wikilinks. Headings inside a scene are
-exported as headings, so use them only when the writer wants a heading inside the text.
+- Paragraphs are separated by **exactly one** empty line. Extra empty lines vanish in the book;
+  a visible blank line is a paragraph holding only `&nbsp;` (see `references/markup.md`).
+- A single line break inside a paragraph (verse, letters) is a line ending with a backslash
+  or two spaces; prefer a backslash, which is visible.
+- Headings inside a scene are exported as headings: use them only when the writer wants one
+  inside the text.
+- A new scene starts from the scene template, `<Templates>/<Scene>.md` (`Templates/Scene.md`,
+  `Modelli/Scena.md`, `Plantillas/Escena.md`, `Modèles/Scène.md`) when it exists, with
+  `{{title}}` and `{{date}}` (YYYY-MM-DD) filled in. Its properties are the ones "for all
+  scenes". Without a template, start with the project's status property set to its first
+  value when the project uses one.
 
 ### Properties with a meaning for Dante
 
@@ -130,15 +168,19 @@ Their names are English in every language:
 | Property | Where | Meaning |
 | --- | --- | --- |
 | `title` | scene, folder note | title shown everywhere, when it differs from the file name |
-| `synopsis` | scene, folder note | a few lines on what happens |
+| `synopsis` | scene, folder note | a few lines on what happens; shown in views and boards |
+| `goal` | scene, folder note | target length, in the project's unit (`goals.unit`) |
 | `kind` | folder note | `part`, `chapter`, `prologue` or `epilogue` |
-| `numbered` | folder note | `false`: no number, not counted (like a prologue) |
+| `numbered` | folder note | `false`: no number, not counted (an interlude) |
 | `published_title` | scene, folder note | title used only in the exported book |
 | `type` | Story Bible note | the note's type id (`character`, `place`…) |
 | `aliases` | any note | other names of the note, for links and mention counts |
 
-Any other property is the writer's own (`status`, `pov`, `date`, in any language). Typed
-properties are defined in `dante.yaml`; respect their kind and allowed values:
+The stage of work is the property `status` (`stato`, `estado`, `statut` in the other
+languages); its allowed values, in order from first to last stage, are in `dante.yaml`.
+Any other property is the writer's own (`pov`, `date`, `place`, in any language).
+
+**Typed properties** are defined in `dante.yaml`; respect their kind and allowed values:
 
 ```yaml
 properties:
@@ -148,26 +190,41 @@ properties:
   pov:
     kind: link
     note_type: character               # value is a "[[link]]" to a character note
-  date: date                           # short for { kind: date }: YYYY-MM-DD
+  date: date                           # short for { kind: date }
 ```
 
-Write values as Obsidian does: numbers bare, `true`/`false`, dates `YYYY-MM-DD`, YAML lists,
-links as quoted `"[[Name]]"`.
+| Kind | Written in the file as |
+| --- | --- |
+| `text` | plain text; one of `values` when they are given |
+| `number` | `42` (bare) |
+| `date` | `2026-10-15` (`YYYY-MM-DD`; a timeline also accepts `1628`, `1628-11`, negative years, or a plain day number) |
+| `checkbox` | `true` / `false` |
+| `list` | YAML list, items from `values` when given |
+| `link` | `"[[Name]]"`, quoted; a list of them for several |
 
-## Common operations
+A value that does not fit its definition is kept and flagged by Dante, not lost; still, do
+not write one. To add a property "for all scenes", add it with an empty value to the scene
+template; scenes get it in their file only when given a value. To rename a property across
+the project, rename the key in every frontmatter (keeping value and position), in
+`dante.yaml` (`properties`, `tree.dot`, `tree.colors`, type `properties`) and in every view
+(`filter`, `sort`, `group_by`, `fields`, `date`, `end`, `widths`). Never rename the status
+property or the English ones above.
 
-Prefer asking the writer to do large restructurings in Dante (it renames and relinks
-atomically); do them by hand only when asked, following these recipes.
+## Common operations on a novel
 
-**Add a scene** at a position: pick a number between its neighbours (between `020` and
-`030`, use `025`); at the end, last number + 10. Create `NNN Title.md` with the prose. If
-there is no free number between the neighbours, renumber the siblings from that point in
-steps of 10, renaming the fewest files possible.
+Large restructurings are safest done by the writer in Dante, which renames and relinks
+atomically. Do them by hand when asked, following these recipes, and run the outline script
+afterwards.
 
-**Add a chapter**: create the folder `NNN Title/` with at least one scene inside. Add a
-folder note only for properties (`kind: prologue`, `title`, `synopsis`…). With parts on, a
-chapter goes inside a part folder; a folder created directly in the manuscript is a part
-unless its folder note says `kind: chapter`.
+**Add a scene** at a position: pick a number between its neighbours (between `020` and `030`,
+use `025`); at the end, last number + 10. Create `NNN Title.md` from the template. If there is
+no free number, renumber the siblings from that point in steps of 10, renaming the fewest
+files possible.
+
+**Add a chapter**: create the folder `NNN Title/` with at least one scene inside. Add a folder
+note only for properties (`kind: prologue`, `title`, `synopsis`…). With parts on, a chapter
+goes inside a part folder; a folder created directly in the manuscript is a part unless its
+folder note says `kind: chapter`.
 
 **Reorder**: change only the numbers needed (rename, keeping the title). Two siblings must not
 share a number.
@@ -177,64 +234,83 @@ there; make sure its name differs from the destination folder's name.
 
 **Rename a scene or chapter**: either change the title in the file or folder name (keep the
 number), or set the `title` property and leave the name alone. Renaming a folder means
-renaming its folder note to the same new name. Then fix links (below). Characters
+renaming its folder note to the same new name. Snapshots follow the scene: move
+`.dante/snapshots/<old path without .md>/` to the new path too. Then fix links. Characters
 `\ / : * ? " < > | # ^ [ ]` cannot be in names; put such a title in the `title` property.
 
 **Split a scene**: keep the first half in the file, create the second half as the next scene.
-**Merge scenes**: append the later scene's body to the first (blank line between), move the
-later file to `.trash/`, and redirect links that pointed to it.
+**Split a chapter**: create the next chapter folder and move the following scenes into it.
+**Merge scenes**: append the later scene's body to the first (one empty line between), move
+the later file to the trash, and redirect links that pointed to it. A scene with a conflict
+copy must be settled first.
 
-**Delete**: move the file or folder to `.trash/<name>` (add ` 2`, ` 3` if taken), with its
-conflict copies.
+**Turn a chapter into a prologue, epilogue or interlude**: in its folder note set
+`kind: prologue` / `kind: epilogue`, or `numbered: false`. The following chapters renumber
+themselves; nothing else changes.
 
-**Read or summarize the novel**: walk the manuscript in reading order, skipping folder notes;
-the chapter title is the folder's `title` property or the folder name without its number.
+**Read, summarize or analyse the novel**: walk the manuscript in reading order, skipping folder
+notes; the chapter title is the folder note's `title` or the folder name without its number.
+Leave out CriticMarkup comments, read pending revisions as accepted (the default export), and
+say so if it matters.
+
+## Deleting
+
+Move the file or folder to `.trash/<name>` at the top of the project (add ` 2`, ` 3` before the
+extension if the name is taken), together with its conflict copies. Then record where it came
+from in `.dante/trash.json`, so Dante can put it back (keep the other entries):
+
+```json
+{ "010 Arrival.md": { "from": "Manuscript/010 Return/010 Arrival.md", "date": "2026-11-09T10:12:00.000Z" } }
+```
+
+An item in `.trash/` with no entry is restored to the Laboratory. Never empty the trash.
 
 ## The Story Bible, Research and Laboratory
 
 - **Story Bible** (`folders.codex`): one note per character, place, object, event, group,
   plotline or other type. A note's type is its `type` property, or else the type whose
-  `folder` it sits in (`Bibbia/Personaggi/` → `character`). Types are defined in
-  `dante.yaml`:
+  `folder` it sits in (`Story Bible/Characters/` → `character`). Types are in `dante.yaml`:
 
   ```yaml
   types:
-    character: { name: Personaggio, folder: Personaggi, icon: "👤", properties: [ruolo, età, aliases] }
+    character: { name: Character, folder: Characters, icon: "👤", properties: [role, age, appearance, aliases] }
+    creature:  { name: Creature,  folder: Creatures,  icon: "🐉", properties: [habitat] }
   ```
 
-  A new note of a type goes in its folder, starts from `Templates/<type name>.md` when it
-  exists (`{{title}}` and `{{date}}` filled in) or else from the type's suggested properties,
-  and gets `type: <id>` written in its frontmatter.
-- **Research** and **Laboratory** hold free notes and files in any folder structure. Images
-  added from Dante go to `<Research>/Attachments/` (`Allegati`, `Adjuntos`, `Pièces jointes`).
-- Note names need no numeric prefix outside the manuscript.
+  Default types: `character`, `place`, `object`, `event`, `group`, `plotline`, with names and
+  folders in the book's language (Personaggi, Luoghi, Oggetti, Eventi, Gruppi, Plotline in
+  Italian). A new note goes in its type's folder, starts from `<Templates>/<type name>.md`
+  when it exists (`{{title}}`, `{{date}}` filled in) or else from the type's suggested
+  properties (empty), and gets `type: <id>` in its frontmatter.
+- **Card images**: the board of the Story Bible shows a note's first image: a property holding
+  one (`portrait: "[[Lucia.jpg]]"`) or else the first image in the text.
+- **Mentions**: Dante counts and underlines a Bible note's name and aliases where the scenes
+  write them as plain words, case-sensitive and whole words only. So `aliases` matter: add
+  the forms the text really uses (`Renzo` for `Lorenzo Tramaglino`).
+- **Research** and **Laboratory** hold free notes and files in any folder structure. Images and
+  files added from Dante go to `<Research>/Attachments/` (`Allegati`, `Adjuntos`,
+  `Pièces jointes`). Notes outside the manuscript need no number prefix.
 
 ## Links and embeds
 
-Links are Obsidian wikilinks, resolved by name, case-insensitive, without `.md`:
+Links are wikilinks, resolved by file name, case-insensitive, without `.md`:
 
 ```markdown
 [[Lucia]]   [[Lucia|the girl]]   [[Lucia#Childhood]]   [[Characters/Lucia]]
-![[Lucia]]  ![[Lucia#^quote1]]   (embedded notes)
+![[Lucia]]  ![[Lucia#Childhood]]  ![[Lucia#^quote1]]      (embedded notes)
 ```
 
 - A bare name matches any note with that name; when several match, the one closest to the
   linking note wins. Use the shortest target that is unambiguous.
-- `aliases` let `[[the Unnamed]]` reach a note listing that alias, when no note has that name.
-- In a table cell an alias is written `[[Lucia\|the girl]]`.
-- After renaming or moving a note, rewrite every link that resolved to it, keeping its
-  `#section`, `|alias` and leading `!`. A link that still reaches its note is left as is.
-
-## Other markup Dante uses
-
-- **Images**: `![[photo.jpg]]`, `![[photo.jpg|300]]` (width), `![[photo.jpg|caption|300]]`,
-  `![caption|300](Attachments/photo.jpg)`.
-- **Alignment** (no Markdown equivalent): a paragraph wrapped as
-  `<span style="display:block;text-align:center">The End</span>` (`center`, `right`,
-  `justify`). Markdown inside the span still works. Do not remove these spans.
-- **Tables**: GitHub-style pipe tables; the paragraph right after a table starting with
-  `Table:` (or `Tabella:`, or just `:`) is its caption.
-- **Lists** with a hanging indent are ordinary Markdown lists.
+- An alias of exactly one note, when no note has that name, is written as
+  `[[Lorenzo Tramaglino|Renzo]]`: the text still reads "Renzo" and the link resolves in any
+  editor. Prefer that form over `[[Renzo]]`.
+- In a table cell the alias bar is escaped: `[[Lucia\|the girl]]`.
+- After renaming or moving a note, rewrite every link that resolved to it, in text and in
+  properties, keeping its `#section`, `|alias` and leading `!`. A link that still reaches its
+  note is left as is.
+- A link to a note that does not exist is allowed (Dante offers to create it); do not create
+  notes for such links unless asked.
 
 ## Comments and revisions (CriticMarkup)
 
@@ -250,13 +326,18 @@ The door was {--closed--}{>>@Anna 2026-10-14<<}{++ajar++}{>>@Anna 2026-10-14<<}.
   followed by a signed addition (`{~~old~>new~~}` is also read), **highlight + comment**
   `{==text==}{>>@Name date: comment<<}`, **plain comment** `{>>@Name date: comment<<}`.
 - A **reply** is one more comment placed immediately after the previous one, with no space.
-- Sign as the name the writer tells you to use (ask if unsure; a name like `@Claude` is a
-  reasonable default) with today's date. The name may contain spaces when followed by a date.
+- Sign as the name the writer tells you to use (ask if unsure; `@Claude` or the agent's own
+  name is a reasonable default) with today's date. The name may contain spaces when followed
+  by a date.
 - To **accept** an addition keep its text without marks; to accept a deletion remove the
-  text. Rejecting does the opposite. Remove the signature comments with them. To **resolve**
+  text; rejecting does the opposite. Remove the signature comments with them. To **resolve**
   a comment thread, remove the comments and keep the highlighted text. Do this only when the
   writer asks, and only for the items they mean.
-- Never nest CriticMarkup or put a mark across a paragraph break.
+- Settling an item through Dante also writes it to the history (`.dante/history/<name>.jsonl`).
+  Do not write there; if the writer wants a record of what you settled, list it in your reply.
+- Never nest CriticMarkup or put a mark across a paragraph break. Keep marks out of
+  frontmatter, link targets and code.
+- The export drops comments and accepts or rejects pending revisions by `export.revisions`.
 
 ## Co-authors, sync and history
 
@@ -265,56 +346,77 @@ The door was {--closed--}{>>@Anna 2026-10-14<<}{++ajar++}{>>@Anna 2026-10-14<<}.
   `updated` is less than 3 minutes old, someone is editing it: do not write that file; tell
   the writer, or leave your changes as a comment elsewhere.
 - **Dante may be open**: it watches the folder and reloads changed files, so editing while it
-  runs is fine for files nobody has open. Write whole files at once rather than in many
-  small appends.
+  runs is fine for files nobody has open. Write whole files at once rather than in many small
+  appends.
 - **Conflict copies**: files such as `Scene (Anna's conflicted copy 2026-10-14).md`,
   `Scena (copia in conflitto di Anna …).md`, `Scene (1).md` next to `Scene.md`, or
   `Scene.sync-conflict-….md` are copies made by a sync service. They are not scenes; Dante
   offers to merge them. Do not edit, rename or delete them unless asked to settle the conflict.
-- **Snapshots**: `.dante/snapshots/<scene path without .md>/YYYY-MM-DDTHH-MM-SS[ name].md`
-  are earlier versions of a scene. Before a large rewrite of a scene you may add one there
-  (a copy of the file, named with the current local time and a name such as `Before AI
-  edit`); never change or delete existing ones.
-- **Writing log**: `.dante/sessions/<name>.json` counts each person's words per day. Leave it
-  alone; your edits made outside Dante are not counted, which is correct.
+- **Snapshots**: `.dante/snapshots/<scene path without .md>/YYYY-MM-DDTHH-MM-SS[ name].md` are
+  earlier versions of a scene, in local time. **Before rewriting a scene, add one** (a copy of
+  the file, named with the current time and a name such as `Before AI edit`); the writer can
+  then compare and restore it in Dante. Never change or delete existing ones.
+- **Writing log**: `.dante/sessions/<name>.json` counts each person's words and characters per
+  day. Leave it alone; edits made outside Dante are not counted, which is correct.
+- **Backups** are zip files outside the project, made by Dante; nothing to do for you.
 
-## Views
+## Views: tables, boards, timelines
 
-A view is a YAML file in the Views folder, read by Dante as a table, list, cards, kanban board
-or timeline. You may create or edit one:
+A view is a YAML file in the Views folder (`Views/Scenes by status.yaml`). Dante shows it as a
+table, list, cards, kanban board or timeline, and lets the writer edit notes from it. You may
+create or edit one:
 
 ```yaml
 type: kanban            # table, list, cards, kanban, timeline
-items: scene            # scene, chapter, note, or a type id such as character
-source: Manuscript      # folders to take notes from; omitted means the whole project
+items: scene            # scene, chapter, note, or a Bible type id such as character
+source: Manuscript      # folder or list of folders to take notes from; omitted = whole project
 filter:
   pov: Marta            # every condition must hold; a list means any of its values
 sort: -date             # "-" reverses; omitted keeps the manuscript's order
-group_by: status
-groups: [idea, draft, revised, done]
+group_by: status        # columns of the board, or groups in the other types
+groups: [idea, draft, revised, done]   # in this order, even when empty
 fields: [pov, words]    # also name, folder, type, words, chapter
-date: date              # timeline only
+date: date              # timeline only: the property with the date
 end: until              # timeline only, optional
+synopsis: false         # hide the synopsis under each item (shown by default)
+widths: {name: 320, pov: 140, lane: 260}   # column widths in pixels, set by dragging
+order: [Manuscript/010 Return/020 The house.md]   # manual order by dragging, when no sort
 ```
 
-## Settings you may be asked to change
+Chapter rows read and write their folder note and count their scenes. When Dante rewrites a
+view it drops hand-written comments, so do not rely on them. To answer questions such as
+"which scenes are still drafts" you do not need a view: read the frontmatter directly.
 
-`dante.yaml` also holds headings (`structure.part`, `structure.chapter`: `numbering` arabic,
-roman, words, ordinal or none; `label`; `showLabel`; `showTitle`; `separator`;
-`restartEachPart`), goals (`goals: {unit, words, deadline, daily, days}`; `unit` is `words` or `characters` with spaces, `words` when missing, and `words`/`daily` and the scenes' `goal` property are in that unit), pages
-(`pages: {unit, size}`), the cover, and export choices (`export.docx`, `export.typography`
-with `quotes` (`keep` in new projects: dialogue as typed), `dialogueDash`, `apostrophes`, `ellipsis`, `spaces`; `export.paratext` with
-dedication, epigraph and so on; `export.revisions: accept | reject`). Edit only the keys you
-are asked about and keep the rest of the file, comments included, exactly as it is.
+## Statistics you can compute
+
+Dante counts the text as read: without frontmatter, CriticMarkup comments, HTML tags,
+embedded images and notes, table rules, link targets (aliases count) and Markdown marks, with
+pending revisions accepted. **Characters** are characters with spaces included after
+collapsing whitespace; **words** are runs of letters and digits, joined by `'`, `’` or `-`.
+A page is `pages.size` units of `pages.unit` (by default 1,800 characters with spaces).
+Reading time uses 230 words a minute. `scripts/outline.py` counts the same way.
 
 ## Before you finish
 
-- Every scene and chapter in the manuscript still has a unique number prefix among its
-  siblings, and no scene has its folder's name.
-- Every frontmatter you touched parses as YAML.
-- No link you could have broken points to a missing note.
-- Nothing in `.dante/`, `.trash/` or `export/` changed except snapshots you added or items you
-  moved to the trash.
+- Run `python3 scripts/outline.py <project>`: no new warnings (duplicate numbers, scene named
+  like its folder, missing links, invalid YAML, scenes outside chapters).
+- Every frontmatter you touched parses as YAML (gamebook paragraphs: see their own rules).
+- Nothing in `.dante/`, `.trash/` or `export/` changed except snapshots you added, items you
+  trashed and their `trash.json` entries.
 - CriticMarkup you did not write is intact.
-- Tell the writer which files you created, renamed, moved or trashed, so they can find them
-  in Dante.
+- Tell the writer which files you created, renamed, moved or trashed, and lengths in the
+  project's unit, so they can find everything in Dante.
+
+## Tools
+
+`scripts/outline.py` (Python 3, standard library; PyYAML used when installed):
+
+```text
+python3 scripts/outline.py <project>           outline in reading order, lengths, warnings
+python3 scripts/outline.py <project> --text    the whole book's text, in order
+python3 scripts/outline.py <project> --json    the outline as JSON
+```
+
+It reads `goals.unit` and shows lengths in words and characters with spaces. For a gamebook it
+lists the paragraphs by number with where each leads, and the orphans, dead ends, duplicate
+numbers and broken references. It only reads files.

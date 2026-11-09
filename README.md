@@ -297,10 +297,13 @@ and Scrivener's synopses become the `synopsis` property (`src/lib/core/import/sc
 ## Working on a project with an AI agent
 
 [`skills/dante`](skills/dante/SKILL.md) is an agent skill (in English) that explains the
-project format to an AI coding agent such as Claude Code, so it can read, write and
-reorganize a novel without breaking it for Dante or Obsidian. `skills/dante/scripts/outline.py`
-prints the manuscript in reading order with word counts and structural warnings. For Claude
-Code, copy the folder to `.claude/skills/` in the novel's folder or in your home folder.
+project format to an AI agent such as Claude, so it can read, write, revise and reorganize a
+novel or a gamebook without breaking it: scenes and folder notes, properties, Story Bible,
+views, comments and revisions, co-authors, `dante.yaml`. The details sit in
+`skills/dante/references/`. `skills/dante/scripts/outline.py` prints the manuscript in reading
+order (a gamebook by paragraph number) with words, characters and structural warnings. For
+Claude Code, copy the folder to `.claude/skills/` in the novel's folder or in your home
+folder; for Claude apps, upload the folder as a zip in the skills settings.
 
 ## Development
 
