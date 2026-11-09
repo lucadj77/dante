@@ -383,8 +383,9 @@ The tower collapses on you. Your adventure ends here.
 
 - A box that gives a value also adds it to the paragraph's property list
   (`keywords:` / `  - lantern`).
-- An ending box (😢) goes with `finale: true` in the frontmatter, and the reverse: Dante flags
-  either without the other.
+- An ending box (😢) needs `finale: true` in the frontmatter: a box without the flag is a
+  problem Dante flags. The reverse is fine: a paragraph with `finale: true` and no ending box
+  (an ending told in the prose) is not an error; at most mention it to the writer as a note.
 - A paragraph that **asks** for a value lists it with a question mark (`keywords:` /
   `  - lantern?`), or says it in the text with the value in bold: "If you have the keyword
   **lantern**, turn to …" («Se hai la parola chiave **lanterna**, vai al …»). Values are
@@ -397,8 +398,8 @@ The tower collapses on you. Your adventure ends here.
 Dante flags these problems, so avoid creating them: **orphans** (no paragraph leads there,
 except the start), **dead ends** (no reference out and not an ending), paragraphs
 **unreachable** from the start, **duplicate numbers**, references to missing paragraphs,
-reference labels that differ from the target's number, ending boxes without `finale: true`
-(or the reverse), near-duplicate values ("lantern" and "lanterm"). Run
+reference labels that differ from the target's number, ending boxes without `finale: true`,
+near-duplicate values ("lantern" and "lanterm"). Run
 `scripts/outline.py`: for a gamebook it lists the paragraphs by number with where each comes
 from and leads to, and these problems.
 

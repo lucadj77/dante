@@ -145,6 +145,7 @@ class Report:
         self.root = root
         self.warnings = []
         self.notes = {}  # relative path -> (properties, body)
+        self.notes_minor = []  # remarks, not problems
 
     def rel(self, path):
         return os.path.relpath(path, self.root).replace(os.sep, "/")
@@ -395,6 +396,8 @@ def gamebook(report, base, folder, settings):
             report.warnings.append(f"{label}: orphan, no paragraph leads here")
         if not p["to"] and not p["ending"] and not p["endingBox"]:
             report.warnings.append(f"{label}: dead end, leads nowhere and is not an ending")
+        if p["ending"] and not p["endingBox"]:
+            report.notes_minor.append(f"{label}: finale: true without an ending box (fine if the ending is in the prose)")
         if p["endingBox"] and not p["ending"]:
             report.warnings.append(f"{label}: ending box but no finale: true")
         if p["numberType"] not in ("libero", "fisso", "relativo"):
@@ -450,7 +453,7 @@ def main(argv):
             return 0
         check_links(report, all_files(root), skip_targets={p["title"].lower() for p in ordered})
         if "--json" in argv:
-            print(json.dumps({"gamebook": True, "unit": unit, "paragraphs": ordered, "warnings": report.warnings}, ensure_ascii=False, indent=2))
+            print(json.dumps({"gamebook": True, "unit": unit, "paragraphs": ordered, "warnings": report.warnings, "notes": report.notes_minor}, ensure_ascii=False, indent=2))
             return 0
         print(f"{title} · gamebook in {manuscript}/ · {len(paragraphs)} paragraphs · start {integer(options.get('start')) or 1} · unit {unit}")
         for p in ordered:
@@ -509,6 +512,10 @@ def main(argv):
 
 
 def finish(report):
+    if report.notes_minor:
+        print("\nNotes (minor, not errors):")
+        for note in report.notes_minor:
+            print(f"- {note}")
     if report.warnings:
         print("\nWarnings:")
         for warning in report.warnings:

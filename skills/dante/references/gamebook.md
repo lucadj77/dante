@@ -144,7 +144,8 @@ Dante follows the references from the start paragraph and checks what the reader
 
 Orphan (no paragraph leads there), dead end (leads nowhere and is not an ending), unreachable
 from the start, duplicate number, link without a number, reference to a missing paragraph,
-ending box in a paragraph without `finale: true` or the reverse, reference label different from
+ending box in a paragraph without `finale: true` (`finale: true` without a box is allowed: at
+most a minor note), reference label different from
 the target's number, possible duplicates in the register (values differing by one or two
 letters, such as "moon" and "mooon"). Before a shuffle Dante also lists paragraph numbers
 written as plain text ("turn to 12", "section 5"), which a shuffle cannot update.
