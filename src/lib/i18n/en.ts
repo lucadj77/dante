@@ -1306,14 +1306,14 @@ export const en = {
   "gamebookView.warning.endingBox": "Unmarked ending",
   "gamebookView.allGood": "No problems found.",
   "gamebookView.state": "Game state",
-  "gamebookView.stateHint": "In the properties {properties} a value gives the reader something («scholar»), the same value with a question mark marks the paragraph that asks whether they have it («scholar?»). The check follows the references from the first paragraph.",
+  "gamebookView.stateHint": "Dante reads what the reader gets and what is asked of them in two ways. In the properties {properties}, a value gives something («scholar») and the same value with a question mark marks the paragraph that asks whether they have it («scholar?»); a value counts in any of these properties. In the text, an Italian sentence such as «Segna la parola chiave **lavanda**» or «Cerchia la caratteristica **studioso**» gives, one such as «Se hai la parola chiave **lavanda**» asks (with several values, one is enough). The check follows the references from the first paragraph.",
   "gamebookView.stateGood": "Every value asked for can be obtained before getting there.",
   "gamebookView.state.neverGiven": "Asked for but never given",
-  "gamebookView.state.neverGivenHint": "No paragraph gives this value: perhaps it is spelled differently where it is given.",
+  "gamebookView.state.neverGivenHint": "A value with a question mark that no paragraph gives, in the properties or in the text: perhaps it is spelled differently where it is given.",
   "gamebookView.state.unobtainable": "Asked for before it can be had",
   "gamebookView.state.unobtainableHint": "The value is given elsewhere, but in no paragraph the reader can pass through before getting here: the way that needs it can never be taken.",
   "gamebookView.state.neverAsked": "Given but never asked for",
-  "gamebookView.state.neverAskedHint": "Just so you know: no paragraph asks for this value with a question mark. That may be fine (for a final score, say).",
+  "gamebookView.state.neverAskedHint": "Just so you know: no paragraph asks for this value, with a question mark or with a sentence such as «Se hai…». That may be fine (for a final score, say).",
   "gamebookView.noProperties": "No box type writes to a property: set it in Settings, Gamebook.",
   "gamebookView.noValues": "No values.",
   "gamebookView.duplicates": "Possible duplicates",
@@ -1321,6 +1321,7 @@ export const en = {
   "status.gamebookOne": "1 problem",
   "status.gamebookNone": "no problems",
   "tip.status.gamebook": "Gamebook\n{details}\nClick to open the checks.",
+  "gamebookView.inText": "in the text",
 } as const;
 
 export type MessageKey = keyof typeof en;

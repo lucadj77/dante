@@ -232,7 +232,7 @@
                 {#each list as s, i (i)}
                   {@const x = byPath.get(s.path)}
                   <li>
-                    <span class="value">{s.value}</span> <span class="muted">({s.property})</span> ·
+                    <span class="value">{s.value}</span> <span class="muted">({s.property || t("gamebookView.inText")})</span> ·
                     <button class="link" onclick={() => open(s.path)}>{x?.number} · {x?.title}</button>
                   </li>
                 {/each}

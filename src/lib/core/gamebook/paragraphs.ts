@@ -7,6 +7,7 @@ import { sceneSize } from "../statistics";
 import { findBoxes, withoutBoxes, type Box, type BoxType } from "./boxes";
 import { readDocument, readList, readScalar, unquote } from "./frontmatter";
 import { findWikiLinks, linkForm, type WikiLink } from "./links";
+import { stateInText, type SaidState } from "./check";
 
 /** Frontmatter keys, as the plugin and Missione Cavaliere write them. */
 export const KEYS = {
@@ -57,6 +58,8 @@ export interface Paragraph {
   /** Values of the frontmatter lists, by key, for the boxes' properties and the register. */
   lists: Record<string, string[]>;
   note: string;
+  /** What the prose gives the reader and asks of them, as in "Segna la parola chiave **x**". */
+  said: SaidState;
 }
 
 export function titleOf(path: string): string {
@@ -125,6 +128,7 @@ export function readParagraph(path: string, text: string, options: ReadOptions):
     bareLinks,
     lists,
     note: unquote(readScalar(frontmatter, KEYS.note) ?? ""),
+    said: stateInText(body),
   };
 }
 

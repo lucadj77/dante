@@ -418,4 +418,17 @@ describe("gamebook checks", () => {
     // studioso is given on one way to Porta: fine. chiave is given only by Sola, which nobody reaches.
     expect(brief).toEqual(["neverGiven:mago?@Fine", "unobtainable:chiave?@Studio", "neverAsked:mondano@Inizio"]);
   });
+
+  it("reads what the prose gives and asks, in any property", () => {
+    const files = [
+      par("Inizio", 1, "Segna la parola chiave **lavanda**.\n\nVai al **[[Bivio|2]]** o al **[[Torre|3]]**.", "parole chiave:\n  - riflessi\n"),
+      par("Bivio", 2, "Se hai la parola chiave **lavanda**, leggi il **[[Torre|3]]**. Se hai cerchiato **studioso** o **riflessivo**, vai al **[[Torre|3]]**.", "carattere:\n  - riflessi?\n"),
+      par("Torre", 3, "Se possiedi uno **scudo piccolo** vai al **[[Bivio|2]]**. Se non hai la parola chiave **lavanda** torna al **[[Inizio|1]]**.", ""),
+      par("Altrove", 4, "Cerchia la caratteristica **studioso** sulla tua scheda. Segna tra gli oggetti lo **scudo piccolo**.", ""),
+    ];
+    const index = new GamebookIndex(files, options);
+    const brief = gameState(index, DIR, 1, stateProperties(types)).map((i) => `${i.kind}:${i.value}@${i.path.slice(DIR.length + 1, -3)}`);
+    // riflessi is a keyword answering a trait's «riflessi?»; studioso and scudo piccolo are given only where nobody goes.
+    expect(brief).toEqual(["unobtainable:studioso@Bivio", "unobtainable:scudo piccolo@Torre"]);
+  });
 });
