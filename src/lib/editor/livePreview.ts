@@ -3,6 +3,7 @@ import type { SyntaxNode } from "@lezer/common";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
 import { tablePreview } from "./tables";
+import { mermaidPreview } from "./mermaid";
 import { embedPreview } from "./embeds";
 import { ImageWidget, imageDecorations, imageInput } from "./images";
 import { isImagePath } from "../core/images";
@@ -21,6 +22,8 @@ const styles: Record<string, Decoration> = {
   ATXHeading4: Decoration.line({ class: "md-h4" }),
 };
 const quoteLine = Decoration.line({ class: "md-quote" });
+/** The "> " (or "> > ") that opens a line of a quote. */
+const QUOTE_PREFIX = /^(?:[ \t]*>[ \t]?)+/;
 const marks: Record<string, Decoration> = {
   Emphasis: Decoration.mark({ class: "md-em" }),
   StrongEmphasis: Decoration.mark({ class: "md-strong" }),
@@ -161,13 +164,15 @@ function build(view: EditorView, focused: boolean): DecorationSet {
     const task = mark.nextSibling?.name === "Task" ? mark.nextSibling.firstChild : null;
     let end = task?.name === "TaskMarker" ? task.to : mark.to;
     while (end < first.to && state.doc.sliceString(end, end + 1) === " ") end++;
+    // In a quote (or a callout) the marker comes after "> ", which has its own decoration.
+    const start = first.from + (QUOTE_PREFIX.exec(first.text)?.[0].length ?? 0);
     if (active.has(first.number)) {
       // As typed, in a box as wide as the marker's, so that the text stays where it was.
-      found.push({ from: first.from, to: end, deco: Decoration.mark({ class: "md-list-prefix", attributes: { style: `min-width: ${indent}em` } }) });
+      found.push({ from: start, to: end, deco: Decoration.mark({ class: "md-list-prefix", attributes: { style: `min-width: ${indent}em` } }) });
     } else {
       const checked = task?.name === "TaskMarker" ? /x/i.test(state.doc.sliceString(task.from, task.to)) : null;
       const marker = state.doc.sliceString(mark.from, mark.to);
-      found.push({ from: first.from, to: end, deco: Decoration.replace({ widget: new ListPrefix(marker, offset, indent, checked) }) });
+      found.push({ from: start, to: end, deco: Decoration.replace({ widget: new ListPrefix(marker, offset, indent, checked) }) });
     }
   };
 
@@ -313,4 +318,4 @@ const plugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, embedPreview, imageInput];
+export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, mermaidPreview(), embedPreview, imageInput];

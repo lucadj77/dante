@@ -1,7 +1,12 @@
+import { completionStatus } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import { EditorSelection, EditorState, Facet, Prec, StateEffect, type Range, StateField, type Extension, type TransactionSpec } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, keymap, type DecorationSet } from "@codemirror/view";
 import { linkHandler } from "./links";
+import { calloutAround, calloutColor, faint } from "./callouts";
+
+/** The "> " (or "> > ") that opens a line of a quote or a callout. */
+const QUOTE_PREFIX = /^(?:[ \t]*>[ \t]?)+/;
 import { captionStart, formatTable, parseTable, splitRow, tableModel, type ParsedTable, type TableCell, type TableModel } from "../core/tables";
 
 // The inline Markdown a cell can hold: wikilinks, bold, italics, highlight, strikethrough, code.
@@ -45,17 +50,28 @@ class TableWidget extends WidgetType {
   constructor(
     readonly source: string,
     readonly table: ParsedTable,
+    /** In a quote: the colour of its callout, or "" for a plain quote; null outside. */
+    readonly quote: string | null = null,
   ) {
     super();
   }
   eq(other: TableWidget) {
-    return other.source === this.source && other.table.header[0]?.from === this.table.header[0]?.from;
+    return other.source === this.source && other.quote === this.quote && other.table.header[0]?.from === this.table.header[0]?.from;
   }
   toDOM(view: EditorView) {
     const links = view.state.facet(linkHandler);
     const resolves = links ? (t: string) => links.resolves(t) : null;
     const wrap = document.createElement("div");
     wrap.className = "md-table-wrap";
+    // In a callout the table keeps the callout's band and background, which the lines it
+    // replaces had.
+    if (this.quote !== null) {
+      wrap.classList.add("md-table-quoted");
+      if (this.quote) {
+        wrap.style.boxShadow = `inset 3px 0 0 ${this.quote}`;
+        wrap.style.background = faint(this.quote);
+      }
+    }
     const table = document.createElement("table");
     table.className = "md-table";
     const columns = this.table.header.length;
@@ -145,12 +161,17 @@ function build(state: EditorState): DecorationSet {
       const lines = [];
       for (let n = first.number; n <= last.number; n++) {
         const l = state.doc.line(n);
-        lines.push({ text: l.text, from: l.from });
+        // In a quote or a callout every line starts with "> ", which is not part of the table.
+        const n0 = QUOTE_PREFIX.exec(l.text)?.[0].length ?? 0;
+        lines.push({ text: l.text.slice(n0), from: l.from + n0 });
       }
       const table = parseTable(lines);
       if (table) {
         const source = state.doc.sliceString(first.from, last.to);
-        ranges.push(Decoration.replace({ widget: new TableWidget(source, table), block: true }).range(first.from, last.to));
+        const quoted = QUOTE_PREFIX.test(first.text);
+        const callout = quoted ? calloutAround(state, first.number) : null;
+        const quote = quoted ? (callout ? calloutColor(callout) : "") : null;
+        ranges.push(Decoration.replace({ widget: new TableWidget(source, table, quote), block: true }).range(first.from, last.to));
       }
       return false;
     },
@@ -229,6 +250,8 @@ interface TableAt {
   col: number;
   /** Where the cursor is in the cell's text. */
   offset: number;
+  /** The "> " before every line, in a quote or a callout. */
+  prefix: string;
 }
 
 function tableAt(state: EditorState): TableAt | null {
@@ -236,20 +259,23 @@ function tableAt(state: EditorState): TableAt | null {
   if (state.readOnly) return null;
   const around = tableAround(state);
   if (!around) return null;
+  const prefix = QUOTE_PREFIX.exec(state.doc.line(around.first).text)?.[0] ?? "";
+  const strip = (text: string) => text.slice(QUOTE_PREFIX.exec(text)?.[0].length ?? 0);
   const lines: string[] = [];
-  for (let n = around.first; n <= around.last; n++) lines.push(state.doc.line(n).text);
+  for (let n = around.first; n <= around.last; n++) lines.push(strip(state.doc.line(n).text));
   const model = tableModel(lines);
   if (!model) return null;
   const head = state.selection.main.head;
   const line = state.doc.lineAt(head);
+  const text = strip(line.text);
   const index = line.number - around.first;
   const row = index <= 1 ? 0 : index - 1;
-  const at = head - line.from;
-  const leading = /^\s*\|/.test(line.text) ? 1 : 0;
-  const col = Math.min(model.align.length - 1, Math.max(0, bars(line.text).filter((b) => b < at).length - leading));
-  const cell = index === 1 ? undefined : splitRow(line.text, 0, true)[col];
+  const at = head - line.from - (line.text.length - text.length);
+  const leading = /^\s*\|/.test(text) ? 1 : 0;
+  const col = Math.min(model.align.length - 1, Math.max(0, bars(text).filter((b) => b < at).length - leading));
+  const cell = index === 1 ? undefined : splitRow(text, 0, true)[col];
   const offset = cell ? Math.min(cell.text.length, Math.max(0, at - cell.from)) : 0;
-  return { ...around, model, row, col, offset };
+  return { ...around, model, row, col, offset, prefix };
 }
 
 /**
@@ -262,10 +288,10 @@ function writeTable(view: EditorView, at: TableAt, model: TableModel, row: numbe
   const to = view.state.doc.line(at.last).to;
   const index = row === 0 ? 0 : row + 1;
   let start = from;
-  for (let i = 0; i < index; i++) start += lines[i].length + 1;
+  for (let i = 0; i < index; i++) start += at.prefix.length + lines[i].length + 1;
   const text = model.rows[row][col];
-  const anchor = start + cellStops(lines[index])[col] + (offset === "end" ? text.length : Math.min(offset, text.length));
-  view.dispatch({ changes: { from, to, insert: lines.join("\n") }, selection: { anchor }, scrollIntoView: true, userEvent: "input" });
+  const anchor = start + at.prefix.length + cellStops(lines[index])[col] + (offset === "end" ? text.length : Math.min(offset, text.length));
+  view.dispatch({ changes: { from, to, insert: lines.map((l) => at.prefix + l).join("\n") }, selection: { anchor }, scrollIntoView: true, userEvent: "input" });
 }
 
 const emptyRow = (model: TableModel) => model.align.map(() => "");
@@ -274,6 +300,7 @@ const copy = (model: TableModel): TableModel => ({ align: [...model.align], rows
 /** Tab and Shift+Tab go from cell to cell, lining the columns up; Tab after the last cell adds a row. */
 function moveCell(forward: boolean) {
   return (view: EditorView): boolean => {
+    if (completionStatus(view.state) === "active") return false;
     const at = tableAt(view.state);
     if (!at || !view.state.selection.main.empty) return false;
     const model = copy(at.model);
@@ -295,13 +322,17 @@ function moveCell(forward: boolean) {
 
 /** Enter adds a row under the cursor's; on an empty last row it leaves the table, as in Obsidian. */
 function newRow(view: EditorView): boolean {
+  // An open completion list takes Enter for itself.
+  if (completionStatus(view.state) === "active") return false;
   const at = tableAt(view.state);
   if (!at || !view.state.selection.main.empty) return false;
   const { model, row } = at;
   if (row === model.rows.length - 1 && row > 0 && model.rows[row].every((c) => !c.trim())) {
     const last = view.state.doc.line(at.last);
     const from = view.state.doc.line(at.last - 1).to;
-    view.dispatch({ changes: { from, to: last.to, insert: "\n\n" }, selection: { anchor: from + 2 }, scrollIntoView: true, userEvent: "input" });
+    // In a callout the cursor stays in it, after an empty quoted line.
+    const insert = at.prefix ? `\n${at.prefix.trimEnd()}\n${at.prefix}` : "\n\n";
+    view.dispatch({ changes: { from, to: last.to, insert }, selection: { anchor: from + insert.length }, scrollIntoView: true, userEvent: "input" });
     return true;
   }
   const next = copy(model);
@@ -481,15 +512,20 @@ const formatOnLeave = EditorState.transactionFilter.of((tr) => {
   const to = doc.line(around.last).to;
   const head = tr.newSelection.main.head;
   if (head >= from && head <= to) return tr;
+  const prefix = QUOTE_PREFIX.exec(doc.line(around.first).text)?.[0] ?? "";
   const lines: string[] = [];
-  for (let n = around.first; n <= around.last; n++) lines.push(doc.line(n).text);
+  for (let n = around.first; n <= around.last; n++) {
+    const line = doc.line(n).text;
+    lines.push(line.slice(QUOTE_PREFIX.exec(line)?.[0].length ?? 0));
+  }
   const model = tableModel(lines);
-  const text = model ? formatTable(model).join("\n") : null;
-  if (!text || text === lines.join("\n")) return tr;
+  const text = model ? formatTable(model).map((l) => prefix + l).join("\n") : null;
+  if (!text || text === doc.sliceString(from, to)) return tr;
   return [tr, { changes: { from, to, insert: text }, sequential: true }];
 });
 
-const tableKeys = Prec.high(
+// Above Markdown's own Enter, which in a quote or a callout would continue the "> ".
+const tableKeys = Prec.highest(
   keymap.of([
     { key: "Tab", run: moveCell(true) },
     { key: "Shift-Tab", run: moveCell(false) },

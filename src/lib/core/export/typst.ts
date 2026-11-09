@@ -1,3 +1,4 @@
+import { pale } from "./docx";
 import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
 import { PARATEXT_LABELS, approxWords } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
@@ -38,9 +39,12 @@ function run(r: Run, maxWidth = 6.5): string {
   if (r.lineBreak) return "#linebreak()";
   if (r.code) return `#raw(${str(r.text)})`;
   let out = str(r.text);
+  if (r.size) out = `text(size: ${r.size}pt, ${out})`;
   if (r.italic) out = `emph(${out})`;
   if (r.bold) out = `strong(${out})`;
   if (r.strike) out = `strike(${out})`;
+  // A gamebook's reference leads to the label of its paragraph's number.
+  if (r.link) return `#link(<${r.link}>)[#${out}]`;
   return `#${out}`;
 }
 
@@ -87,7 +91,10 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   emit(`#set document(title: ${str(title)}, author: (${book.authors.map((a) => `${str(a)},`).join(" ")}))`);
   emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: ${cm(margin)}, header: none, footer: none)`);
   emit(`#set text(font: ${fonts(opts.font)}, size: ${size}pt, lang: ${str(book.language.slice(0, 2) || "en")}, hyphenate: ${typeset}, top-edge: "ascender", bottom-edge: "descender")`);
-  emit(`#set par(justify: ${typeset}, leading: ${+leading.toFixed(2)}em, spacing: ${+leading.toFixed(2)}em, first-line-indent: ${cm(opts.indent)})`);
+  // A gamebook's paragraphs have their own alignment, indent and space after.
+  const gx = book.gamebook;
+  const spacing = `${+leading.toFixed(2)}em${gx?.spacing ? ` + ${gx.spacing}pt` : ""}`;
+  emit(`#set par(justify: ${gx ? gx.justify : typeset}, leading: ${+leading.toFixed(2)}em, spacing: ${spacing}, first-line-indent: ${cm(gx ? gx.indent : opts.indent)})`);
   // The text keeps the quotes the author or the typography settings chose.
   emit(`#set smartquote(enabled: false)`);
   const headingSizes = typeset ? [1.5, 1.3, 1, 1, 1, 1] : [1, 1, 1, 1, 1, 1];
@@ -187,7 +194,18 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       ? `#block(breakable: false, width: 100%)[${content} #set par(first-line-indent: 0pt, justify: false); #align(${align}, text(size: 0.9em, style: "italic")[${runs(items)}])]\n`
       : `${content}\n`;
   const blocks = (items: Block[], level: number) => {
+    // The blocks of a gamebook's box go in one frame.
+    let open: number | null = null;
+    const close = () => {
+      if (open !== null) emit("]\n");
+      open = null;
+    };
     for (const block of items) {
+      if (open !== null && block.box?.id !== open) close();
+      if (block.box && open === null) {
+        emit(`#block(width: 100%, inset: (x: 10pt, y: 8pt), radius: 3pt, breakable: true, fill: rgb("#${pale(block.box.color)}"), stroke: (left: 3pt + rgb("${block.box.color}"), rest: 0.6pt + rgb("${block.box.color}")))[#set par(first-line-indent: 0pt)`);
+        open = block.box.id;
+      }
       if (block.type === "heading") emit(`#heading(level: ${Math.min(6, level + block.level)})[${runs(block.runs)}]\n`);
       else if (block.type === "quote") emit(`#pad(x: ${cm(opts.indent || 1)})[${runs(block.runs)}]\n`);
       else if (block.type === "item") {
@@ -219,6 +237,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       } else if (block.align) emit(`#[#set par(justify: ${block.align === "justify"}); ${runs(block.runs)}]\n`);
       else emit(`${runs(block.runs)}\n`);
     }
+    close();
   };
   const entry = (e: BookEntry) => {
     if (e.kind === "part") {
@@ -233,7 +252,12 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     e.scenes.forEach((scene, i) => {
       if (started && (i > 0 || !e.heading)) separate(i > 0 ? opts.sceneBreak : opts.chapterBreak);
       started = true;
-      if (scene.heading) emit(`#heading(level: ${sceneLevel})[${lines(scene.heading)}]`);
+      if (scene.heading && book.gamebook) {
+        const gx = book.gamebook;
+        const font = gx.numberFont ? `font: ${fonts(gx.numberFont)}, ` : "";
+        const body = `#text(${font}size: ${gx.size}pt, weight: ${gx.numberBold ? '"bold"' : '"regular"'}, style: ${gx.numberItalic ? '"italic"' : '"normal"'})[${lines(scene.heading)}]`;
+        emit(`#heading(level: ${sceneLevel}, outlined: false)[${gx.align === "left" ? `#align(left)[${body}]` : body}]${scene.anchor ? ` <${scene.anchor}>` : ""}`);
+      } else if (scene.heading) emit(`#heading(level: ${sceneLevel})[${lines(scene.heading)}]`);
       blocks(scene.blocks, sceneLevel);
     });
   };

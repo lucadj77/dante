@@ -19,8 +19,34 @@
   import { whereIs } from "$lib/platform";
   import HeadingLevel from "./HeadingLevel.svelte";
   import FontPicker from "./FontPicker.svelte";
+  import { gamebookOf } from "$lib/core/gamebook/marks";
+  import { warnings as gamebookWarnings, type Warning } from "$lib/core/gamebook/paragraphs";
+  import type { GamebookExportSettings } from "$lib/core/settings";
+  import { navigator } from "./navigation";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
+  const nav = navigator();
+
+  // A gamebook: what is wrong in it that the printed book would show.
+  const gamebook = $derived(project.settings.gamebook.enabled);
+  // svelte-ignore state_referenced_locally
+  let gbx = $state<GamebookExportSettings>(structuredClone($state.snapshot(project.settings.gamebook.export)));
+  /** The faults that spoil a printed gamebook: a reference to nothing, two paragraphs with one number, a wrong number on a reference. */
+  const SERIOUS: Warning[] = ["broken", "duplicate", "staleLabel", "bareLink"];
+  let problems = $state.raw<{ path: string; number: number; title: string; warnings: Warning[] }[]>([]);
+  $effect(() => {
+    if (!gamebook) return;
+    void project.index().then((notes) => {
+      const index = gamebookOf(notes, project.settings);
+      if (!index) return;
+      const found = gamebookWarnings(index, project.settings.gamebook.start);
+      problems = index
+        .all()
+        .map((p) => ({ path: p.path, number: p.number, title: p.title, warnings: (found.get(p.path) ?? []).filter((w) => SERIOUS.includes(w)) }))
+        .filter((x) => x.warnings.length)
+        .sort((a, b) => a.number - b.number);
+    });
+  });
 
   // svelte-ignore state_referenced_locally
   let options = $state<DocxSettings>(structuredClone($state.snapshot(project.settings.export.docx)));
@@ -98,6 +124,9 @@
     // The default stylesheet is not copied into the project, so later versions of Dante can improve it.
     settings.export.epubCss = epubCss.trim() === EPUB_CSS.trim() ? "" : epubCss;
     settings.structure = $state.snapshot(structure);
+    settings.gamebook.export = $state.snapshot(gbx);
+    // The estimate of pages follows the export: a new page for each paragraph or not.
+    if (settings.gamebook.enabled) settings.gamebook.onePerPage = gbx.separator === "pageBreak";
     return settings;
   }
 
@@ -301,7 +330,9 @@
       if (format === "epub" && !epubId) epubId = crypto.randomUUID();
       await persist();
       const book = await buildBook(project, { revisions, convert: imageToPng });
-      const layout = project.settings.export.docx;
+      // In a gamebook what parts the paragraphs is chosen in its own section.
+      const gx = project.settings.gamebook.export;
+      const layout = gamebook ? { ...project.settings.export.docx, sceneBreak: gx.separator, sceneSeparator: gx.symbol, lineSign: "\\n" } : project.settings.export.docx;
       const labels = { words: t("export.words") };
       const pages = num(pageCount(book, project.settings.pages), 1);
       const withCover = useCover && format !== "md";
@@ -396,6 +427,85 @@
       </select>
     </label>
 
+    {#if gamebook}
+      <h4>{t("export.gamebook")}</h4>
+      <p class="hint">{t("export.gamebookHint")}</p>
+      <div class="row">
+        <label
+          >{t("export.gb.heading")}
+          <select bind:value={gbx.heading}>
+            <option value="number">{t("export.gb.headingNumber")}</option>
+            <option value="numberTitle">{t("export.gb.headingTitle")}</option>
+          </select>
+        </label>
+        <label>{t("export.gb.prefix")} <input class="short" bind:value={gbx.prefix} placeholder="§ " /></label>
+        <label
+          >{t("export.gb.align")}
+          <select bind:value={gbx.align}>
+            <option value="center">{t("export.gb.center")}</option>
+            <option value="left">{t("export.gb.left")}</option>
+          </select>
+        </label>
+        <label>{t("export.gb.size")} <input class="short" type="number" min="6" max="72" bind:value={gbx.size} /></label>
+      </div>
+      <div class="row">
+        <label
+          >{t("export.gb.separator")}
+          <select bind:value={gbx.separator}>
+            <option value="pageBreak">{t("export.gb.separatorPage")}</option>
+            <option value="blankLine">{t("export.gb.separatorBlank")}</option>
+            <option value="characters">{t("export.gb.separatorSymbol")}</option>
+          </select>
+        </label>
+        {#if gbx.separator === "characters"}<label>{t("export.gb.symbol")} <input class="short" bind:value={gbx.symbol} /></label>{/if}
+        <label
+          >{t("export.gb.boxes")}
+          <select bind:value={gbx.boxes}>
+            <option value="color">{t("export.gb.boxesColor")}</option>
+            <option value="gray">{t("export.gb.boxesGray")}</option>
+            <option value="none">{t("export.gb.boxesNone")}</option>
+          </select>
+        </label>
+      </div>
+      <p class="sub">{t("export.gb.text")}</p>
+      <div class="row">
+        <label
+          >{t("export.gb.justify")}
+          <select bind:value={gbx.justify}>
+            <option value={true}>{t("export.gb.justified")}</option>
+            <option value={false}>{t("export.gb.ragged")}</option>
+          </select>
+        </label>
+        <label>{t("export.gb.indent")} <input class="short" type="number" min="0" max="5" step="0.1" bind:value={gbx.indent} /></label>
+        <label>{t("export.gb.spacing")} <input class="short" type="number" min="0" max="48" step="1" bind:value={gbx.spacing} /></label>
+        <label>{t("export.gb.boxSize")} <input class="short" type="number" min="0" max="48" step="0.5" bind:value={gbx.boxSize} /></label>
+      </div>
+      <p class="sub">{t("export.gb.number")}</p>
+      <label class="check"><input type="checkbox" bind:checked={gbx.numberBold} /> {t("export.gb.numberBold")}</label>
+      <label class="check"><input type="checkbox" bind:checked={gbx.numberItalic} /> {t("export.gb.numberItalic")}</label>
+      <div class="field">
+        <span class="label">{t("export.gb.numberFont")}</span>
+        <FontPicker bind:value={gbx.numberFont} />
+      </div>
+      <p class="hint">{t("export.gb.textHint")}</p>
+      <label class="check"><input type="checkbox" bind:checked={gbx.links} /> {t("export.gb.links")}</label>
+      <label class="check"><input type="checkbox" bind:checked={gbx.bold} /> {t("export.gb.bold")}</label>
+      <p class="hint">{t("export.gb.linksHint")}</p>
+      {#if problems.length}
+        <div class="problems" role="alert">
+          <strong>{t("export.gamebookProblems", { n: problems.length })}</strong>
+          <ul>
+            {#each problems.slice(0, 30) as x (x.path)}
+              <li>
+                <button type="button" class="link" onclick={() => nav?.open(x.path)}>{x.number} · {x.title}</button>:
+                {x.warnings.map((w) => t(`gamebook.warning.${w}` as MessageKey)).join("; ")}
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
+    {/if}
+
     <h4>{t("export.page")}</h4>
     <div class="row">
       <label
@@ -427,7 +537,7 @@
           <option value={2}>2</option>
         </select>
       </label>
-      <label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>
+      {#if !gamebook}<label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>{/if}
     </div>
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
@@ -442,6 +552,7 @@
       </div>
     {/if}
 
+    {#if !gamebook}
     <h4>{t("export.structure")}</h4>
     <div class="row">
       {#each breaks as item (item.key)}
@@ -487,6 +598,7 @@
       {/if}
     </fieldset>
     <p class="hint">{t("export.publishedTitleHint")}</p>
+    {/if}
 
     <h4>{t("export.typography")}</h4>
     <p class="hint">{t("export.typographyHint")}</p>
@@ -556,6 +668,16 @@
 </div>
 
 <style>
+  .problems {
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .problems ul {
+    margin: 4px 0 0;
+    padding-left: 16px;
+  }
   .separator {
     display: flex;
     gap: 8px;
@@ -634,6 +756,11 @@
   fieldset label.check {
     margin: 0;
   }
+  .sub {
+    margin: 8px 0 0;
+    font-weight: 600;
+    font-size: 13px;
+  }
   h4 {
     font-size: 13px;
     margin: 24px 0 10px;
@@ -709,6 +836,9 @@
     align-items: center;
     gap: 8px;
     color: var(--text);
+  }
+  input.short {
+    width: 5em;
   }
   .row {
     display: grid;

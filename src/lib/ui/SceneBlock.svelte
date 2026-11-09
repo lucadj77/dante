@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  import type { BoxType } from "$lib/core/gamebook/boxes";
   import type { Action } from "$lib/editor/formatting";
 
   export interface SceneHandle {
@@ -11,6 +12,10 @@
     format(action: Action): void;
     /** Splits the scene at the cursor into a new scene or chapter. */
     split(kind: "scene" | "chapter"): void;
+    /** In a gamebook, puts a box at the cursor. */
+    insertBox(type: BoxType, value: string): void;
+    /** In a gamebook, asks for a new paragraph and puts the reference to it at the cursor. */
+    newParagraph(): void;
   }
 </script>
 
@@ -19,6 +24,9 @@
   import type { ManuscriptNode } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
+  import { gamebookPreview, insertBox } from "$lib/editor/gamebook";
+  import { calloutPreview } from "$lib/editor/callouts";
+  import { askNewParagraph } from "$lib/editor/links";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
@@ -101,13 +109,20 @@
     split(kind) {
       editor?.split(kind);
     },
+    insertBox(type, value) {
+      if (editor) insertBox(editor.view, type, value);
+    },
+    newParagraph() {
+      if (editor) askNewParagraph(editor.view);
+    },
   };
 
   /** What an empty scene says: where to write, how to go on, where the scene's details are. */
   function emptyHint(): HTMLElement {
     const box = document.createElement("span");
     box.className = "empty-hint";
-    for (const key of ["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const) {
+    const keys = props.project.settings.gamebook.enabled ? (["editor.emptyScene1", "editor.emptyParagraph2", "editor.emptyParagraph3"] as const) : (["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const);
+    for (const key of keys) {
       const line = document.createElement("span");
       line.textContent = t(key);
       box.append(line);
@@ -150,7 +165,11 @@
         critic: criticHandlerFor(path),
         language: props.project.settings.language,
         blankLines: blankLineAskFor(props.project),
-        extensions: [shared.extension],
+        extensions: [
+          shared.extension,
+          ...(props.raw ? [] : [calloutPreview()]),
+          ...(props.project.settings.gamebook.enabled ? [gamebookPreview(props.project.settings.gamebook.boxes, !props.raw)] : []),
+        ],
       });
       shared.attach(editor.view);
       editor.setSpelling(app.settings.spellcheck);
@@ -223,9 +242,11 @@
         }}
       />
     {:else}
-      <button class="title" title={t("tree.renameHint")} onclick={startRename}>{props.node.title}</button>
+      <button class="title" title={t("tree.renameHint")} onclick={startRename}
+        >{#if props.project.settings.gamebook.enabled && props.node.number !== undefined}<span class="gb-number">{props.node.number}</span>&nbsp;·&nbsp;{/if}{props.node.title}</button
+      >
     {/if}
-    <button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>
+    {#if !props.project.settings.gamebook.enabled}<button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>{/if}
   </header>
   {#if collab.holder}
     <div class="presence" role="status">
@@ -308,6 +329,10 @@
     letter-spacing: inherit;
     text-transform: inherit;
     cursor: text;
+  }
+  .gb-number {
+    font-weight: 700;
+    color: var(--text);
   }
   input.title {
     text-transform: none;

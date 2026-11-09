@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { keepInView } from "./keepInView";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import { projectKey } from "$lib/platform";
   import { tick, type Snippet } from "svelte";
-  import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
+  import { enclosing, GAMEBOOK_AFTER, GAMEBOOK_POSITION, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
   import { app, t } from "$lib/state.svelte";
@@ -19,7 +20,12 @@
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
-  import { flushAll } from "./documents.svelte";
+  import { documents, flushAll } from "./documents.svelte";
+  import type { BoxType } from "$lib/core/gamebook/boxes";
+  import { scalar } from "$lib/core/gamebook/edit";
+  import { dirname } from "$lib/core/path";
+  import ShuffleDialog from "./ShuffleDialog.svelte";
+  import NewParagraphDialog from "./NewParagraphDialog.svelte";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
@@ -29,6 +35,9 @@
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
   import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
   import type { NoteIndex } from "$lib/core/notes";
+  import { gamebookMarks, gamebookOf } from "$lib/core/gamebook/marks";
+  import { gameState, stateProperties } from "$lib/core/gamebook/check";
+  import type { MessageKey } from "$lib/i18n";
   import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
   interface Props {
@@ -45,8 +54,10 @@
     onShow: (path: string) => void;
     /** The panes beside the text, if any are open. */
     beside?: Snippet | null;
+    /** In a gamebook, opens the checks of the whole book. */
+    onGamebookChecks?: () => void;
   }
-  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow, beside = null }: Props = $props();
+  let { project, rev, diskRev, fullscreen = $bindable(), onReload, onDiskChange, reveal, onShow, beside = null, onGamebookChecks }: Props = $props();
 
   type Level = "scene" | "chapter" | "part" | "novel";
   let level = $state<Level>("chapter");
@@ -174,6 +185,31 @@
     void unit;
     return noteIndex ? treeMarks(tree, noteIndex, project.settings, wordsOf) : new Map();
   });
+  /** In a gamebook: paragraphs in order of number, what is wrong with each, and the totals. */
+  const gamebook = $derived.by(() => {
+    void rev;
+    return project.settings.gamebook.enabled;
+  });
+  const game = $derived.by(() => {
+    void edits;
+    void tree;
+    if (!gamebook || !noteIndex) return null;
+    const index = gamebookOf(noteIndex, project.settings);
+    if (!index) return null;
+    const found = gamebookMarks(index, project.settings);
+    const issues = index.scopes().flatMap((s) => gameState(index, s, project.settings.gamebook.start, stateProperties(project.settings.gamebook.boxes)));
+    return { ...found, issues: issues.filter((i) => i.kind !== "neverAsked").length };
+  });
+  /** What the status bar says of the gamebook: the problems, by kind. */
+  const statusGamebook = $derived.by(() => {
+    if (!game) return null;
+    const counts = new Map<string, number>();
+    for (const m of game.marks.values()) for (const w of m.warnings) counts.set(w, (counts.get(w) ?? 0) + 1);
+    const parts = [...counts].map(([w, n]) => `${t(`gamebookView.warning.${w}` as MessageKey)}: ${n}`);
+    if (game.issues) parts.push(`${t("gamebookView.state")}: ${game.issues}`);
+    const problems = [...counts.values()].reduce((a, b) => a + b, 0) + game.issues;
+    return { problems, details: parts.join("\n") || t("gamebookView.allGood"), onOpen: () => onGamebookChecks?.() };
+  });
   /** The text selected in the scene with the cursor. */
   let selection = $state<{ path: string; text: string }>({ path: "", text: "" });
   const statusScene = $derived.by(() => {
@@ -285,11 +321,13 @@
 
   // The scene's editor still holds the whole text: it takes the first part from the disk.
   function splitScene(path: string, before: string, after: string) {
+    if (gamebook) return;
     editors.get(path)?.cancel();
     void run(() => project.splitScene(path, before, after, t("untitledScene")), "start").then(onDiskChange);
   }
 
   function splitChapter(path: string, before: string, after: string) {
+    if (gamebook) return;
     editors.get(path)?.cancel();
     void run(() => project.splitChapter(path, before, after, t("untitled"), t("untitledScene")), "start").then(onDiskChange);
   }
@@ -309,8 +347,53 @@
     void run(() => project.createScene(parent.path, index + 1, t("untitledScene")), "start");
   }
 
+  /** In a gamebook: the folder a paragraph made from the tree goes in, while its window is open. */
+  let newParagraphIn = $state<string | null>(null);
+  function openNewParagraph() {
+    const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    const node = selected && index ? index.get(selected) : undefined;
+    newParagraphIn = node?.scope ?? index?.scopes()[0] ?? tree.path;
+  }
+
+  /** In a gamebook: writes the graph note again and opens it. */
+  async function openGraph() {
+    const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    if (!index) return;
+    const node = selected ? index.get(selected) : undefined;
+    const scope = node?.scope ?? index.scopes()[0];
+    if (scope === undefined) return;
+    error = "";
+    try {
+      await flushAll(project);
+      const path = await project.writeGamebookGraph(scope, t("gamebook.graph.intro"));
+      await documents(project).refreshAll();
+      nav?.open(path);
+    } catch (e) {
+      error = failure(e);
+    }
+  }
+
+  /** In a gamebook: the folder whose numbers the shuffle window mixes, while it is open. */
+  let shuffling = $state<string | null>(null);
+  let shuffleMode = $state<"shuffle" | "reorder">("shuffle");
+  function openShuffle(mode: "shuffle" | "reorder") {
+    shuffleMode = mode;
+    const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    if (!index) return;
+    const node = selected ? index.get(selected) : undefined;
+    shuffling = node?.scope ?? index.scopes()[0] ?? null;
+  }
+
+  /** In a gamebook: a page without a number (rules, an introduction), next to the selected paragraph's folder. */
+  function newPage() {
+    const node = selected ? findNode(selected) : null;
+    const dir = node?.kind === "scene" ? dirname(node.path) : (node?.path ?? tree.path);
+    void run(() => project.createPage(dir, t("gamebook.newPageTitle")), "start");
+  }
+
   /** New scene in the selected chapter, or right after the selected scene. */
   function newScene() {
+    if (gamebook) return;
     const node = selected ? findNode(selected) : null;
     if (node && node.kind === "scene") return addAfter(node.path);
     const holder = node && node.kind !== "part" ? node : (node?.children.find((c) => c.kind !== "scene") ?? node ?? tree);
@@ -369,6 +452,7 @@
   }
 
   function newContainer(kind: "chapter" | "part") {
+    if (gamebook) return;
     const node = selected ? findNode(selected) : null;
     let holder: ManuscriptNode = tree;
     let index = tree.children.length;
@@ -399,6 +483,33 @@
       const created = await project.createContainer(holder.path, index, t("untitled"));
       return project.createScene(created, 0, t("untitledScene"));
     }, "start");
+  }
+
+  /** In a gamebook, the values already given to a property in the book, for a box tied to it. */
+  function boxValues(property: string): string[] {
+    const book = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    const values = new Set<string>();
+    for (const p of book?.all() ?? []) for (const v of p.lists[property] ?? []) if (v) values.add(v);
+    return [...values].sort((a, b) => a.localeCompare(b));
+  }
+
+  /** In a gamebook, a box at the cursor; its value goes in the paragraph's property too, and an ending box marks it as an ending. */
+  async function insertBox(type: BoxType, value: string) {
+    const path = active;
+    if (!path) return;
+    editors.get(path)?.insertBox(type, value);
+    if (!(type.property && value.trim()) && !type.ending) return;
+    await run(async () => {
+      if (type.property && value.trim()) await project.addToParagraphList(path, type.property, scalar(value));
+      if (type.ending) await project.setParagraph(path, { ending: true });
+      await documents(project).refreshAll();
+    });
+  }
+
+  /** In a gamebook, puts a page that is not a paragraph before or after the paragraphs, in the tree and in the export. */
+  async function placePage(path: string, position: "before" | "after") {
+    menu = null;
+    await run(() => project.setProperties(path, { [GAMEBOOK_POSITION]: position === "after" ? GAMEBOOK_AFTER : undefined }));
   }
 
   /**
@@ -441,7 +552,8 @@
   function drop(target: string, position: DropPosition) {
     const source = dragging;
     dragging = null;
-    if (!source || source === target) return;
+    // A paragraph's place comes from its number, not from where it is dragged.
+    if (!source || source === target || gamebook) return;
     const targetNode = findNode(target);
     if (!targetNode) return;
     if (position === "inside" && targetNode.kind !== "scene") {
@@ -522,6 +634,7 @@
 
   function moveBy(path: string, delta: number) {
     menu = null;
+    if (gamebook) return;
     const parent = parentOf(tree, path);
     if (!parent) return;
     const index = parent.children.findIndex((c) => c.path === path) + delta;
@@ -698,15 +811,21 @@
       onmouseleave={leaveEdge}
       onfocusout={leaveEdge}
     >
-      <div class="tree-actions">
+      {#if game}
+        <p class="gamebook-summary" title={t("gamebook.summaryHint")}>
+          {t("gamebook.summary", { paragraphs: game.summary.paragraphs, empty: game.summary.empty, orphans: game.summary.orphans, deadEnds: game.summary.deadEnds, pages: game.summary.pages })}
+        </p>
+      {/if}
+      <div class="tree-actions" class:gamebook>
         <div class="tree-group" role="group" aria-labelledby="tree-add">
           <div class="caption-row">
-            <span class="caption" id="tree-add">{t("tree.add")}</span>
+            <span class="caption" id="tree-add">{gamebook ? "" : t("tree.add")}</span>
             <span class="fold">
               <button class="icon-only" title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /></button>
               <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
             </span>
           </div>
+          {#if !gamebook}
           <div class="add">
             <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
             <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
@@ -715,6 +834,15 @@
             {/if}
             <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
           </div>
+          {:else}
+          <div class="add gamebook-add">
+            <button title={t("gamebook.newParagraphTip")} aria-label={t("gamebook.new.title")} onclick={openNewParagraph}><Icon name="scene" /><span>{t("gamebook.paragraphShort")}</span></button>
+            <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
+            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
+            <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><span class="glyph" aria-hidden="true">⇣</span><span>{t("gamebook.reorder.button")}</span></button>
+            <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><span class="glyph" aria-hidden="true">🕸</span><span>{t("gamebook.graph.button")}</span></button>
+          </div>
+          {/if}
         </div>
       </div>
       {#if tree.children.length === 0}
@@ -754,6 +882,8 @@
             {foldScope}
             {marks}
             {unit}
+            game={game?.marks ?? null}
+            showLinks={project.settings.gamebook.showLinks}
           />
         {/each}
       </ul>
@@ -800,17 +930,25 @@
   {#if menu}
     {@const node = findNode(menu.path)}
     <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
-    <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px">
+    <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px" use:keepInView={menu}>
       {#if chosen.length > 1 && chosen.includes(menu.path)}
         <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
         <hr />
       {/if}
       <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = menu!.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
       <hr />
-      <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
+      {#if !gamebook}
+        <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
+      {/if}
       <button role="menuitem" onclick={() => menuRename(menu!.path)}>{t("tree.rename")}</button>
-      <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
-      <button role="menuitem" onclick={() => moveBy(menu!.path, 1)}>{t("tree.moveDown")}</button>
+      {#if !gamebook}
+        <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
+        <button role="menuitem" onclick={() => moveBy(menu!.path, 1)}>{t("tree.moveDown")}</button>
+      {:else if node?.kind === "scene" && node.number === undefined}
+        <button role="menuitem" onclick={() => placePage(menu!.path, node!.position === "after" ? "before" : "after")}
+          >{t(node.position === "after" ? "gamebook.moveBefore" : "gamebook.moveAfter")}</button
+        >
+      {/if}
       <hr />
       <button role="menuitem" class="danger" onclick={() => remove(menu!.path)}>{t("tree.deleteItem")}</button>
     </div>
@@ -844,6 +982,11 @@
         disabled={!active}
         onFormat={(action) => active && editors.get(active)?.format(action)}
         onSplit={(kind) => active && editors.get(active)?.split(kind)}
+        noSplit={gamebook}
+        boxes={gamebook ? project.settings.gamebook.boxes : []}
+        {boxValues}
+        onBox={gamebook ? insertBox : undefined}
+        onParagraph={gamebook ? () => active && editors.get(active)?.newParagraph() : undefined}
       />
     {/if}
     </div>
@@ -906,7 +1049,7 @@
       </div>
     </div>
     {#if app.settings.statusBar && !fullscreen}
-      <StatusBar {unit} scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
+      <StatusBar {unit} gamebook={statusGamebook} scene={statusScene} selected={selectedWords} view={statusView} daily={project.settings.goals.daily} days={project.settings.goals.days} />
     {/if}
   </main>
 
@@ -955,6 +1098,41 @@
     </SidePanel>
 {/snippet}
 
+{#if newParagraphIn !== null}
+  {@const scope = newParagraphIn}
+  {@const book = noteIndex ? gamebookOf(noteIndex, project.settings) : null}
+  <NewParagraphDialog
+    title=""
+    hidden={false}
+    noReference
+    paragraphs={(book?.inScope(scope) ?? []).map((x) => ({ title: x.title, number: x.number, empty: x.empty }))}
+    firstFree={book?.firstFreeNumber(scope) ?? 1}
+    onCreate={async (title, spec) => {
+      const made = await project.createParagraph(scope, title, spec);
+      await run(async () => made.path, "start");
+    }}
+    onClose={() => (newParagraphIn = null)}
+  />
+{/if}
+{#if shuffling !== null && noteIndex}
+  <ShuffleDialog
+    mode={shuffleMode}
+    {project}
+    notes={noteIndex}
+    scope={shuffling}
+    run={(operation) =>
+      run(async () => {
+        await operation();
+        await documents(project).refreshAll();
+      })}
+    onOpen={(path) => {
+      shuffling = null;
+      nav?.open(path);
+    }}
+    onClose={() => (shuffling = null)}
+  />
+{/if}
+
 <style>
   .manuscript {
     position: relative;
@@ -966,6 +1144,11 @@
     background: var(--bg-panel);
     overflow: auto;
     padding: 8px;
+  }
+  .gamebook-summary {
+    margin: 4px 10px 2px;
+    font-size: 11.5px;
+    color: var(--text-muted);
   }
   .tree-actions {
     display: grid;
@@ -991,6 +1174,10 @@
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 3px;
+  }
+  .tree-actions .add.gamebook-add {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .tree-actions .add button {
     display: flex;

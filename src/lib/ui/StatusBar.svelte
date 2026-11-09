@@ -18,6 +18,8 @@
     /** The novel's daily goal, and whether today is a writing day. */
     daily: number;
     days: number[];
+    /** In a gamebook: how many problems the checks find, by kind, and how to open them. */
+    gamebook?: { problems: number; details: string; onOpen: () => void } | null;
   }
   let p: Props = $props();
 
@@ -65,6 +67,13 @@
     <span class="what">{t("status.today")}</span>
     {amount(today, rest ? 0 : p.daily)}
   </span>
+  {#if p.gamebook}
+    {@const g = p.gamebook}
+    <button class="item gamebook" class:bad={g.problems > 0} data-tip={t("tip.status.gamebook", { details: g.details })} onclick={g.onOpen}>
+      <span class="what">{t("gamebook.title")}</span>
+      {g.problems === 0 ? t("status.gamebookNone") : g.problems === 1 ? t("status.gamebookOne") : t("status.gamebook", { n: num(g.problems) })}
+    </button>
+  {/if}
   <span class="grow"></span>
 
   {#if sprint.running}
@@ -136,6 +145,17 @@
   }
   .what {
     font-weight: 600;
+  }
+  button.gamebook {
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  button.gamebook.bad {
+    color: var(--danger);
   }
   .what.label {
     max-width: 220px;

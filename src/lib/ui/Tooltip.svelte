@@ -1,5 +1,6 @@
 <script lang="ts">
-  // One tooltip for the whole app, shown at once instead of after the system's delay. It takes
+  // One tooltip for the whole app, shown at once instead of after the system's delay, above
+  // the element so the pointer does not hide it. It takes
   // the text of any title or data-tip attribute; a first line ending in a newline is the
   // tool's name, shown in bold above what it does.
   import { onMount } from "svelte";
@@ -31,7 +32,8 @@
     const right = el.dataset.tipSide === "right";
     tip = right
       ? { text, x: r.right + 8, y: r.top + r.height / 2, side: "right" }
-      : { text, x: r.left + r.width / 2, y: r.bottom + 6, side: r.bottom + 80 > innerHeight ? "above" : "below" };
+      : // Above the element, where the pointer does not cover it; below only when there is no room above.
+        { text, x: r.left + r.width / 2, y: r.bottom + 6, side: r.top < 80 ? "below" : "above" };
     if (tip.side === "above") tip.y = r.top - 6;
   }
 

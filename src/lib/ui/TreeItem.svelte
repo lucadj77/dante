@@ -6,6 +6,7 @@
   import type { ManuscriptNode } from "$lib/core/manuscript";
   import type { PageUnit } from "$lib/core/settings";
   import type { TreeMark } from "$lib/core/statistics";
+  import type { ParagraphMark } from "$lib/core/gamebook/marks";
   import { num, t, tu } from "$lib/state.svelte";
   import type { MessageKey } from "$lib/i18n";
   import TreeItem from "./TreeItem.svelte";
@@ -39,6 +40,10 @@
     marks: Map<string, TreeMark>;
     /** What lengths and goals count. */
     unit: PageUnit;
+    /** In a gamebook, what the tree shows of each paragraph; null for a novel. */
+    game?: Map<string, ParagraphMark> | null;
+    /** In a gamebook, a line under each paragraph with where it comes from and where it leads. */
+    showLinks?: boolean;
   }
   let p: Props = $props();
   const nav = navigator();
@@ -52,6 +57,8 @@
   const label = $derived((p.headings.get(p.node.path) ?? p.node.title).replace(/\n/g, " · "));
   const info = $derived(p.marks.get(p.node.path));
   const share = $derived(info && info.goal ? Math.min(1, info.words / info.goal) : 0);
+  const para = $derived(p.game?.get(p.node.path) ?? null);
+  const warningText = $derived(para ? para.warnings.map((w) => t(`gamebook.warning.${w}` as MessageKey)).join("\n") : "");
 
   $effect(() => {
     if (p.renaming === p.node.path) startRename();
@@ -89,7 +96,7 @@
     class:drop-after={over === "after"}
     class:drop-inside={over === "inside"}
     style="padding-left: {8 + p.depth * 14}px"
-    draggable={editing ? undefined : "true"}
+    draggable={editing || p.game ? undefined : "true"}
     role="button"
     tabindex="0"
     title={`${t(`kind.${p.node.kind}` as MessageKey)} · ${t("tree.renameHint")}`}
@@ -162,7 +169,23 @@
         {@const tip = info.property ? t("tree.dot", { property: info.property.charAt(0).toLocaleUpperCase() + info.property.slice(1), value: info.status }) : t("tree.status", { status: info.status })}
         <span class="status" class:own={!!info.color} style:--own={info.color || null} data-tone={info.tone ?? ""} data-hue={info.hue ?? ""} title={tip} aria-label={tip}></span>
       {/if}
-      <span class="label">{label}</span>
+      {#if para}
+        <span
+          class="num"
+          class:fixed={para.numberType === "fixed"}
+          class:relative={para.numberType === "relative"}
+          title={t(`gamebook.type.${para.numberType}` as MessageKey)}>{para.numberType === "fixed" ? "🔒" : para.numberType === "relative" ? "⚓" : ""}{para.number}</span
+        >
+      {:else if p.game && isScene}
+        <span class="num page" title={t("gamebook.pageHint")}>📄</span>
+      {/if}
+      <span class="label" class:empty-paragraph={para?.empty} title={para?.empty ? t("gamebook.empty") : undefined}>{label}</span>
+      {#if para && para.warnings.length}
+        <span class="warning" title={warningText} aria-label={warningText}>⚠</span>
+      {/if}
+      {#if para}
+        <span class="length {para.band}" title={tu("gamebook.length", p.unit, { n: num(para.length) })}>{num(para.length)}</span>
+      {/if}
       {#if info && info.goal}
         <span
           class="goal"
@@ -174,11 +197,33 @@
           title={tu("tree.goal", p.unit, { words: num(info.words), goal: num(info.goal) })}><span style:width="{share * 100}%"></span></span
         >
       {/if}
-      {#if p.loose}
+      {#if p.game && isScene && !para}
+        <span class="loose" title={t("gamebook.pageHint")}>{t(p.node.position === "after" ? "gamebook.pageAfter" : "gamebook.pageBefore")}</span>
+      {/if}
+      {#if p.loose && !p.game}
         <span class="loose" title={t("tree.looseHint")}>{t("tree.loose")}</span>
       {/if}
     {/if}
   </div>
+  {#if para && p.showLinks}
+    <div class="links" style="padding-left: {30 + p.depth * 14}px">
+      <span title={t("gamebook.incoming")}>←
+        {#each para.incoming as from, i (from.path + i)}<button class="ref" class:hidden-ref={from.hidden} onclick={() => p.onSelect(from.path)}>{from.number}</button>{/each}
+        {#if !para.incoming.length}–{/if}
+      </span>
+      <span title={t("gamebook.outgoing")}>→
+        {#each para.outgoing as to, i (to.label + i)}<button
+            class="ref"
+            class:hidden-ref={to.hidden}
+            class:broken={!to.path}
+            class:empty-ref={to.empty}
+            disabled={!to.path}
+            onclick={() => p.onSelect(to.path)}>{to.path ? to.label : "?"}</button
+          >{/each}
+        {#if !para.outgoing.length}–{/if}
+      </span>
+    </div>
+  {/if}
   {#if !isScene && !collapsed && p.node.children.length > 0}
     <ul role="group">
       {#each p.node.children as child (child.path)}
@@ -204,6 +249,78 @@
   ul {
     margin: 0;
     padding: 0;
+  }
+  .num {
+    flex: none;
+    min-width: 26px;
+    margin-left: 4px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text);
+    text-align: right;
+  }
+  .num.fixed,
+  .num.relative {
+    min-width: 40px;
+  }
+  .row.scene .num + .label {
+    padding-left: 6px;
+  }
+  .label.empty-paragraph {
+    font-style: italic;
+    opacity: 0.7;
+  }
+  .warning {
+    flex: none;
+    color: var(--danger);
+    font-size: 12px;
+  }
+  .length {
+    flex: none;
+    margin-left: auto;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  .length.short {
+    color: var(--status-2);
+  }
+  .length.long {
+    color: var(--danger);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    padding-right: 8px;
+    margin: -4px 0 2px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .links .ref {
+    padding: 0 3px;
+    border: none;
+    background: none;
+    color: var(--wikilink);
+    font: inherit;
+    cursor: pointer;
+  }
+  .links .ref:hover {
+    text-decoration: underline;
+  }
+  .links .hidden-ref {
+    font-style: italic;
+    opacity: 0.8;
+  }
+  .links .hidden-ref::before {
+    content: "⋯";
+  }
+  .links .empty-ref {
+    color: var(--text-muted);
+  }
+  .links .broken {
+    color: var(--danger);
+    cursor: default;
   }
   .row {
     display: flex;

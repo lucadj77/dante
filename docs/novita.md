@@ -6,9 +6,17 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Callout**: i blocchi `> [!note]`, `> [!warning]` e simili si vedono con il nome in una pillola colorata; elenchi e tabelle al loro interno si vedono come nel resto del testo.
+- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo e permette di cambiarne numero, tipo e finale, aggiornando i rimandi; regole e altre pagine senza numero (pulsante Pagina in cima all'albero) stanno prima o dopo i paragrafi. Si scrive come nel plugin, ma più in fretta: `[[` cerca o crea un paragrafo (le due voci per crearlo sono in cima all'elenco) e mette il rimando con l'articolo giusto, Cmd/Ctrl+Invio apre la finestra del nuovo paragrafo (numero libero, fisso o relativo, rimando nel testo o nascosto), il pulsante Paragrafo della barra apre la stessa finestra, il pulsante Box inserisce i box del libro e ne scrive il valore nelle proprietà. L'esportazione mette i paragrafi in ordine con il numero come titolo e i box come riquadri colorati, e avvisa dei rimandi rotti. Il pulsante Riordina numera i paragrafi in sequenza nell'ordine in cui si leggono; il pulsante Paragrafo nell'albero crea un paragrafo senza rimando. Il pulsante Rimescola dà nuovi numeri a caso con un'anteprima, tenendo fermi i fissi e spostando i relativi con la loro ancora, aggiorna rimandi e articoli e si può annullare, anche solo nella numerazione; il pulsante Grafo scrive una nota con lo schema del libro, da guardare anche a tutto schermo. La sezione Libro game ha la tabella dei paragrafi, ordinabile e filtrabile, i controlli di tutto il libro (orfani, vicoli ciechi, rimandi rotti e stato di gioco: valori chiesti con il punto interrogativo che il lettore non può ancora avere) e il registro di caratteri, parole chiave e incontri con i possibili doppioni; la barra di stato dice quanti problemi ci sono. Nell'esportazione la sezione Libro game sostituisce parti, capitoli e scene: titolo del paragrafo, separazione tra paragrafi, box a colori, grigi o senza riquadro, e rimandi cliccabili nel Word, nel PDF e nell'EPUB. Il testo dei paragrafi si personalizza: giustificato o a sinistra, rientro, spazio tra i capoversi, dimensione del testo nei box, numero in grassetto o in corsivo e con un font suo. Usa lo stesso formato del plugin Librogame.
+
 ### Cambiato
 
+- **Diagrammi Mermaid**: i blocchi ```` ```mermaid ```` nelle note e nelle scene si vedono disegnati, con un pulsante per guardarli a tutto schermo.
+
 ### Corretto
+
+- **Menu del tasto destro**: sugli ultimi elementi del pannello il menu si apre più in alto e resta visibile per intero.
+- **Suggerimenti**: i suggerimenti che compaiono passando sopra un elemento si aprono sopra di esso, così il puntatore non li copre.
 
 ## 1.1.4 · 28 ottobre 2026
 
