@@ -329,6 +329,24 @@
     void run(() => project.createScene(parent.path, index + 1, t("untitledScene")), "start");
   }
 
+  /** In a gamebook: writes the graph note again and opens it. */
+  async function openGraph() {
+    const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    if (!index) return;
+    const node = selected ? index.get(selected) : undefined;
+    const scope = node?.scope ?? index.scopes()[0];
+    if (scope === undefined) return;
+    error = "";
+    try {
+      await flushAll(project);
+      const path = await project.writeGamebookGraph(scope, t("gamebook.graph.intro"));
+      await documents(project).refreshAll();
+      nav?.open(path);
+    } catch (e) {
+      error = failure(e);
+    }
+  }
+
   /** In a gamebook: the folder whose numbers the shuffle window mixes, while it is open. */
   let shuffling = $state<string | null>(null);
   function openShuffle() {
@@ -792,6 +810,7 @@
           <div class="add">
             <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
             <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={openShuffle}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
+            <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><span class="glyph" aria-hidden="true">🕸</span><span>{t("gamebook.graph.button")}</span></button>
           </div>
           {/if}
         </div>

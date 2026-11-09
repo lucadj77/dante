@@ -3,6 +3,7 @@ import type { SyntaxNode } from "@lezer/common";
 import { RangeSetBuilder, type EditorState } from "@codemirror/state";
 import { linkHandler } from "./links";
 import { tablePreview } from "./tables";
+import { mermaidPreview } from "./mermaid";
 import { embedPreview } from "./embeds";
 import { ImageWidget, imageDecorations, imageInput } from "./images";
 import { isImagePath } from "../core/images";
@@ -317,4 +318,4 @@ const plugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
-export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, embedPreview, imageInput];
+export const livePreview = [plugin, taskClicks, alignedEditing, alignmentTheme, tablePreview, mermaidPreview(), embedPreview, imageInput];

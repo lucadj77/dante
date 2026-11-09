@@ -38,6 +38,7 @@ import { addToList, newParagraphText, relabel, removeFromList, setParagraphField
 import { fixArticles } from "./gamebook/articles";
 import type { GamebookIndex } from "./gamebook/paragraphs";
 import { gamebookOf } from "./gamebook/marks";
+import { GRAPH_NOTE, graphNote, mermaidGraph } from "./gamebook/graph";
 
 /** Where the operations on a whole gamebook are recorded, to undo them. */
 const OPERATIONS = ".dante/gamebook/operations.json";
@@ -597,6 +598,21 @@ export class Project {
       }
     }
     return written;
+  }
+
+  /**
+   * In a gamebook: writes the graph of the paragraphs of `scope` as a Mermaid diagram in a
+   * note at the top of the project, keeping what the writer added around it; returns its path.
+   */
+  async writeGamebookGraph(scope: string, intro: string): Promise<string> {
+    const index = gamebookOf(await this.index(), this.settings);
+    if (!index) throw new Error("gamebook.off");
+    const path = GRAPH_NOTE;
+    const existing = (await this.fs.exists(path)) ? await this.fs.readText(path) : null;
+    const next = graphNote(existing, mermaidGraph(index, scope, this.settings.gamebook.start), intro);
+    if (next !== existing) await this.fs.writeText(path, next);
+    await this.reload();
+    return path;
   }
 
   /** In a gamebook: the operations on the whole book, newest first, to undo them. */

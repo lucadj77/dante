@@ -11,6 +11,7 @@ import { addToList, newParagraphText, relabel, removeFromList, setParagraphField
 import { articleFix, fixArticles, startsWithVowel } from "../gamebook/articles";
 import { Project } from "../project";
 import { proseNumbers, shuffle } from "../gamebook/shuffle";
+import { graphNote, mermaidGraph, titleFromLabel } from "../gamebook/graph";
 
 const types = defaultBoxTypes("it");
 const options = { boxTypes: types, unit: "characters" as const };
@@ -313,5 +314,22 @@ describe("gamebook shuffle", () => {
     await project.undoGamebookOperation(op.id, false, "");
     expect(await fs.readText(`${DIR}/Bosco.md`)).not.toContain("Nuovo testo.");
     expect(await fs.readText(`${DIR}/Agguato.md`)).toBe(book[0].text);
+  });
+});
+
+describe("gamebook graph", () => {
+  it("draws paragraphs, references and hidden ones in Mermaid, keeping the note around it", () => {
+    const index = new GamebookIndex(book, options);
+    const chart = mermaidGraph(index, DIR, 1);
+    expect(chart).toContain('p1["1 · Agguato"]');
+    expect(chart).toContain("p1 --> p2");
+    expect(chart).toContain("p3 -.-> p32");
+    expect(chart).toMatch(/class p1 start/);
+    expect(chart).toMatch(/class p8 ending/);
+    expect(titleFromLabel("12 · Il ponte")).toBe("Il ponte");
+    const note = graphNote(null, chart, "Intro");
+    expect(note.startsWith("Intro\n\n```mermaid\nflowchart TD")).toBe(true);
+    const kept = graphNote("Mio testo\n\n```mermaid\nflowchart TD\n  a --> b\n```\n\nAltro", "flowchart LR", "Intro");
+    expect(kept).toBe("Mio testo\n\n```mermaid\nflowchart LR\n```\n\nAltro");
   });
 });
