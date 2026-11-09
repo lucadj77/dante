@@ -1123,7 +1123,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "appearance.askBlankLinesHint": "Quando lasci tra due capoversi più righe vuote del solito, Dante chiede se scrivere una riga vuota vera, che si vede anche nel libro esportato.",
   "gamebook.title": "Libro game",
   "gamebook.enable": "Questo progetto è un libro game",
-  "gamebook.enableHint": "La cartella del manoscritto contiene paragrafi numerati invece di capitoli e scene, scritti come li scrive il plugin Obsidian «Librogame»: il numero nella proprietà numero, i rimandi come [[Titolo|25]], i box tra righe :::. Gli stessi file continuano a funzionare in Obsidian.",
+  "gamebook.enableHint": "La cartella del manoscritto contiene paragrafi numerati invece di capitoli e scene, uno per file: il numero nella proprietà numero, i rimandi come [[Titolo|25]], i box tra righe :::. Restano file Markdown, apribili con qualsiasi editor di testo.",
   "gamebook.folder": "Cartella dei paragrafi",
   "gamebook.folderHint": "La cartella, dentro il progetto, che contiene i paragrafi.",
   "gamebook.start": "Paragrafo iniziale",

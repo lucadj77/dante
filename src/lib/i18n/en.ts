@@ -1123,7 +1123,7 @@ export const en = {
   "appearance.askBlankLinesHint": "When you leave more empty lines than usual between two paragraphs, Dante asks whether to write a real blank line, which shows in the exported book too.",
   "gamebook.title": "Gamebook",
   "gamebook.enable": "This project is a gamebook",
-  "gamebook.enableHint": "The manuscript folder holds numbered paragraphs instead of chapters and scenes, written as the Obsidian plugin “Librogame” writes them: the number in the numero property, links as [[Title|25]], boxes between ::: lines. The same files keep working in Obsidian.",
+  "gamebook.enableHint": "The manuscript folder holds numbered paragraphs instead of chapters and scenes, one per file: the number in the numero property, links as [[Title|25]], boxes between ::: lines. They stay Markdown files that any text editor can open.",
   "gamebook.folder": "Paragraphs folder",
   "gamebook.folderHint": "The folder inside the project that holds the paragraphs.",
   "gamebook.start": "First paragraph",
