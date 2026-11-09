@@ -1,3 +1,4 @@
+import { pale } from "./docx";
 import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
 import { PARATEXT_LABELS, approxWords } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
@@ -187,7 +188,18 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       ? `#block(breakable: false, width: 100%)[${content} #set par(first-line-indent: 0pt, justify: false); #align(${align}, text(size: 0.9em, style: "italic")[${runs(items)}])]\n`
       : `${content}\n`;
   const blocks = (items: Block[], level: number) => {
+    // The blocks of a gamebook's box go in one frame.
+    let open: number | null = null;
+    const close = () => {
+      if (open !== null) emit("]\n");
+      open = null;
+    };
     for (const block of items) {
+      if (open !== null && block.box?.id !== open) close();
+      if (block.box && open === null) {
+        emit(`#block(width: 100%, inset: (x: 10pt, y: 8pt), radius: 3pt, breakable: true, fill: rgb("#${pale(block.box.color)}"), stroke: (left: 3pt + rgb("${block.box.color}"), rest: 0.6pt + rgb("${block.box.color}")))[#set par(first-line-indent: 0pt)`);
+        open = block.box.id;
+      }
       if (block.type === "heading") emit(`#heading(level: ${Math.min(6, level + block.level)})[${runs(block.runs)}]\n`);
       else if (block.type === "quote") emit(`#pad(x: ${cm(opts.indent || 1)})[${runs(block.runs)}]\n`);
       else if (block.type === "item") {
@@ -219,6 +231,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       } else if (block.align) emit(`#[#set par(justify: ${block.align === "justify"}); ${runs(block.runs)}]\n`);
       else emit(`${runs(block.runs)}\n`);
     }
+    close();
   };
   const entry = (e: BookEntry) => {
     if (e.kind === "part") {

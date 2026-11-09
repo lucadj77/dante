@@ -12,6 +12,11 @@ import { articleFix, fixArticles, startsWithVowel } from "../gamebook/articles";
 import { Project } from "../project";
 import { proseNumbers, reorder, shuffle } from "../gamebook/shuffle";
 import { graphNote, mermaidGraph, titleFromLabel } from "../gamebook/graph";
+import { buildBook } from "../export/book";
+import { bookToMarkdown } from "../export/markdown";
+import { bookToTypst } from "../export/typst";
+import { bookToDocx, docxBytes } from "../export/docx";
+import { bookToEpub } from "../export/epub";
 
 const types = defaultBoxTypes("it");
 const options = { boxTypes: types, unit: "characters" as const };
@@ -353,5 +358,33 @@ describe("gamebook reorder", () => {
     if (!result.ok) return;
     const n = (t: string) => result.numbers.get(`${DIR}/${t}.md`);
     expect([n("Inizio"), n("Sud"), n("Nord"), n("Fine"), n("Segreto"), n("Dopo segreto"), n("Perso")]).toEqual([1, 2, 4, 3, 5, 6, 7]);
+  });
+});
+
+describe("gamebook export", () => {
+  it("puts the paragraphs in order under their number, with boxes and pages", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
+    for (const f of book) await fs.writeText(f.path, f.text);
+    await fs.writeText(`${DIR}/Ringraziamenti.md`, "---\nposizione: dopo\n---\nGrazie.");
+    const project = await Project.open(fs, "it");
+    const built = await buildBook(project);
+    expect(built.entries.map((e) => e.heading)).toEqual(["00 regole", "", "Ringraziamenti"]);
+    const paragraphs = built.entries[1].scenes;
+    expect(paragraphs.map((s) => s.heading)).toEqual(["1", "2", "3", "4", "8", "32"]);
+    const first = paragraphs[0].blocks;
+    expect(first[0]).toMatchObject({ type: "paragraph", runs: [{ text: "Corri o ti fermi?" }] });
+    expect(first.slice(1).every((b) => b.box?.color === "#3b82c4")).toBe(true);
+    expect(first.length).toBe(3);
+    const text = first[2].type === "paragraph" ? first[2].runs.map((r) => r.text).join("") : "";
+    expect(text).toBe("Se corri leggi il 2, se ti fermi l'8.");
+    expect((await buildBook(project, { workingTitles: true })).entries[1].scenes[0].heading).toBe("1 · Agguato");
+
+    const md = bookToMarkdown(built, project.settings.export.docx);
+    expect(md).toContain('::: {custom-style="box"}\n🤔 **Devi agire in fretta!**');
+    expect(md).toContain("**8**.\n:::");
+    expect(bookToTypst(built, project.settings.export.docx, { words: "parole" })).toContain('#block(width: 100%');
+    const docx = new TextDecoder().decode(await docxBytes(bookToDocx(built, project.settings.export.docx, { words: "parole" })));
+    expect(docx.length).toBeGreaterThan(1000);
+    expect(bookToEpub(built, project.settings.export.docx, "id").length).toBeGreaterThan(1000);
   });
 });

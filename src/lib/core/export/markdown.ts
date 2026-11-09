@@ -101,7 +101,16 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
   };
   const blocks = (items: Block[]) => {
     let previous: Block | undefined;
+    // A gamebook's box goes back to the plugin's fenced div, which Pandoc reads as a style.
+    let open: number | null = null;
     for (const block of items) {
+      // As the plugin writes it: the open line right above the first line, ":::" right under the last.
+      if (open !== null && block.box?.id !== open) {
+        out[out.length - 1] += "\n:::";
+        open = null;
+      }
+      const opening = !!block.box && open === null;
+      const before = out.length;
       if (block.type === "heading") add(heading(sceneLevel + block.level, block.runs.map((r) => r.text).join("")));
       else if (block.type === "quote") add(`> ${runs(block.runs)}`.replace(/\n/g, "\n> "));
       else if (block.type === "item") {
@@ -127,8 +136,13 @@ export function bookToMarkdown(book: Book, opts: DocxSettings): string {
       }
       else if (block.runs.length && block.runs.every((r) => r.code)) add("```\n" + block.runs.map((r) => r.text).join("").replace(/\n$/, "") + "\n```");
       else add(setAlignment(runs(block.runs), block.align ?? null));
+      if (opening && out.length > before) {
+        out[before] = `::: {custom-style="box"}\n${out[before]}`;
+        open = block.box!.id;
+      }
       previous = block;
     }
+    if (open !== null) out[out.length - 1] += "\n:::";
   };
 
   for (const entry of book.entries) {

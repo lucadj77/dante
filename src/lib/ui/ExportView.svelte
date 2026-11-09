@@ -19,8 +19,32 @@
   import { whereIs } from "$lib/platform";
   import HeadingLevel from "./HeadingLevel.svelte";
   import FontPicker from "./FontPicker.svelte";
+  import { gamebookOf } from "$lib/core/gamebook/marks";
+  import { warnings as gamebookWarnings, type Warning } from "$lib/core/gamebook/paragraphs";
+  import { navigator } from "./navigation";
 
   let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
+  const nav = navigator();
+
+  // A gamebook: what is wrong in it that the printed book would show.
+  const gamebook = $derived(project.settings.gamebook.enabled);
+  let workingTitles = $state(false);
+  /** The faults that spoil a printed gamebook: a reference to nothing, two paragraphs with one number, a wrong number on a reference. */
+  const SERIOUS: Warning[] = ["broken", "duplicate", "staleLabel", "bareLink"];
+  let problems = $state.raw<{ path: string; number: number; title: string; warnings: Warning[] }[]>([]);
+  $effect(() => {
+    if (!gamebook) return;
+    void project.index().then((notes) => {
+      const index = gamebookOf(notes, project.settings);
+      if (!index) return;
+      const found = gamebookWarnings(index, project.settings.gamebook.start);
+      problems = index
+        .all()
+        .map((p) => ({ path: p.path, number: p.number, title: p.title, warnings: (found.get(p.path) ?? []).filter((w) => SERIOUS.includes(w)) }))
+        .filter((x) => x.warnings.length)
+        .sort((a, b) => a.number - b.number);
+    });
+  });
 
   // svelte-ignore state_referenced_locally
   let options = $state<DocxSettings>(structuredClone($state.snapshot(project.settings.export.docx)));
@@ -300,8 +324,11 @@
     try {
       if (format === "epub" && !epubId) epubId = crypto.randomUUID();
       await persist();
-      const book = await buildBook(project, { revisions, convert: imageToPng });
-      const layout = project.settings.export.docx;
+      const book = await buildBook(project, { revisions, convert: imageToPng, workingTitles });
+      // In a gamebook each paragraph starts a page, or follows the one before after a blank line.
+      const layout = gamebook
+        ? { ...project.settings.export.docx, sceneBreak: project.settings.gamebook.onePerPage ? ("pageBreak" as const) : ("blankLine" as const) }
+        : project.settings.export.docx;
       const labels = { words: t("export.words") };
       const pages = num(pageCount(book, project.settings.pages), 1);
       const withCover = useCover && format !== "md";
@@ -395,6 +422,25 @@
         <option value="typeset">{t("export.profileTypeset")}</option>
       </select>
     </label>
+
+    {#if gamebook}
+      <h4>{t("export.gamebook")}</h4>
+      <p class="hint">{t(project.settings.gamebook.onePerPage ? "export.gamebookHintPage" : "export.gamebookHintFlow")}</p>
+      <label class="check"><input type="checkbox" bind:checked={workingTitles} /> {t("export.workingTitles")}</label>
+      {#if problems.length}
+        <div class="problems" role="alert">
+          <strong>{t("export.gamebookProblems", { n: problems.length })}</strong>
+          <ul>
+            {#each problems.slice(0, 30) as x (x.path)}
+              <li>
+                <button type="button" class="link" onclick={() => nav?.open(x.path)}>{x.number} · {x.title}</button>:
+                {x.warnings.map((w) => t(`gamebook.warning.${w}` as MessageKey)).join("; ")}
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
+    {/if}
 
     <h4>{t("export.page")}</h4>
     <div class="row">
@@ -556,6 +602,16 @@
 </div>
 
 <style>
+  .problems {
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .problems ul {
+    margin: 4px 0 0;
+    padding-left: 16px;
+  }
   .separator {
     display: flex;
     gap: 8px;

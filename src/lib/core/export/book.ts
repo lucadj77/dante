@@ -2,7 +2,7 @@ import { parser as baseParser } from "@lezer/markdown";
 import { GFM } from "@lezer/markdown";
 import type { SyntaxNode } from "@lezer/common";
 import { readProperties, splitNote } from "../frontmatter";
-import { headingInfo, type ContainerKind, type ManuscriptNode } from "../manuscript";
+import { headingInfo, scenesOf, type ContainerKind, type ManuscriptNode } from "../manuscript";
 import { levelHeading } from "../numbering";
 import type { Project } from "../project";
 import { byline, type ParatextSettings } from "../settings";
@@ -13,6 +13,50 @@ import { expandEmbeds } from "../embeds";
 import { captionStart, splitRow, parseTable, type CellAlign } from "../tables";
 import { resolveLink } from "../wikilinks";
 import { isBlankLine, normalizeBlankLines } from "../blankLines";
+import { findBoxes, type BoxType } from "../gamebook/boxes";
+
+// A gamebook's boxes, through the parser: each becomes a paragraph of its own that opens it,
+// its content, and one that closes it. The markers are private characters outside the range
+// that marks images.
+const BOX_OPEN = "\u{F0001}";
+const BOX_CLOSE = "\u{F0002}";
+
+/** The text with each box between its markers, and the colours of the boxes in order. */
+export function markBoxes(text: string, types: BoxType[]): { text: string; colors: string[] } {
+  const colors: string[] = [];
+  let out = "";
+  let last = 0;
+  for (const box of findBoxes(text, types)) {
+    const before = text.slice(last, box.from);
+    const color = types.find((t) => t.id === box.type)?.color ?? "#868e96";
+    const gap = before === "" || /\n\n$/.test(before) ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    out += `${before}${gap}${BOX_OPEN}${colors.length}\n\n${box.content}\n\n${BOX_CLOSE}`;
+    colors.push(color);
+    last = box.to;
+  }
+  return { text: out + text.slice(last), colors };
+}
+
+/** Takes the box markers out of the blocks and marks the blocks between them. */
+export function applyBoxes(blocks: Block[], colors: string[]): Block[] {
+  const out: Block[] = [];
+  let box: BoxMark | undefined;
+  const textOf = (b: Block) => ("runs" in b ? b.runs.map((r) => r.text).join("").trim() : "");
+  for (const b of blocks) {
+    const text = textOf(b);
+    if (text.startsWith(BOX_OPEN)) {
+      const id = Number(text.slice(BOX_OPEN.length));
+      box = { id, color: colors[id] ?? "#868e96" };
+      continue;
+    }
+    if (text === BOX_CLOSE) {
+      box = undefined;
+      continue;
+    }
+    out.push(box ? { ...b, box } : b);
+  }
+  return out;
+}
 
 // The manuscript as a format-neutral document, built once and rendered by each
 // exporter (DOCX now; EPUB and PDF later).
@@ -40,7 +84,14 @@ export interface BookImage {
   alt: string;
 }
 
-export type Block =
+/** A gamebook's box a block stands in: blocks with the same id go in one frame. */
+export interface BoxMark {
+  id: number;
+  /** The box type's colour, as "#3b82c4". */
+  color: string;
+}
+
+export type Block = (
   | { type: "paragraph"; runs: Run[]; align?: Align }
   | { type: "heading"; level: number; runs: Run[] }
   | { type: "quote"; runs: Run[] }
@@ -53,7 +104,8 @@ export type Block =
   | { type: "image"; image: BookImage; align?: Align; caption?: Run[] }
   | { type: "break" }
   /** An empty line between paragraphs, written as a paragraph of its own: no new scene. */
-  | { type: "blank" };
+  | { type: "blank" }
+) & { box?: BoxMark };
 
 // Where an image stood, inside the text that goes through typography and the parser: one
 // private-use character per image, its number counted from IMAGE_BASE.
@@ -390,7 +442,13 @@ async function takeImages(project: Project, notePath: string, text: string, conv
 
 export async function buildBook(
   project: Project,
-  options: { revisions?: "accept" | "reject"; root?: ManuscriptNode; convert?: ImageConverter } = {},
+  options: {
+    revisions?: "accept" | "reject";
+    root?: ManuscriptNode;
+    convert?: ImageConverter;
+    /** In a gamebook, each paragraph's title after its number, for a working copy. */
+    workingTitles?: boolean;
+  } = {},
 ): Promise<Book> {
   const { settings } = project;
   const docx = settings.export.docx;
@@ -413,6 +471,9 @@ export async function buildBook(
   const heads = headingInfo(project.manuscript, settings, titleOf);
 
   const entries: BookEntry[] = [];
+  const gamebook = settings.gamebook.enabled;
+  /** Boxes counted across the book, so that two boxes in a row stay two. */
+  let boxBase = 0;
   let words = 0;
   let characters = 0;
   let sceneCount = 0;
@@ -424,8 +485,11 @@ export async function buildBook(
     const { body, images } = await takeImages(project, node.path, source, options.convert);
     for (const image of images) image.alt = typeset(image.alt);
     // Alignment tags come out before typography, which would change the quotes in them.
-    const { text, aligns } = extractAlignments(cleanSource(body, options.revisions));
-    const blocks = markdownToBlocks(typeset(text), aligns, images);
+    const marked = gamebook ? markBoxes(body, settings.gamebook.boxes) : { text: body, colors: [] };
+    const { text, aligns } = extractAlignments(cleanSource(marked.text, options.revisions));
+    const parsed = markdownToBlocks(typeset(text), aligns, images);
+    const blocks = gamebook ? applyBoxes(parsed, marked.colors).map((b) => (b.box ? { ...b, box: { ...b.box, id: b.box.id + boxBase } } : b)) : parsed;
+    boxBase += marked.colors.length;
     words += countWords(blocks);
     characters += countCharacters(blocks);
     sceneCount++;
@@ -485,7 +549,24 @@ export async function buildBook(
     await flushLoose();
   };
 
-  if (root.kind === "scene") {
+  if (gamebook && root.kind !== "scene") {
+    // A gamebook: the paragraphs in order of number, each under its number; the pages
+    // without a number (rules, an introduction) before or after them, under their title.
+    let paragraphs: BookEntry | null = null;
+    for (const node of scenesOf(root)) {
+      if (node.number !== undefined) {
+        if (!paragraphs) entries.push((paragraphs = { kind: "loose", heading: "", scenes: [] }));
+        const scene = await readScene(node);
+        scene.heading = options.workingTitles ? `${node.number} · ${titleOf(node)}` : String(node.number);
+        paragraphs.scenes.push(scene);
+      } else {
+        paragraphs = null;
+        const scene = await readScene(node);
+        scene.heading = "";
+        entries.push({ kind: "chapter", heading: titleOf(node), scenes: [scene] });
+      }
+    }
+  } else if (root.kind === "scene") {
     const entry: BookEntry = { kind: "loose", heading: "", scenes: [] };
     entries.push(entry);
     await readScenes(entry, [root]);

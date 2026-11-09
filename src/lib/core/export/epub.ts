@@ -1,3 +1,4 @@
+import { pale } from "./docx";
 import { separatorParts, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
@@ -58,6 +59,8 @@ pre { white-space: pre-wrap; font-size: 0.9em; }
 table { border-collapse: collapse; margin: 1em auto; }
 th, td { border: 1px solid #999; padding: 0.2em 0.5em; text-align: left; vertical-align: top; }
 th { font-weight: bold; }
+.box { border: 1px solid; border-left-width: 4px; padding: 0.5em 0.8em; margin: 1em 0; }
+.box p { text-indent: 0; }
 div.image { margin: 1em 0; text-indent: 0; }
 div.image.align-center { text-align: center; }
 div.image.align-right { text-align: right; }
@@ -174,7 +177,19 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
   const blocks = (items: Block[], level: number): string => {
     let first = true;
     const out: string[] = [];
+    // The blocks of a gamebook's box go in one frame.
+    let open: number | null = null;
     for (const block of items) {
+      const id = block.box?.id ?? null;
+      if (open !== null && id !== open) {
+        out.push("</div>");
+        open = null;
+      }
+      if (block.box && open === null) {
+        out.push(`<div class="box" style="border-color: ${block.box.color}; background: #${pale(block.box.color)}">`);
+        open = block.box.id;
+        first = true;
+      }
       if (block.type === "heading") out.push(`<h${Math.min(6, level + block.level)}>${inline(block.runs)}</h${Math.min(6, level + block.level)}>`);
       else if (block.type === "quote") out.push(`<blockquote><p>${inline(block.runs)}</p></blockquote>`);
       else if (block.type === "item") {
@@ -201,6 +216,7 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       }
       first = block.type !== "paragraph";
     }
+    if (open !== null) out.push("</div>");
     return out.join("\n");
   };
 

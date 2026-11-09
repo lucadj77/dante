@@ -1,6 +1,7 @@
 import { formatNumber } from "../numbers";
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   Footer,
   Header,
@@ -11,6 +12,7 @@ import {
   Packer,
   PageNumber,
   Paragraph,
+  ShadingType,
   SectionType,
   Tab,
   TabStopType,
@@ -26,6 +28,28 @@ import {
 import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import type { CellAlign } from "../tables";
+
+/** The colour mixed with white, `amount` of it kept: the background of a gamebook's box. */
+export function pale(color: string, amount = 0.12): string {
+  const n = Number.parseInt(color.replace("#", ""), 16);
+  const mix = (c: number) => Math.round(255 - (255 - c) * amount).toString(16).padStart(2, "0");
+  return `${mix((n >> 16) & 255)}${mix((n >> 8) & 255)}${mix(n & 255)}`.toUpperCase();
+}
+
+/**
+ * A paragraph in a gamebook's box: a border and a light background of the box's colour.
+ * Word joins the borders of paragraphs that have the same ones into a single frame.
+ */
+function frame(block: Block) {
+  if (!block.box) return {};
+  const color = block.box.color.replace("#", "").toUpperCase();
+  const side = { style: BorderStyle.SINGLE, size: 6, color, space: 6 };
+  return {
+    border: { top: side, bottom: side, left: { ...side, size: 18 }, right: side },
+    shading: { type: ShadingType.CLEAR, color: "auto", fill: pale(block.box.color) },
+    indent: { left: 170, right: 170, firstLine: 0 },
+  };
+}
 
 const CELL_ALIGN: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
   left: AlignmentType.LEFT,
@@ -224,16 +248,21 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   const blocks = (items: Block[], level: number) => {
     // No indent after a heading, a separator or a quote: the usual typographic rule.
     let first = true;
+    let previous: Block | undefined;
     for (const block of items) {
+      // Two boxes in a row stay two: Word would join their frames.
+      if (block.box && previous?.box && previous.box.id !== block.box.id) body.push(new Paragraph({ style: "Normal", children: [] }));
+      previous = block;
       if (block.type === "heading") {
-        body.push(new Paragraph({ heading: HEADINGS[Math.min(5, level + block.level)], children: runs(block.runs) }));
+        body.push(new Paragraph({ ...frame(block), heading: HEADINGS[Math.min(5, level + block.level)], children: runs(block.runs) }));
       } else if (block.type === "quote") {
-        body.push(new Paragraph({ style: "BlockText", children: runs(block.runs) }));
+        body.push(new Paragraph({ ...frame(block), style: "BlockText", children: runs(block.runs) }));
       } else if (block.type === "item") {
         const left = (block.level + 1) * LIST_INDENT;
         const lead = block.marker ? [new TextRun({ text: block.marker }), new TextRun({ children: [new Tab()] })] : [];
         body.push(
           new Paragraph({
+            ...frame(block),
             style: "ListParagraph",
             indent: { left, hanging: block.marker ? LIST_INDENT : 0 },
             tabStops: [{ type: TabStopType.LEFT, position: left }],
@@ -243,21 +272,21 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       } else if (block.type === "break") {
         characters();
       } else if (block.type === "blank") {
-        body.push(new Paragraph({ style: "Normal", children: [] }));
+        body.push(new Paragraph({ ...frame(block), style: "Normal", children: [] }));
       } else if (block.type === "table") {
         body.push(table(block.align, block.header, block.rows));
         // Word needs a paragraph between two tables, or it joins them: the caption, if any.
         body.push(new Paragraph(block.caption ? { style: "Caption", alignment: AlignmentType.CENTER, children: runs(block.caption) } : { style: "TableText", children: [] }));
       } else if (block.type === "image") {
         const alignment = block.align === "center" ? AlignmentType.CENTER : block.align === "right" ? AlignmentType.RIGHT : AlignmentType.LEFT;
-        body.push(new Paragraph({ style: "Figure", alignment, keepNext: !!block.caption, children: [imageRun(block.image, textWidth)] }));
-        if (block.caption) body.push(new Paragraph({ style: "Caption", alignment, children: runs(block.caption) }));
+        body.push(new Paragraph({ ...frame(block), style: "Figure", alignment, keepNext: !!block.caption, children: [imageRun(block.image, textWidth)] }));
+        if (block.caption) body.push(new Paragraph({ ...frame(block), style: "Caption", alignment, children: runs(block.caption) }));
       } else {
         const code = block.runs.every((r) => r.code);
         const style = code ? "Code" : block.align === "center" ? "Centered" : block.align === "right" ? "RightAligned" : first ? "FirstParagraph" : "Normal";
         // Left and justified differ from Normal only when the profile sets the other one.
         const alignment = block.align === "left" ? AlignmentType.LEFT : block.align === "justify" ? AlignmentType.JUSTIFIED : undefined;
-        body.push(new Paragraph({ style, alignment, children: runs(block.runs) }));
+        body.push(new Paragraph({ ...frame(block), style, alignment, children: runs(block.runs) }));
       }
       first = block.type !== "paragraph";
     }
