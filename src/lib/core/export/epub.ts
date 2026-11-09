@@ -1,3 +1,4 @@
+import { pale } from "./docx";
 import { separatorParts, type DocxSettings, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
@@ -13,6 +14,21 @@ export function escapeXml(text: string): string {
 
 const lines = (text: string) => text.split("\n").map(escapeXml).join("<br/>");
 
+/** A gamebook's choices for its text and numbers, after the stylesheet so that they win. */
+function gamebookCss(book: Book): string {
+  const gx = book.gamebook;
+  if (!gx) return "";
+  const font = gx.numberFont ? ` font-family: "${gx.numberFont.replace(/["\\]/g, "")}", serif;` : "";
+  return `
+/* Libro game */
+p { text-align: ${gx.justify ? "justify" : "left"}; text-indent: ${gx.indent}cm; margin-bottom: ${gx.spacing}pt; }
+h1.number, h2.number, h3.number, h4.number { font-weight: ${gx.numberBold ? "bold" : "normal"}; font-style: ${gx.numberItalic ? "italic" : "normal"};${font} }
+`;
+}
+
+/** Stands for the file of a gamebook's paragraph until the chapters are laid out. */
+const LINK_HREF = "dante-link:";
+
 /** A paragraph's runs as XHTML; `imageFile` gives where an image inside the text is in the book. */
 function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
   return items
@@ -27,6 +43,9 @@ function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
       if (r.italic) out = `<em>${out}</em>`;
       if (r.bold) out = `<strong>${out}</strong>`;
       if (r.strike) out = `<s>${out}</s>`;
+      if (r.size) out = `<span style="font-size: ${r.size}pt">${out}</span>`;
+      // A gamebook's reference: the file is filled in once every paragraph has its file.
+      if (r.link) out = `<a href="${LINK_HREF}${r.link}">${out}</a>`;
       return out;
     })
     .join("");
@@ -56,8 +75,12 @@ p.align-left { text-align: left; }
 p.align-justify { text-align: justify; }
 pre { white-space: pre-wrap; font-size: 0.9em; }
 table { border-collapse: collapse; margin: 1em auto; }
+h1.number, h2.number, h3.number, h4.number { font-style: normal; font-weight: bold; }
+a { color: inherit; }
 th, td { border: 1px solid #999; padding: 0.2em 0.5em; text-align: left; vertical-align: top; }
 th { font-weight: bold; }
+.box { border: 1px solid; border-left-width: 4px; padding: 0.5em 0.8em; margin: 1em 0; }
+.box p { text-indent: 0; }
 div.image { margin: 1em 0; text-indent: 0; }
 div.image.align-center { text-align: center; }
 div.image.align-right { text-align: right; }
@@ -174,7 +197,19 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
   const blocks = (items: Block[], level: number): string => {
     let first = true;
     const out: string[] = [];
+    // The blocks of a gamebook's box go in one frame.
+    let open: number | null = null;
     for (const block of items) {
+      const id = block.box?.id ?? null;
+      if (open !== null && id !== open) {
+        out.push("</div>");
+        open = null;
+      }
+      if (block.box && open === null) {
+        out.push(`<div class="box" style="border-color: ${block.box.color}; background: #${pale(block.box.color)}">`);
+        open = block.box.id;
+        first = true;
+      }
       if (block.type === "heading") out.push(`<h${Math.min(6, level + block.level)}>${inline(block.runs)}</h${Math.min(6, level + block.level)}>`);
       else if (block.type === "quote") out.push(`<blockquote><p>${inline(block.runs)}</p></blockquote>`);
       else if (block.type === "item") {
@@ -201,6 +236,7 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
       }
       first = block.type !== "paragraph";
     }
+    if (open !== null) out.push("</div>");
     return out.join("\n");
   };
 
@@ -233,7 +269,10 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
     if (e.heading) current.body.push(`<${chapterTag}>${lines(e.heading)}</${chapterTag}>`);
     e.scenes.forEach((scene, i) => {
       if (i > 0) current!.body.push(separator(opts.sceneBreak));
-      if (scene.heading) current!.body.push(`<${sceneTag}>${lines(scene.heading)}</${sceneTag}>`);
+      if (scene.heading && book.gamebook) {
+        const style = book.gamebook.align === "left" ? ' style="text-align: left"' : "";
+        current!.body.push(`<${sceneTag} class="number"${scene.anchor ? ` id="${scene.anchor}"` : ""}${style}>${lines(scene.heading)}</${sceneTag}>`);
+      } else if (scene.heading) current!.body.push(`<${sceneTag}>${lines(scene.heading)}</${sceneTag}>`);
       current!.body.push(blocks(scene.blocks, level));
     });
   }
@@ -268,6 +307,17 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
   const tocHtml = toc.join("\n").replace(/<ol>\n<\/ol>/g, "");
   const nav = page(title, language, `<nav epub:type="toc" id="toc"><h1>${escapeXml(title)}</h1><ol>\n${tocHtml || `<li><a href="${chapters[0]?.file ?? "nav.xhtml"}">${escapeXml(title)}</a></li>`}\n</ol></nav>`);
 
+  // A gamebook's references lead to the file that holds their paragraph.
+  const fileOf = new Map<string, string>();
+  for (const c of chapters) for (const m of c.html.matchAll(/ id="(p\d+)"/g)) fileOf.set(m[1], c.file);
+  for (const c of chapters) {
+    if (!c.html.includes(LINK_HREF)) continue;
+    c.html = c.html.replace(/href="dante-link:(p\d+)"/g, (_, anchor: string) => {
+      const file = fileOf.get(anchor);
+      return `href="${file === c.file ? "" : file ?? ""}#${anchor}"`;
+    });
+  }
+
   const modified = now.toISOString().replace(/\.\d+Z$/, "Z");
   const opf = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id" xml:lang="${language}">
@@ -299,7 +349,7 @@ ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
       { name: "META-INF/container.xml", data: container },
       { name: "OEBPS/content.opf", data: opf },
       { name: "OEBPS/nav.xhtml", data: nav },
-      { name: "OEBPS/style.css", data: css.trim() ? css : EPUB_CSS },
+      { name: "OEBPS/style.css", data: (css.trim() ? css : EPUB_CSS) + gamebookCss(book) },
       ...(cover ? [{ name: `OEBPS/${coverFile}`, data: cover.data }] : []),
       ...chapters.map((c) => ({ name: `OEBPS/${c.file}`, data: c.html })),
       ...[...images.values()].map((img) => ({ name: `OEBPS/${img.file}`, data: img.data })),

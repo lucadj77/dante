@@ -2,6 +2,7 @@ import { parseDocument } from "yaml";
 import { COVER_PALETTES, COVER_TEMPLATES, hexColor, type CoverSettings } from "./cover";
 import { authorsOf } from "./export/files";
 import { parsePropertyDefs, serializePropertyDefs, type PropertyDef } from "./properties";
+import { defaultBoxTypes, type BoxType } from "./gamebook/boxes";
 
 export const SETTINGS_FILE = "dante.yaml";
 
@@ -185,6 +186,61 @@ export interface NoteType {
   properties: string[];
 }
 
+export interface GamebookSettings {
+  enabled: boolean;
+  /** Number of the paragraph the reader starts from. */
+  start: number;
+  /** A paragraph shorter than this, in the unit of the pages, is marked as short. */
+  short: number;
+  /** Each paragraph starts on a new page, for the estimate of pages. */
+  onePerPage: boolean;
+  /** Shows under each paragraph in the tree where it comes from and where it leads. */
+  showLinks: boolean;
+  boxes: BoxType[];
+  /** How the export lays out the paragraphs. */
+  export: GamebookExportSettings;
+}
+
+/** The export of a gamebook: in place of parts, chapters and scenes, the paragraphs. */
+export interface GamebookExportSettings {
+  /** The heading of each paragraph: its number, or number and title for a working copy. */
+  heading: "number" | "numberTitle";
+  /** Written before the number, such as "§ "; empty for the number alone. */
+  prefix: string;
+  align: "center" | "left";
+  /** Size of the number, in points. */
+  size: number;
+  /** Between two paragraphs: a new page, an empty line, or the characters of `symbol`. */
+  separator: "pageBreak" | "blankLine" | "characters";
+  symbol: string;
+  /** References lead to their paragraph with a click, in Word, PDF and EPUB. */
+  links: boolean;
+  /** References in bold, as they are written; off, in the weight of the text. */
+  bold: boolean;
+  /** Boxes in their type's colour, in grey, or as plain text. */
+  boxes: "color" | "gray" | "none";
+  /** The text of the paragraphs justified, or ragged on the right. */
+  justify: boolean;
+  /** First-line indent of the text, in centimetres. */
+  indent: number;
+  /** Space after each paragraph of text, in points. */
+  spacing: number;
+  /** Size of the text in boxes, in points; 0 for the size of the text. */
+  boxSize: number;
+  /** The number in bold, and in a font of its own ("" for the font of the text). */
+  numberBold: boolean;
+  numberItalic: boolean;
+  numberFont: string;
+}
+
+export function defaultGamebookExport(): GamebookExportSettings {
+  return { heading: "number", prefix: "", align: "center", size: 18, separator: "pageBreak", symbol: "✦", links: true, bold: true, boxes: "color", justify: true, indent: 0.5, spacing: 0, boxSize: 0, numberBold: true, numberItalic: false, numberFont: "" };
+}
+
+export function defaultGamebook(language = "it"): GamebookSettings {
+  return { enabled: false, start: 1, short: 400, onePerPage: true, showLinks: false, boxes: defaultBoxTypes(language), export: defaultGamebookExport() };
+}
+
 export interface NovelSettings {
   title: string;
   subtitle: string;
@@ -241,6 +297,11 @@ export interface NovelSettings {
     /** Colours chosen for the dots, by property and value (in lower case), as #rrggbb. */
     colors: Record<string, Record<string, string>>;
   };
+  /**
+   * The gamebook module, off for a novel. When on, the manuscript folder holds numbered
+   * paragraphs written as the Obsidian plugin «Librogame» writes them.
+   */
+  gamebook: GamebookSettings;
   /** What makes a page in the statistics and the export summary. */
   pages: {
     /** Characters (spaces included) or words. */
@@ -470,6 +531,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     goals: { unit: language.startsWith("it") ? "characters" : "words", words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
     cover: { template: "", palette: "", image: "", show: { title: true, subtitle: true, authors: true }, textColor: "", outlineColor: "" },
     tree: { dot: "", colors: {} },
+    gamebook: defaultGamebook(language),
     pages: { unit: "characters", size: 1800 },
     export: {
       format: "docx",
@@ -535,6 +597,20 @@ function parseDotColors(value: unknown): Record<string, Record<string, string>> 
   return out;
 }
 
+/** The gamebook's box types as written in dante.yaml; the plugin's six when there are none. */
+function parseBoxTypes(value: unknown, language: string): BoxType[] {
+  if (!Array.isArray(value)) return defaultBoxTypes(language);
+  const out: BoxType[] = [];
+  for (const item of value) {
+    if (!isObject(item) || typeof item.emoji !== "string" || !item.emoji.trim()) continue;
+    const text = (key: string) => (typeof item[key] === "string" ? (item[key] as string) : "");
+    const id = text("id").trim() || `box${out.length + 1}`;
+    if (out.some((b) => b.id === id)) continue;
+    out.push({ id, emoji: item.emoji.trim(), name: text("name") || id, color: hexColor(text("color")) || "#888888", text: text("text"), property: text("property").trim(), ending: item.ending === true });
+  }
+  return out.length ? out : defaultBoxTypes(language);
+}
+
 /** Fills what the file leaves out with defaults, recursively. */
 function merge<T>(defaults: T, value: unknown): T {
   if (!isObject(defaults) || !isObject(value)) {
@@ -553,6 +629,21 @@ export function parseSettings(text: string): NovelSettings {
   // Types are a free list: the user's replace the defaults instead of being merged into them.
   settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
   settings.properties = parsePropertyDefs(isObject(raw) ? raw.properties : undefined);
+  settings.gamebook.boxes = parseBoxTypes(isObject(raw) && isObject(raw.gamebook) ? raw.gamebook.boxes : undefined, language);
+  if (!Number.isInteger(settings.gamebook.start) || settings.gamebook.start < 1) settings.gamebook.start = 1;
+  if (!(settings.gamebook.short >= 0)) settings.gamebook.short = 400;
+  const gx = settings.gamebook.export;
+  // A book that set only "each paragraph on a new page" keeps it in the export.
+  if (!(isObject(raw) && isObject(raw.gamebook) && isObject(raw.gamebook.export)) && !settings.gamebook.onePerPage) gx.separator = "blankLine";
+  if (!["number", "numberTitle"].includes(gx.heading)) gx.heading = "number";
+  if (!["center", "left"].includes(gx.align)) gx.align = "center";
+  if (!["pageBreak", "blankLine", "characters"].includes(gx.separator)) gx.separator = "pageBreak";
+  if (!["color", "gray", "none"].includes(gx.boxes)) gx.boxes = "color";
+  if (!(gx.size >= 6 && gx.size <= 72)) gx.size = 18;
+  if (!(gx.indent >= 0 && gx.indent <= 5)) gx.indent = 0.5;
+  if (!(gx.spacing >= 0 && gx.spacing <= 48)) gx.spacing = 0;
+  if (!(gx.boxSize >= 0 && gx.boxSize <= 48)) gx.boxSize = 0;
+  if (typeof gx.numberFont !== "string") gx.numberFont = "";
   settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;
@@ -612,6 +703,13 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     if (path.length === 2 && path[0] === "tree" && path[1] === "colors") {
       if (Object.keys(value as object).length) doc.setIn(path, doc.createNode(value));
       else doc.deleteIn(path);
+      return;
+    }
+    // The gamebook's settings stay out of a novel's file until the module is turned on.
+    if (path.length === 1 && path[0] === "gamebook") {
+      const gamebook = value as GamebookSettings;
+      if (!gamebook.enabled && !doc.hasIn(["gamebook"])) return;
+      doc.setIn(path, doc.createNode(gamebook));
       return;
     }
     if (path.length === 1 && path[0] === "properties") {

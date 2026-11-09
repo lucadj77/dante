@@ -19,6 +19,11 @@ export const TITLE = "title";
 export const SYNOPSIS = "synopsis";
 /** Property of a scene or folder note: the words it should reach. */
 export const GOAL = "goal";
+/** Property of a gamebook paragraph: its number, as the Obsidian plugin «Librogame» writes it. */
+export const GAMEBOOK_NUMBER = "numero";
+/** In a gamebook, `posizione: dopo` puts a page that is not a paragraph (an epilogue, the credits) after the paragraphs. */
+export const GAMEBOOK_POSITION = "posizione";
+export const GAMEBOOK_AFTER = "dopo";
 
 /** The `title` property, when it holds one. */
 function ownTitle(properties: Record<string, unknown>): string | null {
@@ -41,12 +46,24 @@ export interface ManuscriptNode {
   notePath: string | null;
   /** A chapter or part with `numbered: false` in its folder note: no number, and not counted. */
   unnumbered?: boolean;
+  /** In a gamebook, the paragraph's number (its `numero` property). */
+  number?: number;
+  /** In a gamebook, a page that is not a paragraph: before or after the paragraphs. */
+  position?: "before" | "after";
   children: ManuscriptNode[];
 }
 
 /** A note in a folder with the folder's own name holds the folder's properties. */
 export function folderNotePath(dir: string): string {
   return join(dir, basename(dir) + ".md");
+}
+
+/** In a gamebook: the pages that go before, the paragraphs by number, the pages that go after. */
+function byNumber(a: ManuscriptNode, b: ManuscriptNode): number {
+  const group = (n: ManuscriptNode) => (n.number !== undefined ? 1 : n.position === "after" ? 2 : 0);
+  if (group(a) !== group(b)) return group(a) - group(b);
+  if (a.number !== undefined && b.number !== undefined && a.number !== b.number) return a.number - b.number;
+  return a.title.localeCompare(b.title, undefined, { numeric: true });
 }
 
 function byOrder(a: ManuscriptNode, b: ManuscriptNode): number {
@@ -78,6 +95,7 @@ export async function loadManuscript(fs: ProjectFs, settings: NovelSettings): Pr
 
 async function loadChildren(fs: ProjectFs, dir: string, depth: number, settings: NovelSettings): Promise<ManuscriptNode[]> {
   const entries = await fs.list(dir);
+  const gamebook = settings.gamebook.enabled;
   const note = depth === 0 ? null : folderNotePath(dir);
   const children: ManuscriptNode[] = [];
   const present = new Set(entries.map((e) => e.path));
@@ -88,12 +106,32 @@ async function loadChildren(fs: ProjectFs, dir: string, depth: number, settings:
     if (entry.isDir) {
       children.push(await loadContainer(fs, entry.path, depth + 1, settings));
     } else if (isMarkdown(entry.path)) {
+      const properties = readProperties(await fs.readText(entry.path));
+      if (gamebook) {
+        // A paragraph's file name is its title: the number lives in its properties.
+        const title = stripExt(entry.name);
+        const number = properties[GAMEBOOK_NUMBER];
+        const paragraph = Number.isInteger(number);
+        children.push({
+          kind: "scene",
+          path: entry.path,
+          name: entry.name,
+          order: null,
+          title,
+          fileTitle: title,
+          notePath: null,
+          number: paragraph ? (number as number) : undefined,
+          position: paragraph ? undefined : properties[GAMEBOOK_POSITION] === GAMEBOOK_AFTER ? "after" : "before",
+          children: [],
+        });
+        continue;
+      }
       const { order, title } = parseName(stripExt(entry.name));
-      const own = ownTitle(readProperties(await fs.readText(entry.path)));
+      const own = ownTitle(properties);
       children.push({ kind: "scene", path: entry.path, name: entry.name, order, title: own ?? title, fileTitle: title, notePath: null, children: [] });
     }
   }
-  return children.sort(byOrder);
+  return children.sort(gamebook ? byNumber : byOrder);
 }
 
 async function loadContainer(fs: ProjectFs, dir: string, depth: number, settings: NovelSettings): Promise<ManuscriptNode> {

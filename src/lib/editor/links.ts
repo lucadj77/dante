@@ -4,6 +4,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import type { ImageHandler } from "./images";
 import type { NameFound, NameMatcher } from "$lib/core/mentions";
 import { namedNotes } from "./mentions";
+import { articleFix } from "$lib/core/gamebook/articles";
 
 export interface LinkSuggestion {
   /** What goes between [[ and ]]: the shortest name that reaches the note. */
@@ -43,7 +44,156 @@ export interface LinkHandler {
   names?(): { matcher: NameMatcher; own: string } | null;
   /** A right click on a name found: the menu of its note; `link` writes the name as a link to `target`. */
   named?(found: NameFound, at: { x: number; y: number }, link: (target: string) => void): void;
+  /** In a gamebook paragraph: references to other paragraphs instead of links to notes. */
+  gamebook?: GamebookLinks;
 }
+
+/** A paragraph offered after "[[". */
+export interface ParagraphChoice {
+  title: string;
+  number: number;
+  empty: boolean;
+}
+
+export interface GamebookLinks {
+  paragraphs(): ParagraphChoice[];
+  firstFree(): number;
+  /** Creates a paragraph with the first free number. */
+  create(title: string): Promise<ParagraphChoice>;
+  /** Adds a reference to the paragraph's hidden references, out of the text. */
+  hide(choice: ParagraphChoice): Promise<void>;
+  /** Asks for everything (title, fixed or relative number, hidden or not), then calls `insert` for a reference in the text. */
+  ask(title: string, hidden: boolean, insert: (choice: ParagraphChoice) => void): void;
+  failed(error: unknown): void;
+  /** The words of the two ways to create a paragraph, in the writer's language. */
+  labels: { create(title: string, number: number): string; createDetail: string; more(title: string): string; moreDetail: string };
+}
+
+/**
+ * Writes a reference to `choice` over from..to, in bold as the plugin writes it, with the
+ * article before it agreeing with the number.
+ */
+export function insertReference(view: EditorView, from: number, to: number, choice: ParagraphChoice) {
+  const state = view.state;
+  const boldBefore = state.doc.sliceString(Math.max(0, from - 2), from) === "**";
+  const boldAfter = state.doc.sliceString(to, to + 2) === "**";
+  const link = `[[${choice.title}|${choice.number}]]`;
+  const insert = boldBefore && boldAfter ? link : `**${link}**`;
+  const line = state.doc.lineAt(from);
+  const before = state.doc.sliceString(line.from, from);
+  const fix = articleFix(before, choice.number);
+  const changes = fix ? [{ from: line.from + fix.from, to: from, insert: fix.text }, { from, to, insert }] : [{ from, to, insert }];
+  const set = ChangeSet.of(changes, state.doc.length);
+  view.dispatch({ changes: set, selection: { anchor: set.mapPos(to, 1) + (boldBefore && boldAfter ? 2 : 0) }, userEvent: "input.complete", scrollIntoView: true });
+}
+
+/** After "[[" in a gamebook: the paragraphs by number or title, then the new paragraph to create. */
+function completeParagraph(context: CompletionContext, gamebook: GamebookLinks): CompletionResult | null {
+  const before = context.matchBefore(/\[\[[^\[\]|\n]*$/);
+  if (!before) return null;
+  const start = before.from;
+  const query = before.text.slice(2);
+  const closed = context.state.doc.sliceString(context.pos, context.pos + 2) === "]]";
+  const end = (pos: number) => (closed ? pos + 2 : pos);
+  // The list is filtered and ordered here: paragraphs first, by number when a number is
+  // typed, then the paragraphs to create, which the editor's own ranking would put first.
+  const wanted = fold(query.trim());
+  const found = gamebook
+    .paragraphs()
+    .filter((p) => !wanted || String(p.number).startsWith(wanted) || fold(p.title).includes(wanted))
+    .sort((a, b) => {
+      const exact = (p: ParagraphChoice) => (String(p.number) === wanted || fold(p.title) === wanted ? 0 : 1);
+      return exact(a) - exact(b) || a.number - b.number;
+    });
+  const options: Completion[] = found.map((p) => ({
+      label: `${p.number} ${p.title}`,
+      detail: p.empty ? "○" : undefined,
+      type: "paragraph",
+      apply: (view: EditorView, _c: Completion, _from: number, to: number) => {
+        if (takeHidden()) {
+          view.dispatch({ changes: { from: start, to: end(to), insert: "" } });
+          void gamebook.hide(p).catch(gamebook.failed);
+        } else insertReference(view, start, end(to), p);
+      },
+    }));
+  // The new paragraph comes first, as the writer asked: creating is what "[[" is most often for.
+  const title = query.trim();
+  const creating: Completion[] = [];
+  if (title && !/^\d+$/.test(title) && !found.some((p) => fold(p.title) === wanted)) {
+    creating.push({
+      label: title,
+      displayLabel: gamebook.labels.create(title, gamebook.firstFree()),
+      detail: gamebook.labels.createDetail,
+      type: "create",
+      apply: (view: EditorView, _c: Completion, _from: number, to: number) => {
+        const hidden = takeHidden();
+        const range = { from: start, to: end(to) };
+        void gamebook
+          .create(title)
+          .then((choice) => {
+            if (hidden) {
+              view.dispatch({ changes: { ...range, insert: "" } });
+              return gamebook.hide(choice);
+            }
+            insertReference(view, range.from, range.to, choice);
+          })
+          .catch(gamebook.failed);
+      },
+    });
+  }
+  if (!/^\d+$/.test(title)) {
+    creating.push({
+      label: title + " ",
+      displayLabel: gamebook.labels.more(title),
+      detail: gamebook.labels.moreDetail,
+      type: "create-more",
+      apply: (view: EditorView, _c: Completion, _from: number, to: number) => {
+        const hidden = takeHidden();
+        view.dispatch({ changes: { from: start, to: end(to), insert: "" } });
+        gamebook.ask(title, hidden, (choice) => insertReference(view, start, start, choice));
+      },
+    });
+  }
+  options.unshift(...creating);
+  return { from: start + 2, options, filter: false };
+}
+
+/** Lower case and without accents, to find "perche" in "Perché". */
+function fold(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/** Alt+Enter takes a suggestion as a hidden reference: the key sets this, the suggestion reads it. */
+let hiddenPending = false;
+function takeHidden(): boolean {
+  const hidden = hiddenPending;
+  hiddenPending = false;
+  return hidden;
+}
+const hiddenKey = keymap.of([
+  {
+    key: "Alt-Enter",
+    run: (view) => {
+      hiddenPending = true;
+      const done = acceptCompletion(view);
+      if (!done) hiddenPending = false;
+      return done;
+    },
+  },
+]);
+
+/** In a gamebook: the window for a new paragraph, whose reference goes at the cursor (over the selection, which proposes the title). */
+export function askNewParagraph(view: EditorView): boolean {
+  const gamebook = view.state.facet(linkHandler)?.gamebook;
+  if (!gamebook) return false;
+  const at = view.state.selection.main;
+  const selected = view.state.sliceDoc(at.from, at.to).trim();
+  gamebook.ask(selected, false, (choice) => insertReference(view, at.from, at.to, choice));
+  return true;
+}
+
+/** In a gamebook, Ctrl+Enter (Cmd+Enter) creates a paragraph and puts the reference to it at the cursor. */
+const newParagraphKey = keymap.of([{ key: "Mod-Enter", run: askNewParagraph }]);
 
 export const linkHandler = Facet.define<LinkHandler, LinkHandler | null>({
   combine: (values) => values[0] ?? null,
@@ -153,6 +303,7 @@ const aliasLinks = EditorState.transactionFilter.of((tr) => {
 function complete(context: CompletionContext): CompletionResult | null {
   const handler = context.state.facet(linkHandler);
   if (!handler) return null;
+  if (handler.gamebook) return completeParagraph(context, handler.gamebook);
   const before = context.matchBefore(/\[\[[^\[\]|\n]*$/);
   if (!before) return null;
   const from = before.from + 2;
@@ -188,5 +339,6 @@ export function wikilinks(handler: LinkHandler | undefined): Extension {
     autocompletion({ override: [complete], icons: false, activateOnTyping: true }),
     // Tab takes the highlighted suggestion too, as Enter does.
     Prec.highest(keymap.of([{ key: "Tab", run: acceptCompletion }])),
+    ...(handler.gamebook ? [Prec.highest(hiddenKey), Prec.highest(newParagraphKey)] : []),
   ];
 }

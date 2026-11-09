@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { keepInView } from "./keepInView";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import { onDisk, projectKey } from "$lib/platform";
@@ -235,7 +236,7 @@
   {#if menu}
     {@const m = menu}
     <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
-    <div class="menu" role="menu" style="left: {m.x}px; top: {m.y}px">
+    <div class="menu" role="menu" style="left: {m.x}px; top: {m.y}px" use:keepInView={m}>
       {#if m.dir}
         <button role="menuitem" onclick={() => newNote(m.path)}>{t("files.newNoteHere")}</button>
         <button role="menuitem" onclick={() => newFolder(m.path)}>{t("files.newFolderHere")}</button>
