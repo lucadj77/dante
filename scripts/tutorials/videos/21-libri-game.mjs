@@ -98,7 +98,7 @@ const D = {
     s6b: 'Senza numero',
     rules: 'Regole',
     rulesSay: 'Una pagina senza numero, con 📄: regole, introduzione, ringraziamenti. Di base va prima dei paragrafi',
-    callout: 'Un blocco che comincia con > [!note] si vede come un riquadro con il nome in una pillola colorata',
+    callout: 'Nelle pagine come nei paragrafi, un blocco che comincia con > [!note] diventa un riquadro con il nome in una pillola colorata',
     page: 'Il pulsante Pagina ne crea una nuova; con il clic destro si rinomina o si mette dopo i paragrafi',
     after: 'Ora la pagina va dopo i paragrafi, ed è così che l’esportazione la metterà',
     s7: 'Controllare il libro',
@@ -202,7 +202,7 @@ const D = {
     s6b: 'With no number',
     rules: 'Rules',
     rulesSay: 'A page with no number, marked 📄: rules, introduction, acknowledgements. By default it goes before the sections',
-    callout: 'A block that starts with > [!note] shows as a frame with its name in a coloured pill',
+    callout: 'In pages as in sections, a block that starts with > [!note] becomes a frame with its name in a coloured pill',
     page: 'The Page button makes a new one; right-click to rename it or put it after the sections',
     after: 'Now the page goes after the sections, and that is where the export will put it',
     s7: 'Checking the book',
@@ -380,7 +380,6 @@ export default async function (t) {
   // 6. pages without a number
   await t.title(d.s6, d.s6b, () => t.click(row(d.rules), { after: 1.2 }));
   await t.focus(row(d.rules).locator('xpath=..'), d.rulesSay, { side: 'right' });
-  await t.focus(main.locator('.cm-callout, .callout').first(), d.callout, { side: 'below' });
   const pageButton = treePane.getByRole('button', { name: L('gamebook.newPage') });
   await t.focus(pageButton, d.page, { side: 'right' });
   await t.click(pageButton, { after: 1.2 });
@@ -389,6 +388,8 @@ export default async function (t) {
   await t.wait(0.6);
   await t.click(p.getByRole('menuitem', { name: L('gamebook.moveAfter') }).first(), { after: 1 });
   await t.focus(newPage.locator('xpath=..'), d.after, { side: 'right' });
+  await t.click(row(d.rules), { after: 1.2 });
+  await t.focus(main.locator('.cm-callout, .callout').first(), d.callout, { side: 'below' });
 
   // 7. the checks
   await t.title(d.s7, d.s7b);
