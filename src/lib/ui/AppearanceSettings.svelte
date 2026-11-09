@@ -3,6 +3,7 @@
   import { ACCENTS } from "$lib/themes";
   import type { MessageKey } from "$lib/i18n";
   import FontPicker from "./FontPicker.svelte";
+  import { UI_ZOOMS, uiZoom } from "$lib/uiZoom.svelte";
 
   // How Dante looks on this computer: theme, accent colour and the page of the editor
   // (font, size, line width, spacing, indent, justification), with a sample of the text.
@@ -82,6 +83,19 @@
     {/each}
   </div>
 </div>
+
+{#if uiZoom.where === "browser"}
+  <div class="field"><span class="label">{t("appearance.uiZoom")}</span></div>
+{:else}
+<label
+  >{t("appearance.uiZoom")}
+  <select value={app.settings.uiZoom} disabled={uiZoom.where !== "app"} onchange={(e) => set({ uiZoom: Number(e.currentTarget.value) })}>
+    {#each UI_ZOOMS as z (z)}<option value={z}>{Math.round(z * 100)}%{z === 1 ? ` (${t("appearance.usual")})` : ""}</option>{/each}
+    {#if !UI_ZOOMS.includes(app.settings.uiZoom)}<option value={app.settings.uiZoom}>{Math.round(app.settings.uiZoom * 100)}%</option>{/if}
+  </select>
+</label>
+{/if}
+<p class="hint">{t(uiZoom.where === "browser" ? "appearance.uiZoomBrowser" : uiZoom.where === "old-mac" ? "appearance.uiZoomOldMac" : "appearance.uiZoomHint")}</p>
 
 <h3>{t("appearance.page")}</h3>
 <label

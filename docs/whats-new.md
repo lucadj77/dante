@@ -6,6 +6,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Interface size**: in Settings > Dante on this computer > Appearance you can enlarge the whole Dante window, from 80% to 200%: menus, panels, buttons and their text, not just the text in the editor.
+
 ### Changed
 
 ### Fixed

@@ -31,7 +31,7 @@ fn staged_folder() -> Option<&'static str> {
 
 /// True on macOS 10.x, read from the system's own version file.
 #[cfg(target_os = "macos")]
-fn macos_10() -> bool {
+pub(crate) fn macos_10() -> bool {
     let Ok(plist) = std::fs::read_to_string("/System/Library/CoreServices/SystemVersion.plist") else {
         return false;
     };

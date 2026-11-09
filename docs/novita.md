@@ -6,6 +6,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Dimensione dell'interfaccia**: in Impostazioni > Dante su questo computer > Aspetto puoi ingrandire tutta la finestra di Dante, da 80% a 200%: menu, pannelli, pulsanti e il loro testo, non solo il testo dell'editor.
+
 ### Cambiato
 
 ### Corretto

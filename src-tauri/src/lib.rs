@@ -59,6 +59,18 @@ fn opened_project(opened: State<Opened>) -> Option<String> {
     opened.0.lock().unwrap().take()
 }
 
+/// Makes the whole interface larger or smaller, as the zoom of a browser: menus, panels,
+/// buttons and text together. False where the system cannot: on macOS 10.15 and older the
+/// web view has no page zoom (WKWebView.pageZoom arrived with macOS 11) and asking would stop Dante.
+#[tauri::command]
+fn set_ui_zoom(window: tauri::WebviewWindow, factor: f64) -> bool {
+    #[cfg(target_os = "macos")]
+    if webkit::macos_10() {
+        return false;
+    }
+    window.set_zoom(factor.clamp(0.5, 3.0)).is_ok()
+}
+
 /// How long the page has to write what is not saved yet before Dante quits anyway.
 const QUIT_GRACE: std::time::Duration = std::time::Duration::from_secs(3);
 
@@ -239,6 +251,7 @@ pub fn run() {
             webkit::webkit_info,
             opened_project,
             updates_supported,
+            set_ui_zoom,
             quit,
             quit_answered,
         ])
