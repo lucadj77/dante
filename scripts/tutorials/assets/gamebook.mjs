@@ -14,7 +14,7 @@ const it = {
   folder: 'Paragrafi',
   yaml: 'title: La torre del mago\nauthor: Luca Di Gialleonardo\nlanguage: it\nfolders:\n  manuscript: Paragrafi\n',
   pages: {
-    Regole: `---\nnote:\n---\nIn questo libro sei tu il protagonista. Non leggerlo dall'inizio alla fine: ogni paragrafo ti dice a quale andare dopo.\n\nTieni accanto un foglio, la **scheda**: quando il testo ti chiede di segnare una parola chiave o di cerchiare una caratteristica, scrivila lì.`,
+    Regole: `---\nnote:\n---\nIn questo libro sei tu il protagonista. Non leggerlo dall'inizio alla fine: ogni paragrafo ti dice a quale andare dopo.\n\nTieni accanto un foglio, la **scheda**: quando il testo ti chiede di segnare una parola chiave o di cerchiare una caratteristica, scrivila lì.\n\n> [!note] Consiglio\n> Usa una matita: alcune parole chiave andranno cancellate.`,
   },
   paragraphs: {
     'Il cancello': par(1, `La torre del mago si alza nera contro il cielo. Il cancello è socchiuso e cigola nel vento; lungo le mura corre un fossato pieno d'acqua scura.\n\n${box(`🤔 **Devi decidere!**\n\nSe entri dal cancello vai al ${L('Il cortile', 2)}. Se preferisci girare intorno alle mura vai al ${L('Il fossato', 5)}.`)}`, 'numero_tipo: fisso\n'),
@@ -40,7 +40,7 @@ const en = {
   folder: 'Sections',
   yaml: "title: The Wizard's Tower\nauthor: Luca Di Gialleonardo\nlanguage: en\nfolders:\n  manuscript: Sections\n",
   pages: {
-    Rules: `---\nnote:\n---\nIn this book you are the hero. Do not read it from start to end: each section tells you which one to read next.\n\nKeep a sheet of paper beside you, your **adventure sheet**: when the text asks you to note a keyword or circle a trait, write it there.`,
+    Rules: `---\nnote:\n---\nIn this book you are the hero. Do not read it from start to end: each section tells you which one to read next.\n\nKeep a sheet of paper beside you, your **adventure sheet**: when the text asks you to note a keyword or circle a trait, write it there.\n\n> [!note] Tip\n> Use a pencil: some keywords will have to be rubbed out.`,
   },
   paragraphs: {
     'The gate': par(1, `The wizard's tower rises black against the sky. The gate stands ajar and creaks in the wind; a moat of dark water runs along the walls.\n\n${box(`🤔 **You must act fast!**\n\nIf you go through the gate turn to ${L('The courtyard', 2)}. If you walk around the walls turn to ${L('The moat', 5)}.`)}`, 'numero_tipo: fisso\n'),

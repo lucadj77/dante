@@ -223,6 +223,15 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
   // PEEK=dir saves the page before each section title and at the end, to check a FAST run
   let peeks = 0;
   const peek = async () => { if (process.env.PEEK) await p.screenshot({ path: path.join(process.env.PEEK, `${String(++peeks).padStart(2, '0')}.png`) }); };
+  // STORY=dir saves a picture of each boxed text, section title and caption, with the words, for a storyboard
+  const story = [];
+  const still = async (kind, text) => {
+    if (!process.env.STORY) return;
+    const file = `${String(story.length + 1).padStart(3, '0')}.jpg`;
+    await p.screenshot({ path: path.join(process.env.STORY, file), type: 'jpeg', quality: 80 });
+    story.push({ file, kind, text });
+    fs.writeFileSync(path.join(process.env.STORY, 'story.json'), JSON.stringify(story, null, 1));
+  };
   const point = async (loc, dx = 0.5, dy = 0.5) => { const r = await box(loc); await moveTo(r.x + r.width * dx, r.y + r.height * dy); await wait(0.25); return r; };
 
   const t = {
@@ -245,6 +254,7 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
       const r = await around(loc);
       if (pointer) await moveTo(r.x + r.width / 2, r.y + r.height / 2);
       await p.evaluate(([r, text, side]) => window.__tu.box(r, text, side), [r, text, side]);
+      if (process.env.STORY) { await p.waitForTimeout(700); await still('focus', text ?? ''); }
       await wait(hold ?? readTime(text ?? ''));
       await p.evaluate(() => window.__tu.box(null));
       await wait(0.5);
@@ -253,6 +263,7 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
     async say(text, { hold } = {}) {
       await p.evaluate((text) => window.__tu.box({ x: innerWidth / 2, y: innerHeight - 40, width: 0, height: 0 }, text, 'above'), text);
       await p.evaluate(() => { document.getElementById('tu-box').style.opacity = 0; });
+      if (process.env.STORY) { await p.waitForTimeout(700); await still('say', text); }
       await wait(hold ?? readTime(text));
       await p.evaluate(() => window.__tu.box(null));
       await wait(0.5);
@@ -261,6 +272,7 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
     async title(big, small = '', after) {
       await peek();
       await p.evaluate(([b, s]) => window.__tu.title(b, s), [big, small]);
+      if (process.env.STORY) story.push({ kind: 'title', text: big, small });
       await wait(Math.max(2.5, readTime(big + ' ' + small) - 1));
       await p.evaluate(() => window.__tu.title(null));
       await wait(1.1);
