@@ -21,7 +21,7 @@ This file covers what every task needs. Read the reference files when the task t
 | --- | --- |
 | `references/dante-yaml.md` | changing `dante.yaml`: headings, goals, pages, cover, tree colours, export, typography |
 | `references/markup.md` | writing or converting text with images, tables, alignment, blank lines, callouts, embeds, diagrams |
-| `references/gamebook.md` | `dante.yaml` has `gamebook: enabled: true`, or the user talks about a gamebook, paragraphs, choices |
+| `references/gamebook.md` | a gamebook needs more than the "Gamebooks" section below: checks, game state, export |
 
 `scripts/outline.py` prints the manuscript in reading order with lengths and warnings (see
 "Tools" at the end). Run it before and after any structural change.
@@ -252,6 +252,161 @@ themselves; nothing else changes.
 notes; the chapter title is the folder note's `title` or the folder name without its number.
 Leave out CriticMarkup comments, read pending revisions as accepted (the default export), and
 say so if it matters.
+
+## Gamebooks
+
+A project is a gamebook when `dante.yaml` has `gamebook: enabled: true`. The manuscript folder
+(`folders.manuscript`, often `Paragraphs`, `Sections` or `Paragrafi`) then holds **numbered
+paragraphs** instead of chapters and scenes, and the reader jumps from one to another by the
+choices they make. Everything else in this file (presence, snapshots, trash, CriticMarkup, Story
+Bible, links) still applies. `references/gamebook.md` has the edge cases.
+
+```yaml
+folders:
+  manuscript: Paragraphs
+gamebook:
+  enabled: true
+  start: 1          # the number of the paragraph the reader starts from
+  short: 400        # a paragraph shorter than this (in goals.unit) is flagged as short
+  onePerPage: true  # each paragraph starts on a new page (pages and export)
+  boxes: [...]      # the box types of this book (defaults below)
+```
+
+### Paragraph files
+
+One Markdown file per paragraph, in the paragraphs folder (flat, no subfolders). **The file
+name is the paragraph's title and never holds the number; the number is the `numero`
+property, repeated in `aliases`.** The keys are the same in every language, because they are
+the file format:
+
+```markdown
+---
+numero: 12
+aliases:
+  - "12"
+note: "Only place where the guard can be bribed"
+---
+The courtyard is empty. A door creaks on your left.
+
+::: {custom-style="box"}
+🤔 **You must act fast!**
+
+If you open the door, turn to **[[The cellar|27]]**. If you climb the wall, turn to **[[On the roof|31]]**.
+:::
+```
+
+| Key | Meaning |
+| --- | --- |
+| `numero` | the paragraph's number (integer). Without it the file is a page: rules, introduction, credits |
+| `aliases` | the number as a quoted string (`- "12"`), plus hand-written aliases |
+| `numero_tipo` | `libero` (default: a shuffle may change it), `fisso` (never changes), `relativo` |
+| `ancora`, `scarto` | for `relativo`: `ancora: "[[Other title]]"`, `scarto: 2` → the anchor's number + 2 |
+| `finale` | `true` on an ending (death, victory) |
+| `note` | the author's note on the paragraph |
+| `rimandi nascosti` | references the reader does not see (a number to work out from a riddle): list of `"[[Title|N]]"` |
+| `posizione` | on a page without number: `dopo` puts it after the paragraphs; otherwise it goes before |
+| box properties | values the reader gets: `traits`, `keywords`, `encounters` (English books), `carattere`, `parole chiave`, `incontri` (Italian books) |
+
+**Write the frontmatter of paragraphs line by line, not as free YAML**: one `key: value` per
+line; lists as `key:` followed by `  - item` lines (two spaces, dash, space); never inline
+lists `[a, b]`; an empty key is `key:` alone. Leave the lines you do not change exactly as they
+are.
+
+A new paragraph, as Dante writes it (use the first number not yet taken, unless the writer
+says otherwise):
+
+```markdown
+---
+numero: 7
+aliases:
+  - "7"
+note:
+---
+```
+
+### The start paragraph
+
+The reader starts from the paragraph whose `numero` is `gamebook.start` (1 when missing). It
+must exist, it is never an orphan, a shuffle never moves it, and every other paragraph should
+be reachable from it by following references. To change where the book starts, change
+`gamebook.start`, not the numbers.
+
+### References between paragraphs
+
+- A reference is a wikilink to the **title** with the **number as label**, in bold:
+  `**[[The cellar|27]]**`. The title keeps the link valid when numbers change; the label is
+  what the reader sees.
+- Never write `[[27]]` (breaks at the first shuffle) or a number as plain text ("turn to 27"),
+  which no renumbering can update.
+- The label must equal the target's current `numero`. When a number changes: update `numero`,
+  replace the old number in `aliases`, rewrite the label of every reference to it (in text and
+  in `rimandi nascosti`), and move the `relativo` paragraphs anchored to it by the same amount.
+  Two paragraphs never share a number. Renaming a paragraph's file means rewriting the target
+  of every reference to it, keeping the label.
+- In Italian books, fix the article before the reference: «vai al **[[Bosco|7]]**» but
+  «vai all'**[[Fiume|8]]**», «il 12» but «l'11» (numbers said with a leading vowel: 1, 8, 11,
+  80-89, 800-899).
+- Leave whole-book renumbering to Dante (**Shuffle**, **Reorder**): it keeps fixed paragraphs,
+  the start and the anchors, saves snapshots, and can undo the operation.
+
+### Boxes: choice, trait, item, encounter, ending
+
+A box is a block between the line `::: {custom-style="box"}` and the line `:::`, each alone on
+its line, with an empty line before and after. The **emoji that opens its first line gives
+its type**. Default types (a book can define others in `gamebook.boxes`, each with `id`,
+`emoji`, `name`, `color`, `text`, `property`, `ending`):
+
+| Emoji | Type | First line (en / it) | Property it fills (en / it) |
+| --- | --- | --- | --- |
+| 🤔 | choice | `**You must act fast!**` / `**Devi agire in fretta!**` | |
+| ❤️ | trait | `**Trait**` / `**Carattere**` | `traits` / `carattere` |
+| ✏️ | item, keyword | `**Item**` / `**Oggetto**` | `keywords` / `parole chiave` |
+| ✅ | memorable encounter | `**Memorable encounter**` / `**Incontro memorabile**` | `encounters` / `incontri` |
+| 😢 | ending | `**The end**` / `**Fine**` | (sets `finale: true`) |
+| 🆗 | confirmed | `**Confirmed**` / `**Corretto**` | |
+
+Examples:
+
+```markdown
+::: {custom-style="box"}
+✏️ **Item**
+
+Note the keyword **lantern** on your sheet, then turn to **[[The stairs|14]]**.
+:::
+
+::: {custom-style="box"}
+😢 **The end**
+
+The tower collapses on you. Your adventure ends here.
+:::
+```
+
+- A box that gives a value also adds it to the paragraph's property list
+  (`keywords:` / `  - lantern`).
+- An ending box (😢) goes with `finale: true` in the frontmatter, and the reverse: Dante flags
+  either without the other.
+- A paragraph that **asks** for a value lists it with a question mark (`keywords:` /
+  `  - lantern?`), or says it in the text with the value in bold: "If you have the keyword
+  **lantern**, turn to …" («Se hai la parola chiave **lanterna**, vai al …»). Values are
+  given in text by "Note the keyword **x**", "Circle the trait **x**" («Segna la parola
+  chiave **x**», «Cerchia la caratteristica **x**»). Spell a value the same everywhere:
+  Dante flags values asked but never given, or asked before the reader can have them.
+
+### What a sound gamebook looks like
+
+Dante flags these problems, so avoid creating them: **orphans** (no paragraph leads there,
+except the start), **dead ends** (no reference out and not an ending), paragraphs
+**unreachable** from the start, **duplicate numbers**, references to missing paragraphs,
+reference labels that differ from the target's number, ending boxes without `finale: true`
+(or the reverse), near-duplicate values ("lantern" and "lanterm"). Run
+`scripts/outline.py`: for a gamebook it lists the paragraphs by number with where each comes
+from and leads to, and these problems.
+
+**Add a paragraph with a choice leading to it**: create `<Title>.md` with the first free
+number, write its text (with a reference out, or a 😢 box and `finale: true`), then add
+`**[[Title|N]]**` where the choice is made. **Delete a paragraph**: move it to the trash as
+below and remove or redirect every reference to it, or the paragraphs that led there become
+dead ends.
 
 ## Deleting
 
