@@ -7,6 +7,8 @@ export interface AppSettings {
   theme: "system" | "light" | "sepia" | "dark" | "night";
   /** The colour of buttons, links and selections: one of ACCENTS, or "" for the theme's own. */
   accent: string;
+  /** The size of the whole interface, as a share of the usual one (1); the editor's text follows it too. */
+  uiZoom: number;
   fontFamily: string;
   fontSize: number;
   /** Maximum line length in the editor, in characters. */
@@ -66,6 +68,7 @@ function defaults(): AppSettings {
     language: browser === "it" ? "it" : "en",
     theme: "system",
     accent: "",
+    uiZoom: 1,
     fontFamily: "Georgia, 'Iowan Old Style', 'Palatino Linotype', serif",
     fontSize: 18,
     lineWidth: 68,
