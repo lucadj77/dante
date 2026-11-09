@@ -813,7 +813,7 @@
     >
       {#if game}
         <p class="gamebook-summary" title={t("gamebook.summaryHint")}>
-          {t("gamebook.summary", { paragraphs: game.summary.paragraphs, empty: game.summary.empty, orphans: game.summary.orphans, deadEnds: game.summary.deadEnds, pages: game.summary.pages })}
+          {(["paragraphs", "empty", "orphans", "deadEnds", "pages"] as const).map((k) => (game.summary[k] === 1 ? t(`gamebook.summary.${k}.one`) : t(`gamebook.summary.${k}`, { n: game.summary[k] }))).join(" · ")}
         </p>
       {/if}
       <div class="tree-actions" class:gamebook>

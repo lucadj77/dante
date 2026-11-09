@@ -12,7 +12,7 @@ const L = (title, n) => `**[[${title}|${n}]]**`;
 const it = {
   title: 'La torre del mago',
   folder: 'Paragrafi',
-  yaml: 'title: La torre del mago\nauthor: Luca Di Gialleonardo\nlanguage: it\nfolders:\n  manuscript: Paragrafi\nunit: words\n',
+  yaml: 'title: La torre del mago\nauthor: Luca Di Gialleonardo\nlanguage: it\nfolders:\n  manuscript: Paragrafi\n',
   pages: {
     Regole: `---\nnote:\n---\nIn questo libro sei tu il protagonista. Non leggerlo dall'inizio alla fine: ogni paragrafo ti dice a quale andare dopo.\n\nTieni accanto un foglio, la **scheda**: quando il testo ti chiede di segnare una parola chiave o di cerchiare una caratteristica, scrivila lì.`,
   },
@@ -38,7 +38,7 @@ const it = {
 const en = {
   title: "The Wizard's Tower",
   folder: 'Sections',
-  yaml: "title: The Wizard's Tower\nauthor: Luca Di Gialleonardo\nlanguage: en\nfolders:\n  manuscript: Sections\nunit: words\n",
+  yaml: "title: The Wizard's Tower\nauthor: Luca Di Gialleonardo\nlanguage: en\nfolders:\n  manuscript: Sections\n",
   pages: {
     Rules: `---\nnote:\n---\nIn this book you are the hero. Do not read it from start to end: each section tells you which one to read next.\n\nKeep a sheet of paper beside you, your **adventure sheet**: when the text asks you to note a keyword or circle a trait, write it there.`,
   },
