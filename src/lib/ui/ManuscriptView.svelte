@@ -23,6 +23,7 @@
   import { documents, flushAll } from "./documents.svelte";
   import type { BoxType } from "$lib/core/gamebook/boxes";
   import { scalar } from "$lib/core/gamebook/edit";
+  import { dirname } from "$lib/core/path";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
@@ -325,6 +326,13 @@
     if (!parent) return;
     const index = parent.children.findIndex((c) => c.path === path);
     void run(() => project.createScene(parent.path, index + 1, t("untitledScene")), "start");
+  }
+
+  /** In a gamebook: a page without a number (rules, an introduction), next to the selected paragraph's folder. */
+  function newPage() {
+    const node = selected ? findNode(selected) : null;
+    const dir = node?.kind === "scene" ? dirname(node.path) : (node?.path ?? tree.path);
+    void run(() => project.createPage(dir, t("gamebook.newPageTitle")), "start");
   }
 
   /** New scene in the selected chapter, or right after the selected scene. */
@@ -769,6 +777,10 @@
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
             <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
+          </div>
+          {:else}
+          <div class="add">
+            <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
           </div>
           {/if}
         </div>

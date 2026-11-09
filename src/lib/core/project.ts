@@ -600,6 +600,17 @@ export class Project {
     return { path, title: clean, number };
   }
 
+  /**
+   * In a gamebook: a page that is not a paragraph (rules, an introduction), a file without a
+   * number in the paragraphs' folder, so that it goes before them; returns its path.
+   */
+  async createPage(dir: string, title: string): Promise<string> {
+    const path = await this.freeName(dir, (sanitizeTitle(title) || "Untitled") + ".md");
+    await this.fs.writeText(path, "");
+    await this.reload();
+    return path;
+  }
+
   /** In a gamebook: adds a value to a list property of a paragraph (a hidden reference, a keyword), as the plugin writes it. */
   async addToParagraphList(path: string, key: string, value: string): Promise<void> {
     await this.beforeMove?.();

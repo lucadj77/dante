@@ -219,6 +219,18 @@ describe("gamebook writing", () => {
     await expect(project.setParagraph(`${DIR}/Enigma.md`, { numberType: "relative", anchor: "Grotta", offset: 1 })).rejects.toThrow("gamebook.anchorCycle:Grotta");
   });
 
+  it("creates a page without a number, before the paragraphs", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
+    for (const f of book) await fs.writeText(f.path, f.text);
+    const project = await Project.open(fs, "it");
+    const path = await project.createPage(DIR, "Regole");
+    expect(path).toBe(`${DIR}/Regole.md`);
+    expect(await project.createPage(DIR, "Regole")).toBe(`${DIR}/Regole 2.md`);
+    const page = project.manuscript.children.find((c) => c.path === path);
+    expect(page?.number).toBeUndefined();
+    expect(project.manuscript.children[0].number).toBeUndefined();
+  });
+
   it("keeps the label when a paragraph is renamed", async () => {
     const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
     for (const f of book) await fs.writeText(f.path, f.text);
