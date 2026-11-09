@@ -412,7 +412,7 @@ describe("gamebook export", () => {
     expect(styledTypst).toContain("justify: false");
     expect(styledTypst).toContain("+ 6pt, first-line-indent: 0cm");
     expect(styledTypst).toContain("text(size: 9pt");
-    expect(styledTypst).toContain('weight: "regular"');
+    expect(styledTypst).toContain('weight: "regular", style: "normal"');
     const styledXml = new TextDecoder().decode(unzipSync(await docxBytes(bookToDocx(styled, project.settings.export.docx, { words: "parole" })))["word/styles.xml"]);
     expect(styledXml).toContain('w:after="120"');
     const css = new TextDecoder().decode(unzipSync(bookToEpub(styled, project.settings.export.docx, "id"))["OEBPS/style.css"]);

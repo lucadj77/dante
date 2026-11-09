@@ -22,7 +22,7 @@ function gamebookCss(book: Book): string {
   return `
 /* Libro game */
 p { text-align: ${gx.justify ? "justify" : "left"}; text-indent: ${gx.indent}cm; margin-bottom: ${gx.spacing}pt; }
-.number { font-weight: ${gx.numberBold ? "bold" : "normal"};${font} }
+h1.number, h2.number, h3.number, h4.number { font-weight: ${gx.numberBold ? "bold" : "normal"}; font-style: ${gx.numberItalic ? "italic" : "normal"};${font} }
 `;
 }
 

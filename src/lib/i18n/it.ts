@@ -1351,4 +1351,5 @@ export const it: Partial<Record<MessageKey, string>> = {
   "export.gb.numberBold": "Numero in grassetto",
   "export.gb.numberFont": "Font del numero (vuoto = quello del testo)",
   "export.gb.textHint": "Font, dimensione e interlinea del testo si scelgono sotto, in Pagina e testo.",
+  "export.gb.numberItalic": "Numero in corsivo",
 };

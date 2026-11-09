@@ -329,7 +329,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       if (scene.heading && book.gamebook) {
         // A gamebook's number: bookmarked, so that the references lead here.
         const gx = book.gamebook;
-        const text = plain(scene.heading, { size: gx.size * 2, bold: gx.numberBold, italics: false, font: gx.numberFont || undefined });
+        const text = plain(scene.heading, { size: gx.size * 2, bold: gx.numberBold, italics: gx.numberItalic, font: gx.numberFont || undefined });
         body.push(new Paragraph({
           heading: HEADINGS[sceneLevel],
           alignment: gx.align === "left" ? AlignmentType.LEFT : AlignmentType.CENTER,

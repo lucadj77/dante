@@ -482,6 +482,7 @@
       </div>
       <p class="sub">{t("export.gb.number")}</p>
       <label class="check"><input type="checkbox" bind:checked={gbx.numberBold} /> {t("export.gb.numberBold")}</label>
+      <label class="check"><input type="checkbox" bind:checked={gbx.numberItalic} /> {t("export.gb.numberItalic")}</label>
       <div class="field">
         <span class="label">{t("export.gb.numberFont")}</span>
         <FontPicker bind:value={gbx.numberFont} />

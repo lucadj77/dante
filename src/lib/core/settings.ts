@@ -229,11 +229,12 @@ export interface GamebookExportSettings {
   boxSize: number;
   /** The number in bold, and in a font of its own ("" for the font of the text). */
   numberBold: boolean;
+  numberItalic: boolean;
   numberFont: string;
 }
 
 export function defaultGamebookExport(): GamebookExportSettings {
-  return { heading: "number", prefix: "", align: "center", size: 18, separator: "pageBreak", symbol: "✦", links: true, bold: true, boxes: "color", justify: true, indent: 0.5, spacing: 0, boxSize: 0, numberBold: true, numberFont: "" };
+  return { heading: "number", prefix: "", align: "center", size: 18, separator: "pageBreak", symbol: "✦", links: true, bold: true, boxes: "color", justify: true, indent: 0.5, spacing: 0, boxSize: 0, numberBold: true, numberItalic: false, numberFont: "" };
 }
 
 export function defaultGamebook(language = "it"): GamebookSettings {

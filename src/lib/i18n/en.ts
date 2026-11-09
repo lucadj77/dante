@@ -1351,6 +1351,7 @@ export const en = {
   "export.gb.numberBold": "Number in bold",
   "export.gb.numberFont": "Number font (empty = the text's)",
   "export.gb.textHint": "Font, size and line spacing of the text are chosen below, in Page and text.",
+  "export.gb.numberItalic": "Number in italics",
 } as const;
 
 export type MessageKey = keyof typeof en;

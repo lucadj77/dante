@@ -255,7 +255,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       if (scene.heading && book.gamebook) {
         const gx = book.gamebook;
         const font = gx.numberFont ? `font: ${fonts(gx.numberFont)}, ` : "";
-        const body = `#text(${font}size: ${gx.size}pt, weight: ${gx.numberBold ? '"bold"' : '"regular"'}, style: "normal")[${lines(scene.heading)}]`;
+        const body = `#text(${font}size: ${gx.size}pt, weight: ${gx.numberBold ? '"bold"' : '"regular"'}, style: ${gx.numberItalic ? '"italic"' : '"normal"'})[${lines(scene.heading)}]`;
         emit(`#heading(level: ${sceneLevel}, outlined: false)[${gx.align === "left" ? `#align(left)[${body}]` : body}]${scene.anchor ? ` <${scene.anchor}>` : ""}`);
       } else if (scene.heading) emit(`#heading(level: ${sceneLevel})[${lines(scene.heading)}]`);
       blocks(scene.blocks, sceneLevel);
