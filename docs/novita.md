@@ -12,6 +12,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Callout nell'esportazione**: i blocchi che cominciano con `> [!note] Titolo` diventano in Word, PDF ed EPUB un riquadro colorato con il titolo in grassetto; prima uscivano come citazioni che cominciavano con «!note». Nel Markdown esportato restano callout.
+
 ## 1.2.0-beta.1 · 9 novembre 2026
 
 ### Nuovo
