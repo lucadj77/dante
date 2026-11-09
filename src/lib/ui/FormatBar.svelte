@@ -19,8 +19,10 @@
     boxes?: BoxType[];
     boxValues?: (property: string) => string[];
     onBox?: (type: BoxType, value: string) => void;
+    /** In a gamebook: a new paragraph, with the reference at the cursor. */
+    onParagraph?: () => void;
   }
-  let { disabled, onFormat, onSplit, noSplit = false, boxes = [], boxValues = () => [], onBox }: Props = $props();
+  let { disabled, onFormat, onSplit, noSplit = false, boxes = [], boxValues = () => [], onBox, onParagraph }: Props = $props();
 
   let boxMenu = $state(false);
   /** A type tied to a property waits here for its value. */
@@ -61,8 +63,14 @@
       >
     {/if}
   {/each}
-  {#if boxes.length && onBox}
+  {#if onParagraph}
     <span class="cm-format-gap"></span>
+    <button class="split" title={t("gamebook.paragraphTip")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={onParagraph}
+      >＋ <span>{t("gamebook.paragraphButton")}</span></button
+    >
+  {/if}
+  {#if boxes.length && onBox}
+    {#if !onParagraph}<span class="cm-format-gap"></span>{/if}
     <span class="box-anchor">
       <button class="split" title={t("gamebook.boxTip")} aria-haspopup="menu" aria-expanded={boxMenu} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => (boxMenu = !boxMenu)}
         >▣ <span>{t("gamebook.box")}</span></button

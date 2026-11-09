@@ -65,6 +65,8 @@ export interface GamebookLinks {
   /** Asks for everything (title, fixed or relative number, hidden or not), then calls `insert` for a reference in the text. */
   ask(title: string, hidden: boolean, insert: (choice: ParagraphChoice) => void): void;
   failed(error: unknown): void;
+  /** The words of the two ways to create a paragraph, in the writer's language. */
+  labels: { create(title: string, number: number): string; createDetail: string; more(title: string): string; moreDetail: string };
 }
 
 /**
@@ -114,13 +116,14 @@ function completeParagraph(context: CompletionContext, gamebook: GamebookLinks):
         } else insertReference(view, start, end(to), p);
       },
     }));
+  // The new paragraph comes first, as the writer asked: creating is what "[[" is most often for.
   const title = query.trim();
+  const creating: Completion[] = [];
   if (title && !/^\d+$/.test(title) && !found.some((p) => fold(p.title) === wanted)) {
-    options.push({
+    creating.push({
       label: title,
-      displayLabel: `+ ${title}`,
-      detail: `${gamebook.firstFree()}`,
-      boost: -99,
+      displayLabel: gamebook.labels.create(title, gamebook.firstFree()),
+      detail: gamebook.labels.createDetail,
       type: "create",
       apply: (view: EditorView, _c: Completion, _from: number, to: number) => {
         const hidden = takeHidden();
@@ -137,10 +140,12 @@ function completeParagraph(context: CompletionContext, gamebook: GamebookLinks):
           .catch(gamebook.failed);
       },
     });
-    options.push({
+  }
+  if (!/^\d+$/.test(title)) {
+    creating.push({
       label: title + " ",
-      displayLabel: `+ ${title}…`,
-      boost: -99,
+      displayLabel: gamebook.labels.more(title),
+      detail: gamebook.labels.moreDetail,
       type: "create-more",
       apply: (view: EditorView, _c: Completion, _from: number, to: number) => {
         const hidden = takeHidden();
@@ -149,6 +154,7 @@ function completeParagraph(context: CompletionContext, gamebook: GamebookLinks):
       },
     });
   }
+  options.unshift(...creating);
   return { from: start + 2, options, filter: false };
 }
 
@@ -176,20 +182,18 @@ const hiddenKey = keymap.of([
   },
 ]);
 
+/** In a gamebook: the window for a new paragraph, whose reference goes at the cursor (over the selection, which proposes the title). */
+export function askNewParagraph(view: EditorView): boolean {
+  const gamebook = view.state.facet(linkHandler)?.gamebook;
+  if (!gamebook) return false;
+  const at = view.state.selection.main;
+  const selected = view.state.sliceDoc(at.from, at.to).trim();
+  gamebook.ask(selected, false, (choice) => insertReference(view, at.from, at.to, choice));
+  return true;
+}
+
 /** In a gamebook, Ctrl+Enter (Cmd+Enter) creates a paragraph and puts the reference to it at the cursor. */
-const newParagraphKey = keymap.of([
-  {
-    key: "Mod-Enter",
-    run: (view) => {
-      const gamebook = view.state.facet(linkHandler)?.gamebook;
-      if (!gamebook) return false;
-      const at = view.state.selection.main;
-      const selected = view.state.sliceDoc(at.from, at.to).trim();
-      gamebook.ask(selected, false, (choice) => insertReference(view, at.from, at.to, choice));
-      return true;
-    },
-  },
-]);
+const newParagraphKey = keymap.of([{ key: "Mod-Enter", run: askNewParagraph }]);
 
 export const linkHandler = Facet.define<LinkHandler, LinkHandler | null>({
   combine: (values) => values[0] ?? null,

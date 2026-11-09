@@ -14,6 +14,8 @@
     split(kind: "scene" | "chapter"): void;
     /** In a gamebook, puts a box at the cursor. */
     insertBox(type: BoxType, value: string): void;
+    /** In a gamebook, asks for a new paragraph and puts the reference to it at the cursor. */
+    newParagraph(): void;
   }
 </script>
 
@@ -24,6 +26,7 @@
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { gamebookPreview, insertBox } from "$lib/editor/gamebook";
   import { calloutPreview } from "$lib/editor/callouts";
+  import { askNewParagraph } from "$lib/editor/links";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
@@ -108,6 +111,9 @@
     },
     insertBox(type, value) {
       if (editor) insertBox(editor.view, type, value);
+    },
+    newParagraph() {
+      if (editor) askNewParagraph(editor.view);
     },
   };
 

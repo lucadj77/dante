@@ -32,14 +32,28 @@ const COLORS: Record<string, string> = {
   quote: "#868e96",
 };
 
+/** The room `md-after-gap` leaves above a line. */
+const GAP = "calc(1em * var(--editor-line-height, 1.7) * var(--editor-gap, 1))";
+
 export function calloutColor(type: string): string {
   return COLORS[type.toLowerCase()] ?? "#868e96";
 }
 
 /** The colour, faint, for the background: macOS 10.15 cannot mix colours in CSS. */
-function faint(hex: string): string {
+export function faint(hex: string): string {
   const n = Number.parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.08)`;
+}
+
+/** The callout a quoted line belongs to, looking back to its "> [!type]" line; null outside one. */
+export function calloutAround(state: EditorState, lineNumber: number): string | null {
+  for (let n = lineNumber; n >= 1; n--) {
+    const text = state.doc.line(n).text;
+    const open = OPEN.exec(text);
+    if (open) return open[1];
+    if (!text.startsWith(">")) return null;
+  }
+  return null;
 }
 
 class Pill extends WidgetType {
@@ -93,6 +107,13 @@ export function calloutPreview(): Extension {
   );
   const theme = EditorView.baseTheme({
     ".cm-line.cm-callout": { background: "var(--callout-bg)", boxShadow: "inset 3px 0 0 var(--callout)" },
+    // The room left above a paragraph after a hidden blank line stays outside the callout:
+    // its border, band and background start below it.
+    ".cm-line.cm-callout.md-after-gap": {
+      borderLeftColor: "transparent",
+      boxShadow: "none",
+      background: `linear-gradient(to right, var(--border) 3px, var(--callout) 3px, var(--callout) 6px, var(--callout-bg) 6px) 0 ${GAP} / 100% 100% no-repeat border-box`,
+    },
     ".cm-callout-pill": {
       display: "inline-block",
       padding: "0 8px",

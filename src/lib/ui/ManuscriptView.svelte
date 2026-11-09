@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { keepInView } from "./keepInView";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import { projectKey } from "$lib/platform";
@@ -857,7 +858,7 @@
   {#if menu}
     {@const node = findNode(menu.path)}
     <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
-    <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px">
+    <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px" use:keepInView={menu}>
       {#if chosen.length > 1 && chosen.includes(menu.path)}
         <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
         <hr />
@@ -913,6 +914,7 @@
         boxes={gamebook ? project.settings.gamebook.boxes : []}
         {boxValues}
         onBox={gamebook ? insertBox : undefined}
+        onParagraph={gamebook ? () => active && editors.get(active)?.newParagraph() : undefined}
       />
     {/if}
     </div>

@@ -316,6 +316,12 @@
       failed(e) {
         gamebookError = failure(e);
       },
+      labels: {
+        create: (title, n) => t("gamebook.complete.create", { title, n }),
+        createDetail: t("gamebook.complete.createDetail"),
+        more: (title) => (title ? t("gamebook.complete.more", { title }) : t("gamebook.complete.moreEmpty")),
+        moreDetail: t("gamebook.complete.moreDetail"),
+      },
     };
   }
 

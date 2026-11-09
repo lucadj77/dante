@@ -6,12 +6,15 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
-- **Callout**: i blocchi `> [!note]`, `> [!warning]` e simili si vedono con il nome in una pillola colorata.
-- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo e permette di cambiarne numero, tipo e finale, aggiornando i rimandi; regole e altre pagine senza numero stanno prima o dopo i paragrafi. Si scrive come nel plugin, ma più in fretta: `[[` cerca o crea un paragrafo e mette il rimando con l'articolo giusto, Cmd/Ctrl+Invio apre la finestra del nuovo paragrafo (numero libero, fisso o relativo, rimando nel testo o nascosto), il pulsante Box inserisce i box del libro e ne scrive il valore nelle proprietà. Usa lo stesso formato del plugin Librogame.
+- **Callout**: i blocchi `> [!note]`, `> [!warning]` e simili si vedono con il nome in una pillola colorata; elenchi e tabelle al loro interno si vedono come nel resto del testo.
+- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo e permette di cambiarne numero, tipo e finale, aggiornando i rimandi; regole e altre pagine senza numero stanno prima o dopo i paragrafi. Si scrive come nel plugin, ma più in fretta: `[[` cerca o crea un paragrafo (le due voci per crearlo sono in cima all'elenco) e mette il rimando con l'articolo giusto, Cmd/Ctrl+Invio apre la finestra del nuovo paragrafo (numero libero, fisso o relativo, rimando nel testo o nascosto), il pulsante Paragrafo della barra apre la stessa finestra, il pulsante Box inserisce i box del libro e ne scrive il valore nelle proprietà. Usa lo stesso formato del plugin Librogame.
 
 ### Cambiato
 
 ### Corretto
+
+- **Menu del tasto destro**: sugli ultimi elementi del pannello il menu si apre più in alto e resta visibile per intero.
+- **Suggerimenti**: i suggerimenti che compaiono passando sopra un elemento si aprono sopra di esso, così il puntatore non li copre.
 
 ## 1.1.4 · 28 ottobre 2026
 

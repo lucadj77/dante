@@ -164,6 +164,7 @@ select {
 .md-table-bar button { border: 1px solid var(--border); background: var(--bg-panel); color: inherit; border-radius: 4px; padding: 1px 7px; font: inherit; cursor: pointer; }
 .md-table-bar button:hover { background: var(--bg-hover); }
 .md-table-wrap { overflow-x: auto; padding: 4px 0; cursor: text; }
+.md-table-wrap.md-table-quoted { border-left: 3px solid var(--border); padding: 4px 8px 4px 12px; }
 .md-table { margin: 0 auto; border-collapse: collapse; font-size: 0.95em; line-height: 1.5; }
 .md-table th,
 .md-table td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; vertical-align: top; }

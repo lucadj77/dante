@@ -6,12 +6,15 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
-- **Callouts**: `> [!note]`, `> [!warning]` and similar blocks show their name in a coloured pill.
-- **Gamebooks**: a project can become a gamebook (Settings > Gamebook). The tree shows the paragraphs in order of number, with warnings, lengths and where each comes from and leads; references read as numbers and boxes as coloured frames; the Paragraph panel sums up each paragraph and changes its number, type and ending, updating the references; rules and other pages without a number sit before or after the paragraphs. Writing goes as in the plugin, only quicker: `[[` finds or creates a paragraph and writes the reference with the right Italian article, Cmd/Ctrl+Enter opens the new paragraph window (free, fixed or relative number, reference in the text or hidden), the Box button inserts the book's boxes and writes their value in the properties. It uses the same format as the Librogame plugin.
+- **Callouts**: `> [!note]`, `> [!warning]` and similar blocks show their name in a coloured pill; lists and tables inside them show as in the rest of the text.
+- **Gamebooks**: a project can become a gamebook (Settings > Gamebook). The tree shows the paragraphs in order of number, with warnings, lengths and where each comes from and leads; references read as numbers and boxes as coloured frames; the Paragraph panel sums up each paragraph and changes its number, type and ending, updating the references; rules and other pages without a number sit before or after the paragraphs. Writing goes as in the plugin, only quicker: `[[` finds or creates a paragraph (the two entries that create one come first in the list) and writes the reference with the right Italian article, Cmd/Ctrl+Enter opens the new paragraph window (free, fixed or relative number, reference in the text or hidden), the Paragraph button on the bar opens the same window, the Box button inserts the book's boxes and writes their value in the properties. It uses the same format as the Librogame plugin.
 
 ### Changed
 
 ### Fixed
+
+- **Right-click menu**: on the last items of a panel the menu opens higher up and stays fully visible.
+- **Tooltips**: the hints that appear over an item now open above it, so the pointer does not cover them.
 
 ## 1.1.4 · October 28, 2026
 
