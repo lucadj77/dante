@@ -11,6 +11,7 @@
   import { documents, flushAll } from "./documents.svelte";
   import { failure } from "./errors";
   import type { ParagraphChanges } from "$lib/core/gamebook/edit";
+  import { GAMEBOOK_AFTER, GAMEBOOK_POSITION, scenesOf } from "$lib/core/manuscript";
 
   interface Props {
     project: Project;
@@ -79,6 +80,26 @@
       others = index.inScope(paragraph.scope).filter((x) => x.path !== path).map((x) => ({ path: x.path, title: x.title, number: x.number }));
     });
   });
+  /** For a page that is not a paragraph: whether it goes before or after the paragraphs. */
+  const page = $derived.by(() => {
+    void p.version;
+    if (mark) return null;
+    const node = scenesOf(p.project.manuscript).find((n) => n.path === p.path);
+    return node && node.number === undefined ? (node.position ?? "before") : null;
+  });
+
+  async function place(position: "before" | "after") {
+    error = "";
+    try {
+      await flushAll(p.project);
+      await p.project.setProperties(p.path, { [GAMEBOOK_POSITION]: position === "after" ? GAMEBOOK_AFTER : undefined });
+      await documents(p.project).refreshAll();
+      await p.onChanged();
+    } catch (e) {
+      error = failure(e);
+    }
+  }
+
   const unit = $derived(p.project.settings.pages.unit);
   const pages = $derived(mark ? Math.max(1, Math.ceil(mark.length / Math.max(1, p.project.settings.pages.size))) : 0);
 </script>
@@ -218,6 +239,18 @@
       </ul>
     {/if}
   </div>
+{:else if page}
+  <div class="paragraph">
+    <p class="muted">{t("gamebook.pageHint")}</p>
+    <label class="stack">
+      <span>{t("gamebook.position")}</span>
+      <select value={page} onchange={(e) => void place(e.currentTarget.value as "before" | "after")}>
+        <option value="before">{t("gamebook.pageBefore")}</option>
+        <option value="after">{t("gamebook.pageAfter")}</option>
+      </select>
+    </label>
+    {#if error}<p class="error" role="alert">{error}</p>{/if}
+  </div>
 {:else}
   <p class="muted">{t("gamebook.notParagraph")}</p>
 {/if}
@@ -246,6 +279,11 @@
     gap: 6px;
     margin-bottom: 6px;
     font-size: 13px;
+  }
+  .stack {
+    display: grid;
+    gap: 2px;
+    font-size: 12px;
   }
   .error {
     color: var(--danger);

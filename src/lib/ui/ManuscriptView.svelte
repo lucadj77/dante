@@ -24,6 +24,7 @@
   import type { BoxType } from "$lib/core/gamebook/boxes";
   import { scalar } from "$lib/core/gamebook/edit";
   import { dirname } from "$lib/core/path";
+  import ShuffleDialog from "./ShuffleDialog.svelte";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
@@ -326,6 +327,15 @@
     if (!parent) return;
     const index = parent.children.findIndex((c) => c.path === path);
     void run(() => project.createScene(parent.path, index + 1, t("untitledScene")), "start");
+  }
+
+  /** In a gamebook: the folder whose numbers the shuffle window mixes, while it is open. */
+  let shuffling = $state<string | null>(null);
+  function openShuffle() {
+    const index = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    if (!index) return;
+    const node = selected ? index.get(selected) : undefined;
+    shuffling = node?.scope ?? index.scopes()[0] ?? null;
   }
 
   /** In a gamebook: a page without a number (rules, an introduction), next to the selected paragraph's folder. */
@@ -781,6 +791,7 @@
           {:else}
           <div class="add">
             <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
+            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={openShuffle}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
           </div>
           {/if}
         </div>
@@ -1037,6 +1048,24 @@
       {/snippet}
     </SidePanel>
 {/snippet}
+
+{#if shuffling !== null && noteIndex}
+  <ShuffleDialog
+    {project}
+    notes={noteIndex}
+    scope={shuffling}
+    run={(operation) =>
+      run(async () => {
+        await operation();
+        await documents(project).refreshAll();
+      })}
+    onOpen={(path) => {
+      shuffling = null;
+      nav?.open(path);
+    }}
+    onClose={() => (shuffling = null)}
+  />
+{/if}
 
 <style>
   .manuscript {

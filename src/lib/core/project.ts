@@ -31,13 +31,27 @@ import {
   type NoteType,
   type NovelSettings,
 } from "./settings";
-import { snapshotDir, takeSnapshot } from "./snapshots";
+import { restoreSnapshot, snapshotDir, takeSnapshot } from "./snapshots";
 import { moveHistory } from "./history";
 import { textStats } from "./stats";
 import { addToList, newParagraphText, relabel, removeFromList, setParagraphFields, type ParagraphChanges } from "./gamebook/edit";
 import { fixArticles } from "./gamebook/articles";
 import type { GamebookIndex } from "./gamebook/paragraphs";
 import { gamebookOf } from "./gamebook/marks";
+
+/** Where the operations on a whole gamebook are recorded, to undo them. */
+const OPERATIONS = ".dante/gamebook/operations.json";
+
+export interface GamebookOperation {
+  id: string;
+  /** The name of the snapshots it took, such as "Prima del rimescolamento". */
+  name: string;
+  date: string;
+  /** Each file it changed, with the snapshot of it taken before. */
+  files: { path: string; snapshot: string }[];
+  /** The paragraphs' numbers before it, by path. */
+  numbers: Record<string, number>;
+}
 import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
@@ -528,33 +542,125 @@ export class Project {
         if (taken && !moved.has(taken.path)) throw new Error(`gamebook.numberTaken:${n}:${taken.title}`);
         if (n < 1) throw new Error(`gamebook.badNumber:${n}`);
       }
-      // Each file to rewrite, with the references in it to relabel.
-      const edits = new Map<string, { name: string; from: number; to: number }[]>();
-      const add = (file: string, name: string, from: number, to: number) => edits.set(file, [...(edits.get(file) ?? []), { name, from, to }]);
-      for (const [p, n] of moved) {
-        const old = index.get(p)!;
-        add(p, old.title, old.number, n);
-        for (const { from, reference } of index.incoming(p)) add(from.path, reference.target, old.number, n);
-      }
-      const numberOf = (target: string) => {
-        const r = index.resolve(target);
-        return r.kind !== "paragraph" ? null : (moved.get(r.to.path) ?? r.to.number);
-      };
-      for (const [file, list] of edits) {
-        const text = await this.fs.readText(file);
-        let next = text;
-        if (file === path) next = setParagraphFields(next, changes);
-        else if (moved.has(file)) next = setParagraphFields(next, { number: moved.get(file)! });
-        for (const e of list) next = relabel(next, e.name, e.from, e.to);
-        next = fixArticles(next, numberOf).text;
-        if (next !== text) await this.fs.writeText(file, next);
-      }
+      await this.writeNumbers(index, moved, path, changes);
       await this.reload();
       return;
     }
     const text = await this.fs.readText(path);
     const next = setParagraphFields(text, changes);
     if (next !== text) await this.fs.writeText(path, next);
+    await this.reload();
+  }
+
+  /** The files that a change of the numbers in `moved` rewrites: the paragraphs and those that refer to them. */
+  private touchedBy(index: GamebookIndex, moved: Map<string, number>): string[] {
+    const files = new Set<string>();
+    for (const [p, n] of moved) {
+      if (index.get(p)?.number === n) continue;
+      files.add(p);
+      for (const { from } of index.incoming(p)) files.add(from.path);
+    }
+    return [...files];
+  }
+
+  /**
+   * Gives the paragraphs in `moved` their new numbers and relabels every reference to
+   * them, correcting the articles; `own` changes one paragraph's other fields as well.
+   */
+  private async writeNumbers(index: GamebookIndex, moved: Map<string, number>, own?: string, changes?: ParagraphChanges): Promise<number> {
+    // Each file to rewrite, with the references in it to relabel.
+    const edits = new Map<string, { name: string; from: number; to: number }[]>();
+    const add = (file: string, name: string, from: number, to: number) => edits.set(file, [...(edits.get(file) ?? []), { name, from, to }]);
+    for (const [p, n] of moved) {
+      const old = index.get(p);
+      if (!old || (old.number === n && p !== own)) continue;
+      add(p, old.title, old.number, n);
+      for (const { from, reference } of index.incoming(p)) add(from.path, reference.target, old.number, n);
+    }
+    const numberOf = (target: string) => {
+      const r = index.resolve(target);
+      return r.kind !== "paragraph" ? null : (moved.get(r.to.path) ?? r.to.number);
+    };
+    let written = 0;
+    for (const [file, list] of edits) {
+      const text = await this.fs.readText(file);
+      let next = text;
+      if (file === own && changes) next = setParagraphFields(next, changes);
+      else if (moved.has(file)) next = setParagraphFields(next, { number: moved.get(file)! });
+      // Through a placeholder, so that two paragraphs that swap numbers do not catch each other's references.
+      for (const e of list) next = relabel(next, e.name, e.from, -1 - e.to);
+      for (const e of list) next = relabel(next, e.name, -1 - e.to, e.to);
+      next = fixArticles(next, numberOf).text;
+      if (next !== text) {
+        await this.fs.writeText(file, next);
+        written++;
+      }
+    }
+    return written;
+  }
+
+  /** In a gamebook: the operations on the whole book, newest first, to undo them. */
+  async gamebookOperations(): Promise<GamebookOperation[]> {
+    if (!(await this.fs.exists(OPERATIONS))) return [];
+    try {
+      const list = JSON.parse(await this.fs.readText(OPERATIONS));
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * In a gamebook: gives the paragraphs new numbers all at once, as a shuffle does. Every
+   * file it touches is kept first in a snapshot named `name`, and the operation is recorded
+   * so that it can be undone. Returns how many files changed.
+   */
+  async renumberParagraphs(numbers: Map<string, number>, name: string): Promise<number> {
+    await this.beforeMove?.();
+    const index = gamebookOf(await this.index(), this.settings);
+    if (!index) return 0;
+    const now = new Date();
+    const files: { path: string; snapshot: string }[] = [];
+    for (const path of this.touchedBy(index, numbers)) {
+      const snap = await takeSnapshot(this.fs, path, name, now);
+      if (snap) files.push({ path, snapshot: snap.path });
+    }
+    const before: Record<string, number> = {};
+    for (const p of numbers.keys()) {
+      const old = index.get(p);
+      if (old) before[p] = old.number;
+    }
+    const written = await this.writeNumbers(index, numbers);
+    const operations = await this.gamebookOperations();
+    operations.unshift({ id: now.toISOString(), name, date: now.toISOString(), files, numbers: before });
+    await this.fs.writeText(OPERATIONS, JSON.stringify(operations.slice(0, 30), null, 2));
+    await this.reload();
+    return written;
+  }
+
+  /**
+   * Undoes a recorded operation: every file goes back to its snapshot, or, with `onlyNumbers`,
+   * the paragraphs only get their old numbers back, with references and articles, and the text
+   * written since stays.
+   */
+  async undoGamebookOperation(id: string, onlyNumbers: boolean, name: string): Promise<void> {
+    const op = (await this.gamebookOperations()).find((o) => o.id === id);
+    if (!op) return;
+    if (onlyNumbers) {
+      const index = gamebookOf(await this.index(), this.settings);
+      const numbers = new Map(Object.entries(op.numbers).filter(([p]) => index?.get(p)));
+      for (const [p, n] of numbers) {
+        const p0 = index!.get(p)!;
+        const taken = index!.byNumber(p0.scope, n);
+        if (taken && !numbers.has(taken.path)) throw new Error(`gamebook.numberTaken:${n}:${taken.title}`);
+      }
+      await this.renumberParagraphs(numbers, name);
+      return;
+    }
+    await this.beforeMove?.();
+    for (const f of op.files) {
+      if (await this.fs.exists(f.snapshot)) await restoreSnapshot(this.fs, f.path, f.snapshot);
+    }
     await this.reload();
   }
 

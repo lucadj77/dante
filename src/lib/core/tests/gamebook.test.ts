@@ -10,6 +10,7 @@ import { MemoryFs } from "../fs";
 import { addToList, newParagraphText, relabel, removeFromList, setParagraphFields } from "../gamebook/edit";
 import { articleFix, fixArticles, startsWithVowel } from "../gamebook/articles";
 import { Project } from "../project";
+import { proseNumbers, shuffle } from "../gamebook/shuffle";
 
 const types = defaultBoxTypes("it");
 const options = { boxTypes: types, unit: "characters" as const };
@@ -238,5 +239,79 @@ describe("gamebook writing", () => {
     await project.rename(`${DIR}/Fuga.md`, "Fuga nel bosco");
     expect(await fs.readText(`${DIR}/Agguato.md`)).toContain("**[[Fuga nel bosco|2]]**");
     expect(await fs.exists(`${DIR}/Fuga nel bosco.md`)).toBe(true);
+  });
+});
+
+describe("gamebook shuffle", () => {
+  const seeded = (seed: number) => () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+
+  it("keeps fixed paragraphs and the start, and moves a relative one with its anchor", () => {
+    const index = new GamebookIndex(
+      [
+        par("Inizio", 1, "Vai al **[[A|2]]**."),
+        par("A", 2, "Vai al **[[B|3]]**."),
+        par("B", 3, "Vai al **[[C|4]]**."),
+        par("C", 4, "Vai al **[[D|5]]**."),
+        par("D", 5, "", 'numero_tipo: relativo\nancora: "[[C]]"\nscarto: 1\n'),
+        par("Fisso", 6, "", "numero_tipo: fisso\n"),
+      ],
+      options,
+    );
+    for (let seed = 1; seed < 20; seed++) {
+      const result = shuffle(index.inScope(DIR), { start: 1, random: seeded(seed) });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const n = (t: string) => result.numbers.get(`${DIR}/${t}.md`)!;
+      expect(n("Inizio")).toBe(1);
+      expect(n("Fisso")).toBe(6);
+      expect(n("D")).toBe(n("C") + 1);
+      expect(new Set(result.numbers.values()).size).toBe(6);
+    }
+  });
+
+  it("reports two fixed paragraphs on the same number and a cycle of anchors", () => {
+    const clash = new GamebookIndex([par("A", 1, "", "numero_tipo: fisso\n"), par("B", 1, "", "numero_tipo: fisso\n")], options);
+    expect(shuffle(clash.inScope(DIR))).toMatchObject({ ok: false, errors: [{ kind: "fixedClash", number: 1 }] });
+    const cycle = new GamebookIndex([par("A", 1, "", 'numero_tipo: relativo\nancora: "[[B]]"\nscarto: 1\n'), par("B", 2, "", 'numero_tipo: relativo\nancora: "[[A]]"\nscarto: 1\n')], options);
+    expect(shuffle(cycle.inScope(DIR))).toMatchObject({ ok: false, errors: [{ kind: "anchorCycle" }] });
+  });
+
+  it("finds paragraph numbers written in the prose", () => {
+    const found = proseNumbers("---\nnumero: 1\n---\nTorna al 12 o vai al **[[A|3]]**; il paragrafo 3 è chiuso, hai 40 monete.", (n) => n === 12 || n === 3 || n === 40);
+    expect(found.map((f) => f.number)).toEqual([12, 3]);
+  });
+
+  it("renumbers the book at once, swapping numbers, and undoes it", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
+    for (const f of book) await fs.writeText(f.path, f.text);
+    const project = await Project.open(fs, "it");
+    const numbers = new Map([
+      [`${DIR}/Fuga.md`, 8],
+      [`${DIR}/Resa.md`, 2],
+      [`${DIR}/Bosco.md`, 11],
+    ]);
+    await project.renumberParagraphs(numbers, "Prima del rimescolamento");
+    const agguato = await fs.readText(`${DIR}/Agguato.md`);
+    expect(agguato).toContain("Se corri leggi l'**[[Fuga|8]]**, se ti fermi il **[[Resa|2]]**.");
+    expect(await fs.readText(`${DIR}/Fuga.md`)).toContain('numero: 8\naliases:\n  - "8"');
+    expect(await fs.readText(`${DIR}/Fuga.md`)).toContain("Vai all'**[[Bosco|11]]**.");
+    const [op] = await project.gamebookOperations();
+    expect(op.numbers[`${DIR}/Fuga.md`]).toBe(2);
+
+    // Text written after the shuffle stays when only the numbers go back.
+    await fs.writeText(`${DIR}/Bosco.md`, (await fs.readText(`${DIR}/Bosco.md`)) + "Nuovo testo.");
+    await project.reload();
+    await project.undoGamebookOperation(op.id, true, "Prima del ripristino");
+    expect(await fs.readText(`${DIR}/Agguato.md`)).toContain("Se corri leggi il **[[Fuga|2]]**, se ti fermi l'**[[Resa|8]]**.");
+    expect(await fs.readText(`${DIR}/Bosco.md`)).toContain("Nuovo testo.");
+    expect(await fs.readText(`${DIR}/Bosco.md`)).toContain("numero: 3");
+
+    // The whole operation goes back to the snapshots.
+    await project.undoGamebookOperation(op.id, false, "");
+    expect(await fs.readText(`${DIR}/Bosco.md`)).not.toContain("Nuovo testo.");
+    expect(await fs.readText(`${DIR}/Agguato.md`)).toBe(book[0].text);
   });
 });
