@@ -63,6 +63,7 @@ function fakePicker() {
 
 // Pointer, click ring, highlight box with its text, section title and the black of the fades.
 function overlay() {
+  if (window !== window.top) return; // not in frames, such as the reader of the gamebook video
   addEventListener('DOMContentLoaded', () => {
     const css = document.createElement('style');
     css.textContent = `

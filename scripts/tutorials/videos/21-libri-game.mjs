@@ -2,6 +2,7 @@
 // with [[ and new paragraphs, boxes and their types, pages without a number, the checks and the game
 // state, the graph, reordering and shuffling with undo, and the export. The book is «La torre del
 // mago» / «The Wizard's Tower», written for this video (assets/gamebook.mjs).
+import JSZip from 'jszip';
 import { BOOKS, bookFiles } from '../assets/gamebook.mjs';
 
 export const meta = {
@@ -133,6 +134,8 @@ const D = {
     boxes: 'I box a colori, in grigio per la stampa in bianco e nero, o come testo normale',
     clickable: 'Rimandi cliccabili: nel Word, nel PDF e nell’EPUB un clic sul numero porta al paragrafo',
     problems: 'E se il libro ha rimandi rotti o numeri doppi, sono elencati qui, prima di esportare',
+    epub: 'Il libro esportato in EPUB, aperto in un lettore: un paragrafo per pagina, i box a colori',
+    jump: 'Un clic sul numero porta dritto al paragrafo',
     end: 'Ogni paragrafo resta un file Markdown, apribile con qualsiasi editor di testo',
   },
   en: {
@@ -237,6 +240,8 @@ const D = {
     boxes: 'Boxes in colour, in grey for black and white printing, or as plain text',
     clickable: 'Clickable references: in Word, PDF and EPUB a click on the number takes you to the section',
     problems: 'And if the book has broken references or duplicate numbers, they are listed here, before you export',
+    epub: 'The book exported as EPUB, open in a reader: one section per page, boxes in colour',
+    jump: 'A click on the number goes straight to the section',
     end: 'Each section stays a Markdown file, which any text editor can open',
   },
 };
@@ -455,5 +460,62 @@ export default async function (t) {
   await t.say(d.boxes);
   await t.say(d.clickable);
   await t.say(d.problems);
+  const frame = await showEpub(t, b.title);
+  await t.focus(frame.locator('.box').first(), d.epub, { side: 'below' });
+  await t.click(frame.locator('.box a').first(), { after: 1.5 });
+  await t.say(d.jump);
   await t.say(d.end);
+}
+
+/** Exports the book as EPUB in the project's export folder and returns its bytes. */
+async function exportEpub(t, folder) {
+  const p = t.page;
+  await t.click(p.locator('label.format').filter({ has: p.locator('input[value="epub"]') }), { after: 0.6 });
+  const run = p.locator('button.primary[type="submit"]').first();
+  await t.click(run, { after: 0.2 });
+  await p.waitForFunction(() => !document.querySelector('button.primary[type="submit"][disabled]'), null, { timeout: 60000 });
+  const b64 = await p.evaluate(async (folder) => {
+    const root = await navigator.storage.getDirectory();
+    const dir = await (await root.getDirectoryHandle(folder)).getDirectoryHandle('export');
+    let file;
+    for await (const [name, h] of dir.entries()) if (name.endsWith('.epub')) file = h;
+    const bytes = new Uint8Array(await (await file.getFile()).arrayBuffer());
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  }, folder);
+  return Buffer.from(b64, 'base64');
+}
+
+/** Shows the EPUB as a reader would: two pages side by side, a section per page, numbers that jump. */
+async function showEpub(t, folder) {
+  const p = t.page;
+  const zip = await JSZip.loadAsync(await exportEpub(t, folder));
+  if (process.env.EPUB) (await import('node:fs')).writeFileSync(process.env.EPUB, await zip.generateAsync({ type: 'nodebuffer' }));
+  const css = await zip.file('OEBPS/style.css').async('string');
+  let html = '';
+  for (const name of Object.keys(zip.files).filter((n) => /text\d+\.xhtml$/.test(n)).sort()) {
+    const x = await zip.file(name).async('string');
+    if (x.includes('class="number"')) { html = x; break; }
+  }
+  const GAP = 128;
+  const page = `html,body{height:100%;margin:0;overflow:hidden;background:#fffdf8}#book{position:absolute;top:56px;bottom:56px;left:64px;width:1052px;overflow:hidden;columns:2;column-gap:${GAP}px;column-fill:auto;font-size:18px}h2.number{margin-top:0}.pagebreak{break-before:column}`;
+  const js = `<script>addEventListener('click',(e)=>{const a=e.target.closest('a[href^="#"]');if(!a)return;e.preventDefault();const b=document.getElementById('book');const x=document.getElementById(a.getAttribute('href').slice(1));if(!x)return;const step=(b.clientWidth+${GAP})/2;const left=x.getBoundingClientRect().left-b.getBoundingClientRect().left+b.scrollLeft;b.scrollTo({left:Math.floor((left+10)/step)*step});});for(const ev of ['mousemove','mousedown'])addEventListener(ev,(e)=>{const r=frameElement.getBoundingClientRect();parent.dispatchEvent(new MouseEvent(ev,{clientX:e.clientX+r.left,clientY:e.clientY+r.top}));},true);<\/script>`;
+  html = html.replace(/<\?xml[^>]*>\s*/, '')
+    .replace(/<link[^>]*style\.css"\/>/, `<style>${css}${page}</style>`)
+    .replace('<body>', '<body><div id="book">')
+    .replace('</body>', `</div>${js}</body>`);
+  await p.evaluate((html) => {
+    const shade = document.createElement('div');
+    shade.id = 'tu-reader';
+    shade.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:#3a3a3c;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s';
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'width:1180px;height:720px;border:0;background:#fffdf8;box-shadow:0 10px 40px rgba(0,0,0,.5);border-radius:6px';
+    frame.srcdoc = html;
+    shade.append(frame);
+    document.body.append(shade);
+    requestAnimationFrame(() => requestAnimationFrame(() => (shade.style.opacity = '1')));
+  }, html);
+  await t.wait(1.2);
+  return p.frameLocator('#tu-reader iframe');
 }
