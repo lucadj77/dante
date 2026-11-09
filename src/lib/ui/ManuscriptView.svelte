@@ -3,7 +3,7 @@
   import { failure } from "$lib/ui/errors";
   import { projectKey } from "$lib/platform";
   import { tick, type Snippet } from "svelte";
-  import { enclosing, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
+  import { enclosing, GAMEBOOK_AFTER, GAMEBOOK_POSITION, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
   import { app, t } from "$lib/state.svelte";
@@ -418,6 +418,12 @@
     }, "start");
   }
 
+  /** In a gamebook, puts a page that is not a paragraph before or after the paragraphs, in the tree and in the export. */
+  async function placePage(path: string, position: "before" | "after") {
+    menu = null;
+    await run(() => project.setProperties(path, { [GAMEBOOK_POSITION]: position === "after" ? GAMEBOOK_AFTER : undefined }));
+  }
+
   /**
    * Renames without moving the selection: paths inside a renamed chapter follow it.
    * `file` renames the file even when the item has a title of its own.
@@ -725,7 +731,7 @@
       <div class="tree-actions" class:gamebook>
         <div class="tree-group" role="group" aria-labelledby="tree-add">
           <div class="caption-row">
-            <span class="caption" id="tree-add">{t("tree.add")}</span>
+            <span class="caption" id="tree-add">{gamebook ? "" : t("tree.add")}</span>
             <span class="fold">
               <button class="icon-only" title={t("tip.foldAll")} aria-label={t("tree.foldAll")} onclick={() => markOnly(foldScope, containers(tree))}><Icon name="collapse" /></button>
               <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
@@ -842,6 +848,10 @@
       {#if !gamebook}
         <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
         <button role="menuitem" onclick={() => moveBy(menu!.path, 1)}>{t("tree.moveDown")}</button>
+      {:else if node?.kind === "scene" && node.number === undefined}
+        <button role="menuitem" onclick={() => placePage(menu!.path, node!.position === "after" ? "before" : "after")}
+          >{t(node.position === "after" ? "gamebook.moveBefore" : "gamebook.moveAfter")}</button
+        >
       {/if}
       <hr />
       <button role="menuitem" class="danger" onclick={() => remove(menu!.path)}>{t("tree.deleteItem")}</button>

@@ -6,6 +6,7 @@
   import { dayKey, isWritingDay, netOf, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
   import { readingMinutes } from "$lib/core/stats";
+  import { gamebookMarks, gamebookOf } from "$lib/core/gamebook/marks";
   import { styleReport, type Place, type StyleReport } from "$lib/core/style";
   import { showMatch } from "./find.svelte";
   import { app, num, saveAppSettings, t, tu } from "$lib/state.svelte";
@@ -27,6 +28,8 @@
   let logs = $state.raw<WritingLog[]>([]);
   let style = $state.raw<StyleReport | null>(null);
   let error = $state("");
+  /** In a gamebook, the pages as the tree counts them: with each paragraph on a new page, if so set. */
+  let gamePages = $state<number | null>(null);
 
   $effect(() => {
     void p.rev;
@@ -43,6 +46,8 @@
         words = frequentWords(s.scenes.map((x) => x.text), p.project.settings.language, 40);
         style = styleReport(s.scenes, p.project.settings.language);
         logs = await readLogs(p.project.fs);
+        const game = gamebookOf(index, p.project.settings);
+        gamePages = game ? gamebookMarks(game, p.project.settings).summary.pages : null;
       } catch (e) {
         error = failure(e);
       }
@@ -207,7 +212,9 @@
     <section class="tiles" aria-label={t("statsView.totals")}>
       {#each [
         { label: t("stats.words"), value: n(stats.words) },
-        { label: t("statsView.pages"), value: n(pageCount(stats, p.project.settings.pages), 1), hint: t(p.project.settings.pages.unit === "words" ? "statsView.pagesWords" : "statsView.pagesCharacters", { size: n(p.project.settings.pages.size) }) },
+        gamePages !== null
+          ? { label: t("statsView.pages"), value: n(gamePages), hint: t(p.project.settings.gamebook.onePerPage ? "gamebook.pagesOnePerPage" : "gamebook.pagesContinuous", { size: n(p.project.settings.pages.size) }) }
+          : { label: t("statsView.pages"), value: n(pageCount(stats, p.project.settings.pages), 1), hint: t(p.project.settings.pages.unit === "words" ? "statsView.pagesWords" : "statsView.pagesCharacters", { size: n(p.project.settings.pages.size) }) },
         { label: t("stats.characters"), value: n(stats.characters) },
         { label: t("statsView.chapters"), value: n(stats.chapters.length) },
         { label: t("statsView.scenes"), value: n(stats.scenes.length) },

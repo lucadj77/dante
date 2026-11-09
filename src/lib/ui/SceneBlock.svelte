@@ -20,6 +20,7 @@
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { gamebookPreview } from "$lib/editor/gamebook";
+  import { calloutPreview } from "$lib/editor/callouts";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
@@ -153,6 +154,7 @@
         blankLines: blankLineAskFor(props.project),
         extensions: [
           shared.extension,
+          ...(props.raw ? [] : [calloutPreview()]),
           ...(props.project.settings.gamebook.enabled ? [gamebookPreview(props.project.settings.gamebook.boxes, !props.raw)] : []),
         ],
       });
@@ -227,9 +229,11 @@
         }}
       />
     {:else}
-      <button class="title" title={t("tree.renameHint")} onclick={startRename}>{props.node.title}</button>
+      <button class="title" title={t("tree.renameHint")} onclick={startRename}
+        >{#if props.project.settings.gamebook.enabled && props.node.number !== undefined}<span class="gb-number">{props.node.number}</span>&nbsp;·&nbsp;{/if}{props.node.title}</button
+      >
     {/if}
-    <button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>
+    {#if !props.project.settings.gamebook.enabled}<button class="add" title={t("editor.addScene")} onclick={() => props.onAddAfter(path)}>+</button>{/if}
   </header>
   {#if collab.holder}
     <div class="presence" role="status">
@@ -312,6 +316,10 @@
     letter-spacing: inherit;
     text-transform: inherit;
     cursor: text;
+  }
+  .gb-number {
+    font-weight: 700;
+    color: var(--text);
   }
   input.title {
     text-transform: none;

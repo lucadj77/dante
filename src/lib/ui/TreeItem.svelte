@@ -176,6 +176,8 @@
           class:relative={para.numberType === "relative"}
           title={t(`gamebook.type.${para.numberType}` as MessageKey)}>{para.numberType === "fixed" ? "🔒" : para.numberType === "relative" ? "⚓" : ""}{para.number}</span
         >
+      {:else if p.game && isScene}
+        <span class="num page" title={t("gamebook.pageHint")}>📄</span>
       {/if}
       <span class="label" class:empty-paragraph={para?.empty} title={para?.empty ? t("gamebook.empty") : undefined}>{label}</span>
       {#if para && para.warnings.length}
@@ -194,6 +196,9 @@
           aria-valuenow={Math.min(info.words, info.goal)}
           title={tu("tree.goal", p.unit, { words: num(info.words), goal: num(info.goal) })}><span style:width="{share * 100}%"></span></span
         >
+      {/if}
+      {#if p.game && isScene && !para}
+        <span class="loose" title={t("gamebook.pageHint")}>{t(p.node.position === "after" ? "gamebook.pageAfter" : "gamebook.pageBefore")}</span>
       {/if}
       {#if p.loose && !p.game}
         <span class="loose" title={t("tree.looseHint")}>{t("tree.loose")}</span>

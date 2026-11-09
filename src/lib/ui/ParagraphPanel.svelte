@@ -7,18 +7,45 @@
   import type { MessageKey } from "$lib/i18n";
   import { num, t, tu } from "$lib/state.svelte";
   import { navigator } from "./navigation";
+  import { documents, flushAll } from "./documents.svelte";
+  import { failure } from "./errors";
+  import type { ParagraphChanges } from "$lib/core/gamebook/edit";
 
   interface Props {
     project: Project;
     path: string;
     /** Changes whenever the text or the project changes, so the panel reads it again. */
     version: string;
+    onChanged: () => Promise<void>;
   }
   let p: Props = $props();
   const nav = navigator();
 
   let mark = $state<ParagraphMark | null>(null);
-  let note = $state("");
+  let error = $state("");
+
+  /** Writes the change in the paragraph's file and, for a new number, in the references to it. */
+  async function change(changes: ParagraphChanges) {
+    error = "";
+    try {
+      await flushAll(p.project);
+      await p.project.setParagraph(p.path, changes);
+      await documents(p.project).refreshAll();
+      await p.onChanged();
+    } catch (e) {
+      const m = /gamebook\.numberTaken:(\d+):(.*)$/.exec(e instanceof Error ? e.message : String(e));
+      error = m ? t("gamebook.numberTaken", { n: m[1], title: m[2] }) : failure(e);
+    }
+  }
+
+  function renumber(input: HTMLInputElement) {
+    const n = Number.parseInt(input.value, 10);
+    if (!mark || !Number.isInteger(n) || n < 1 || n === mark.number) {
+      if (mark) input.value = String(mark.number);
+      return;
+    }
+    void change({ number: n });
+  }
 
   $effect(() => {
     void p.version;
@@ -32,7 +59,6 @@
         return;
       }
       mark = paragraphMark(index, paragraph, warnings(index, p.project.settings.gamebook.start).get(path) ?? [], p.project.settings);
-      note = paragraph.note;
     });
   });
   const unit = $derived(p.project.settings.pages.unit);
@@ -41,17 +67,41 @@
 
 {#if mark}
   <div class="paragraph">
-    <p class="head">
-      <span class="number">{mark.number}</span>
-      <span class="type">{t(`gamebook.type.${mark.numberType}` as MessageKey)}</span>
-      {#if mark.ending}<span class="tag">{t("gamebook.ending")}</span>{/if}
-      {#if mark.empty}<span class="tag">{t("gamebook.empty")}</span>{/if}
-    </p>
+    <div class="head">
+      {#key mark.number}
+        <input
+          class="number"
+          type="number"
+          min="1"
+          value={mark.number}
+          aria-label={t("gamebook.number")}
+          title={t("gamebook.numberHint")}
+          disabled={mark.numberType === "relative"}
+          onchange={(e) => renumber(e.currentTarget)}
+          onkeydown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+        />
+      {/key}
+      {#if mark.numberType === "relative"}
+        <span class="type">{t("gamebook.type.relative")}</span>
+      {:else}
+        <select aria-label={t("gamebook.numberType")} value={mark.numberType} onchange={(e) => void change({ numberType: e.currentTarget.value as "free" | "fixed" })}>
+          <option value="free">{t("gamebook.type.free")}</option>
+          <option value="fixed">{t("gamebook.type.fixed")}</option>
+        </select>
+      {/if}
+    </div>
+    <label class="check">
+      <input type="checkbox" checked={mark.ending} onchange={(e) => void change({ ending: e.currentTarget.checked })} />
+      {t("gamebook.endingCheck")}
+    </label>
+    {#if mark.empty}<p class="muted">{t("gamebook.empty")}</p>{/if}
+    {#if error}<p class="error" role="alert">{error}</p>{/if}
     <p class="muted">
       <span class="length {mark.band}">{tu("gamebook.length", unit, { n: num(mark.length) })}</span>
       · {(pages === 1 ? t("gamebook.pages.one") : t("gamebook.pages", { n: pages }))}
     </p>
-    {#if note}<p class="note">{note}</p>{/if}
 
     <h4>{t("gamebook.incoming")}</h4>
     {#if mark.incoming.length}
@@ -105,9 +155,24 @@
     gap: 8px;
   }
   .number {
-    font-size: 22px;
+    width: 80px;
+    font-size: 20px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+  }
+  .head {
+    margin-bottom: 6px;
+  }
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .error {
+    color: var(--danger);
+    font-size: 12px;
   }
   .type {
     color: var(--text-muted);
@@ -121,10 +186,6 @@
   .muted {
     color: var(--text-muted);
     font-size: 12px;
-  }
-  .note {
-    font-size: 12px;
-    font-style: italic;
   }
   .length.short {
     color: var(--status-2);

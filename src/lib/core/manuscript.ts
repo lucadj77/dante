@@ -21,6 +21,9 @@ export const SYNOPSIS = "synopsis";
 export const GOAL = "goal";
 /** Property of a gamebook paragraph: its number, as the Obsidian plugin «Librogame» writes it. */
 export const GAMEBOOK_NUMBER = "numero";
+/** In a gamebook, `posizione: dopo` puts a page that is not a paragraph (an epilogue, the credits) after the paragraphs. */
+export const GAMEBOOK_POSITION = "posizione";
+export const GAMEBOOK_AFTER = "dopo";
 
 /** The `title` property, when it holds one. */
 function ownTitle(properties: Record<string, unknown>): string | null {
@@ -45,6 +48,8 @@ export interface ManuscriptNode {
   unnumbered?: boolean;
   /** In a gamebook, the paragraph's number (its `numero` property). */
   number?: number;
+  /** In a gamebook, a page that is not a paragraph: before or after the paragraphs. */
+  position?: "before" | "after";
   children: ManuscriptNode[];
 }
 
@@ -53,11 +58,11 @@ export function folderNotePath(dir: string): string {
   return join(dir, basename(dir) + ".md");
 }
 
-/** In a gamebook: paragraphs by number, then the other notes by title. */
+/** In a gamebook: the pages that go before, the paragraphs by number, the pages that go after. */
 function byNumber(a: ManuscriptNode, b: ManuscriptNode): number {
+  const group = (n: ManuscriptNode) => (n.number !== undefined ? 1 : n.position === "after" ? 2 : 0);
+  if (group(a) !== group(b)) return group(a) - group(b);
   if (a.number !== undefined && b.number !== undefined && a.number !== b.number) return a.number - b.number;
-  if (a.number === undefined && b.number !== undefined) return 1;
-  if (a.number !== undefined && b.number === undefined) return -1;
   return a.title.localeCompare(b.title, undefined, { numeric: true });
 }
 
@@ -106,7 +111,19 @@ async function loadChildren(fs: ProjectFs, dir: string, depth: number, settings:
         // A paragraph's file name is its title: the number lives in its properties.
         const title = stripExt(entry.name);
         const number = properties[GAMEBOOK_NUMBER];
-        children.push({ kind: "scene", path: entry.path, name: entry.name, order: null, title, fileTitle: title, notePath: null, number: Number.isInteger(number) ? (number as number) : undefined, children: [] });
+        const paragraph = Number.isInteger(number);
+        children.push({
+          kind: "scene",
+          path: entry.path,
+          name: entry.name,
+          order: null,
+          title,
+          fileTitle: title,
+          notePath: null,
+          number: paragraph ? (number as number) : undefined,
+          position: paragraph ? undefined : properties[GAMEBOOK_POSITION] === GAMEBOOK_AFTER ? "after" : "before",
+          children: [],
+        });
         continue;
       }
       const { order, title } = parseName(stripExt(entry.name));

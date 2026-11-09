@@ -17,6 +17,7 @@
   import { displayValue } from "./propertyText";
   import ParagraphPanel from "./ParagraphPanel.svelte";
   import { KEYS } from "$lib/core/gamebook/paragraphs";
+  import { documents, flushAll } from "./documents.svelte";
 
   interface Props {
     project: Project;
@@ -78,7 +79,23 @@
   const goal = $derived(goalOf(properties));
   const unit = $derived(p.project.settings.goals.unit);
   const today = $derived(writtenToday(unit));
-  const synopsis = $derived(typeof properties[SYNOPSIS] === "string" ? (properties[SYNOPSIS] as string) : displayValue(properties[SYNOPSIS]));
+  /** A paragraph's synopsis is its `note`, the plugin's note on the paragraph. */
+  const paragraphNote = $derived(gamebook && node?.kind === "scene");
+  const synopsisKey = $derived(paragraphNote ? KEYS.note : SYNOPSIS);
+  const synopsis = $derived(typeof properties[synopsisKey] === "string" ? (properties[synopsisKey] as string) : displayValue(properties[synopsisKey]));
+
+  async function setNote(value: string) {
+    if (!node) return;
+    error = "";
+    try {
+      await flushAll(p.project);
+      await p.project.setParagraph(node.path, { note: value });
+      await documents(p.project).refreshAll();
+      await p.onChanged();
+    } catch (e) {
+      error = failure(e);
+    }
+  }
 
   async function retitle(title: string) {
     if (!node || title.trim() === node.title) return;
@@ -129,7 +146,7 @@
 <div class="panel">
   {#if gamebook && node && node.kind === "scene"}
     <PanelSection id="paragraph" title={t("gamebook.paragraph")}>
-      <ParagraphPanel project={p.project} path={node.path} version={`${p.rev}|${p.localRev}|${p.activeText ?? ""}`} />
+      <ParagraphPanel project={p.project} path={node.path} version={`${p.rev}|${p.localRev}|${p.activeText ?? ""}`} onChanged={p.onChanged} />
     </PanelSection>
   {/if}
   {#if node && node.kind !== "manuscript"}
@@ -174,7 +191,9 @@
             placeholder={t("panel.synopsisHint")}
             onchange={(e) => {
               const value = (e.currentTarget as HTMLTextAreaElement).value.trim();
-              if (value !== synopsis) void update({ [SYNOPSIS]: value === "" ? undefined : value });
+              if (value === synopsis) return;
+              if (paragraphNote) void setNote(value);
+              else void update({ [SYNOPSIS]: value === "" ? undefined : value });
             }}
           ></textarea>
         {/key}

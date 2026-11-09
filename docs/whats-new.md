@@ -6,7 +6,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
-- **Gamebooks**: a project can become a gamebook (Settings > Gamebook). The tree shows the paragraphs in order of number, with warnings, lengths and where each comes from and leads; references read as numbers and boxes as coloured frames; the Paragraph panel sums up each paragraph. It uses the same format as the Librogame plugin.
+- **Callouts**: `> [!note]`, `> [!warning]` and similar blocks show their name in a coloured pill.
+- **Gamebooks**: a project can become a gamebook (Settings > Gamebook). The tree shows the paragraphs in order of number, with warnings, lengths and where each comes from and leads; references read as numbers and boxes as coloured frames; the Paragraph panel sums up each paragraph and changes its number, type and ending, updating the references; rules and other pages without a number sit before or after the paragraphs. It uses the same format as the Librogame plugin.
 
 ### Changed
 

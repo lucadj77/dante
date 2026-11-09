@@ -7,6 +7,8 @@ import { writeProperties } from "../frontmatter";
 import { defaultSettings, parseSettings, serializeSettings } from "../settings";
 import { loadManuscript } from "../manuscript";
 import { MemoryFs } from "../fs";
+import { relabel, setParagraphFields } from "../gamebook/edit";
+import { Project } from "../project";
 
 const types = defaultBoxTypes("it");
 const options = { boxTypes: types, unit: "characters" as const };
@@ -131,7 +133,44 @@ describe("gamebook settings and manuscript", () => {
     settings.folders.manuscript = DIR;
     settings.gamebook.enabled = true;
     const tree = await loadManuscript(fs, settings);
-    expect(tree.children.map((c) => c.title)).toEqual(["Agguato", "Fuga", "Bosco", "Dimenticato", "Resa", "Enigma", "00 regole"]);
-    expect(tree.children[0].number).toBe(1);
+    expect(tree.children.map((c) => c.title)).toEqual(["00 regole", "Agguato", "Fuga", "Bosco", "Dimenticato", "Resa", "Enigma"]);
+    expect(tree.children[1].number).toBe(1);
+  });
+});
+
+describe("gamebook edits", () => {
+  it("writes number, alias, type, ending and note as the plugin does", () => {
+    const text = '---\nnumero: 3\naliases:\n  - "3"\n  - Bosco fitto\ncarattere:\n  - studioso\n---\nTesto.';
+    const out = setParagraphFields(text, { number: 12, numberType: "fixed", ending: true, note: "Da rivedere: troppo corto" });
+    expect(out).toBe('---\nnumero: 12\naliases:\n  - Bosco fitto\n  - "12"\ncarattere:\n  - studioso\nnumero_tipo: fisso\nfinale: true\nnote: "Da rivedere: troppo corto"\n---\nTesto.');
+    const back = setParagraphFields(out, { numberType: "free", ending: false, note: "" });
+    expect(back).toBe('---\nnumero: 12\naliases:\n  - Bosco fitto\n  - "12"\ncarattere:\n  - studioso\n---\nTesto.');
+  });
+
+  it("relabels references in the text and among the hidden ones", () => {
+    const text = '---\nrimandi nascosti:\n  - "[[Bosco|3]]"\n---\nVai al **[[Bosco|3]]** o al **[[Boscaglia|3]]**.';
+    expect(relabel(text, "Bosco", 3, 12)).toBe('---\nrimandi nascosti:\n  - "[[Bosco|12]]"\n---\nVai al **[[Bosco|12]]** o al **[[Boscaglia|3]]**.');
+  });
+
+  it("renumbers a paragraph and the references to it, and refuses a number taken", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
+    for (const f of book) await fs.writeText(f.path, f.text);
+    const project = await Project.open(fs, "it");
+    await project.setParagraph(`${DIR}/Fuga.md`, { number: 5 });
+    expect(await fs.readText(`${DIR}/Fuga.md`)).toContain('numero: 5\naliases:\n  - "5"');
+    expect(await fs.readText(`${DIR}/Agguato.md`)).toContain("**[[Fuga|5]]**");
+    await expect(project.setParagraph(`${DIR}/Fuga.md`, { number: 8 })).rejects.toThrow("gamebook.numberTaken:8:Resa");
+  });
+
+  it("puts pages marked to go after the paragraphs at the end", async () => {
+    const fs = new MemoryFs();
+    for (const f of book) await fs.writeText(f.path, f.text);
+    await fs.writeText(`${DIR}/Ringraziamenti.md`, "---\nposizione: dopo\n---\nGrazie.");
+    const settings = defaultSettings("it");
+    settings.folders.manuscript = DIR;
+    settings.gamebook.enabled = true;
+    const tree = await loadManuscript(fs, settings);
+    expect(tree.children.map((c) => c.title).filter((t) => !/^[A-Z][a-z]+$/.test(t) || t === "Ringraziamenti")).toEqual(["00 regole", "Ringraziamenti"]);
+    expect(tree.children.at(-1)?.position).toBe("after");
   });
 });

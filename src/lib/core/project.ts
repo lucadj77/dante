@@ -34,6 +34,8 @@ import {
 import { snapshotDir, takeSnapshot } from "./snapshots";
 import { moveHistory } from "./history";
 import { textStats } from "./stats";
+import { relabel, setParagraphFields, type ParagraphChanges } from "./gamebook/edit";
+import { gamebookOf } from "./gamebook/marks";
 import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
@@ -484,6 +486,37 @@ export class Project {
     const file = this.propertiesFile(path);
     const text = (await this.fs.exists(file)) ? await this.fs.readText(file) : "";
     await this.fs.writeText(file, writeProperties(text, changes));
+    await this.reload();
+  }
+
+  /**
+   * In a gamebook: changes a paragraph's own properties as the plugin writes them. A new
+   * number also goes into its aliases and into the label of every reference to it, so the
+   * book reads the same. Refuses a number another paragraph of the same folder already has.
+   */
+  async setParagraph(path: string, changes: ParagraphChanges): Promise<void> {
+    await this.beforeMove?.();
+    const index = gamebookOf(await this.index(), this.settings);
+    const paragraph = index?.get(path);
+    if (changes.number !== undefined && index && paragraph && changes.number !== paragraph.number) {
+      const taken = index.byNumber(paragraph.scope, changes.number);
+      if (taken) throw new Error(`gamebook.numberTaken:${changes.number}:${taken.title}`);
+      // Each file that refers here, with the names it uses for this paragraph.
+      const targets = new Map<string, Set<string>>();
+      for (const { from, reference } of index.incoming(path)) targets.set(from.path, (targets.get(from.path) ?? new Set()).add(reference.target));
+      targets.set(path, (targets.get(path) ?? new Set()).add(paragraph.title));
+      for (const [file, names] of targets) {
+        const text = await this.fs.readText(file);
+        let next = file === path ? setParagraphFields(text, changes) : text;
+        for (const name of names) next = relabel(next, name, paragraph.number, changes.number);
+        if (next !== text) await this.fs.writeText(file, next);
+      }
+      await this.reload();
+      return;
+    }
+    const text = await this.fs.readText(path);
+    const next = setParagraphFields(text, changes);
+    if (next !== text) await this.fs.writeText(path, next);
     await this.reload();
   }
 
