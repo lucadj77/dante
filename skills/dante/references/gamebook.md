@@ -129,7 +129,7 @@ list in the paragraph's frontmatter (`keywords:` / `  - lantern`).
 
 Dante follows the references from the start paragraph and checks what the reader can have:
 
-- A value in a box property (`keywords: [lantern]`) **gives** it; the same value with a
+- A value in a box property (`keywords:` / `  - lantern`) **gives** it; the same value with a
   question mark (`lantern?`) marks a paragraph that **asks** for it. A value with a leading
   `-` takes it away and is ignored by the checks.
 - In the text, sentences give or ask too. English: "Note the keyword **lantern**", "Circle
