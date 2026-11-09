@@ -2,11 +2,15 @@
 """Outline of a Dante project's manuscript, in reading order, with structural warnings.
 
     python3 outline.py <project folder>            outline and warnings
-    python3 outline.py <project folder> --text     the whole novel's text, in order
+    python3 outline.py <project folder> --text     the whole book's text, in order
     python3 outline.py <project folder> --json     the outline as JSON
 
+Lengths are given in words and in characters with spaces included, counted as Dante counts
+them (no comments, revisions accepted, no Markdown marks). A gamebook (gamebook.enabled in
+dante.yaml) is listed by paragraph number, with its references and their problems.
+
 Only reads files. Uses PyYAML when installed; otherwise a small reader that understands the
-frontmatter Dante and Obsidian write (keys, quoted values, inline and block lists).
+frontmatter Dante writes (keys, quoted values, inline and block lists).
 """
 
 import json
@@ -19,7 +23,7 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
-SKIPPED = {".dante", ".obsidian", ".git", ".trash", "node_modules", "export"}
+SKIPPED = {"node_modules", "export"}  # and every hidden folder (.dante, .trash, .git…)
 PREFIX = re.compile(r"^(\d+)\s+(.*)$")
 FENCE = re.compile(r"^---[ \t]*\r?\n")
 CLOSE = re.compile(r"^---[ \t]*(\r?\n|$)", re.M)
@@ -31,6 +35,8 @@ CONFLICT = re.compile(
     re.I,
 )
 WORD = re.compile(r"[^\W_]+(?:['’\-][^\W_]+)*")
+REFERENCE = re.compile(r"(!?)\[\[([^\[\]|#]+)(?:#[^\[\]|]*)?(?:\\?\|([^\[\]]*))?\]\]")
+BOX = re.compile(r'^::: \{custom-style="box"\}[ \t]*\n[\s\S]*?\n:::[ \t]*$', re.M)
 DEFAULT_MANUSCRIPT = {"en": "Manuscript", "it": "Manoscritto", "es": "Manuscrito", "fr": "Manuscrit"}
 CONTAINER_KINDS = {"part", "chapter", "prologue", "epilogue"}
 
@@ -104,13 +110,34 @@ def split_note(text):
     return rest[: match.start()], rest[match.end():]
 
 
-def plain_words(body):
+def plain_text(body):
+    """The text as Dante counts it: revisions accepted, no comments, marks, tags or embeds."""
     body = re.sub(r"\{>>[\s\S]*?<<\}", "", body)
-    body = re.sub(r"<!--[\s\S]*?-->|</?[a-zA-Z][^<>\n]*>", "", body)
+    body = re.sub(r"\{\+\+([\s\S]*?)\+\+\}", r"\1", body)
+    body = re.sub(r"\{--[\s\S]*?--\}", "", body)
+    body = re.sub(r"\{~~[\s\S]*?~>([\s\S]*?)~~\}", r"\1", body)
+    body = re.sub(r"\{==([\s\S]*?)==\}", r"\1", body)
+    body = re.sub(r"<!--[\s\S]*?-->", "", body)
+    body = re.sub(r"&(?:nbsp|#160|#x0*a0);", " ", body, flags=re.I)
+    body = re.sub(r"</?[a-zA-Z][^<>\n]*>", "", body)
     body = re.sub(r"!\[\[[^\]]*\]\]|!\[[^\]\n]*\]\([^)\n]*\)", "", body)
+    body = re.sub(r"^[ \t]*\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)+\|?[ \t]*$", "", body, flags=re.M)
     body = re.sub(r"\[\[([^\]|]+)\\?\|([^\]]+)\]\]", r"\2", body)
     body = re.sub(r"\[\[([^\]]+)\]\]", r"\1", body)
-    return len(WORD.findall(body))
+    body = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", body)
+    body = re.sub(r"\\?\|", lambda m: " " if m.group(0) == "|" else m.group(0), body)
+    body = re.sub(r"^\s{0,3}(#{1,6}|>|[-*+]|\d+[.)])\s+", "", body, flags=re.M)
+    body = re.sub(r"[*_~`=]+", "", body)
+    return re.sub(r"\s+", " ", body).strip()
+
+
+def measure(body):
+    text = plain_text(body)
+    return {"words": len(WORD.findall(text)), "characters": len(text)}
+
+
+def show_size(size):
+    return f"{size['words']} words, {size['characters']} characters"
 
 
 class Report:
@@ -118,6 +145,7 @@ class Report:
         self.root = root
         self.warnings = []
         self.notes = {}  # relative path -> (properties, body)
+        self.notes_minor = []  # remarks, not problems
 
     def rel(self, path):
         return os.path.relpath(path, self.root).replace(os.sep, "/")
@@ -179,7 +207,7 @@ def load_children(report, directory, depth, parts):
                 "order": order,
                 "title": own_title(props) or title,
                 "fileTitle": title,
-                "words": plain_words(body),
+                **measure(body),
                 "children": [],
             }
         else:
@@ -240,13 +268,13 @@ def all_files(root):
     out = []
     for directory, dirs, files in os.walk(root):
         if os.path.abspath(directory) == os.path.abspath(root):
-            dirs[:] = [d for d in dirs if d not in SKIPPED]
+            dirs[:] = [d for d in dirs if d not in SKIPPED and not d.startswith(".")]
         for name in files:
             out.append(os.path.relpath(os.path.join(directory, name), root).replace(os.sep, "/"))
     return out
 
 
-def check_links(report, files):
+def check_links(report, files, skip_targets=frozenset()):
     keys = [(f[:-3] if f.lower().endswith(".md") else f).lower() for f in files]
     aliases = set()
     for f in files:
@@ -267,7 +295,7 @@ def check_links(report, files):
             for match in LINK.finditer(text):
                 target = match.group(1).strip()
                 wanted = (target[:-3] if target.lower().endswith(".md") else target).lstrip("/").lower()
-                if not wanted or wanted in aliases:
+                if not wanted or wanted in aliases or wanted in skip_targets:
                     continue
                 if any(k == wanted or k.endswith("/" + wanted) for k in keys):
                     continue
@@ -275,6 +303,116 @@ def check_links(report, files):
     for target, sources in sorted(missing.items()):
         names = ", ".join(sorted(sources)[:3]) + (" …" if len(sources) > 3 else "")
         report.warnings.append(f"link to a missing note [[{target}]] in {names}")
+
+
+def sum_size(nodes):
+    return {
+        "words": sum(n["words"] for n in nodes if n["kind"] == "scene"),
+        "characters": sum(n["characters"] for n in nodes if n["kind"] == "scene"),
+    }
+
+
+def integer(value):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and re.fullmatch(r"\s*-?\d+\s*", value):
+        return int(value)
+    return None
+
+
+def as_list(value):
+    if value is None or value == "":
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def gamebook(report, base, folder, settings):
+    """Paragraphs by number, their references and the problems Dante would flag."""
+    options = settings.get("gamebook") if isinstance(settings.get("gamebook"), dict) else {}
+    start = integer(options.get("start")) or 1
+    paragraphs, pages = [], []
+    for directory, dirs, files in os.walk(base):
+        dirs[:] = sorted(d for d in dirs if not d.startswith((".", "_")))
+        for name in sorted(files):
+            if name.startswith((".", "_")) or not name.lower().endswith(".md"):
+                continue
+            path = os.path.join(directory, name)
+            if is_conflict(directory, name):
+                report.warnings.append(f"{report.rel(path)}: conflict copy made by a sync service, not a paragraph")
+                continue
+            props, body = report.read(path)
+            title = name[:-3]
+            entry = {"kind": "scene", "path": report.rel(path), "title": title, **measure(BOX.sub("", body))}
+            number = integer(props.get("numero"))
+            if number is None:
+                entry["position"] = "after" if str(props.get("posizione", "")).strip() == "dopo" else "before"
+                pages.append(entry)
+                continue
+            entry.update({
+                "number": number,
+                "numberType": str(props.get("numero_tipo") or "libero"),
+                "ending": props.get("finale") is True or str(props.get("finale")).lower() == "true",
+                "links": [],
+                "hidden": [],
+            })
+            for match in REFERENCE.finditer(body):
+                if not match.group(1):
+                    entry["links"].append((match.group(2).strip(), (match.group(3) or "").strip()))
+            for value in as_list(props.get("rimandi nascosti")):
+                for match in REFERENCE.finditer(str(value)):
+                    entry["hidden"].append((match.group(2).strip(), (match.group(3) or "").strip()))
+            entry["endingBox"] = "😢" in "".join(m.group(0)[:60] for m in BOX.finditer(body))
+            paragraphs.append(entry)
+    paragraphs.sort(key=lambda p: (p["number"], p["title"].lower()))
+    by_title = {p["title"].lower(): p for p in paragraphs}
+    by_number = {}
+    for p in paragraphs:
+        by_number.setdefault(p["number"], []).append(p)
+    for number, same in sorted(by_number.items()):
+        if len(same) > 1:
+            report.warnings.append(f"number {number} used by " + ", ".join(p["title"] for p in same))
+    incoming = {p["title"].lower(): [] for p in paragraphs}
+    for p in paragraphs:
+        p["to"] = []
+        for target, label in p["links"] + p["hidden"]:
+            other = by_title.get(target.lower())
+            if other is None and integer(target) is not None and integer(target) in by_number:
+                other = by_number[integer(target)][0]
+                report.warnings.append(f"{p['number']} {p['title']}: [[{target}]] points at a number, write [[{other['title']}|{other['number']}]]")
+            if other is None:
+                continue  # a missing note is reported with the other broken links
+            if label and integer(label) is not None and integer(label) != other["number"]:
+                report.warnings.append(f"{p['number']} {p['title']}: [[{target}|{label}]] but {other['title']} is {other['number']}")
+            elif not label:
+                report.warnings.append(f"{p['number']} {p['title']}: [[{target}]] has no number label")
+            p["to"].append(other["number"])
+            incoming[other["title"].lower()].append(p["number"])
+    for p in paragraphs:
+        p["from"] = sorted(set(incoming[p["title"].lower()]))
+        label = f"{p['number']} {p['title']}"
+        if not p["from"] and p["number"] != start:
+            report.warnings.append(f"{label}: orphan, no paragraph leads here")
+        if not p["to"] and not p["ending"] and not p["endingBox"]:
+            report.warnings.append(f"{label}: dead end, leads nowhere and is not an ending")
+        if p["ending"] and not p["endingBox"]:
+            report.notes_minor.append(f"{label}: finale: true without an ending box (fine if the ending is in the prose)")
+        if p["endingBox"] and not p["ending"]:
+            report.warnings.append(f"{label}: ending box but no finale: true")
+        if p["numberType"] not in ("libero", "fisso", "relativo"):
+            report.warnings.append(f"{label}: numero_tipo {p['numberType']!r} is not libero, fisso or relativo")
+    reached, todo = set(), [start]
+    while todo:
+        n = todo.pop()
+        if n in reached or n not in by_number:
+            continue
+        reached.add(n)
+        todo.extend(by_number[n][0]["to"])
+    for p in paragraphs:
+        if p["number"] not in reached and p["from"]:
+            report.warnings.append(f"{p['number']} {p['title']}: unreachable from paragraph {start}")
+    return paragraphs, pages
 
 
 def main(argv):
@@ -297,14 +435,43 @@ def main(argv):
     manuscript = folders.get("manuscript") or DEFAULT_MANUSCRIPT.get(language[:2], "Manuscript")
     if not os.path.isdir(os.path.join(root, manuscript)) and os.path.isdir(os.path.join(root, "Manuscript")):
         manuscript = "Manuscript"
+    goals = settings.get("goals") if isinstance(settings.get("goals"), dict) else {}
+    unit = "characters" if goals.get("unit") == "characters" else "words"
+    options = settings.get("gamebook") if isinstance(settings.get("gamebook"), dict) else {}
+    base = os.path.join(root, manuscript)
+    title = settings.get("title") or os.path.basename(root)
+    if not os.path.isdir(base):
+        report.warnings.append(f"manuscript folder {manuscript}/ is missing")
+
+    if options.get("enabled") is True:
+        paragraphs, pages = gamebook(report, base, manuscript, settings) if os.path.isdir(base) else ([], [])
+        ordered = [p for p in pages if p["position"] == "before"] + paragraphs + [p for p in pages if p["position"] == "after"]
+        if "--text" in argv:
+            for p in ordered:
+                print(f"\n# {p.get('number', p['title'])}\n")
+                print(report.notes[p["path"]][1].strip())
+            return 0
+        check_links(report, all_files(root), skip_targets={p["title"].lower() for p in ordered})
+        if "--json" in argv:
+            print(json.dumps({"gamebook": True, "unit": unit, "paragraphs": ordered, "warnings": report.warnings, "notes": report.notes_minor}, ensure_ascii=False, indent=2))
+            return 0
+        print(f"{title} · gamebook in {manuscript}/ · {len(paragraphs)} paragraphs · start {integer(options.get('start')) or 1} · unit {unit}")
+        for p in ordered:
+            if "number" not in p:
+                print(f"- [page, {p['position']}] {p['title']}  [{show_size(p)}]  {p['path']}")
+                continue
+            kind = {"fisso": " fixed", "relativo": " relative"}.get(p["numberType"], "")
+            end = " ENDING" if p["ending"] else ""
+            print(f"- {p['number']}{kind}{end}: {p['title']}  [{show_size(p)}]  from {p['from'] or '-'} to {p['to'] or '-'}")
+        total = sum_size(ordered)
+        print(f"\nTotal: {show_size(total)}")
+        return finish(report)
+
     structure = settings.get("structure") if isinstance(settings.get("structure"), dict) else {}
     parts = structure.get("parts") is True
-    base = os.path.join(root, manuscript)
     tree = {"kind": "manuscript", "path": manuscript, "children": []}
     if os.path.isdir(base):
         tree["children"] = load_children(report, base, 0, parts)
-    else:
-        report.warnings.append(f"manuscript folder {manuscript}/ is missing")
     for node in flatten(tree):
         if node["kind"] == "manuscript" or (parts and node["kind"] == "part"):
             for child in node["children"]:
@@ -321,26 +488,34 @@ def main(argv):
 
     check_links(report, all_files(root))
     if "--json" in argv:
-        print(json.dumps({"manuscript": tree, "warnings": report.warnings}, ensure_ascii=False, indent=2))
+        print(json.dumps({"unit": unit, "manuscript": tree, "warnings": report.warnings}, ensure_ascii=False, indent=2))
         return 0
 
-    total = 0
-
     def show(node, level):
-        nonlocal total
         for child in node["children"]:
             mark = "" if child.get("numbered", True) else " (unnumbered)"
             if child["kind"] == "scene":
-                total += child["words"]
-                print(f"{'  ' * level}- {child['title']}  [{child['words']} words]  {child['path']}")
+                print(f"{'  ' * level}- {child['title']}  [{show_size(child)}]  {child['path']}")
             else:
-                words = sum(c["words"] for c in flatten(child) if c["kind"] == "scene")
-                print(f"{'  ' * level}{child['kind'].upper()}{mark}: {child['title']}  [{words} words]  {child['path']}/")
+                size = sum_size(flatten(child))
+                print(f"{'  ' * level}{child['kind'].upper()}{mark}: {child['title']}  [{show_size(size)}]  {child['path']}/")
                 show(child, level + 1)
 
-    print(f"{settings.get('title') or os.path.basename(root)} · manuscript in {manuscript}/ · parts {'on' if parts else 'off'}")
+    print(f"{title} · manuscript in {manuscript}/ · parts {'on' if parts else 'off'} · goals in {unit}")
     show(tree, 0)
-    print(f"\nTotal: about {total} words")
+    total = sum_size(flatten(tree))
+    print(f"\nTotal: {show_size(total)}")
+    target = integer(goals.get("words"))
+    if target:
+        print(f"Goal: {target} {unit} ({round(100 * total[unit] / target)}%)")
+    return finish(report)
+
+
+def finish(report):
+    if report.notes_minor:
+        print("\nNotes (minor, not errors):")
+        for note in report.notes_minor:
+            print(f"- {note}")
     if report.warnings:
         print("\nWarnings:")
         for warning in report.warnings:
