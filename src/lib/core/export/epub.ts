@@ -14,6 +14,9 @@ export function escapeXml(text: string): string {
 
 const lines = (text: string) => text.split("\n").map(escapeXml).join("<br/>");
 
+/** Stands for the file of a gamebook's paragraph until the chapters are laid out. */
+const LINK_HREF = "dante-link:";
+
 /** A paragraph's runs as XHTML; `imageFile` gives where an image inside the text is in the book. */
 function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
   return items
@@ -28,6 +31,8 @@ function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
       if (r.italic) out = `<em>${out}</em>`;
       if (r.bold) out = `<strong>${out}</strong>`;
       if (r.strike) out = `<s>${out}</s>`;
+      // A gamebook's reference: the file is filled in once every paragraph has its file.
+      if (r.link) out = `<a href="${LINK_HREF}${r.link}">${out}</a>`;
       return out;
     })
     .join("");
@@ -57,6 +62,8 @@ p.align-left { text-align: left; }
 p.align-justify { text-align: justify; }
 pre { white-space: pre-wrap; font-size: 0.9em; }
 table { border-collapse: collapse; margin: 1em auto; }
+h1.number, h2.number, h3.number, h4.number { font-style: normal; font-weight: bold; }
+a { color: inherit; }
 th, td { border: 1px solid #999; padding: 0.2em 0.5em; text-align: left; vertical-align: top; }
 th { font-weight: bold; }
 .box { border: 1px solid; border-left-width: 4px; padding: 0.5em 0.8em; margin: 1em 0; }
@@ -249,7 +256,10 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
     if (e.heading) current.body.push(`<${chapterTag}>${lines(e.heading)}</${chapterTag}>`);
     e.scenes.forEach((scene, i) => {
       if (i > 0) current!.body.push(separator(opts.sceneBreak));
-      if (scene.heading) current!.body.push(`<${sceneTag}>${lines(scene.heading)}</${sceneTag}>`);
+      if (scene.heading && book.gamebook) {
+        const style = book.gamebook.align === "left" ? ' style="text-align: left"' : "";
+        current!.body.push(`<${sceneTag} class="number"${scene.anchor ? ` id="${scene.anchor}"` : ""}${style}>${lines(scene.heading)}</${sceneTag}>`);
+      } else if (scene.heading) current!.body.push(`<${sceneTag}>${lines(scene.heading)}</${sceneTag}>`);
       current!.body.push(blocks(scene.blocks, level));
     });
   }
@@ -283,6 +293,17 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
   // A part without chapters would leave an empty list, which EPUB does not allow.
   const tocHtml = toc.join("\n").replace(/<ol>\n<\/ol>/g, "");
   const nav = page(title, language, `<nav epub:type="toc" id="toc"><h1>${escapeXml(title)}</h1><ol>\n${tocHtml || `<li><a href="${chapters[0]?.file ?? "nav.xhtml"}">${escapeXml(title)}</a></li>`}\n</ol></nav>`);
+
+  // A gamebook's references lead to the file that holds their paragraph.
+  const fileOf = new Map<string, string>();
+  for (const c of chapters) for (const m of c.html.matchAll(/ id="(p\d+)"/g)) fileOf.set(m[1], c.file);
+  for (const c of chapters) {
+    if (!c.html.includes(LINK_HREF)) continue;
+    c.html = c.html.replace(/href="dante-link:(p\d+)"/g, (_, anchor: string) => {
+      const file = fileOf.get(anchor);
+      return `href="${file === c.file ? "" : file ?? ""}#${anchor}"`;
+    });
+  }
 
   const modified = now.toISOString().replace(/\.\d+Z$/, "Z");
   const opf = `<?xml version="1.0" encoding="UTF-8"?>

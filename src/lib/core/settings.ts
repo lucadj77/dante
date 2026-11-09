@@ -197,10 +197,36 @@ export interface GamebookSettings {
   /** Shows under each paragraph in the tree where it comes from and where it leads. */
   showLinks: boolean;
   boxes: BoxType[];
+  /** How the export lays out the paragraphs. */
+  export: GamebookExportSettings;
+}
+
+/** The export of a gamebook: in place of parts, chapters and scenes, the paragraphs. */
+export interface GamebookExportSettings {
+  /** The heading of each paragraph: its number, or number and title for a working copy. */
+  heading: "number" | "numberTitle";
+  /** Written before the number, such as "§ "; empty for the number alone. */
+  prefix: string;
+  align: "center" | "left";
+  /** Size of the number, in points. */
+  size: number;
+  /** Between two paragraphs: a new page, an empty line, or the characters of `symbol`. */
+  separator: "pageBreak" | "blankLine" | "characters";
+  symbol: string;
+  /** References lead to their paragraph with a click, in Word, PDF and EPUB. */
+  links: boolean;
+  /** References in bold, as they are written; off, in the weight of the text. */
+  bold: boolean;
+  /** Boxes in their type's colour, in grey, or as plain text. */
+  boxes: "color" | "gray" | "none";
+}
+
+export function defaultGamebookExport(): GamebookExportSettings {
+  return { heading: "number", prefix: "", align: "center", size: 18, separator: "pageBreak", symbol: "✦", links: true, bold: true, boxes: "color" };
 }
 
 export function defaultGamebook(language = "it"): GamebookSettings {
-  return { enabled: false, start: 1, short: 400, onePerPage: true, showLinks: false, boxes: defaultBoxTypes(language) };
+  return { enabled: false, start: 1, short: 400, onePerPage: true, showLinks: false, boxes: defaultBoxTypes(language), export: defaultGamebookExport() };
 }
 
 export interface NovelSettings {
@@ -594,6 +620,14 @@ export function parseSettings(text: string): NovelSettings {
   settings.gamebook.boxes = parseBoxTypes(isObject(raw) && isObject(raw.gamebook) ? raw.gamebook.boxes : undefined, language);
   if (!Number.isInteger(settings.gamebook.start) || settings.gamebook.start < 1) settings.gamebook.start = 1;
   if (!(settings.gamebook.short >= 0)) settings.gamebook.short = 400;
+  const gx = settings.gamebook.export;
+  // A book that set only "each paragraph on a new page" keeps it in the export.
+  if (!(isObject(raw) && isObject(raw.gamebook) && isObject(raw.gamebook.export)) && !settings.gamebook.onePerPage) gx.separator = "blankLine";
+  if (!["number", "numberTitle"].includes(gx.heading)) gx.heading = "number";
+  if (!["center", "left"].includes(gx.align)) gx.align = "center";
+  if (!["pageBreak", "blankLine", "characters"].includes(gx.separator)) gx.separator = "pageBreak";
+  if (!["color", "gray", "none"].includes(gx.boxes)) gx.boxes = "color";
+  if (!(gx.size >= 6 && gx.size <= 72)) gx.size = 18;
   settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;

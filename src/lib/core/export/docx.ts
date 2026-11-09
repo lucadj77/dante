@@ -2,11 +2,13 @@ import { formatNumber } from "../numbers";
 import {
   AlignmentType,
   BorderStyle,
+  Bookmark,
   Document,
   Footer,
   Header,
   HeadingLevel,
   ImageRun,
+  InternalHyperlink,
   LineRuleType,
   NumberFormat,
   Packer,
@@ -112,15 +114,30 @@ export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgeme
   fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements" },
 };
 
-/** The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize` points. */
-function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun)[] {
-  return items.map((r) =>
+/**
+ * The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize`
+ * points. A gamebook's references lead to the bookmark of their paragraph.
+ */
+function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun | InternalHyperlink)[] {
+  const one = (r: Run) =>
     r.image
       ? imageRun(r.image, maxWidth, fontSize)
       : r.lineBreak
       ? new TextRun({ break: 1 })
-      : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined }),
-  );
+      : new TextRun({ text: r.text, italics: r.italic, bold: r.bold, strike: r.strike, font: r.code ? "Courier New" : undefined });
+  const out: (TextRun | ImageRun | InternalHyperlink)[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const link = items[i].link;
+    if (!link) {
+      out.push(one(items[i]));
+      continue;
+    }
+    const group: Run[] = [];
+    while (i < items.length && items[i].link === link) group.push(items[i++]);
+    i--;
+    out.push(new InternalHyperlink({ anchor: link, children: group.map((r) => one(r) as TextRun) }));
+  }
+  return out;
 }
 
 function plain(text: string, options: Partial<IRunOptions> = {}): TextRun[] {
@@ -307,7 +324,16 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
         if (separate(i > 0 ? opts.sceneBreak : opts.chapterBreak)) body.push(new Paragraph({ style: "SceneBreak", pageBreakBefore: true, children: [] }));
       }
       started = true;
-      if (scene.heading) body.push(new Paragraph({ heading: HEADINGS[sceneLevel], children: plain(scene.heading) }));
+      if (scene.heading && book.gamebook) {
+        // A gamebook's number: bookmarked, so that the references lead here.
+        const gx = book.gamebook;
+        const text = plain(scene.heading, { size: gx.size * 2 });
+        body.push(new Paragraph({
+          heading: HEADINGS[sceneLevel],
+          alignment: gx.align === "left" ? AlignmentType.LEFT : AlignmentType.CENTER,
+          children: scene.anchor ? [new Bookmark({ id: scene.anchor, children: text })] : text,
+        }));
+      } else if (scene.heading) body.push(new Paragraph({ heading: HEADINGS[sceneLevel], children: plain(scene.heading) }));
       blocks(scene.blocks, sceneLevel);
     });
   };

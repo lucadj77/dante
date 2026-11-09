@@ -42,6 +42,8 @@ function run(r: Run, maxWidth = 6.5): string {
   if (r.italic) out = `emph(${out})`;
   if (r.bold) out = `strong(${out})`;
   if (r.strike) out = `strike(${out})`;
+  // A gamebook's reference leads to the label of its paragraph's number.
+  if (r.link) return `#link(<${r.link}>)[#${out}]`;
   return `#${out}`;
 }
 
@@ -246,7 +248,11 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     e.scenes.forEach((scene, i) => {
       if (started && (i > 0 || !e.heading)) separate(i > 0 ? opts.sceneBreak : opts.chapterBreak);
       started = true;
-      if (scene.heading) emit(`#heading(level: ${sceneLevel})[${lines(scene.heading)}]`);
+      if (scene.heading && book.gamebook) {
+        const gx = book.gamebook;
+        const body = `#text(size: ${gx.size}pt)[${lines(scene.heading)}]`;
+        emit(`#heading(level: ${sceneLevel}, outlined: false)[${gx.align === "left" ? `#align(left)[${body}]` : body}]${scene.anchor ? ` <${scene.anchor}>` : ""}`);
+      } else if (scene.heading) emit(`#heading(level: ${sceneLevel})[${lines(scene.heading)}]`);
       blocks(scene.blocks, sceneLevel);
     });
   };

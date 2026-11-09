@@ -252,7 +252,16 @@
         <input type="number" min="0" step="50" bind:value={novel.gamebook.short} />
         <small>{t("gamebook.shortHint")}</small>
       </label>
-      <label class="check"><input type="checkbox" bind:checked={novel.gamebook.onePerPage} /> {t("gamebook.onePerPage")}</label>
+      <label class="check"><input
+          type="checkbox"
+          bind:checked={novel.gamebook.onePerPage}
+          onchange={() => {
+            // The export lays the paragraphs out the same way.
+            const gx = novel.gamebook.export;
+            if (novel.gamebook.onePerPage) gx.separator = "pageBreak";
+            else if (gx.separator === "pageBreak") gx.separator = "blankLine";
+          }}
+        /> {t("gamebook.onePerPage")}</label>
       <label class="check"><input type="checkbox" bind:checked={novel.gamebook.showLinks} /> {t("gamebook.showLinks")}</label>
       <h4>{t("gamebook.boxes")}</h4>
       <p class="hint">{t("gamebook.boxesHint")}</p>

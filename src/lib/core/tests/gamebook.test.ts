@@ -378,15 +378,33 @@ describe("gamebook export", () => {
     expect(first.length).toBe(3);
     const text = first[2].type === "paragraph" ? first[2].runs.map((r) => r.text).join("") : "";
     expect(text).toBe("Se corri leggi il 2, se ti fermi l'8.");
-    expect((await buildBook(project, { workingTitles: true })).entries[1].scenes[0].heading).toBe("1 · Agguato");
+    const links = first[2].type === "paragraph" ? first[2].runs.filter((r) => r.link).map((r) => [r.text, r.link, r.bold]) : [];
+    expect(links).toEqual([["2", "p2", true], ["8", "p8", true]]);
+    expect(paragraphs[1].anchor).toBe("p2");
+    project.settings.gamebook.export = { ...project.settings.gamebook.export, heading: "numberTitle", prefix: "§ ", bold: false, boxes: "none" };
+    const working = await buildBook(project);
+    expect(working.entries[1].scenes[0].heading).toBe("§ 1 · Agguato");
+    expect(working.entries[1].scenes[0].blocks.some((b) => b.box)).toBe(false);
+    expect(working.entries[1].scenes[0].blocks.flatMap((b) => ("runs" in b ? b.runs : [])).find((r) => r.link)?.bold).toBe(false);
+    project.settings.gamebook.export = { ...project.settings.gamebook.export, heading: "number", prefix: "", bold: true, boxes: "color" };
 
     const md = bookToMarkdown(built, project.settings.export.docx);
     expect(md).toContain('::: {custom-style="box"}\n🤔 **Devi agire in fretta!**');
     expect(md).toContain("**8**.\n:::");
-    expect(bookToTypst(built, project.settings.export.docx, { words: "parole" })).toContain('#block(width: 100%');
-    const docx = new TextDecoder().decode(await docxBytes(bookToDocx(built, project.settings.export.docx, { words: "parole" })));
-    expect(docx.length).toBeGreaterThan(1000);
-    expect(bookToEpub(built, project.settings.export.docx, "id").length).toBeGreaterThan(1000);
+    const typst = bookToTypst(built, project.settings.export.docx, { words: "parole" });
+    expect(typst).toContain('#block(width: 100%');
+    expect(typst).toContain("#link(<p2>)[#strong(");
+    expect(typst).toContain("] <p2>");
+    const docx = await docxBytes(bookToDocx(built, project.settings.export.docx, { words: "parole" }));
+    const { unzipSync } = await import("fflate");
+    const xml = new TextDecoder().decode(unzipSync(docx)["word/document.xml"]);
+    expect(xml).toContain('w:anchor="p8"');
+    expect(xml).toContain('w:name="p8"');
+    const epub = bookToEpub(built, project.settings.export.docx, "id");
+    const pages = unzipSync(epub);
+    const html = Object.entries(pages).filter(([name]) => name.endsWith(".xhtml")).map(([, data]) => new TextDecoder().decode(data)).join("");
+    expect(html).toContain('id="p8"');
+    expect(html).toContain('href="#p8"');
   });
 });
 

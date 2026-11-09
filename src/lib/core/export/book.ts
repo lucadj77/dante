@@ -14,6 +14,58 @@ import { captionStart, splitRow, parseTable, type CellAlign } from "../tables";
 import { resolveLink } from "../wikilinks";
 import { isBlankLine, normalizeBlankLines } from "../blankLines";
 import { findBoxes, type BoxType } from "../gamebook/boxes";
+import type { GamebookExportSettings } from "../settings";
+
+// A gamebook's references, through typography and the parser: LINK_OPEN, the number of the
+// paragraph, LINK_MID, the text shown, LINK_CLOSE.
+const LINK_OPEN = "\u{F0003}";
+const LINK_MID = "\u{F0004}";
+const LINK_CLOSE = "\u{F0005}";
+
+/** The references to paragraphs written with the markers, showing the paragraph's number. */
+export function markLinks(text: string, numbers: Map<string, number>): string {
+  return text.replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g, (all, target: string) => {
+    const n = numbers.get(target.trim());
+    return n === undefined ? all : `${LINK_OPEN}${n}${LINK_MID}${n}${LINK_CLOSE}`;
+  });
+}
+
+const LINK_PIECE = /\u{F0003}(\d+)\u{F0004}|\u{F0005}/gu;
+
+/** Takes the markers out of the runs, giving the runs between them their link. */
+function linkRuns(items: Run[], bold: boolean, clickable: boolean): Run[] {
+  const out: Run[] = [];
+  let link: string | undefined;
+  for (const r of items) {
+    if (r.image || r.lineBreak || !r.text.includes(LINK_OPEN) && !r.text.includes(LINK_CLOSE) && !link) {
+      out.push(r);
+      continue;
+    }
+    let last = 0;
+    const piece = (text: string) => {
+      if (!text) return;
+      out.push(link ? { ...r, text, ...(clickable ? { link } : {}), ...(bold ? {} : { bold: false }) } : { ...r, text });
+    };
+    for (const m of r.text.matchAll(LINK_PIECE)) {
+      piece(r.text.slice(last, m.index));
+      link = m[1] ? `p${m[1]}` : undefined;
+      last = m.index! + m[0].length;
+    }
+    piece(r.text.slice(last));
+  }
+  return out;
+}
+
+/** The blocks with their references' markers turned into links. */
+export function applyLinks(blocks: Block[], bold: boolean, clickable: boolean): Block[] {
+  const fix = (items: Run[]) => linkRuns(items, bold, clickable);
+  return blocks.map((b) => {
+    if (b.type === "table") return { ...b, header: b.header.map(fix), rows: b.rows.map((row) => row.map(fix)), caption: b.caption && fix(b.caption) };
+    if (b.type === "image") return b.caption ? { ...b, caption: fix(b.caption) } : b;
+    if ("runs" in b) return { ...b, runs: fix(b.runs) };
+    return b;
+  });
+}
 
 // A gamebook's boxes, through the parser: each becomes a paragraph of its own that opens it,
 // its content, and one that closes it. The markers are private characters outside the range
@@ -71,6 +123,8 @@ export interface Run {
   lineBreak?: boolean;
   /** An image inside the text, on the line with it; the run has no text. */
   image?: BookImage;
+  /** In a gamebook, the anchor of the paragraph a reference leads to, as "p12". */
+  link?: string;
 }
 
 /** An image of the text, with the size it shows at, in pixels (96 to the inch). */
@@ -116,6 +170,8 @@ export interface BookScene {
   /** Heading above the scene, possibly on two lines; empty when scenes have none. */
   heading: string;
   blocks: Block[];
+  /** In a gamebook, the anchor references lead to, as "p12". */
+  anchor?: string;
 }
 
 export interface BookEntry {
@@ -137,6 +193,8 @@ export interface Book {
   words: number;
   /** Characters including spaces, for counts in standard pages. */
   characters: number;
+  /** For a gamebook, how its paragraphs are laid out. */
+  gamebook?: GamebookExportSettings;
 }
 
 /** Property holding the title to print when it differs from the working title. */
@@ -446,8 +504,6 @@ export async function buildBook(
     revisions?: "accept" | "reject";
     root?: ManuscriptNode;
     convert?: ImageConverter;
-    /** In a gamebook, each paragraph's title after its number, for a working copy. */
-    workingTitles?: boolean;
   } = {},
 ): Promise<Book> {
   const { settings } = project;
@@ -472,6 +528,10 @@ export async function buildBook(
 
   const entries: BookEntry[] = [];
   const gamebook = settings.gamebook.enabled;
+  const gx = settings.gamebook.export;
+  /** In a gamebook, the number of each paragraph by title, for the references. */
+  const numbers = new Map<string, number>();
+  if (gamebook) for (const node of scenesOf(project.manuscript)) if (node.number !== undefined) numbers.set(node.path.slice(node.path.lastIndexOf("/") + 1).replace(/\.md$/, ""), node.number);
   /** Boxes counted across the book, so that two boxes in a row stay two. */
   let boxBase = 0;
   let words = 0;
@@ -485,10 +545,13 @@ export async function buildBook(
     const { body, images } = await takeImages(project, node.path, source, options.convert);
     for (const image of images) image.alt = typeset(image.alt);
     // Alignment tags come out before typography, which would change the quotes in them.
-    const marked = gamebook ? markBoxes(body, settings.gamebook.boxes) : { text: body, colors: [] };
+    const marked = gamebook ? markBoxes(markLinks(body, numbers), settings.gamebook.boxes) : { text: body, colors: [] };
     const { text, aligns } = extractAlignments(cleanSource(marked.text, options.revisions));
     const parsed = markdownToBlocks(typeset(text), aligns, images);
-    const blocks = gamebook ? applyBoxes(parsed, marked.colors).map((b) => (b.box ? { ...b, box: { ...b.box, id: b.box.id + boxBase } } : b)) : parsed;
+    const colors = gx.boxes === "gray" ? marked.colors.map(() => "#868e96") : marked.colors;
+    const blocks = gamebook
+      ? applyLinks(applyBoxes(parsed, colors), gx.bold, gx.links).map((b) => (b.box && gx.boxes !== "none" ? { ...b, box: { ...b.box, id: b.box.id + boxBase } } : { ...b, box: undefined }))
+      : parsed;
     boxBase += marked.colors.length;
     words += countWords(blocks);
     characters += countCharacters(blocks);
@@ -557,7 +620,8 @@ export async function buildBook(
       if (node.number !== undefined) {
         if (!paragraphs) entries.push((paragraphs = { kind: "loose", heading: "", scenes: [] }));
         const scene = await readScene(node);
-        scene.heading = options.workingTitles ? `${node.number} · ${titleOf(node)}` : String(node.number);
+        scene.heading = gx.prefix + (gx.heading === "numberTitle" ? `${node.number} · ${titleOf(node)}` : String(node.number));
+        scene.anchor = `p${node.number}`;
         paragraphs.scenes.push(scene);
       } else {
         paragraphs = null;
@@ -585,5 +649,6 @@ export async function buildBook(
     entries,
     words,
     characters,
+    ...(gamebook && root.kind !== "scene" ? { gamebook: gx } : {}),
   };
 }
