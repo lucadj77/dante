@@ -57,7 +57,9 @@ const D = {
     paragraph: 'La scala',
     panel: 'In Proprietà, il pannello Paragrafo: tutto quello che serve sul paragrafo aperto',
     number: 'Il numero si cambia scrivendone un altro: Dante aggiorna tutti i rimandi che portano qui e rifiuta un numero già usato',
-    type: 'Il numero può essere libero, fisso o relativo a un altro paragrafo con uno scarto',
+    type: 'Il numero può essere di tre tipi. Libero: il rimescolamento può cambiarlo',
+    typeFixed: 'Fisso, con il lucchetto: resta sempre quello, per esempio un paragrafo che il libro cita con il suo numero',
+    typeRelative: 'Relativo, con l’ancora: segue un altro paragrafo più uno scarto, per esempio «la risposta giusta è il numero dell’indovinello più 2», e si sposta con lui',
     ending: 'E qui si segna che il paragrafo è un finale',
     refs: 'Da dove si arriva e dove si va: ogni numero si apre con un clic',
     synopsis: 'La nota del paragrafo, per chi scrive: non finisce nel libro',
@@ -159,7 +161,9 @@ const D = {
     paragraph: 'The stairs',
     panel: 'In Properties, the Paragraph panel: all you need about the open section',
     number: 'Change the number by typing another: Dante updates every reference that leads here, and refuses a number already taken',
-    type: 'The number can be free, fixed, or relative to another section with an offset',
+    type: 'There are three kinds of number. Free: shuffling may change it',
+    typeFixed: 'Fixed, with the padlock: it always stays the same, for instance a section the book quotes by its number',
+    typeRelative: 'Relative, with the anchor: it follows another section plus an offset, for instance “the right answer is the riddle’s number plus 2”, and moves with it',
     ending: 'And here you mark the section as an ending',
     refs: 'Where it comes from and where it goes: each number opens with a click',
     synopsis: 'The section’s note, for the writer: it never goes into the book',
@@ -307,6 +311,8 @@ export default async function (t) {
   await t.zoom(panel.locator('.head'), async () => {
     await t.focus(panel.locator('input.number'), d.number, { side: 'left' });
     await t.focus(panel.locator('.head select').first(), d.type, { side: 'left' });
+    await t.focus(panel.locator('.head select').first(), d.typeFixed, { side: 'left' });
+    await t.focus(panel.locator('.head select').first(), d.typeRelative, { side: 'left' });
   }, 1.5);
   await t.focus(panel.locator('label.check').first(), d.ending, { side: 'left' });
   await t.focus([panel.locator('.refs').first(), panel.locator('.refs').last()], d.refs, { side: 'left' });
