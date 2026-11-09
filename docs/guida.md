@@ -642,7 +642,8 @@ Su Mac si usa Cmd, su Windows e Linux Ctrl; Alt è il tasto che sul Mac si chiam
 
 | Mac | Windows e Linux | Azione |
 | --- | --- | --- |
-| Cmd+Invio | Ctrl+Invio | Dividi in scena: il testo dopo il cursore va in una nuova scena |
+| Cmd+Invio | Ctrl+Invio | Dividi in scena: il testo dopo il cursore va in una nuova scena (in un libro game: nuovo paragrafo, capitolo 22) |
+| Alt+Invio (in un elenco di `[[`) | Alt+Invio (in un elenco di `[[`) | in un libro game, collega il paragrafo con un rimando nascosto |
 | Cmd+Maiusc+Invio | Ctrl+Maiusc+Invio | Dividi in capitolo: apre un nuovo capitolo dal cursore |
 | Invio | Invio | nuovo paragrafo; due volte di seguito, una riga vuota che si vede nel libro |
 | Maiusc+Invio | Maiusc+Invio | a capo nello stesso paragrafo |
@@ -866,7 +867,7 @@ Apri **Impostazioni** > **Dante su questo computer**.
 
 Un libro game è fatto di paragrafi numerati: il lettore non legge in ordine, ma salta da un paragrafo all'altro secondo le scelte che fa. Dante può lavorare su un libro game invece che su un romanzo. È un modulo spento di base: si accende progetto per progetto e non cambia nulla negli altri.
 
-Dante usa lo stesso formato del plugin «Librogame» per Obsidian, quindi un libro iniziato con il plugin si apre in Dante così com'è, e gli stessi file continuano a funzionare nel plugin. Questa prima versione legge e controlla il libro; creare paragrafi, rimescolare i numeri ed esportare arriveranno nelle prossime.
+Dante usa lo stesso formato del plugin «Librogame» per Obsidian, quindi un libro iniziato con il plugin si apre in Dante così com'è, e gli stessi file continuano a funzionare nel plugin. Per ora Dante legge, controlla e scrive il libro; rimescolare i numeri ed esportare arriveranno nelle prossime versioni.
 
 ### Come si fa
 
@@ -874,6 +875,10 @@ Dante usa lo stesso formato del plugin «Librogame» per Obsidian, quindi un lib
 - **L'albero**: al posto di capitoli e scene mostra i paragrafi in ordine di numero. Accanto a ogni paragrafo ci sono il numero (🔒 se è fisso, ⚓ se è relativo a un altro), il titolo, un ⚠ se c'è qualcosa da controllare (passa con il mouse per leggere cosa) e la lunghezza, in azzurro se il paragrafo è corto e in rosso se supera una pagina. I paragrafi ancora vuoti hanno il titolo in corsivo grigio. In cima, una riga riassume il libro: quanti paragrafi, quanti vuoti, quanti orfani (nessuno ci arriva), quanti vicoli ciechi (non portano da nessuna parte e non sono finali) e quante pagine.
 - **Da dove si arriva e dove si va**: con **Mostra sotto ogni paragrafo dell'albero da dove si arriva e dove porta** compare sotto ogni paragrafo una riga con i numeri che ci portano (←) e quelli a cui rimanda (→). Un clic su un numero apre quel paragrafo.
 - **Il pannello Paragrafo**: in **Proprietà**, sopra le altre sezioni, mostra numero e tipo, lunghezza e pagine, i paragrafi da cui si arriva e quelli a cui porta (ognuno si apre con un clic) e gli avvisi. Il numero si cambia scrivendone un altro: Dante aggiorna anche l'alias e tutti i rimandi che portano a quel paragrafo, e rifiuta un numero già usato. Accanto si sceglie se il numero è **libero** o **fisso**, e sotto si segna se il paragrafo è un finale. La nota del paragrafo (proprietà `note`) si scrive nel campo **Sinossi**. Sopra il testo, il divisore mostra numero e titolo.
+- **Collegare un paragrafo**: scrivi `[[` e poi il numero o una parte del titolo. L'elenco mostra i paragrafi che corrispondono; Invio inserisce il rimando in grassetto, come `**[[Il cortile|2]]**`, e corregge l'articolo davanti («al 2», «all'8», «l'11»). In fondo all'elenco ci sono **+ titolo**, che crea un nuovo paragrafo con il primo numero libero e ci mette il rimando, e **+ titolo…**, che apre la finestra con tutte le scelte. Con **Alt+Invio** invece di Invio il rimando diventa nascosto: non va nel testo ma nella proprietà `rimandi nascosti` del paragrafo.
+- **Nuovo paragrafo**: Cmd+Invio / Ctrl+Invio apre la finestra **Nuovo paragrafo** e mette il rimando dove c'è il cursore. Nella finestra scegli il titolo (che diventa il nome del file), il numero (**primo numero libero**, **fisso** o **relativo a** un altro paragrafo più uno scarto) e se il rimando va nel testo o tra quelli nascosti. Un testo selezionato diventa il titolo proposto.
+- **Box**: il pulsante **Box** nella barra di formattazione elenca i tipi di box del libro. Il box si inserisce al cursore con la sua emoji e il suo testo. Per i tipi legati a una proprietà (come ✏️ e la proprietà `parole chiave`) Dante chiede il valore, propone quelli già usati nel libro e lo scrive anche nella proprietà del paragrafo. Un box di fine (😢) segna il paragrafo come finale.
+- **Relativi e rimandi nascosti nel pannello**: nel pannello Paragrafo il tipo di numero può essere anche **relativo**: si sceglie il paragrafo a cui è legato e lo scarto, e il numero diventa quello del paragrafo più lo scarto. Quando il numero di un paragrafo cambia, quelli relativi a lui si spostano con lui. Sotto, **Rimandi nascosti** elenca quelli del paragrafo, con × per toglierli e un elenco per aggiungerne.
 - **Regole e altre pagine**: un file della cartella dei paragrafi senza numero (le regole, un'introduzione, i ringraziamenti) è una pagina, con 📄 al posto del numero. Di base va prima dei paragrafi; con il clic destro > **Metti dopo i paragrafi** va in fondo, ed è così che l'esportazione la metterà.
 - **Nell'editor** i rimandi come `[[Il cortile|2]]` si vedono come il solo numero, e i box (scelte, parole chiave, finali e gli altri) come riquadri colorati. Le righe `:::` che aprono e chiudono un box si nascondono e ricompaiono quando il cursore ci passa sopra.
 - **Tipi di box**: in **Impostazioni** > **Libro game** > **Tipi di box** ogni libro ha i suoi: emoji, nome, colore, testo proposto e la proprietà del paragrafo a cui il box si collega. Di base sono i sei del plugin: 🤔 scelta, ❤️ carattere, ✏️ parola chiave, ✅ incontro, 😢 finale, 🆗 conferma.
@@ -883,6 +888,8 @@ Dante usa lo stesso formato del plugin «Librogame» per Obsidian, quindi un lib
 
 - **Callout**: un blocco che comincia con `> [!note]` o `> [!warning]` si vede con il nome in una pillola colorata e lo sfondo dello stesso colore; il marcatore torna testo quando il cursore è sulla sua riga. Vale anche nei romanzi.
 - **Statistiche**: in un libro game le pagine sono contate come nella riga in cima all'albero, quindi tengono conto di **Ogni paragrafo inizia su una pagina nuova**.
+
+Rinominando un paragrafo (dal divisore o dal nome del file) cambia il nome del file e i rimandi che portano lì tengono il loro numero.
 
 Mentre il modulo è acceso l'albero non si riordina trascinando e non si dividono le scene: l'ordine viene dai numeri, e i file non vengono mai rinominati né ricevono numeri nel nome.
 

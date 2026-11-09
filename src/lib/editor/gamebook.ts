@@ -91,3 +91,23 @@ export function gamebookPreview(types: BoxType[], preview: boolean): Extension {
   });
   return [plugin, theme];
 }
+
+/**
+ * Inserts a box at the cursor, on lines of its own, with the type's emoji and text and, for
+ * a type tied to a property, the value in bold. The cursor ends inside the box, after the text.
+ */
+export function insertBox(view: EditorView, type: BoxType, value: string) {
+  const state = view.state;
+  const at = state.selection.main;
+  const line = state.doc.lineAt(at.from);
+  // A box starts on a line of its own, after a blank line.
+  const before = at.from === line.from ? (line.number > 1 && state.doc.line(line.number - 1).text.trim() !== "" ? "\n" : "") : "\n\n";
+  const after = at.to === state.doc.lineAt(at.to).to && at.to < state.doc.length ? "\n" : "\n\n";
+  const first = [type.emoji, type.text].filter(Boolean).join(" ");
+  const content = value.trim() ? `${first}\n\n**${value.trim()}**` : first;
+  const open = '::: {custom-style="box"}\n';
+  const insert = `${before}${open}${content}\n:::${after}`;
+  const cursor = at.from + before.length + open.length + content.length;
+  view.dispatch({ changes: { from: at.from, to: at.to, insert }, selection: { anchor: cursor }, userEvent: "input", scrollIntoView: true });
+  view.focus();
+}

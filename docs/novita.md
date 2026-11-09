@@ -7,7 +7,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 ### Nuovo
 
 - **Callout**: i blocchi `> [!note]`, `> [!warning]` e simili si vedono con il nome in una pillola colorata.
-- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo e permette di cambiarne numero, tipo e finale, aggiornando i rimandi; regole e altre pagine senza numero stanno prima o dopo i paragrafi. Usa lo stesso formato del plugin Librogame.
+- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo e permette di cambiarne numero, tipo e finale, aggiornando i rimandi; regole e altre pagine senza numero stanno prima o dopo i paragrafi. Si scrive come nel plugin, ma più in fretta: `[[` cerca o crea un paragrafo e mette il rimando con l'articolo giusto, Cmd/Ctrl+Invio apre la finestra del nuovo paragrafo (numero libero, fisso o relativo, rimando nel testo o nascosto), il pulsante Box inserisce i box del libro e ne scrive il valore nelle proprietà. Usa lo stesso formato del plugin Librogame.
 
 ### Cambiato
 

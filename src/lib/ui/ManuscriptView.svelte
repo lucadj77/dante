@@ -19,7 +19,9 @@
   import { inTauri, TauriFs } from "$lib/tauriFs";
   import SceneBlock, { type SceneHandle } from "./SceneBlock.svelte";
   import TreeItem, { type DropPosition } from "./TreeItem.svelte";
-  import { flushAll } from "./documents.svelte";
+  import { documents, flushAll } from "./documents.svelte";
+  import type { BoxType } from "$lib/core/gamebook/boxes";
+  import { scalar } from "$lib/core/gamebook/edit";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
@@ -416,6 +418,27 @@
       const created = await project.createContainer(holder.path, index, t("untitled"));
       return project.createScene(created, 0, t("untitledScene"));
     }, "start");
+  }
+
+  /** In a gamebook, the values already given to a property in the book, for a box tied to it. */
+  function boxValues(property: string): string[] {
+    const book = noteIndex ? gamebookOf(noteIndex, project.settings) : null;
+    const values = new Set<string>();
+    for (const p of book?.all() ?? []) for (const v of p.lists[property] ?? []) if (v) values.add(v);
+    return [...values].sort((a, b) => a.localeCompare(b));
+  }
+
+  /** In a gamebook, a box at the cursor; its value goes in the paragraph's property too, and an ending box marks it as an ending. */
+  async function insertBox(type: BoxType, value: string) {
+    const path = active;
+    if (!path) return;
+    editors.get(path)?.insertBox(type, value);
+    if (!(type.property && value.trim()) && !type.ending) return;
+    await run(async () => {
+      if (type.property && value.trim()) await project.addToParagraphList(path, type.property, scalar(value));
+      if (type.ending) await project.setParagraph(path, { ending: true });
+      await documents(project).refreshAll();
+    });
   }
 
   /** In a gamebook, puts a page that is not a paragraph before or after the paragraphs, in the tree and in the export. */
@@ -887,6 +910,9 @@
         onFormat={(action) => active && editors.get(active)?.format(action)}
         onSplit={(kind) => active && editors.get(active)?.split(kind)}
         noSplit={gamebook}
+        boxes={gamebook ? project.settings.gamebook.boxes : []}
+        {boxValues}
+        onBox={gamebook ? insertBox : undefined}
       />
     {/if}
     </div>

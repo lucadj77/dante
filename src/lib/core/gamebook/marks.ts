@@ -23,7 +23,10 @@ export interface ParagraphMark {
   /** Numbers of the paragraphs that lead here. */
   incoming: { number: number; path: string; hidden: boolean }[];
   /** Where the paragraph leads; `path` is "" for a link to nothing. */
-  outgoing: { number: number | null; label: string; path: string; hidden: boolean; empty: boolean }[];
+  outgoing: { number: number | null; label: string; path: string; hidden: boolean; empty: boolean; raw: string }[];
+  /** For a relative paragraph: the title of the one it follows, and by how much. */
+  anchor: string | null;
+  offset: number | null;
 }
 
 export interface GamebookSummary {
@@ -51,7 +54,10 @@ export function paragraphMark(index: GamebookIndex, p: Paragraph, found: Warning
       path: to?.path ?? "",
       hidden: reference.hidden,
       empty: to?.empty ?? false,
+      raw: reference.raw,
     })),
+    anchor: p.anchor,
+    offset: p.offset,
   };
 }
 

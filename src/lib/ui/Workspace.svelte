@@ -37,7 +37,14 @@
   import ConflictsDialog from "./ConflictsDialog.svelte";
   import { startPresence } from "./presence.svelte";
   import PaneArea from "./PaneArea.svelte";
-  import { flushAll } from "./documents.svelte";
+  import { documents, flushAll } from "./documents.svelte";
+  import NewParagraphDialog from "./NewParagraphDialog.svelte";
+  import ErrorText from "./ErrorText.svelte";
+  import { failure } from "./errors";
+  import { gamebookOf } from "$lib/core/gamebook/marks";
+  import { KEYS } from "$lib/core/gamebook/paragraphs";
+  import { hiddenReference } from "$lib/core/gamebook/edit";
+  import type { GamebookLinks, ParagraphChoice } from "$lib/editor/links";
   import {
     closePane,
     dropMissing,
@@ -133,7 +140,7 @@
   }
 
   /** Kept for link suggestions and for telling typed notes apart; refreshed after reloads. */
-  let index: NoteIndex | null = null;
+  let index = $state.raw<NoteIndex | null>(null);
   /** The names of the Story Bible the editors underline; rebuilt with the index. */
   let names: NameMatcher | null = null;
   $effect(() => {
@@ -214,6 +221,7 @@
       return null;
     },
     links: (from) => ({
+      gamebook: gamebookLinks(from),
       open(target, beside) {
         const path = linked(target, from);
         if (path) open(path, beside);
@@ -276,6 +284,40 @@
       },
     }),
   });
+
+  /** In a gamebook, the window that asks for a new paragraph, and what to do with it. */
+  let newParagraph = $state<{ from: string; title: string; hidden: boolean; insert: (choice: ParagraphChoice) => void } | null>(null);
+  let gamebookError = $state("");
+
+  /** References between paragraphs, for an editor showing a paragraph of a gamebook; undefined elsewhere. */
+  function gamebookLinks(from: string): GamebookLinks | undefined {
+    if (!project.settings.gamebook.enabled || !isWithin(from, project.settings.folders.manuscript)) return undefined;
+    const scope = dirname(from);
+    const book = () => (index ? gamebookOf(index, project.settings) : null);
+    const choice = (x: { title: string; number: number; empty: boolean }): ParagraphChoice => ({ title: x.title, number: x.number, empty: x.empty });
+    const hide = async (c: ParagraphChoice) => {
+      await flushAll(project);
+      await project.addToParagraphList(from, KEYS.hidden, hiddenReference(c.title, c.number));
+      await documents(project).refreshAll();
+      await reload();
+    };
+    return {
+      paragraphs: () => (book()?.inScope(scope) ?? []).map(choice),
+      firstFree: () => book()?.firstFreeNumber(scope) ?? 1,
+      async create(title) {
+        const made = await project.createParagraph(scope, title, { numberType: "free" });
+        await reload();
+        return { title: made.title, number: made.number, empty: true };
+      },
+      hide,
+      ask(title, hidden, insert) {
+        newParagraph = { from, title, hidden, insert };
+      },
+      failed(e) {
+        gamebookError = failure(e);
+      },
+    };
+  }
 
   /** Closes the project: what was typed is written, and a backup is made if the settings ask. */
   let closing = false;
@@ -747,11 +789,55 @@
   {/key}
 {/if}
 
+{#if newParagraph}
+  {@const request = newParagraph}
+  {@const book = index ? gamebookOf(index, project.settings) : null}
+  <NewParagraphDialog
+    title={request.title}
+    hidden={request.hidden}
+    paragraphs={(book?.inScope(dirname(request.from)) ?? []).map((x) => ({ title: x.title, number: x.number, empty: x.empty }))}
+    firstFree={book?.firstFreeNumber(dirname(request.from)) ?? 1}
+    onCreate={async (title, spec, hidden) => {
+      const made = await project.createParagraph(dirname(request.from), title, spec);
+      const choice = { title: made.title, number: made.number, empty: true };
+      if (hidden) {
+        await flushAll(project);
+        await project.addToParagraphList(request.from, KEYS.hidden, hiddenReference(made.title, made.number));
+        await documents(project).refreshAll();
+      } else request.insert(choice);
+      await reload();
+    }}
+    onClose={() => (newParagraph = null)}
+  />
+{/if}
+{#if gamebookError}
+  <div class="gamebook-error" role="alert">
+    <ErrorText text={gamebookError} />
+    <button aria-label={t("linkMenu.close")} onclick={() => (gamebookError = "")}>×</button>
+  </div>
+{/if}
+
 {#snippet besidePanes()}
   <PaneArea {project} {rev} {diskRev} onReload={reload} onOpenMain={(path) => open(path)} onSwap={swap} />
 {/snippet}
 
 <style>
+  .gamebook-error {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 45;
+    display: flex;
+    gap: 8px;
+    align-items: start;
+    max-width: 420px;
+    padding: 10px 12px;
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--danger);
+    font-size: 13px;
+  }
   .workspace {
     display: grid;
     grid-template-columns: auto 1fr;

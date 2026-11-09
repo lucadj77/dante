@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  import type { BoxType } from "$lib/core/gamebook/boxes";
   import type { Action } from "$lib/editor/formatting";
 
   export interface SceneHandle {
@@ -11,6 +12,8 @@
     format(action: Action): void;
     /** Splits the scene at the cursor into a new scene or chapter. */
     split(kind: "scene" | "chapter"): void;
+    /** In a gamebook, puts a box at the cursor. */
+    insertBox(type: BoxType, value: string): void;
   }
 </script>
 
@@ -19,7 +22,7 @@
   import type { ManuscriptNode } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
-  import { gamebookPreview } from "$lib/editor/gamebook";
+  import { gamebookPreview, insertBox } from "$lib/editor/gamebook";
   import { calloutPreview } from "$lib/editor/callouts";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
@@ -102,6 +105,9 @@
     },
     split(kind) {
       editor?.split(kind);
+    },
+    insertBox(type, value) {
+      if (editor) insertBox(editor.view, type, value);
     },
   };
 

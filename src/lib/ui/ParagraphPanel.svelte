@@ -2,7 +2,8 @@
   // In a gamebook: the paragraph's number, where it comes from, where it leads, and what is
   // wrong with it.
   import { gamebookOf, paragraphMark, type ParagraphMark } from "$lib/core/gamebook/marks";
-  import { warnings } from "$lib/core/gamebook/paragraphs";
+  import { KEYS, warnings } from "$lib/core/gamebook/paragraphs";
+  import { hiddenReference } from "$lib/core/gamebook/edit";
   import type { Project } from "$lib/core/project";
   import type { MessageKey } from "$lib/i18n";
   import { num, t, tu } from "$lib/state.svelte";
@@ -23,6 +24,23 @@
 
   let mark = $state<ParagraphMark | null>(null);
   let error = $state("");
+  /** The other paragraphs of the folder, to choose an anchor or a hidden reference. */
+  let others = $state.raw<{ path: string; title: string; number: number }[]>([]);
+  /** "Relative" chosen, waiting for the paragraph it follows. */
+  let relativeOpen = $state(false);
+
+  async function list(action: "add" | "remove", value: string) {
+    error = "";
+    try {
+      await flushAll(p.project);
+      if (action === "add") await p.project.addToParagraphList(p.path, KEYS.hidden, value);
+      else await p.project.removeFromParagraphList(p.path, KEYS.hidden, value);
+      await documents(p.project).refreshAll();
+      await p.onChanged();
+    } catch (e) {
+      error = failure(e);
+    }
+  }
 
   /** Writes the change in the paragraph's file and, for a new number, in the references to it. */
   async function change(changes: ParagraphChanges) {
@@ -33,8 +51,7 @@
       await documents(p.project).refreshAll();
       await p.onChanged();
     } catch (e) {
-      const m = /gamebook\.numberTaken:(\d+):(.*)$/.exec(e instanceof Error ? e.message : String(e));
-      error = m ? t("gamebook.numberTaken", { n: m[1], title: m[2] }) : failure(e);
+      error = failure(e);
     }
   }
 
@@ -59,6 +76,7 @@
         return;
       }
       mark = paragraphMark(index, paragraph, warnings(index, p.project.settings.gamebook.start).get(path) ?? [], p.project.settings);
+      others = index.inScope(paragraph.scope).filter((x) => x.path !== path).map((x) => ({ path: x.path, title: x.title, number: x.number }));
     });
   });
   const unit = $derived(p.project.settings.pages.unit);
@@ -83,15 +101,52 @@
           }}
         />
       {/key}
-      {#if mark.numberType === "relative"}
-        <span class="type">{t("gamebook.type.relative")}</span>
-      {:else}
-        <select aria-label={t("gamebook.numberType")} value={mark.numberType} onchange={(e) => void change({ numberType: e.currentTarget.value as "free" | "fixed" })}>
-          <option value="free">{t("gamebook.type.free")}</option>
-          <option value="fixed">{t("gamebook.type.fixed")}</option>
-        </select>
-      {/if}
+      <select
+        aria-label={t("gamebook.numberType")}
+        value={relativeOpen ? "relative" : mark.numberType}
+        onchange={(e) => {
+          const v = e.currentTarget.value as "free" | "fixed" | "relative";
+          relativeOpen = v === "relative";
+          if (v !== "relative") void change({ numberType: v });
+        }}
+      >
+        <option value="free">{t("gamebook.type.free")}</option>
+        <option value="fixed">{t("gamebook.type.fixed")}</option>
+        <option value="relative">{t("gamebook.type.relative")}</option>
+      </select>
     </div>
+    {#if relativeOpen || mark.numberType === "relative"}
+      {@const current = mark}
+      <div class="relative">
+        <label>
+          <span>{t("gamebook.relativeTo")}</span>
+          <select
+            value={current.anchor ?? ""}
+            onchange={(e) => {
+              const anchor = e.currentTarget.value;
+              if (anchor) void change({ numberType: "relative", anchor, offset: current.offset ?? 1 }).then(() => (relativeOpen = false));
+            }}
+          >
+            <option value="">{t("gamebook.new.chooseAnchor")}</option>
+            {#each others as x (x.path)}<option value={x.title}>{x.number} · {x.title}</option>{/each}
+          </select>
+        </label>
+        <label>
+          <span>{t("gamebook.offset")}</span>
+          {#key current.offset}
+            <input
+              type="number"
+              value={current.offset ?? 1}
+              disabled={!current.anchor}
+              onchange={(e) => {
+                const offset = Number.parseInt(e.currentTarget.value, 10);
+                if (current.anchor && Number.isInteger(offset)) void change({ numberType: "relative", anchor: current.anchor, offset });
+              }}
+            />
+          {/key}
+        </label>
+      </div>
+    {/if}
     <label class="check">
       <input type="checkbox" checked={mark.ending} onchange={(e) => void change({ ending: e.currentTarget.checked })} />
       {t("gamebook.endingCheck")}
@@ -132,6 +187,28 @@
     {:else}
       <p class="muted">{mark.ending ? t("gamebook.isEnding") : t("gamebook.noOutgoing")}</p>
     {/if}
+
+    <h4>{t("gamebook.hiddenRefs")}</h4>
+    <div class="hidden-list">
+      {#each mark.outgoing.filter((o) => o.hidden) as to, i (to.raw + i)}
+        <span class="ref hidden-ref">
+          <button class="link" disabled={!to.path} onclick={() => nav?.open(to.path)}>{to.path ? to.label : `? ${to.label}`}</button>
+          <button class="remove" title={t("gamebook.removeHidden")} aria-label={t("gamebook.removeHidden")} onclick={() => void list("remove", to.raw)}>×</button>
+        </span>
+      {/each}
+      <select
+        aria-label={t("gamebook.addHidden")}
+        value=""
+        onchange={(e) => {
+          const target = others.find((x) => x.path === e.currentTarget.value);
+          e.currentTarget.value = "";
+          if (target) void list("add", hiddenReference(target.title, target.number));
+        }}
+      >
+        <option value="">{t("gamebook.addHidden")}</option>
+        {#each others as x (x.path)}<option value={x.path}>{x.number} · {x.title}</option>{/each}
+      </select>
+    </div>
 
     {#if mark.warnings.length}
       <ul class="warnings">
@@ -225,6 +302,42 @@
   .ref.broken {
     color: var(--danger);
     cursor: default;
+  }
+  .relative {
+    display: grid;
+    grid-template-columns: 1fr 80px;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .relative label {
+    display: grid;
+    gap: 2px;
+  }
+  .relative select {
+    min-width: 0;
+  }
+  .hidden-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .hidden-list select {
+    font-size: 12px;
+    max-width: 100%;
+  }
+  .ref .link,
+  .ref .remove {
+    border: none;
+    background: none;
+    padding: 0 2px;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .ref .remove {
+    color: var(--text-muted);
   }
   .warnings {
     margin: 10px 0 0;

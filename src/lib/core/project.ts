@@ -34,7 +34,9 @@ import {
 import { snapshotDir, takeSnapshot } from "./snapshots";
 import { moveHistory } from "./history";
 import { textStats } from "./stats";
-import { relabel, setParagraphFields, type ParagraphChanges } from "./gamebook/edit";
+import { addToList, newParagraphText, relabel, removeFromList, setParagraphFields, type ParagraphChanges } from "./gamebook/edit";
+import { fixArticles } from "./gamebook/articles";
+import type { GamebookIndex } from "./gamebook/paragraphs";
 import { gamebookOf } from "./gamebook/marks";
 import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
@@ -491,24 +493,60 @@ export class Project {
 
   /**
    * In a gamebook: changes a paragraph's own properties as the plugin writes them. A new
-   * number also goes into its aliases and into the label of every reference to it, so the
-   * book reads the same. Refuses a number another paragraph of the same folder already has.
+   * number (given, or worked out from an anchor) also goes into its aliases, into the label
+   * of every reference to it and into the articles before them, so the book reads the same.
+   * Refuses a number another paragraph of the same folder already has.
    */
   async setParagraph(path: string, changes: ParagraphChanges): Promise<void> {
     await this.beforeMove?.();
     const index = gamebookOf(await this.index(), this.settings);
     const paragraph = index?.get(path);
+    changes = { ...changes };
+    if (changes.numberType === "relative" && index && changes.anchor !== undefined) {
+      const r = index.resolve(changes.anchor);
+      if (r.kind !== "paragraph") throw new Error(`gamebook.noAnchor:${changes.anchor}`);
+      if (this.anchoredOn(index, r.to.path, path)) throw new Error(`gamebook.anchorCycle:${changes.anchor}`);
+      changes.number = r.to.number + (changes.offset ?? 0);
+    }
+    if (changes.number !== undefined && (!Number.isInteger(changes.number) || changes.number < 1)) throw new Error(`gamebook.badNumber:${changes.number}`);
     if (changes.number !== undefined && index && paragraph && changes.number !== paragraph.number) {
-      const taken = index.byNumber(paragraph.scope, changes.number);
-      if (taken) throw new Error(`gamebook.numberTaken:${changes.number}:${taken.title}`);
-      // Each file that refers here, with the names it uses for this paragraph.
-      const targets = new Map<string, Set<string>>();
-      for (const { from, reference } of index.incoming(path)) targets.set(from.path, (targets.get(from.path) ?? new Set()).add(reference.target));
-      targets.set(path, (targets.get(path) ?? new Set()).add(paragraph.title));
-      for (const [file, names] of targets) {
+      // The paragraphs relative to this one move with it, keeping their distance.
+      const moved = new Map<string, number>([[path, changes.number]]);
+      const queue = [paragraph];
+      while (queue.length) {
+        const anchor = queue.shift()!;
+        for (const other of index.inScope(paragraph.scope)) {
+          if (moved.has(other.path) || other.numberType !== "relative" || !other.anchor) continue;
+          const r = index.resolve(other.anchor);
+          if (r.kind !== "paragraph" || r.to.path !== anchor.path) continue;
+          moved.set(other.path, moved.get(anchor.path)! + (other.offset ?? other.number - anchor.number));
+          queue.push(other);
+        }
+      }
+      for (const n of moved.values()) {
+        const taken = index.byNumber(paragraph.scope, n);
+        if (taken && !moved.has(taken.path)) throw new Error(`gamebook.numberTaken:${n}:${taken.title}`);
+        if (n < 1) throw new Error(`gamebook.badNumber:${n}`);
+      }
+      // Each file to rewrite, with the references in it to relabel.
+      const edits = new Map<string, { name: string; from: number; to: number }[]>();
+      const add = (file: string, name: string, from: number, to: number) => edits.set(file, [...(edits.get(file) ?? []), { name, from, to }]);
+      for (const [p, n] of moved) {
+        const old = index.get(p)!;
+        add(p, old.title, old.number, n);
+        for (const { from, reference } of index.incoming(p)) add(from.path, reference.target, old.number, n);
+      }
+      const numberOf = (target: string) => {
+        const r = index.resolve(target);
+        return r.kind !== "paragraph" ? null : (moved.get(r.to.path) ?? r.to.number);
+      };
+      for (const [file, list] of edits) {
         const text = await this.fs.readText(file);
-        let next = file === path ? setParagraphFields(text, changes) : text;
-        for (const name of names) next = relabel(next, name, paragraph.number, changes.number);
+        let next = text;
+        if (file === path) next = setParagraphFields(next, changes);
+        else if (moved.has(file)) next = setParagraphFields(next, { number: moved.get(file)! });
+        for (const e of list) next = relabel(next, e.name, e.from, e.to);
+        next = fixArticles(next, numberOf).text;
         if (next !== text) await this.fs.writeText(file, next);
       }
       await this.reload();
@@ -516,6 +554,65 @@ export class Project {
     }
     const text = await this.fs.readText(path);
     const next = setParagraphFields(text, changes);
+    if (next !== text) await this.fs.writeText(path, next);
+    await this.reload();
+  }
+
+  /** Whether `anchor` follows `path`, directly or through other anchors: anchoring on it would go round in a circle. */
+  private anchoredOn(index: GamebookIndex, anchor: string, path: string): boolean {
+    const seen = new Set<string>();
+    let current = index.get(anchor);
+    while (current && !seen.has(current.path)) {
+      if (current.path === path) return true;
+      seen.add(current.path);
+      if (current.numberType !== "relative" || !current.anchor) return false;
+      const r = index.resolve(current.anchor);
+      current = r.kind === "paragraph" ? r.to : undefined;
+    }
+    return false;
+  }
+
+  /**
+   * In a gamebook: creates a paragraph in `dir`, with the first free number, a fixed one or
+   * one relative to another paragraph, and returns its path and number.
+   */
+  async createParagraph(dir: string, title: string, spec: { numberType: "free" | "fixed" | "relative"; number?: number; anchor?: string; offset?: number }): Promise<{ path: string; title: string; number: number }> {
+    const clean = sanitizeTitle(title);
+    if (!clean) throw new Error("gamebook.noTitle");
+    const path = join(dir, `${clean}.md`);
+    if (await this.fs.exists(path)) throw new Error(`gamebook.exists:${clean}`);
+    const index = gamebookOf(await this.index(), this.settings);
+    let number: number;
+    if (spec.numberType === "relative") {
+      const r = spec.anchor && index ? index.resolve(spec.anchor) : null;
+      if (!r || r.kind !== "paragraph") throw new Error(`gamebook.noAnchor:${spec.anchor ?? ""}`);
+      number = r.to.number + (spec.offset ?? 0);
+    } else if (spec.numberType === "fixed") {
+      number = spec.number ?? 0;
+    } else {
+      number = index ? index.firstFreeNumber(dir) : 1;
+    }
+    if (!Number.isInteger(number) || number < 1) throw new Error(`gamebook.badNumber:${number}`);
+    const taken = index?.byNumber(dir, number);
+    if (taken) throw new Error(`gamebook.numberTaken:${number}:${taken.title}`);
+    await this.fs.writeText(path, newParagraphText({ number, numberType: spec.numberType, anchor: spec.anchor, offset: spec.offset }));
+    await this.reload();
+    return { path, title: clean, number };
+  }
+
+  /** In a gamebook: adds a value to a list property of a paragraph (a hidden reference, a keyword), as the plugin writes it. */
+  async addToParagraphList(path: string, key: string, value: string): Promise<void> {
+    await this.beforeMove?.();
+    const text = await this.fs.readText(path);
+    const next = addToList(text, key, value);
+    if (next !== text) await this.fs.writeText(path, next);
+    await this.reload();
+  }
+
+  async removeFromParagraphList(path: string, key: string, value: string): Promise<void> {
+    await this.beforeMove?.();
+    const text = await this.fs.readText(path);
+    const next = removeFromList(text, key, value);
     if (next !== text) await this.fs.writeText(path, next);
     await this.reload();
   }

@@ -7,7 +7,8 @@ import { writeProperties } from "../frontmatter";
 import { defaultSettings, parseSettings, serializeSettings } from "../settings";
 import { loadManuscript } from "../manuscript";
 import { MemoryFs } from "../fs";
-import { relabel, setParagraphFields } from "../gamebook/edit";
+import { addToList, newParagraphText, relabel, removeFromList, setParagraphFields } from "../gamebook/edit";
+import { articleFix, fixArticles, startsWithVowel } from "../gamebook/articles";
 import { Project } from "../project";
 
 const types = defaultBoxTypes("it");
@@ -172,5 +173,58 @@ describe("gamebook edits", () => {
     const tree = await loadManuscript(fs, settings);
     expect(tree.children.map((c) => c.title).filter((t) => !/^[A-Z][a-z]+$/.test(t) || t === "Ringraziamenti")).toEqual(["00 regole", "Ringraziamenti"]);
     expect(tree.children.at(-1)?.position).toBe("after");
+  });
+});
+
+describe("gamebook writing", () => {
+  it("knows which numbers start with a vowel", () => {
+    expect([1, 8, 11, 80, 89, 800, 8000, 11000].every(startsWithVowel)).toBe(true);
+    expect([2, 10, 18, 100, 1000, 1800].some(startsWithVowel)).toBe(false);
+  });
+
+  it("corrects the article before a reference", () => {
+    expect(articleFix("Vai al ", 8)).toEqual({ from: 4, text: "all'" });
+    expect(articleFix("Vai all'", 12)).toEqual({ from: 4, text: "al " });
+    expect(articleFix("vai al **", 11)).toEqual({ from: 4, text: "all'**" });
+    expect(articleFix("Leggi il ", 3)).toBeNull();
+    expect(articleFix("Leggi l’", 7)).toEqual({ from: 6, text: "il " });
+    expect(articleFix("Fossil ", 8)).toBeNull();
+    const text = "Vai al **[[Fuga|8]]** o all'**[[Resa|12]]**, non al [[Fuga|3]].";
+    expect(fixArticles(text, (t) => (t === "Fuga" ? 8 : t === "Resa" ? 12 : null)).text).toBe("Vai all'**[[Fuga|8]]** o al **[[Resa|12]]**, non al [[Fuga|3]].");
+  });
+
+  it("writes new paragraphs and list properties as the plugin does", () => {
+    expect(newParagraphText({ number: 7, numberType: "free" })).toBe('---\nnumero: 7\naliases:\n  - "7"\nnote:\n---\n');
+    expect(newParagraphText({ number: 9, numberType: "relative", anchor: "Bosco", offset: 2 })).toBe('---\nnumero: 9\nnumero_tipo: relativo\nancora: "[[Bosco]]"\nscarto: 2\naliases:\n  - "9"\nnote:\n---\n');
+    const one = addToList('---\nnumero: 1\n---\nTesto', "rimandi nascosti", '"[[Bosco|3]]"');
+    expect(one).toBe('---\nnumero: 1\nrimandi nascosti: "[[Bosco|3]]"\n---\nTesto');
+    const two = addToList(one, "rimandi nascosti", '"[[Fuga|2]]"');
+    expect(two).toBe('---\nnumero: 1\nrimandi nascosti:\n  - "[[Bosco|3]]"\n  - "[[Fuga|2]]"\n---\nTesto');
+    expect(removeFromList(removeFromList(two, "rimandi nascosti", '"[[Fuga|2]]"'), "rimandi nascosti", '"[[Bosco|3]]"')).toBe('---\nnumero: 1\n---\nTesto');
+  });
+
+  it("creates paragraphs, makes one relative and moves its followers with it", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
+    for (const f of book) await fs.writeText(f.path, f.text);
+    const project = await Project.open(fs, "it");
+    const made = await project.createParagraph(DIR, "Grotta", { numberType: "free" });
+    expect(made.number).toBe(5);
+    await expect(project.createParagraph(DIR, "Grotta", { numberType: "free" })).rejects.toThrow("gamebook.exists:Grotta");
+    await expect(project.createParagraph(DIR, "Lago", { numberType: "fixed", number: 8 })).rejects.toThrow("gamebook.numberTaken:8:Resa");
+    await project.setParagraph(`${DIR}/Grotta.md`, { numberType: "relative", anchor: "Enigma", offset: 1 });
+    expect(await fs.readText(`${DIR}/Grotta.md`)).toContain('numero: 33\naliases:\n  - "33"\nnote:\nnumero_tipo: relativo\nancora: "[[Enigma]]"\nscarto: 1');
+    await project.setParagraph(`${DIR}/Enigma.md`, { number: 40 });
+    expect(await fs.readText(`${DIR}/Grotta.md`)).toContain("numero: 41");
+    expect(await fs.readText(`${DIR}/Bosco.md`)).toContain('"[[Enigma|40]]"');
+    await expect(project.setParagraph(`${DIR}/Enigma.md`, { numberType: "relative", anchor: "Grotta", offset: 1 })).rejects.toThrow("gamebook.anchorCycle:Grotta");
+  });
+
+  it("keeps the label when a paragraph is renamed", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\nlanguage: it\nfolders:\n  manuscript: Paragrafi\ngamebook:\n  enabled: true\n" });
+    for (const f of book) await fs.writeText(f.path, f.text);
+    const project = await Project.open(fs, "it");
+    await project.rename(`${DIR}/Fuga.md`, "Fuga nel bosco");
+    expect(await fs.readText(`${DIR}/Agguato.md`)).toContain("**[[Fuga nel bosco|2]]**");
+    expect(await fs.exists(`${DIR}/Fuga nel bosco.md`)).toBe(true);
   });
 });
