@@ -19,6 +19,7 @@
   import type { ManuscriptNode } from "$lib/core/manuscript";
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
+  import { gamebookPreview } from "$lib/editor/gamebook";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
   import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
@@ -150,7 +151,10 @@
         critic: criticHandlerFor(path),
         language: props.project.settings.language,
         blankLines: blankLineAskFor(props.project),
-        extensions: [shared.extension],
+        extensions: [
+          shared.extension,
+          ...(props.project.settings.gamebook.enabled ? [gamebookPreview(props.project.settings.gamebook.boxes, !props.raw)] : []),
+        ],
       });
       shared.attach(editor.view);
       editor.setSpelling(app.settings.spellcheck);

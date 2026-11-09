@@ -2,6 +2,7 @@ import { parseDocument } from "yaml";
 import { COVER_PALETTES, COVER_TEMPLATES, hexColor, type CoverSettings } from "./cover";
 import { authorsOf } from "./export/files";
 import { parsePropertyDefs, serializePropertyDefs, type PropertyDef } from "./properties";
+import { defaultBoxTypes, type BoxType } from "./gamebook/boxes";
 
 export const SETTINGS_FILE = "dante.yaml";
 
@@ -185,6 +186,23 @@ export interface NoteType {
   properties: string[];
 }
 
+export interface GamebookSettings {
+  enabled: boolean;
+  /** Number of the paragraph the reader starts from. */
+  start: number;
+  /** A paragraph shorter than this, in the unit of the pages, is marked as short. */
+  short: number;
+  /** Each paragraph starts on a new page, for the estimate of pages. */
+  onePerPage: boolean;
+  /** Shows under each paragraph in the tree where it comes from and where it leads. */
+  showLinks: boolean;
+  boxes: BoxType[];
+}
+
+export function defaultGamebook(language = "it"): GamebookSettings {
+  return { enabled: false, start: 1, short: 400, onePerPage: true, showLinks: false, boxes: defaultBoxTypes(language) };
+}
+
 export interface NovelSettings {
   title: string;
   subtitle: string;
@@ -241,6 +259,11 @@ export interface NovelSettings {
     /** Colours chosen for the dots, by property and value (in lower case), as #rrggbb. */
     colors: Record<string, Record<string, string>>;
   };
+  /**
+   * The gamebook module, off for a novel. When on, the manuscript folder holds numbered
+   * paragraphs written as the Obsidian plugin «Librogame» writes them.
+   */
+  gamebook: GamebookSettings;
   /** What makes a page in the statistics and the export summary. */
   pages: {
     /** Characters (spaces included) or words. */
@@ -470,6 +493,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     goals: { unit: language.startsWith("it") ? "characters" : "words", words: 0, deadline: "", daily: 0, days: [1, 2, 3, 4, 5, 6, 7] },
     cover: { template: "", palette: "", image: "", show: { title: true, subtitle: true, authors: true }, textColor: "", outlineColor: "" },
     tree: { dot: "", colors: {} },
+    gamebook: defaultGamebook(language),
     pages: { unit: "characters", size: 1800 },
     export: {
       format: "docx",
@@ -535,6 +559,20 @@ function parseDotColors(value: unknown): Record<string, Record<string, string>> 
   return out;
 }
 
+/** The gamebook's box types as written in dante.yaml; the plugin's six when there are none. */
+function parseBoxTypes(value: unknown, language: string): BoxType[] {
+  if (!Array.isArray(value)) return defaultBoxTypes(language);
+  const out: BoxType[] = [];
+  for (const item of value) {
+    if (!isObject(item) || typeof item.emoji !== "string" || !item.emoji.trim()) continue;
+    const text = (key: string) => (typeof item[key] === "string" ? (item[key] as string) : "");
+    const id = text("id").trim() || `box${out.length + 1}`;
+    if (out.some((b) => b.id === id)) continue;
+    out.push({ id, emoji: item.emoji.trim(), name: text("name") || id, color: hexColor(text("color")) || "#888888", text: text("text"), property: text("property").trim(), ending: item.ending === true });
+  }
+  return out.length ? out : defaultBoxTypes(language);
+}
+
 /** Fills what the file leaves out with defaults, recursively. */
 function merge<T>(defaults: T, value: unknown): T {
   if (!isObject(defaults) || !isObject(value)) {
@@ -553,6 +591,9 @@ export function parseSettings(text: string): NovelSettings {
   // Types are a free list: the user's replace the defaults instead of being merged into them.
   settings.types = parseTypes(isObject(raw) ? raw.types : undefined, language);
   settings.properties = parsePropertyDefs(isObject(raw) ? raw.properties : undefined);
+  settings.gamebook.boxes = parseBoxTypes(isObject(raw) && isObject(raw.gamebook) ? raw.gamebook.boxes : undefined, language);
+  if (!Number.isInteger(settings.gamebook.start) || settings.gamebook.start < 1) settings.gamebook.start = 1;
+  if (!(settings.gamebook.short >= 0)) settings.gamebook.short = 400;
   settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;
@@ -612,6 +653,13 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     if (path.length === 2 && path[0] === "tree" && path[1] === "colors") {
       if (Object.keys(value as object).length) doc.setIn(path, doc.createNode(value));
       else doc.deleteIn(path);
+      return;
+    }
+    // The gamebook's settings stay out of a novel's file until the module is turned on.
+    if (path.length === 1 && path[0] === "gamebook") {
+      const gamebook = value as GamebookSettings;
+      if (!gamebook.enabled && !doc.hasIn(["gamebook"])) return;
+      doc.setIn(path, doc.createNode(gamebook));
       return;
     }
     if (path.length === 1 && path[0] === "properties") {

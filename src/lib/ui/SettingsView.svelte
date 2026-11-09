@@ -237,6 +237,52 @@
       >
     {/if}
 
+    <h3>{t("gamebook.title")}</h3>
+    <label class="check"><input type="checkbox" bind:checked={novel.gamebook.enabled} /> {t("gamebook.enable")}</label>
+    <p class="hint">{t("gamebook.enableHint")}</p>
+    {#if novel.gamebook.enabled}
+      <label
+        >{t("gamebook.folder")}
+        <input bind:value={novel.folders.manuscript} />
+        <small>{t("gamebook.folderHint")}</small>
+      </label>
+      <label>{t("gamebook.start")} <input type="number" min="1" step="1" bind:value={novel.gamebook.start} /></label>
+      <label
+        >{t(novel.pages.unit === "words" ? "gamebook.shortWords" : "gamebook.shortCharacters")}
+        <input type="number" min="0" step="50" bind:value={novel.gamebook.short} />
+        <small>{t("gamebook.shortHint")}</small>
+      </label>
+      <label class="check"><input type="checkbox" bind:checked={novel.gamebook.onePerPage} /> {t("gamebook.onePerPage")}</label>
+      <label class="check"><input type="checkbox" bind:checked={novel.gamebook.showLinks} /> {t("gamebook.showLinks")}</label>
+      <h4>{t("gamebook.boxes")}</h4>
+      <p class="hint">{t("gamebook.boxesHint")}</p>
+      {#each novel.gamebook.boxes as box, i (i)}
+        <fieldset class="box-type">
+          <legend>{box.emoji} {box.name}</legend>
+          <div class="box-row">
+            <label>{t("gamebook.boxEmoji")} <input class="emoji" bind:value={box.emoji} /></label>
+            <label>{t("gamebook.boxName")} <input bind:value={box.name} /></label>
+            <label>{t("gamebook.boxColor")} <input type="color" bind:value={box.color} /></label>
+          </div>
+          <label>{t("gamebook.boxText")} <input bind:value={box.text} /></label>
+          <label>{t("gamebook.boxProperty")} <input bind:value={box.property} placeholder={t("gamebook.boxPropertyNone")} /></label>
+          <label class="check"><input type="checkbox" bind:checked={box.ending} /> {t("gamebook.boxEnding")}</label>
+          <div class="define">
+            <button type="button" class="danger" disabled={novel.gamebook.boxes.length <= 1} onclick={() => (novel.gamebook.boxes = novel.gamebook.boxes.filter((_, j) => j !== i))}>{t("gamebook.boxRemove")}</button>
+          </div>
+        </fieldset>
+      {/each}
+      <div class="define">
+        <button
+          type="button"
+          onclick={() => {
+            const n = novel.gamebook.boxes.length + 1;
+            novel.gamebook.boxes = [...novel.gamebook.boxes, { id: `box${Date.now().toString(36)}`, emoji: "⭐", name: t("gamebook.boxNew", { n }), color: "#888888", text: "", property: "", ending: false }];
+          }}>{t("gamebook.boxAdd")}</button
+        >
+      </div>
+    {/if}
+
     <h3>{t("settings.tree")}</h3>
     <label
       >{t("settings.treeDot")}
@@ -488,6 +534,21 @@
     color: var(--text-muted);
     font-size: 12px;
     margin: 0 0 12px;
+  }
+  .box-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .box-row label {
+    flex: 1;
+  }
+  .box-row input.emoji {
+    width: 4em;
+  }
+  h4 {
+    margin: 14px 0 4px;
+    font-size: 13px;
   }
   fieldset.property {
     padding: 4px 12px 0;

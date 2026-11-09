@@ -15,6 +15,8 @@
   import PropertyAdd from "./PropertyAdd.svelte";
   import PropertyRows from "./PropertyRows.svelte";
   import { displayValue } from "./propertyText";
+  import ParagraphPanel from "./ParagraphPanel.svelte";
+  import { KEYS } from "$lib/core/gamebook/paragraphs";
 
   interface Props {
     project: Project;
@@ -57,10 +59,15 @@
     if (target.kind === "scene") p.project.sceneProperties().then((value) => (offeredProperties = value), () => (offeredProperties = {}));
   });
 
+  /** In a gamebook the paragraph's own keys are shown in their section, and written only as the plugin writes them. */
+  const gamebook = $derived(p.project.settings.gamebook.enabled);
+  const gamebookKeys = new Set<string>(Object.values(KEYS));
   // `kind` and `numbered` live in folder notes and are set with the controls above the list.
   // Title and synopsis have their own fields above the list.
   const entries = $derived(
-    Object.entries(properties).filter(([key]) => key !== TITLE && key !== SYNOPSIS && key !== GOAL && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED))),
+    Object.entries(properties).filter(
+      ([key]) => key !== TITLE && key !== SYNOPSIS && key !== GOAL && !(node?.kind !== "scene" && (key === "kind" || key === NUMBERED)) && !(gamebook && gamebookKeys.has(key)),
+    ),
   );
   /** The properties of every scene this scene has not been given yet. */
   const offered = $derived(
@@ -120,8 +127,14 @@
 </script>
 
 <div class="panel">
+  {#if gamebook && node && node.kind === "scene"}
+    <PanelSection id="paragraph" title={t("gamebook.paragraph")}>
+      <ParagraphPanel project={p.project} path={node.path} version={`${p.rev}|${p.localRev}|${p.activeText ?? ""}`} />
+    </PanelSection>
+  {/if}
   {#if node && node.kind !== "manuscript"}
     <PanelSection id="details" title={t(`kind.${node.kind}` as MessageKey)}>
+      {#if !(gamebook && node.kind === "scene")}
       <label class="title-field">
         <span>{t("panel.title")}</span>
         {#key node.path + node.title}
@@ -136,6 +149,7 @@
           />
         {/key}
       </label>
+      {/if}
       <label class="title-field">
         <span>{t("panel.fileName")}</span>
         {#key node.path}

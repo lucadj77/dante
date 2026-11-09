@@ -6,6 +6,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo. Usa lo stesso formato del plugin Librogame.
+
 ### Cambiato
 
 ### Corretto

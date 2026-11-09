@@ -29,6 +29,7 @@ Le immagini e gli esempi vengono dal **progetto di esempio**, che si apre dalla 
 19. [Copie di sicurezza](#19-copie-di-sicurezza)
 20. [Aiuto dentro Dante](#20-aiuto-dentro-dante)
 21. [Aspetto e ortografia](#21-aspetto-e-ortografia)
+22. [Libri game](#22-libri-game)
 
 ## 1. Cos'è Dante
 
@@ -860,3 +861,31 @@ Apri **Impostazioni** > **Dante su questo computer**.
 - La sillabazione del testo giustificato usa la lingua del romanzo; dove il sistema non ha le regole di quella lingua, le righe giustificate possono avere spazi più larghi.
 - **Correttore**: è quello del sistema (macOS, Windows, Linux o il browser), con i suoi dizionari e le parole che gli hai insegnato; è il sistema a scegliere il dizionario. Dante segna il testo con la lingua del romanzo (impostazione **Lingua** del romanzo), che il sistema può usare per scegliere il dizionario giusto. Sul Mac il clic destro su una parola sottolineata dà i suggerimenti e **Impara ortografia**; le lingue si scelgono in Impostazioni di Sistema > Tastiera > Immissione testo > Modifica > Ortografia. Su Windows le lingue sono quelle installate in Impostazioni > Ora e lingua. Un dizionario personale dentro Dante, uguale su tutti i computer, non c'è ancora.
 - Nel file delle impostazioni dell'app: `theme`, `accent`, `fontFamily`, `fontSize`, `lineWidth`, `lineHeight`, `paragraphGap`, `indent`, `justify`, `spellcheck`.
+
+## 22. Libri game
+
+Un libro game è fatto di paragrafi numerati: il lettore non legge in ordine, ma salta da un paragrafo all'altro secondo le scelte che fa. Dante può lavorare su un libro game invece che su un romanzo. È un modulo spento di base: si accende progetto per progetto e non cambia nulla negli altri.
+
+Dante usa lo stesso formato del plugin «Librogame» per Obsidian, quindi un libro iniziato con il plugin si apre in Dante così com'è, e gli stessi file continuano a funzionare nel plugin. Questa prima versione legge e controlla il libro; creare paragrafi, rimescolare i numeri ed esportare arriveranno nelle prossime.
+
+### Come si fa
+
+- **Accendere il modulo**: apri **Impostazioni** > **Questo romanzo** > **Libro game** e spunta **Questo progetto è un libro game**. In **Cartella dei paragrafi** scrivi la cartella, dentro il progetto, che contiene i paragrafi (per esempio `Paragrafi`).
+- **L'albero**: al posto di capitoli e scene mostra i paragrafi in ordine di numero. Accanto a ogni paragrafo ci sono il numero (🔒 se è fisso, ⚓ se è relativo a un altro), il titolo, un ⚠ se c'è qualcosa da controllare (passa con il mouse per leggere cosa) e la lunghezza, in azzurro se il paragrafo è corto e in rosso se supera una pagina. I paragrafi ancora vuoti hanno il titolo in corsivo grigio. In cima, una riga riassume il libro: quanti paragrafi, quanti vuoti, quanti orfani (nessuno ci arriva), quanti vicoli ciechi (non portano da nessuna parte e non sono finali) e quante pagine.
+- **Da dove si arriva e dove si va**: con **Mostra sotto ogni paragrafo dell'albero da dove si arriva e dove porta** compare sotto ogni paragrafo una riga con i numeri che ci portano (←) e quelli a cui rimanda (→). Un clic su un numero apre quel paragrafo.
+- **Il pannello Paragrafo**: in **Proprietà**, sopra le altre sezioni, mostra numero e tipo, lunghezza e pagine, la nota del paragrafo, i paragrafi da cui si arriva e quelli a cui porta (ognuno si apre con un clic) e gli avvisi.
+- **Nell'editor** i rimandi come `[[Il cortile|2]]` si vedono come il solo numero, e i box (scelte, parole chiave, finali e gli altri) come riquadri colorati. Le righe `:::` che aprono e chiudono un box si nascondono e ricompaiono quando il cursore ci passa sopra.
+- **Tipi di box**: in **Impostazioni** > **Libro game** > **Tipi di box** ogni libro ha i suoi: emoji, nome, colore, testo proposto e la proprietà del paragrafo a cui il box si collega. Di base sono i sei del plugin: 🤔 scelta, ❤️ carattere, ✏️ parola chiave, ✅ incontro, 😢 finale, 🆗 conferma.
+- **Lunghezze e pagine**: **Paragrafo corto sotto** dice sotto quale lunghezza un paragrafo è corto, nell'unità del romanzo (parole o caratteri spazi inclusi). La pagina è quella delle impostazioni **Pagine**. **Ogni paragrafo inizia su una pagina nuova** conta le pagine come in un libro game stampato; spenta, conta il testo di seguito.
+
+*Esempio:* nel paragrafo 1 scrivi «Se vuoi entrare vai al **[[Il cortile|2]]**». Nell'albero il paragrafo 2 non è più orfano, e nel suo pannello compare 1 tra i paragrafi da cui si arriva.
+
+Mentre il modulo è acceso l'albero non si riordina trascinando e non si dividono le scene: l'ordine viene dai numeri, e i file non vengono mai rinominati né ricevono numeri nel nome.
+
+### Approfondimento
+
+- Un paragrafo è una nota Markdown nella cartella dei paragrafi. Il nome del file è il titolo e non cambia mai; il numero sta nella proprietà `numero`, ripetuto in `aliases` come elenco con il trattino. `numero_tipo` può essere `libero` (il rimescolamento può cambiarlo), `fisso`, o `relativo` con `ancora` (il titolo di un altro paragrafo) e `scarto`. `finale: true` segna un finale.
+- I rimandi sono collegamenti `[[Titolo|N]]`, di solito in grassetto. I rimandi che il lettore non vede (per esempio un numero da calcolare) vanno nella proprietà `rimandi nascosti`: contano per orfani e vicoli ciechi ma non compaiono nel testo.
+- Un box è un blocco tra la riga `::: {custom-style="box"}` e la riga `:::`; il tipo lo dà l'emoji con cui comincia la prima riga del contenuto. È il formato dei blocchi con stile di Pandoc, quindi un'esportazione in Word con Pandoc dà ai box lo stile «box».
+- Gli avvisi sono: orfano, vicolo cieco, irraggiungibile dal paragrafo iniziale, numero doppio, collegamento senza numero, rimando a un paragrafo che non c'è, box di finale in un paragrafo non finale (o viceversa), numero del rimando diverso da quello del paragrafo.
+- In `dante.yaml` tutto sta sotto `gamebook:` (`enabled`, `start`, `short`, `onePerPage`, `showLinks`, `boxes`); la cartella è `folders.manuscript`. In un romanzo `gamebook:` non viene scritto.

@@ -29,6 +29,7 @@
   import { readDocx, type DocxContent } from "$lib/core/import/docx";
   import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
   import type { NoteIndex } from "$lib/core/notes";
+  import { gamebookMarks, gamebookOf } from "$lib/core/gamebook/marks";
   import { defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
 
   interface Props {
@@ -174,6 +175,18 @@
     void unit;
     return noteIndex ? treeMarks(tree, noteIndex, project.settings, wordsOf) : new Map();
   });
+  /** In a gamebook: paragraphs in order of number, what is wrong with each, and the totals. */
+  const gamebook = $derived.by(() => {
+    void rev;
+    return project.settings.gamebook.enabled;
+  });
+  const game = $derived.by(() => {
+    void edits;
+    void tree;
+    if (!gamebook || !noteIndex) return null;
+    const index = gamebookOf(noteIndex, project.settings);
+    return index ? gamebookMarks(index, project.settings) : null;
+  });
   /** The text selected in the scene with the cursor. */
   let selection = $state<{ path: string; text: string }>({ path: "", text: "" });
   const statusScene = $derived.by(() => {
@@ -285,11 +298,13 @@
 
   // The scene's editor still holds the whole text: it takes the first part from the disk.
   function splitScene(path: string, before: string, after: string) {
+    if (gamebook) return;
     editors.get(path)?.cancel();
     void run(() => project.splitScene(path, before, after, t("untitledScene")), "start").then(onDiskChange);
   }
 
   function splitChapter(path: string, before: string, after: string) {
+    if (gamebook) return;
     editors.get(path)?.cancel();
     void run(() => project.splitChapter(path, before, after, t("untitled"), t("untitledScene")), "start").then(onDiskChange);
   }
@@ -311,6 +326,7 @@
 
   /** New scene in the selected chapter, or right after the selected scene. */
   function newScene() {
+    if (gamebook) return;
     const node = selected ? findNode(selected) : null;
     if (node && node.kind === "scene") return addAfter(node.path);
     const holder = node && node.kind !== "part" ? node : (node?.children.find((c) => c.kind !== "scene") ?? node ?? tree);
@@ -369,6 +385,7 @@
   }
 
   function newContainer(kind: "chapter" | "part") {
+    if (gamebook) return;
     const node = selected ? findNode(selected) : null;
     let holder: ManuscriptNode = tree;
     let index = tree.children.length;
@@ -441,7 +458,8 @@
   function drop(target: string, position: DropPosition) {
     const source = dragging;
     dragging = null;
-    if (!source || source === target) return;
+    // A paragraph's place comes from its number, not from where it is dragged.
+    if (!source || source === target || gamebook) return;
     const targetNode = findNode(target);
     if (!targetNode) return;
     if (position === "inside" && targetNode.kind !== "scene") {
@@ -522,6 +540,7 @@
 
   function moveBy(path: string, delta: number) {
     menu = null;
+    if (gamebook) return;
     const parent = parentOf(tree, path);
     if (!parent) return;
     const index = parent.children.findIndex((c) => c.path === path) + delta;
@@ -698,7 +717,12 @@
       onmouseleave={leaveEdge}
       onfocusout={leaveEdge}
     >
-      <div class="tree-actions">
+      {#if game}
+        <p class="gamebook-summary" title={t("gamebook.summaryHint")}>
+          {t("gamebook.summary", { paragraphs: game.summary.paragraphs, empty: game.summary.empty, orphans: game.summary.orphans, deadEnds: game.summary.deadEnds, pages: game.summary.pages })}
+        </p>
+      {/if}
+      <div class="tree-actions" class:gamebook>
         <div class="tree-group" role="group" aria-labelledby="tree-add">
           <div class="caption-row">
             <span class="caption" id="tree-add">{t("tree.add")}</span>
@@ -707,6 +731,7 @@
               <button class="icon-only" title={t("tip.unfoldAll")} aria-label={t("tree.unfoldAll")} onclick={() => markOnly(foldScope, [])}><Icon name="expand" /></button>
             </span>
           </div>
+          {#if !gamebook}
           <div class="add">
             <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
             <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
@@ -715,6 +740,7 @@
             {/if}
             <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
           </div>
+          {/if}
         </div>
       </div>
       {#if tree.children.length === 0}
@@ -754,6 +780,8 @@
             {foldScope}
             {marks}
             {unit}
+            game={game?.marks ?? null}
+            showLinks={project.settings.gamebook.showLinks}
           />
         {/each}
       </ul>
@@ -807,10 +835,14 @@
       {/if}
       <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = menu!.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
       <hr />
-      <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
+      {#if !gamebook}
+        <button role="menuitem" onclick={() => menuNewScene(menu!.path)}>{node?.kind === "scene" ? t("tree.newSceneAfter") : t("tree.newSceneInside")}</button>
+      {/if}
       <button role="menuitem" onclick={() => menuRename(menu!.path)}>{t("tree.rename")}</button>
-      <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
-      <button role="menuitem" onclick={() => moveBy(menu!.path, 1)}>{t("tree.moveDown")}</button>
+      {#if !gamebook}
+        <button role="menuitem" onclick={() => moveBy(menu!.path, -1)}>{t("tree.moveUp")}</button>
+        <button role="menuitem" onclick={() => moveBy(menu!.path, 1)}>{t("tree.moveDown")}</button>
+      {/if}
       <hr />
       <button role="menuitem" class="danger" onclick={() => remove(menu!.path)}>{t("tree.deleteItem")}</button>
     </div>
@@ -844,6 +876,7 @@
         disabled={!active}
         onFormat={(action) => active && editors.get(active)?.format(action)}
         onSplit={(kind) => active && editors.get(active)?.split(kind)}
+        noSplit={gamebook}
       />
     {/if}
     </div>
@@ -966,6 +999,11 @@
     background: var(--bg-panel);
     overflow: auto;
     padding: 8px;
+  }
+  .gamebook-summary {
+    margin: 4px 10px 2px;
+    font-size: 11.5px;
+    color: var(--text-muted);
   }
   .tree-actions {
     display: grid;

@@ -12,8 +12,10 @@
     disabled: boolean;
     onFormat: (action: Action) => void;
     onSplit: (kind: "scene" | "chapter") => void;
+    /** Without the split buttons, as in a gamebook, whose paragraphs are not split. */
+    noSplit?: boolean;
   }
-  let { disabled, onFormat, onSplit }: Props = $props();
+  let { disabled, onFormat, onSplit, noSplit = false }: Props = $props();
   const labels = $derived(formatLabels());
 </script>
 
@@ -31,6 +33,7 @@
       >
     {/if}
   {/each}
+  {#if !noSplit}
   <span class="cm-format-gap"></span>
   <button class="split" title={t("tip.splitScene")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("scene")}
     ><Icon name="scene" /><span>{t("split.scene")}</span></button
@@ -38,6 +41,7 @@
   <button class="split" title={t("tip.splitChapter")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("chapter")}
     ><Icon name="chapter" /><span>{t("split.chapter")}</span></button
   >
+  {/if}
 </div>
 
 <style>
