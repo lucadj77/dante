@@ -14,7 +14,7 @@ import {
   type ContainerKind,
   type ManuscriptNode,
 } from "./manuscript";
-import { assignOrders, formatName, sanitizeTitle } from "./naming";
+import { assignOrders, formatName, parseName, sanitizeTitle } from "./naming";
 import { NoteIndex } from "./notes";
 import { basename, dirname, extname, isMarkdown, isWithin, join, rebase, stripExt } from "./path";
 import {
@@ -491,6 +491,140 @@ export class Project {
     const to = await this.freeName(dir, basename(path));
     await this.apply([{ from: path, to }]);
     return to;
+  }
+
+  /**
+   * Moves or copies items, in order, to another place: a folder of any section, or a place
+   * in the manuscript. In the manuscript `index` is where among the container's children
+   * they go, counted as the children are now; without it they go at the end. An item that
+   * leaves the manuscript loses its number; one that enters it gets the number of its
+   * place. Moves fix the links; a copy keeps them reaching what the original reached.
+   * Returns where each item ended up.
+   */
+  async transfer(paths: string[], target: { dir: string; index?: number }, copy: boolean): Promise<string[]> {
+    const sources = paths.filter((path, i) => paths.indexOf(path) === i && !paths.some((other) => other !== path && isWithin(path, other)));
+    for (const path of sources) if (isWithin(target.dir, path)) throw new Error("Cannot move an item into itself");
+    await this.beforeMove?.();
+    const ordered = !this.settings.gamebook.enabled && isWithin(target.dir, this.settings.folders.manuscript) && !!findNode(this.manuscript, target.dir);
+    let dir = target.dir;
+    let index = target.index ?? Number.POSITIVE_INFINITY;
+    if (ordered && !copy && Number.isFinite(index)) {
+      // Items moved from before the place leave a gap, so the place is counted without them.
+      const children = this.node(dir).children;
+      index -= children.slice(0, index).filter((c) => sources.includes(c.path)).length;
+    }
+    let pending = [...sources];
+    const results: string[] = [];
+    while (pending.length) {
+      const source = pending.shift()!;
+      let moved: (path: string) => string = (path) => path;
+      let result: string;
+      if (ordered) {
+        ({ result, moved } = await this.placeInManuscript(source, dir, index, copy));
+        if (Number.isFinite(index)) index++;
+      } else {
+        ({ result, moved } = await this.placeInFolder(source, dir, copy));
+      }
+      results.push(result);
+      dir = moved(dir);
+      pending = pending.map(moved);
+      for (let i = 0; i < results.length - 1; i++) results[i] = moved(results[i]);
+    }
+    return results;
+  }
+
+  /** The title an item takes in the manuscript: its file name without number or extension. */
+  private titleOf(path: string): string {
+    const node = findNode(this.manuscript, path);
+    if (node && node.kind !== "manuscript") return node.fileTitle;
+    const name = this.files.includes(path) ? stripExt(basename(path)) : basename(path);
+    return parseName(name).title;
+  }
+
+  private async placeInManuscript(source: string, dir: string, index: number, copy: boolean): Promise<{ result: string; moved: (path: string) => string }> {
+    const parent = this.node(dir);
+    const file = this.files.includes(source);
+    if (file && !isMarkdown(source)) throw new Error(`Only notes and folders go in the manuscript: ${basename(source)}`);
+    const ext = file ? ".md" : "";
+    const node = findNode(this.manuscript, source);
+    if (copy) {
+      const title = this.uniqueTitle(parent, sanitizeTitle(this.titleOf(source)) || "Untitled");
+      const { path, moved } = await this.insertAt(parent, index, title, (path, moved) => this.copyItem(moved(source), path + ext), ext);
+      return { result: path, moved };
+    }
+    const siblings = parent.children.filter((c) => c.path !== source);
+    const clamped = Math.max(0, Math.min(index, siblings.length));
+    // Within the manuscript, a move like dragging; from outside, the item comes in as a new one.
+    const title = node && dirname(source) === parent.path ? node.fileTitle : this.uniqueTitle(parent, sanitizeTitle(this.titleOf(source)) || "Untitled", node ? source : undefined);
+    const item: ManuscriptNode = node
+      ? { ...node, fileTitle: title }
+      : { kind: file ? "scene" : "chapter", path: source, name: basename(source), order: null, title, fileTitle: title, notePath: null, children: [] };
+    const sequence = [...siblings.slice(0, clamped), item, ...siblings.slice(clamped)];
+    const orders = assignOrders(sequence.map((n) => (n === item ? null : n.order)));
+    const moves = this.orderMovesFrom(parent.path, sequence, orders);
+    const moved = await this.apply(moves);
+    return { result: moved(source), moved };
+  }
+
+  private async placeInFolder(source: string, dir: string, copy: boolean): Promise<{ result: string; moved: (path: string) => string }> {
+    const file = this.files.includes(source);
+    const inManuscript = isWithin(source, this.settings.folders.manuscript);
+    const leaves = inManuscript && !isWithin(dir, this.settings.folders.manuscript);
+    // Out of the manuscript the number in front of the name means nothing.
+    const name = leaves ? this.titleOf(source) + (file ? extname(source) : "") : basename(source);
+    if (!copy && dirname(source) === dir && name === basename(source)) return { result: source, moved: (path) => path };
+    const to = await this.freeName(dir, name);
+    if (copy) {
+      await this.fs.mkdir(dir);
+      await this.copyItem(source, to);
+      await this.reload();
+      return { result: to, moved: (path) => path };
+    }
+    await this.fs.mkdir(dir);
+    const moved = await this.apply([{ from: source, to }]);
+    return { result: moved(source), moved };
+  }
+
+  /**
+   * Copies a file, or a folder with all it holds, to `to`. A folder note takes the copy's
+   * folder name, and links in copied notes are fixed so they still reach the same notes.
+   */
+  private async copyItem(from: string, to: string): Promise<void> {
+    const after = [...this.files];
+    const plan: { from: string; to: string }[] = [];
+    const walk = async (source: string, target: string) => {
+      if (!(await this.isFolder(source))) {
+        plan.push({ from: source, to: target });
+        return;
+      }
+      await this.fs.mkdir(target);
+      const note = folderNotePath(source);
+      for (const entry of await this.fs.list(source)) {
+        if (entry.name.startsWith(".dante-move-")) continue;
+        const name = entry.path === note ? basename(target) + ".md" : entry.name;
+        await walk(entry.path, join(target, name));
+      }
+    };
+    await walk(from, to);
+    for (const item of plan) after.push(item.to);
+    for (const item of plan) {
+      if (isMarkdown(item.from)) {
+        const text = await this.fs.readText(item.from);
+        await this.fs.writeText(item.to, rewriteLinks(text, item.from, new Map(), this.files, after, item.to) ?? text);
+      } else {
+        await this.fs.writeBytes(item.to, await this.fs.readBytes(item.from));
+      }
+    }
+  }
+
+  private async isFolder(path: string): Promise<boolean> {
+    if (this.files.includes(path)) return false;
+    try {
+      await this.fs.list(path);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** Properties of a scene, or of a container through its folder note. */
@@ -1217,6 +1351,17 @@ export class Project {
     create: (pathWithoutExt: string) => Promise<void>,
     ext: string,
   ): Promise<string> {
+    return (await this.insertAt(parent, index, title, create, ext)).path;
+  }
+
+  /** Makes room among `parent`'s children and creates an item there; also says where the renumbered siblings went. */
+  private async insertAt(
+    parent: ManuscriptNode,
+    index: number,
+    title: string,
+    create: (pathWithoutExt: string, moved: (path: string) => string) => Promise<void>,
+    ext: string,
+  ): Promise<{ path: string; moved: (path: string) => string }> {
     const placeholder = "\u0000new";
     const sequence = [...parent.children];
     const clamped = Math.max(0, Math.min(index, sequence.length));
@@ -1226,11 +1371,11 @@ export class Project {
     sequence.splice(clamped, 0, fake);
     const orders = assignOrders(sequence.map((n) => n.order));
     const moves = this.orderMovesFrom(parent.path, sequence, orders).filter((m) => m.from !== placeholder);
-    await this.apply(moves);
+    const moved = await this.apply(moves);
     const path = join(parent.path, formatName(orders[clamped], title));
-    await create(path);
+    await create(path, moved);
     await this.reload();
-    return path + ext;
+    return { path: path + ext, moved };
   }
 
   /**
@@ -1269,9 +1414,12 @@ export class Project {
     return moves.find((m) => m.from === path)?.to ?? path;
   }
 
-  /** Performs renames, renames folder notes with their folders, then fixes wikilinks. */
-  private async apply(moves: Move[]): Promise<void> {
-    if (moves.length === 0) return;
+  /**
+   * Performs renames, renames folder notes with their folders, then fixes wikilinks.
+   * Returns where each path of before the moves is now.
+   */
+  private async apply(moves: Move[]): Promise<(path: string) => string> {
+    if (moves.length === 0) return (path) => path;
     await this.beforeMove?.();
     const before = [...this.files];
     // A file's conflict copies take its new name, or they would show as files of their own.
@@ -1327,7 +1475,9 @@ export class Project {
       if (updated !== null) await this.fs.writeText(newPath, updated);
     }
     await this.reload();
-    this.onMoved?.((path) => renames.get(path) ?? moves.reduce((p, m) => rebase(p, m.from, m.to), path));
+    const moved = (path: string) => renames.get(path) ?? moves.reduce((p, m) => rebase(p, m.from, m.to), path);
+    this.onMoved?.(moved);
+    return moved;
   }
 }
 

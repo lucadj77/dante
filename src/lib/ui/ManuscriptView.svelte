@@ -25,6 +25,7 @@
   import { scalar } from "$lib/core/gamebook/edit";
   import { dirname } from "$lib/core/path";
   import ShuffleDialog from "./ShuffleDialog.svelte";
+  import TransferDialog from "./TransferDialog.svelte";
   import NewParagraphDialog from "./NewParagraphDialog.svelte";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
@@ -632,6 +633,27 @@
     });
   }
 
+  /** What the Move to… or Copy to… window is sending elsewhere. */
+  let transferring = $state<{ paths: string[]; mode: "move" | "copy" } | null>(null);
+
+  function startTransfer(path: string, mode: "move" | "copy") {
+    menu = null;
+    // On a chosen scene, the chosen scenes go together, in reading order.
+    const paths = chosen.length > 1 && chosen.includes(path) ? scenesOf(tree).map((n) => n.path).filter((p) => chosen.includes(p)) : [path];
+    transferring = { paths, mode };
+  }
+
+  async function transferred(results: string[]) {
+    chosen = [];
+    localRev++;
+    await onReload();
+    const first = results.find((r) => findNode(r));
+    if (first) {
+      selected = first;
+      void bringIntoView(first);
+    }
+  }
+
   function moveBy(path: string, delta: number) {
     menu = null;
     if (gamebook) return;
@@ -929,6 +951,7 @@
 
   {#if menu}
     {@const node = findNode(menu.path)}
+    {@const many = chosen.length > 1 && chosen.includes(menu.path)}
     <div class="menu-backdrop" role="presentation" onmousedown={() => (menu = null)} oncontextmenu={(e) => { e.preventDefault(); menu = null; }}></div>
     <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px" use:keepInView={menu}>
       {#if chosen.length > 1 && chosen.includes(menu.path)}
@@ -949,6 +972,9 @@
           >{t(node.position === "after" ? "gamebook.moveBefore" : "gamebook.moveAfter")}</button
         >
       {/if}
+      <hr />
+      <button role="menuitem" onclick={() => startTransfer(menu!.path, "move")}>{many ? t("transfer.moveChosen", { n: chosen.length }) : t("transfer.moveTo")}</button>
+      <button role="menuitem" onclick={() => startTransfer(menu!.path, "copy")}>{many ? t("transfer.copyChosen", { n: chosen.length }) : t("transfer.copyTo")}</button>
       <hr />
       <button role="menuitem" class="danger" onclick={() => remove(menu!.path)}>{t("tree.deleteItem")}</button>
     </div>
@@ -1113,6 +1139,9 @@
     }}
     onClose={() => (newParagraphIn = null)}
   />
+{/if}
+{#if transferring}
+  <TransferDialog {project} paths={transferring.paths} mode={transferring.mode} onDone={transferred} onClose={() => (transferring = null)} />
 {/if}
 {#if shuffling !== null && noteIndex}
   <ShuffleDialog

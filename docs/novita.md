@@ -6,6 +6,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Sposta in… e Copia in…**: con il clic destro su una scena, un capitolo, una nota o una cartella (anche sulle schede della Bibbia) puoi spostarla o copiarla in un'altra sezione o in un punto preciso del manoscritto, scegliendo da una finestra con l'albero e una casella di ricerca, senza trascinare.
 - **Skill per agenti IA aggiornata**: la skill in `skills/dante` ora spiega anche libri game, viste, proprietà per tutte le scene, cestino, righe vuote, callout e tutte le impostazioni del romanzo, e il suo script conta parole e caratteri spazi inclusi come Dante.
 - **Libri game in inglese**: in un libro game in inglese Dante legge lo stato di gioco anche da frasi come «Note the keyword…» e «If you have…», trova i numeri scritti a mano come «turn to 12», dà ai box proprietà con nomi inglesi (traits, keywords, encounters), chiama la nota del grafo «Gamebook graph» e non tocca più le parole prima dei rimandi (gli articoli si correggono solo nei libri in italiano).
 

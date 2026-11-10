@@ -20,6 +20,8 @@
   import SidePanel from "./SidePanel.svelte";
   import { columns, layout, width } from "./layout.svelte";
   import Resizer from "./Resizer.svelte";
+  import TransferDialog from "./TransferDialog.svelte";
+  import { keepInView } from "./keepInView";
 
   interface Props {
     project: Project;
@@ -266,6 +268,26 @@
     p.onShow(null);
   }
 
+  /** A card's right-click menu. */
+  let cardMenu = $state<{ path: string; x: number; y: number } | null>(null);
+  /** What the Move to… or Copy to… window is sending elsewhere. */
+  let transferring = $state<{ path: string; mode: "move" | "copy" } | null>(null);
+
+  function startTransfer(path: string, mode: "move" | "copy") {
+    cardMenu = null;
+    transferring = { path, mode };
+  }
+
+  async function transferred(source: string, mode: "move" | "copy", results: string[]) {
+    await editor?.flush();
+    await p.onReload();
+    const to = results[0];
+    if (!to) return;
+    const codex = p.project.settings.folders.codex;
+    if (mode === "move" && p.open === source) p.onShow(isWithin(to, codex) ? to : null);
+    else if (mode === "copy" && isWithin(to, codex)) p.onShow(to);
+  }
+
   async function editTemplate(type: string) {
     const path = await run(() => p.project.ensureTemplate(type));
     if (path) nav?.open(path);
@@ -364,6 +386,8 @@
       <div class="item-bar">
         <button onclick={() => p.onShow(null)}>‹ {typeLabel(selectedType ?? "")}</button>
         <span class="spacer"></span>
+        <button onclick={() => startTransfer(current, "move")}>{t("transfer.moveTo")}</button>
+        <button onclick={() => startTransfer(current, "copy")}>{t("transfer.copyTo")}</button>
         <button class="danger" onclick={() => remove(current)}>{t("tree.deleteItem")}</button>
       </div>
       <h1 class="item-title">
@@ -487,7 +511,14 @@
       {/if}
       <div class="cards place-{look.place} fit-{look.fit} focus-{look.focus} size-{look.size}">
         {#each shown as note (note.path)}
-          <button class="card" onclick={(e) => (e.altKey ? nav?.open(note.path, true) : p.onShow(note.path))}>
+          <button
+            class="card"
+            onclick={(e) => (e.altKey ? nav?.open(note.path, true) : p.onShow(note.path))}
+            oncontextmenu={(e) => {
+              e.preventDefault();
+              cardMenu = { path: note.path, x: e.clientX, y: e.clientY };
+            }}
+          >
             {#if pictures && cardImages[note.path]}<img class="picture" src={cardImages[note.path]} alt="" />{/if}
             <span class="card-title">{noteTitle(note.path)}</span>
             {#if note.aliases.length}<span class="aliases">{note.aliases.join(", ")}</span>{/if}
@@ -515,6 +546,24 @@
   </SidePanel>
   {/if}
 </div>
+
+{#if cardMenu}
+  {@const m = cardMenu}
+  <div class="menu-backdrop" role="presentation" onmousedown={() => (cardMenu = null)} oncontextmenu={(e) => { e.preventDefault(); cardMenu = null; }}></div>
+  <div class="card-menu" role="menu" style="left: {m.x}px; top: {m.y}px" use:keepInView={m}>
+    <button role="menuitem" onclick={() => { cardMenu = null; p.onShow(m.path); }}>{t("files.open")}</button>
+    <button role="menuitem" title={t("tip.openBeside")} onclick={() => { cardMenu = null; nav?.open(m.path, true); }}>{t("panes.openBeside")}</button>
+    <hr />
+    <button role="menuitem" onclick={() => startTransfer(m.path, "move")}>{t("transfer.moveTo")}</button>
+    <button role="menuitem" onclick={() => startTransfer(m.path, "copy")}>{t("transfer.copyTo")}</button>
+    <hr />
+    <button role="menuitem" class="danger" onclick={() => { cardMenu = null; void remove(m.path); }}>{t("tree.deleteItem")}</button>
+  </div>
+{/if}
+{#if transferring}
+  {@const job = transferring}
+  <TransferDialog project={p.project} paths={[job.path]} mode={job.mode} onDone={(results) => transferred(job.path, job.mode, results)} onClose={() => (transferring = null)} />
+{/if}
 
 <style>
   .codex {
@@ -784,6 +833,35 @@
     position: fixed;
     inset: 0;
     z-index: 29;
+  }
+  .card-menu {
+    position: fixed;
+    z-index: 30;
+    display: grid;
+    min-width: 200px;
+    padding: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  }
+  .card-menu button {
+    padding: 6px 10px;
+    border: none;
+    background: none;
+    text-align: left;
+  }
+  .card-menu button:hover {
+    background: var(--bg-hover);
+  }
+  .card-menu hr {
+    width: 100%;
+    margin: 4px 0;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+  .card-menu .danger {
+    color: var(--danger);
   }
   .card-title {
     font-weight: 600;

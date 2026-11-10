@@ -19,6 +19,7 @@
   import Resizer from "./Resizer.svelte";
   import { hasMarks, mark, markOnly } from "./folding.svelte";
   import { navigator } from "./navigation";
+  import TransferDialog from "./TransferDialog.svelte";
 
   interface Props {
     project: Project;
@@ -174,6 +175,21 @@
     if (wasOpen) p.onShow(null);
   }
 
+  /** What the Move to… or Copy to… window is sending elsewhere. */
+  let transferring = $state<{ path: string; mode: "move" | "copy" } | null>(null);
+
+  async function transferred(source: string, mode: "move" | "copy", results: string[]) {
+    await p.onReload();
+    const to = results[0];
+    if (!to) return;
+    if (mode === "move" && p.open && isWithin(p.open, source)) {
+      const now = rebase(p.open, source, to);
+      p.onShow(inRoots(now) ? now : null);
+    } else if (mode === "copy" && inRoots(to) && p.project.files.includes(to)) {
+      p.onShow(to);
+    }
+  }
+
   async function openWithSystem(path: string) {
     menu = null;
     try {
@@ -248,10 +264,17 @@
       {/if}
       {#if !isRoot(m.path)}
         <button role="menuitem" onclick={() => { const path = m.path; menu = null; renaming = path; }}>{t("tree.rename")}</button>
+        <button role="menuitem" onclick={() => { transferring = { path: m.path, mode: "move" }; menu = null; }}>{t("transfer.moveTo")}</button>
+        <button role="menuitem" onclick={() => { transferring = { path: m.path, mode: "copy" }; menu = null; }}>{t("transfer.copyTo")}</button>
         <hr />
         <button role="menuitem" class="danger" onclick={() => remove(m.path)}>{t("tree.deleteItem")}</button>
       {/if}
     </div>
+  {/if}
+
+  {#if transferring}
+    {@const job = transferring}
+    <TransferDialog project={p.project} paths={[job.path]} mode={job.mode} onDone={(results) => transferred(job.path, job.mode, results)} onClose={() => (transferring = null)} />
   {/if}
 
   <main class="center">
