@@ -10,6 +10,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Spostare più volte con la tastiera**: nell'albero del manoscritto Ctrl+Alt+freccia (Cmd+Opz+freccia su Mac) sposta la scena di un posto a ogni pressione, senza doverci cliccare sopra ogni volta.
+
 ## 1.2.0-beta.2 · 10 novembre 2026
 
 ### Nuovo

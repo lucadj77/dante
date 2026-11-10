@@ -200,3 +200,18 @@ test("moves a scene to the Laboratory and copies it back into a chapter", async 
   await page.locator('nav button[data-section="manuscript"]').click();
   await expect(tree.getByText(title, { exact: true })).toHaveCount(1);
 });
+
+test("moves a scene several places with the keyboard, without clicking it again", async ({ page }) => {
+  await openSample(page);
+  // A chapter with at least three scenes: the first of them goes down twice.
+  const chapter = page.locator('li[role="treeitem"]').filter({ has: page.locator(":scope > ul > li:nth-child(3) > .row.scene") }).first();
+  const scenes = chapter.locator(":scope > ul > li > .row.scene .label");
+  const first = await scenes.nth(0).innerText();
+  await chapter.locator(":scope > ul > li > .row.scene").first().click();
+  await page.keyboard.press("ControlOrMeta+Alt+ArrowDown");
+  await expect(scenes.nth(1)).toHaveText(first);
+  await page.keyboard.press("ControlOrMeta+Alt+ArrowDown");
+  await expect(scenes.nth(2)).toHaveText(first);
+  await page.keyboard.press("ControlOrMeta+Alt+ArrowUp");
+  await expect(scenes.nth(1)).toHaveText(first);
+});

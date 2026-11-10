@@ -10,6 +10,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+- **Moving several times from the keyboard**: in the manuscript tree Ctrl+Alt+arrow (Cmd+Option+arrow on a Mac) moves the scene one place at each press, without clicking on it every time.
+
 ## 1.2.0-beta.2 · November 10, 2026
 
 ### New
