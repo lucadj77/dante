@@ -169,3 +169,34 @@ test("opens the exported book with a cover made from a picture of the writer's",
   }, Buffer.from(zip[media[0]]).toString("base64"));
   expect(corner.slice(0, 3)).toEqual([255, 0, 0]);
 });
+
+test("moves a scene to the Laboratory and copies it back into a chapter", async ({ page }) => {
+  await openSample(page);
+  const tree = page.getByRole("tree");
+  const scene = tree.locator(".row.scene").nth(1);
+  const title = (await scene.locator(".label").innerText()).trim();
+  await scene.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Sposta in…" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("tab", { name: "Laboratorio" }).click();
+  await dialog.getByRole("option", { name: "Laboratorio" }).click();
+  await dialog.getByRole("button", { name: "Sposta", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(tree.getByText(title, { exact: true })).toHaveCount(0);
+
+  // In Notes, the scene is a note of the Laboratory: a copy goes back at the start of the first chapter.
+  await page.locator('nav button[data-section="notes"]').click();
+  const note = page.locator(".file-tree .row").filter({ hasText: title });
+  await expect(note).toBeVisible();
+  await note.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Copia in…" }).click();
+  await dialog.getByRole("tab", { name: "Manoscritto" }).click();
+  await dialog.getByRole("searchbox").fill("bravi");
+  await dialog.getByRole("option").nth(1).click();
+  await dialog.getByRole("radio", { name: "Dentro, all'inizio" }).check();
+  await dialog.getByRole("button", { name: "Copia", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(note).toBeVisible();
+  await page.locator('nav button[data-section="manuscript"]').click();
+  await expect(tree.getByText(title, { exact: true })).toHaveCount(1);
+});
