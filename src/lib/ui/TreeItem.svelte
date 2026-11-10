@@ -91,6 +91,7 @@
 <li role="treeitem" aria-selected={p.selected === p.node.path} aria-expanded={isScene ? undefined : !collapsed}>
   <div
     class="row {p.node.kind}"
+    data-path={p.node.path}
     class:selected={p.selected === p.node.path || p.chosen.includes(p.node.path)}
     class:drop-before={over === "before"}
     class:drop-after={over === "after"}

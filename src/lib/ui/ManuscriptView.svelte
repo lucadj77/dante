@@ -68,6 +68,7 @@
   let active = $state<string | null>(null);
   /** A chapter or part picked in the tree: the side panel shows it until a scene gets the cursor. */
   let picked = $state<string | null>(null);
+  let treeList = $state<HTMLUListElement | null>(null);
   let raw = $state(false);
   let typewriter = $state(false);
   let focusMode = $state(false);
@@ -661,7 +662,21 @@
     if (!parent) return;
     const index = parent.children.findIndex((c) => c.path === path) + delta;
     if (index < 0 || index >= parent.children.length) return;
-    void run(() => project.move(path, parent.path, index));
+    void run(() => project.move(path, parent.path, index)).then(() => focusRow(selected));
+  }
+
+  /**
+   * Moving renames the file, so the tree draws the item again as a new row and the keyboard
+   * focus is lost: the row is focused again, so Ctrl/Cmd+Alt+arrow can be pressed once more.
+   */
+  function focusRow(path: string | null) {
+    if (!path || !treeList) return;
+    for (const row of treeList.querySelectorAll<HTMLElement>(".row[data-path]")) {
+      if (row.dataset.path === path) {
+        row.focus();
+        return;
+      }
+    }
   }
 
   function menuNewScene(path: string) {
@@ -877,7 +892,7 @@
           <button onclick={() => (chosen = [])}>{t("tree.cancel")}</button>
         </div>
       {/if}
-      <ul role="tree" ondragend={() => (dragging = null)}>
+      <ul role="tree" bind:this={treeList} ondragend={() => (dragging = null)}>
         {#each tree.children as node (node.path)}
           <TreeItem
             {node}
