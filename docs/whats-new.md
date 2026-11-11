@@ -12,6 +12,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **A look for each novel**: in Settings > Look of this novel you can give a novel its own theme, accent colour, font and text layout. The choices stay on this computer and not in the project: those who write with you keep their own look.
 - **Undo for moves, splits and merges**: after moving, splitting or merging scenes and chapters, **Undo** appears at the bottom of the tree (also Cmd+Z / Ctrl+Z with the tree active) and puts everything back as it was, links included.
 - **Going back to a backup from Dante**: Settings > Backups lists the backups; **Open this backup** takes it out into a new folder beside the novel and opens it, without touching the novel as it is now.
+- **One property for several scenes**: choose several scenes in the tree (Cmd/Ctrl+click), then right click > **Set a property on the scenes…** to give all of them the same value, for example the status.
 
 ### Changed
 

@@ -269,3 +269,20 @@ test("takes back a scene moved by mistake", async ({ page }) => {
   await expect.poll(() => rows.allInnerTexts()).toEqual(before);
   await expect(page.getByRole("status").filter({ hasText: "Spostamento fatto." })).toBeHidden();
 });
+
+test("sets a property on several scenes at once", async ({ page }) => {
+  await openSample(page);
+  await page.getByRole("treeitem", { name: "Il nome" }).click();
+  await page.getByRole("treeitem", { name: "Lucia" }).click({ modifiers: ["ControlOrMeta"] });
+  await page.getByRole("treeitem", { name: "Lucia" }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Imposta una proprietà alle 2 scene…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Una proprietà per 2 scene" });
+  await dialog.getByRole("combobox", { name: "Proprietà", exact: true }).selectOption("stato");
+  await dialog.getByRole("combobox", { name: "stato", exact: true }).selectOption("rivista");
+  await dialog.getByRole("button", { name: "Applica a 2 scene" }).click();
+  await expect(dialog).toBeHidden();
+  for (const scene of ["Il nome", "Lucia"]) {
+    await page.getByRole("treeitem", { name: scene }).click();
+    await expect(page.locator("aside.side").getByLabel("stato", { exact: true })).toHaveValue("rivista");
+  }
+});

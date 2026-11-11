@@ -792,6 +792,17 @@ export class Project {
     await this.reload();
   }
 
+  /** The same change to the properties of several scenes, chapters or parts at once. */
+  async setPropertiesOf(paths: string[], changes: Properties): Promise<void> {
+    for (const path of paths) {
+      const file = this.propertiesFile(path);
+      const text = (await this.fs.exists(file)) ? await this.fs.readText(file) : "";
+      const updated = writeProperties(text, changes);
+      if (updated !== text) await this.fs.writeText(file, updated);
+    }
+    await this.reload();
+  }
+
   /**
    * In a gamebook: changes a paragraph's own properties as the plugin writes them. A new
    * number (given, or worked out from an anchor) also goes into its aliases, into the label

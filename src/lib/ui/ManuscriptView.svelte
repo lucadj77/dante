@@ -14,6 +14,7 @@
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import BulkPropertyDialog from "./BulkPropertyDialog.svelte";
   import { columns, layout, width } from "./layout.svelte";
   import Resizer from "./Resizer.svelte";
   import { markOnly } from "./folding.svelte";
@@ -664,6 +665,9 @@
   /** What the Move to… or Copy to… window is sending elsewhere. */
   let transferring = $state<{ paths: string[]; mode: "move" | "copy" } | null>(null);
 
+  /** The chosen scenes whose property is being set together. */
+  let bulk = $state<string[] | null>(null);
+
   function startTransfer(path: string, mode: "move" | "copy") {
     menu = null;
     // On a chosen scene, the chosen scenes go together, in reading order.
@@ -1018,6 +1022,13 @@
     <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px" use:keepInView={menu}>
       {#if chosen.length > 1 && chosen.includes(menu.path)}
         <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
+        <button
+          role="menuitem"
+          onclick={() => {
+            menu = null;
+            bulk = scenesOf(tree).map((n) => n.path).filter((path) => chosen.includes(path));
+          }}>{t("bulk.menu", { n: chosen.length })}</button
+        >
         <hr />
       {/if}
       <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = menu!.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
@@ -1205,6 +1216,9 @@
 {/if}
 {#if transferring}
   <TransferDialog {project} paths={transferring.paths} mode={transferring.mode} onDone={transferred} onClose={() => (transferring = null)} />
+{/if}
+{#if bulk}
+  <BulkPropertyDialog {project} paths={bulk} onDone={() => run(async () => {})} onClose={() => (bulk = null)} />
 {/if}
 {#if shuffling !== null && noteIndex}
   <ShuffleDialog
