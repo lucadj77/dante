@@ -1,4 +1,5 @@
 <script lang="ts">
+  import HelpLink from "./HelpLink.svelte";
   // The "Libro game" section: every paragraph in a table that can be sorted and filtered,
   // the checks of the whole book (the warnings and the game state) and the register of the
   // values written in the boxes' properties.
@@ -137,6 +138,7 @@
         <button role="tab" aria-selected={tab === "checks"} onclick={() => (tab = "checks")}>{t("gamebookView.checks", { n: num(problems) })}</button>
         <button role="tab" aria-selected={tab === "register"} onclick={() => (tab = "register")}>{t("gamebookView.register")}</button>
       </div>
+      <HelpLink chapter="gamebook" />
       {#if book.scopes().length > 1}
         <label class="scope">
           {t("gamebookView.folder")}

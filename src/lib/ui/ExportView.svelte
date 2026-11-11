@@ -1,4 +1,5 @@
 <script lang="ts">
+  import HelpLink from "./HelpLink.svelte";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import { buildBook } from "$lib/core/export/book";
@@ -651,7 +652,7 @@
     <p class="hint">{t("export.publishedTitleHint")}</p>
     {/if}
 
-    <h4>{t("export.typography")}</h4>
+    <h4>{t("export.typography")} <HelpLink chapter="export" /></h4>
     <p class="hint">{t("export.typographyHint")}</p>
     <label
       >{t("export.quotes")}

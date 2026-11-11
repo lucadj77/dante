@@ -153,7 +153,7 @@ Each section matches a folder of the project: Manuscript, Story Bible, Views for
 The **Help** icon (the question mark in the bar on the left, above the trash) opens a window with three tabs:
 
 - **First steps**: seven steps to begin, from creating the project to the export.
-- **Full guide**: this guide, with the list of the chapters on the left. A click on a reference ("chapter 15") leads to the chapter.
+- **Full guide**: this guide, with the list of the chapters on the left. A click on a reference ("chapter 15") leads to the chapter. A small **?** in the export typography, in a view's settings and in the Gamebook section opens this tab at the chapter about it.
 
   ![The Help window on the Full guide tab, with the chapters on the left](img/aiuto.png)
 

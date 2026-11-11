@@ -1,4 +1,5 @@
 <script lang="ts">
+  import HelpLink from "./HelpLink.svelte";
   import type { ViewSpec } from "$lib/core/views";
   import { SYNOPSIS, TITLE } from "$lib/core/manuscript";
   import { t } from "$lib/state.svelte";
@@ -127,10 +128,17 @@
       <label class="check"><input type="checkbox" checked={fields.includes(c)} onchange={(e) => toggleField(c, e.currentTarget.checked)} /> {label(c)}</label>
     {/each}
   </fieldset>
+  <span class="guide"><HelpLink chapter="views" /></span>
 </section>
 
 <style>
+  .guide {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+  }
   .settings {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 10px 20px;

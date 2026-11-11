@@ -3,6 +3,21 @@ import { describe, expect, it } from "vitest";
 import { guideToHtml, slug } from "../guide";
 
 describe("guide", () => {
+  it("keeps the chapters the panels link to where the links expect them", () => {
+    const source = readFileSync("src/lib/ui/help.svelte.ts", "utf8");
+    const numbers = Object.fromEntries([...source.match(/GUIDE_CHAPTERS = \{([^}]*)\}/)![1].matchAll(/(\w+): (\d+)/g)].map((m) => [m[1], Number(m[2])]));
+    const titles: Record<string, [string, string]> = {
+      views: ["Tabelle e bacheche", "Tables and boards"],
+      export: ["Esportare in Word, PDF ed EPUB", "Exporting to Word, PDF and EPUB"],
+      gamebook: ["Libri game", "Gamebooks"],
+    };
+    expect(Object.keys(numbers).sort()).toEqual(Object.keys(titles).sort());
+    for (const [key, [italian, english]] of Object.entries(titles)) {
+      expect(readFileSync("docs/guida.md", "utf8")).toContain(`\n## ${numbers[key]}. ${italian}\n`);
+      expect(readFileSync("docs/guide.md", "utf8")).toContain(`\n## ${numbers[key]}. ${english}\n`);
+    }
+  });
+
   it("makes anchors as GitHub does", () => {
     expect(slug("1. Cos'è Dante")).toBe("1-cosè-dante");
     expect(slug("13. Esportare in Word, PDF ed EPUB")).toBe("13-esportare-in-word-pdf-ed-epub");

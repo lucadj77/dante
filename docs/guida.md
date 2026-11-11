@@ -153,7 +153,7 @@ Ogni sezione corrisponde a una cartella del progetto: Manoscritto, Bibbia, Viste
 L'icona **Aiuto** (il punto di domanda nella barra a sinistra, sopra il cestino) apre una finestra con tre schede:
 
 - **Primi passi**: sette passi per cominciare, dalla creazione del progetto all'esportazione.
-- **Guida completa**: questa guida, con l'elenco dei capitoli a sinistra. Un clic su un rimando («capitolo 15») porta al capitolo.
+- **Guida completa**: questa guida, con l'elenco dei capitoli a sinistra. Un clic su un rimando («capitolo 15») porta al capitolo. Un piccolo **?** nella tipografia dell'esportazione, nelle impostazioni di una vista e nella sezione Libro game apre questa scheda al capitolo che ne parla.
 
   ![La finestra dell'Aiuto sulla scheda Guida completa, con i capitoli a sinistra](img/aiuto.png)
 

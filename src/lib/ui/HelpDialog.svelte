@@ -41,6 +41,8 @@
       if (files[help.page] !== file) return;
       page = guideToHtml(m.default, { image: imageUrl });
       await tick();
+      if (help.chapter) pending = page.headings.find((h) => h.level === 2 && h.text.startsWith(`${help.chapter}. `))?.id ?? "";
+      help.chapter = 0;
       if (pending) go(pending);
       else content?.scrollTo({ top: 0 });
       pending = "";
