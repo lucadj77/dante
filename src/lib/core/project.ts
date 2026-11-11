@@ -288,7 +288,17 @@ export class Project {
         }
       }
     }
-    this.manuscript = await loadManuscript(this.fs, this.settings);
+    // The scenes that have not changed since the last index are not read again for the tree.
+    const known = await this.unchanged();
+    const reader: ProjectFs = known
+      ? Object.assign(Object.create(this.fs) as ProjectFs, {
+          readText: (path: string) => {
+            const text = known(path);
+            return text === undefined ? this.fs.readText(path) : Promise.resolve(text);
+          },
+        })
+      : this.fs;
+    this.manuscript = await loadManuscript(reader, this.settings);
     const folders: string[] = [];
     this.files = await this.scan("", folders);
     this.folders = folders;
@@ -313,8 +323,41 @@ export class Project {
 
   /** What every note says and links to; read on first use after each reload. */
   index(): Promise<NoteIndex> {
-    this.indexing ??= NoteIndex.build(this.fs, this.files, this.settings.folders.manuscript);
+    this.indexing ??= this.buildIndex();
     return this.indexing;
+  }
+
+  /** The last index built, with the signature each file had then: what need not be read again. */
+  private indexed: { index: NoteIndex; signatures: Map<string, string> } | null = null;
+
+  /**
+   * Gives the text of a note as the last index read it, when the disk says it is the same
+   * file as then; null where the disk cannot tell or nothing was read yet. `seen` receives
+   * the signatures of now.
+   */
+  private async unchanged(seen?: (signatures: Map<string, string>) => void): Promise<((path: string) => string | undefined) | null> {
+    let signatures: Map<string, string> | null = null;
+    try {
+      signatures = (await this.fs.signatures?.([...SKIPPED])) ?? null;
+    } catch {
+      signatures = null;
+    }
+    if (!signatures) return null;
+    seen?.(signatures);
+    const previous = this.indexed;
+    if (!previous) return null;
+    return (path: string) => {
+      const now = signatures!.get(path);
+      return now !== undefined && now === previous.signatures.get(path) ? previous.index.notes.get(path)?.text : undefined;
+    };
+  }
+
+  private async buildIndex(): Promise<NoteIndex> {
+    let signatures: Map<string, string> | null = null;
+    const known = await this.unchanged((s) => (signatures = s));
+    const index = await NoteIndex.build(this.fs, this.files, this.settings.folders.manuscript, known ?? undefined);
+    this.indexed = signatures ? { index, signatures } : null;
+    return index;
   }
 
   async saveSettings(settings: NovelSettings): Promise<void> {

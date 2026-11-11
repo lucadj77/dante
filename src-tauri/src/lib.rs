@@ -257,6 +257,7 @@ pub fn run() {
             files::path_exists,
             files::remove_path,
             files::read_bytes,
+            files::file_signatures,
             files::open_with_system,
             files::import_files,
             files::watch_project,

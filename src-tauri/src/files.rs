@@ -2,6 +2,7 @@
 //! a path relative to it, always with "/" as separator; paths that would leave the
 //! project are refused.
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;
@@ -127,6 +128,33 @@ pub fn read_bytes(root: String, path: String) -> Result<tauri::ipc::Response, St
     Ok(tauri::ipc::Response::new(fs::read(resolve(&root, &path)?).map_err(err)?))
 }
 
+/// The size and modification time of every file of the project, by path: what tells a file
+/// read before from one that changed since, without reading it again. The folders named in
+/// `skip`, at the top of the project, are left out.
+#[tauri::command]
+pub fn file_signatures(root: String, skip: Vec<String>) -> Result<HashMap<String, String>, String> {
+    fn walk(dir: &Path, rel: &str, skip: &[String], out: &mut HashMap<String, String>) {
+        let Ok(entries) = fs::read_dir(dir) else { return };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if rel.is_empty() && skip.contains(&name) {
+                continue;
+            }
+            let path = if rel.is_empty() { name } else { format!("{rel}/{name}") };
+            let Ok(meta) = entry.metadata() else { continue };
+            if meta.is_dir() {
+                walk(&entry.path(), &path, skip, out);
+            } else {
+                let changed = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_nanos()).unwrap_or(0);
+                out.insert(path, format!("{}:{}", meta.len(), changed));
+            }
+        }
+    }
+    let mut out = HashMap::new();
+    walk(&PathBuf::from(&root), "", &skip, &mut out);
+    Ok(out)
+}
+
 /// Opens a project file with the application the system uses for its kind.
 #[tauri::command]
 pub fn open_with_system(root: String, path: String) -> Result<(), String> {
@@ -191,6 +219,19 @@ pub fn watch_project(app: AppHandle, state: State<WatcherState>, root: String) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn signs_files_by_size_and_time_and_skips_top_folders() {
+        let dir = std::env::temp_dir().join(format!("dante-signatures-{}", std::process::id()));
+        fs::create_dir_all(dir.join("Manuscript")).unwrap();
+        fs::create_dir_all(dir.join(".dante")).unwrap();
+        fs::write(dir.join("Manuscript/010 A.md"), "abc").unwrap();
+        fs::write(dir.join(".dante/x.json"), "{}").unwrap();
+        let found = file_signatures(dir.to_string_lossy().into_owned(), vec![".dante".into()]).unwrap();
+        assert_eq!(found.len(), 1);
+        assert!(found["Manuscript/010 A.md"].starts_with("3:"));
+        fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn refuses_paths_outside_the_project() {

@@ -22,6 +22,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Progetti grandi più pronti**: dopo una modifica fatta da fuori, uno spostamento o un'impostazione salvata, l'app rilegge solo i file cambiati invece di tutte le note.
 - **Impostazioni riordinate**: al posto delle due schede c'è un elenco di pagine a sinistra, diviso tra «Questo romanzo» e «Dante su questo computer», con una casella per cercare un'impostazione. I temi si scelgono da piccoli disegni della finestra, e struttura, colori dell'albero, pagina e testo dell'editor hanno un'anteprima a fianco.
 - **Guida più ordinata**: il capitolo sui libri game è diviso in gruppi (preparare, leggere, scrivere, numerare, controllare, esportare) e i dettagli per chi sviluppa Dante sono usciti dalla guida.
 - **Barre sopra il testo più compatte**: nel Manoscritto le barre dei comandi occupano meno righe. In una finestra stretta i pulsanti mostrano solo l'icona (il nome resta nel suggerimento), «Dividi in scena» e «Dividi in capitolo» diventano icone e la dimensione del testo passa nel menu **Altro**.

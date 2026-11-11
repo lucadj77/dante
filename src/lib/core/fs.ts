@@ -24,6 +24,12 @@ export interface ProjectFs {
   readBytes(path: string): Promise<Uint8Array>;
   /** Writes a file of any kind, creating missing parent folders. */
   writeBytes(path: string, content: Uint8Array): Promise<void>;
+  /**
+   * Where the system can tell it cheaply: something that changes whenever a file does (its
+   * size and modification time), for every file by path, leaving out the top folders in
+   * `skip`. A file with the same signature as before need not be read again.
+   */
+  signatures?(skip: string[]): Promise<Map<string, string>>;
 }
 
 /** In-memory filesystem used by tests and by the demo project. */

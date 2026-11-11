@@ -89,15 +89,36 @@ export class NoteIndex {
     private manuscript = "",
   ) {}
 
-  static async build(fs: ProjectFs, files: string[], manuscript = ""): Promise<NoteIndex> {
+  /**
+   * Reads every note. `known` gives the text of a note that has not changed since it was
+   * last read, so only the others are read from the disk, a few at a time.
+   */
+  static async build(fs: ProjectFs, files: string[], manuscript = "", known?: (path: string) => string | undefined): Promise<NoteIndex> {
     const index = new NoteIndex(files, manuscript);
+    const texts = new Map<string, string>();
+    const toRead: string[] = [];
     for (const path of files) {
       if (!isMarkdown(path)) continue;
-      try {
-        index.set(path, await fs.readText(path));
-      } catch {
-        // Gone since the scan: the next reload drops it.
-      }
+      const text = known?.(path);
+      if (text === undefined) toRead.push(path);
+      else texts.set(path, text);
+    }
+    const BATCH = 12;
+    for (let i = 0; i < toRead.length; i += BATCH) {
+      await Promise.all(
+        toRead.slice(i, i + BATCH).map(async (path) => {
+          try {
+            texts.set(path, await fs.readText(path));
+          } catch {
+            // Gone since the scan: the next reload drops it.
+          }
+        }),
+      );
+    }
+    // In the order of the files, whatever the order the readings ended in.
+    for (const path of files) {
+      const text = texts.get(path);
+      if (text !== undefined) index.set(path, text);
     }
     return index;
   }
