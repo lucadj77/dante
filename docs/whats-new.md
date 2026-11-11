@@ -6,9 +6,16 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Characters with spaces in tables, export and import**: tables and boards have a **Characters** field beside **Words**, and a new project's Scenes table starts with the unit the project measures in. The manuscript's title page and the summary after an export use the same unit. The import preview shows words and characters.
+- **Mac menu in the language of the interface**: the items of the menu bar (Check for Updates…, Edit, Window, Dante Help and the others) follow the language chosen in Dante.
+
 ### Changed
 
 ### Fixed
+
+- **The same number everywhere**: with revisions pending, the Properties panel, the tables and the writing log also counted the deleted text and the revision marks. They now count as the Statistics do: added text counts, deleted text does not.
+- **Interrupted moves**: if Dante closed while it was reordering scenes or chapters, some files kept a temporary name and no longer showed in the tree. Dante now puts the files back or finishes the move when the project is opened again, and says so in a notice.
+- **Guide**: the chapter on installing, the name of the setting "A single Enter starts a new paragraph" and the names of the Mac menu items are corrected.
 
 ## 1.2.0-beta.3 · November 10, 2026
 

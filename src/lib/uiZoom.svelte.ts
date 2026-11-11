@@ -24,3 +24,16 @@ export async function applyUiZoom(factor: number) {
     applied = null;
   }
 }
+
+/**
+ * The Mac menu bar in the language of the interface: its words are written by the app's shell,
+ * which takes them from here at start and whenever the language changes. Nothing to do elsewhere.
+ */
+export async function applyMenuLabels(labels: Record<string, string>) {
+  if (!inTauri()) return;
+  try {
+    await invoke<boolean>("set_menu_labels", { labels });
+  } catch {
+    // An older shell without the command keeps its English menu.
+  }
+}

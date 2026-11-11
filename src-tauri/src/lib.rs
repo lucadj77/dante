@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{App, AppHandle, Emitter, Manager, State, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewWindowBuilder};
 
 /// Folder name that makes a copy of Dante portable: when it sits next to the program,
 /// settings and recent projects are kept there instead of in the user's profile, so the
@@ -113,72 +113,77 @@ fn updates_supported() -> bool {
     !cfg!(debug_assertions) && portable_data_dir().is_none()
 }
 
+/// The words of the Mac menu bar. The page sends them in the language of the interface, at
+/// start and when that language changes; until then, and for a word it does not send, English.
+type MenuLabels = std::collections::HashMap<String, String>;
+
+fn label<'a>(labels: &'a MenuLabels, key: &str, english: &'a str) -> &'a str {
+    labels.get(key).map(String::as_str).filter(|text| !text.is_empty()).unwrap_or(english)
+}
+
 /// The Mac menu bar, as Tauri makes it but for Cmd+W: the usual "Close Window" would leave
 /// the app without a window, so the shortcut closes the pane beside the text instead, or
 /// the project when no pane has the cursor (the page receives it as the "close-pane" event). Elsewhere there is no menu bar and
 /// the page sees Ctrl+W itself.
-fn mac_menu(app: &App) -> tauri::Result<()> {
-    let h = app.handle();
-    let close_pane = MenuItem::with_id(h, "close-pane", "Close", true, Some("CmdOrCtrl+W"))?;
+fn mac_menu(h: &AppHandle, labels: &MenuLabels) -> tauri::Result<Menu<tauri::Wry>> {
+    let l = |key: &str, english: &'static str| label(labels, key, english).to_string();
+    let close_pane = MenuItem::with_id(h, "close-pane", l("close", "Close"), true, Some("CmdOrCtrl+W"))?;
     let app_menu = Submenu::with_items(
         h,
         "Dante",
         true,
         &[
-            &PredefinedMenuItem::about(h, None, None)?,
-            &MenuItem::with_id(h, "check-updates", "Check for Updates…", true, None::<&str>)?,
+            &PredefinedMenuItem::about(h, Some(&l("about", "About Dante")), None)?,
+            &MenuItem::with_id(h, "check-updates", l("checkUpdates", "Check for Updates…"), true, None::<&str>)?,
             &PredefinedMenuItem::separator(h)?,
-            &PredefinedMenuItem::services(h, None)?,
+            &PredefinedMenuItem::services(h, Some(&l("services", "Services")))?,
             &PredefinedMenuItem::separator(h)?,
-            &PredefinedMenuItem::hide(h, None)?,
-            &PredefinedMenuItem::hide_others(h, None)?,
-            &PredefinedMenuItem::show_all(h, None)?,
+            &PredefinedMenuItem::hide(h, Some(&l("hide", "Hide Dante")))?,
+            &PredefinedMenuItem::hide_others(h, Some(&l("hideOthers", "Hide Others")))?,
+            &PredefinedMenuItem::show_all(h, Some(&l("showAll", "Show All")))?,
             &PredefinedMenuItem::separator(h)?,
             // Not the predefined Quit, which ends Dante before the page saves.
-            &MenuItem::with_id(h, "quit", "Quit Dante", true, Some("CmdOrCtrl+Q"))?,
+            &MenuItem::with_id(h, "quit", l("quit", "Quit Dante"), true, Some("CmdOrCtrl+Q"))?,
         ],
     )?;
     let edit = Submenu::with_items(
         h,
-        "Edit",
+        l("edit", "Edit"),
         true,
         &[
-            &PredefinedMenuItem::undo(h, None)?,
-            &PredefinedMenuItem::redo(h, None)?,
+            &PredefinedMenuItem::undo(h, Some(&l("undo", "Undo")))?,
+            &PredefinedMenuItem::redo(h, Some(&l("redo", "Redo")))?,
             &PredefinedMenuItem::separator(h)?,
-            &PredefinedMenuItem::cut(h, None)?,
-            &PredefinedMenuItem::copy(h, None)?,
-            &PredefinedMenuItem::paste(h, None)?,
-            &PredefinedMenuItem::select_all(h, None)?,
+            &PredefinedMenuItem::cut(h, Some(&l("cut", "Cut")))?,
+            &PredefinedMenuItem::copy(h, Some(&l("copy", "Copy")))?,
+            &PredefinedMenuItem::paste(h, Some(&l("paste", "Paste")))?,
+            &PredefinedMenuItem::select_all(h, Some(&l("selectAll", "Select All")))?,
         ],
     )?;
-    let view = Submenu::with_items(h, "View", true, &[&PredefinedMenuItem::fullscreen(h, None)?])?;
+    let view = Submenu::with_items(h, l("view", "View"), true, &[&PredefinedMenuItem::fullscreen(h, Some(&l("fullscreen", "Enter Full Screen")))?])?;
     let window = Submenu::with_items(
         h,
-        "Window",
+        l("window", "Window"),
         true,
         &[
-            &PredefinedMenuItem::minimize(h, None)?,
-            &PredefinedMenuItem::maximize(h, None)?,
+            &PredefinedMenuItem::minimize(h, Some(&l("minimize", "Minimize")))?,
+            &PredefinedMenuItem::maximize(h, Some(&l("zoom", "Zoom")))?,
             &PredefinedMenuItem::separator(h)?,
             &close_pane,
         ],
     )?;
     // The page opens its own help window, which reads the guide without a connection.
-    let help = Submenu::with_items(h, "Help", true, &[&MenuItem::with_id(h, "open-help", "Dante Help", true, Some("CmdOrCtrl+?"))?])?;
-    app.set_menu(Menu::with_items(h, &[&app_menu, &edit, &view, &window, &help])?)?;
-    app.on_menu_event(|app, event| {
-        if event.id() == "close-pane" {
-            let _ = app.emit("close-pane", ());
-        } else if event.id() == "check-updates" {
-            let _ = app.emit("check-updates", ());
-        } else if event.id() == "open-help" {
-            let _ = app.emit("open-help", ());
-        } else if event.id() == "quit" {
-            quit_requested(app);
-        }
-    });
-    Ok(())
+    let help = Submenu::with_items(h, l("help", "Help"), true, &[&MenuItem::with_id(h, "open-help", l("openHelp", "Dante Help"), true, Some("CmdOrCtrl+?"))?])?;
+    Menu::with_items(h, &[&app_menu, &edit, &view, &window, &help])
+}
+
+/// Writes the Mac menu bar again with the words the page sends. False where there is no menu bar.
+#[tauri::command]
+fn set_menu_labels(app: AppHandle, labels: MenuLabels) -> bool {
+    if !cfg!(target_os = "macos") {
+        return false;
+    }
+    mac_menu(&app, &labels).and_then(|menu| app.set_menu(menu)).is_ok()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -220,7 +225,19 @@ pub fn run() {
         // the web view keeps its data.
         .setup(|app| {
             if cfg!(target_os = "macos") {
-                mac_menu(app)?;
+                let menu = mac_menu(app.handle(), &MenuLabels::new())?;
+                app.set_menu(menu)?;
+                app.on_menu_event(|app, event| {
+                    if event.id() == "close-pane" {
+                        let _ = app.emit("close-pane", ());
+                    } else if event.id() == "check-updates" {
+                        let _ = app.emit("check-updates", ());
+                    } else if event.id() == "open-help" {
+                        let _ = app.emit("open-help", ());
+                    } else if event.id() == "quit" {
+                        quit_requested(app);
+                    }
+                });
             }
             let config = app.config().app.windows.first().cloned().ok_or("no window configured")?;
             let mut window = WebviewWindowBuilder::from_config(app.handle(), &config)?;
@@ -252,6 +269,7 @@ pub fn run() {
             opened_project,
             updates_supported,
             set_ui_zoom,
+            set_menu_labels,
             quit,
             quit_answered,
         ])

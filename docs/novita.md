@@ -6,9 +6,16 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Caratteri spazi inclusi in tabelle, esportazione e importazione**: nelle tabelle e bacheche c'è il campo **Caratteri** accanto a **Parole**, e la tabella Scene di un progetto nuovo parte con la misura del progetto. Il frontespizio del manoscritto e il riepilogo dopo l'esportazione usano la stessa misura. L'anteprima dell'importazione mostra parole e caratteri.
+- **Menu del Mac nella lingua dell'interfaccia**: le voci della barra dei menu (Cerca aggiornamenti…, Modifica, Finestra, Aiuto di Dante e le altre) seguono la lingua scelta in Dante.
+
 ### Cambiato
 
 ### Corretto
+
+- **Lo stesso numero dappertutto**: con revisioni in sospeso il pannello Proprietà, le tabelle e il registro di scrittura contavano anche il testo cancellato e i segni delle revisioni. Ora contano come le Statistiche: il testo aggiunto vale, quello cancellato no.
+- **Spostamenti interrotti**: se Dante si chiudeva mentre riordinava scene o capitoli, alcuni file restavano con un nome provvisorio e non comparivano più nell'albero. Ora alla riapertura Dante rimette i file dov'erano o porta a termine lo spostamento, e lo dice con un avviso.
+- **Guida**: corretti il capitolo sull'installazione, il nome dell'impostazione «Invio singolo per iniziare un nuovo paragrafo» e i nomi delle voci di menu del Mac.
 
 ## 1.2.0-beta.3 · 10 novembre 2026
 

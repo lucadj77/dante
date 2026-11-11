@@ -1,6 +1,6 @@
 <script lang="ts">
   import { projectKey } from "$lib/platform";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import type { Project } from "$lib/core/project";
   import { app, t, zoom } from "$lib/state.svelte";
   import { TauriFs } from "$lib/tauriFs";
@@ -60,7 +60,7 @@
 
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
   /** A reordering cut short was settled when the project opened: said once, until dismissed. */
-  let recovered = $state(project.recovered);
+  let recovered = $state(untrack(() => project.recovered));
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
   type Section = "manuscript" | "gamebook" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
