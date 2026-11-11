@@ -24,6 +24,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Guide reordered by task**: the chapters now follow what you do (starting, writing, organising, revising, publishing, safety and updates) and no longer the order in which features arrived; the "chapter N" references are updated. The chapters on the browser, help, look and gamebooks now have pictures.
 - **The same icons on every computer**: folders, files, warnings, gamebook padlocks and the comment bubble are now line drawings like the other icons, in place of emoji that changed between Mac and Windows. Emoji stay for Bible types and boxes, where you choose them.
 - **Finishing touches**: the Synopsis field looks like the other fields, board column names start with a capital and, if you asked the system to reduce motion, Dante turns its animations off.
 - **Large projects respond sooner**: after a change made from outside, a move or a saved setting, the app reads again only the files that changed instead of every note.
@@ -235,7 +236,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## 0.1.42 · October 21, 2026
 
-- **Dante in the browser**: Dante can also be used from Chrome, Edge or Brave, with nothing to install, at https://lucadj77.github.io/dante/. It works on the files of the novel's folder, works offline after the first visit and never sends your writing online. No PDF yet, and a few other limits described in chapter 18 of the guide.
+- **Dante in the browser**: Dante can also be used from Chrome, Edge or Brave, with nothing to install, at https://lucadj77.github.io/dante/. It works on the files of the novel's folder, works offline after the first visit and never sends your writing online. No PDF yet, and a few other limits described in chapter 21 of the guide.
 - **Importing from Word with a preview**: before importing you see the document next to the result and can say line by line what it is (part, chapter or scene title, scene break, text, leave out), for all similar lines at once too. Sections divided only by a number on its own line ("1", "2", "3"…) become chapters instead of scenes holding just the number. With the **Import** button in the manuscript you can add a Word file to a project already under way, such as a novel split into several files.
 - **Visible update check**: at start Dante says for a few seconds that it is up to date, or that it could not check, instead of staying silent. If it stays open it checks again every six hours, and on the Mac there is **Dante > Check for Updates…**.
 - **Dialogue in exports**: lines of dialogue typed with dashes or hyphens at the start of the paragraph take the marks of the chosen style (— Come in — she said becomes “Come in” she said). New projects leave dialogue as typed until you pick a style in Export > Typography.

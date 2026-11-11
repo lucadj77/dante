@@ -24,6 +24,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Guida riordinata per compito**: i capitoli seguono ora quello che si fa (iniziare, scrivere, organizzare, rivedere, pubblicare, sicurezza e aggiornamenti) e non più l'ordine in cui le funzioni sono arrivate; i rimandi «capitolo N» sono aggiornati. I capitoli su browser, aiuto, aspetto e libri game hanno ora le immagini.
 - **Icone uguali su ogni computer**: cartelle, file, avvisi, lucchetti dei libri game e il fumetto dei commenti sono ora disegnati a tratto come il resto delle icone, al posto delle emoji che cambiavano tra Mac e Windows. Le emoji restano per i tipi della Bibbia e i box, dove le scegli tu.
 - **Rifiniture**: il campo Sinossi ha lo stesso aspetto degli altri campi, i nomi delle colonne in bacheca hanno l'iniziale maiuscola e, se nel sistema hai chiesto di ridurre le animazioni, Dante le spegne.
 - **Progetti grandi più pronti**: dopo una modifica fatta da fuori, uno spostamento o un'impostazione salvata, l'app rilegge solo i file cambiati invece di tutte le note.
@@ -235,7 +236,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## 0.1.42 · 21 ottobre 2026
 
-- **Dante nel browser**: Dante si può usare anche da Chrome, Edge o Brave, senza installare nulla, all'indirizzo https://lucadj77.github.io/dante/. Lavora sui file della cartella del romanzo, funziona senza connessione dopo la prima apertura e non manda online i tuoi testi. Niente PDF, e qualche altro limite descritto nel capitolo 18 della guida.
+- **Dante nel browser**: Dante si può usare anche da Chrome, Edge o Brave, senza installare nulla, all'indirizzo https://lucadj77.github.io/dante/. Lavora sui file della cartella del romanzo, funziona senza connessione dopo la prima apertura e non manda online i tuoi testi. Niente PDF, e qualche altro limite descritto nel capitolo 21 della guida.
 - **Importare da Word con anteprima**: prima di importare vedi il documento accanto al risultato e puoi dire riga per riga cos'è (titolo di parte, capitolo o scena, separatore, testo, da omettere), anche per tutte le righe simili in un colpo. Le sezioni divise solo da un numero su una riga ("1", "2", "3"…) diventano capitoli invece di scene con il solo numero. Con il pulsante **Importa** nel manoscritto puoi aggiungere un file Word a un progetto già iniziato, per esempio un romanzo diviso in più file.
 - **Controllo degli aggiornamenti visibile**: all'avvio Dante dice per qualche secondo che è aggiornato, o che non è riuscito a controllare, invece di restare in silenzio. Se resta aperto controlla di nuovo ogni sei ore, e sul Mac c'è la voce **Dante > Check for Updates…**.
 - **Dialoghi in esportazione**: le battute scritte con lineette o trattini a inizio paragrafo prendono le virgolette dello stile scelto (— Vieni — disse diventa «Vieni» disse). I nuovi progetti lasciano i dialoghi come sono scritti, finché non scegli uno stile in Esportazione > Tipografia.

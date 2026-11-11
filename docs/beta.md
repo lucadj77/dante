@@ -10,7 +10,7 @@ Questa è una versione di prova: funziona, ma può contenere errori.
 
 - **Lavora su una copia.** Se vuoi provare Dante su un romanzo a cui tieni, duplica prima la cartella (o il file Word da importare) e apri la copia. Dante salva da solo mentre scrivi, quindi un errore del programma può finire subito nei file.
 - Per fare pratica senza rischi c'è il **progetto di esempio**, nella schermata iniziale.
-- Le istantanee (capitolo 7 della guida) conservano versioni precedenti delle scene, ma non sostituiscono una copia di sicurezza.
+- Le istantanee (capitolo 15 della guida) conservano versioni precedenti delle scene, ma non sostituiscono una copia di sicurezza.
 
 ## Scaricare Dante
 
@@ -59,7 +59,7 @@ La versione portatile non si installa: estrai lo zip dove vuoi (anche su una chi
 
 ## Senza installare
 
-Se non puoi installare Dante (per esempio su un Mac con Catalina), aprilo con Chrome, Edge o Brave all'indirizzo https://dante.lucadj.eu/app/ (in https://dante.lucadj.eu/beta/ c'è l'ultima versione di prova). È lo stesso programma, senza PDF e con alcuni limiti descritti nel capitolo 18 della [guida](guida.md#18-dante-nel-browser).
+Se non puoi installare Dante (per esempio su un Mac con Catalina), aprilo con Chrome, Edge o Brave all'indirizzo https://dante.lucadj.eu/app/ (in https://dante.lucadj.eu/beta/ c'è l'ultima versione di prova). È lo stesso programma, senza PDF e con alcuni limiti descritti nel capitolo 21 della [guida](guida.md#18-dante-nel-browser).
 
 ## Primo avvio
 

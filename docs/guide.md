@@ -2,7 +2,7 @@
 
 Updated on 11 November 2026.
 
-Every chapter of the guide has two parts. **How to** explains in a few steps how to use a feature, without technical terms. **In depth** explains what happens in the files of the novel, for those who want to understand more or to work outside Dante too. To begin, the first parts of chapters 1-5 are enough, or the page [First steps](first-steps.md), which also opens inside Dante from the **Help** icon (chapter 20).
+Every chapter of the guide has two parts. **How to** explains in a few steps how to use a feature, without technical terms. **In depth** explains what happens in the files of the novel, for those who want to understand more or to work outside Dante too. To begin, the first parts of chapters 1-6 are enough, or the page [First steps](first-steps.md), which also opens inside Dante from the **Help** icon (chapter 5).
 
 The pictures and the examples come from the **sample project** of the Italian interface: the first chapters of *I promessi sposi* (*The Betrothed*), with the cards of characters and places, some views, a comment and a revision by a co-author, Anna. For this reason the pictures show the commands in Italian. With the interface in English, **Try the sample project** on the start screen opens the first chapters of *Pride and Prejudice*, built the same way: open it and try each step as you read, with a scene of your choice where the guide names one. The changes are not saved anywhere. Shortcuts are written first as on a Mac and then as on Windows and Linux, for example Cmd+F / Ctrl+F; those that are the same everywhere, such as Alt+Enter, are written once.
 
@@ -12,24 +12,24 @@ The pictures and the examples come from the **sample project** of the Italian in
 2. [Installing and first launch](#2-installing-and-first-launch)
 3. [Importing a novel from Word or Scrivener](#3-importing-a-novel-from-word-or-scrivener)
 4. [The workspace](#4-the-workspace)
-5. [Writing](#5-writing)
-6. [Organising the manuscript](#6-organising-the-manuscript)
-7. [Snapshots](#7-snapshots)
-8. [Properties, title and synopsis](#8-properties-title-and-synopsis)
-9. [Story Bible and Notes](#9-story-bible-and-notes)
-10. [Writing with other people](#10-writing-with-other-people)
-11. [Tables and boards](#11-tables-and-boards)
-12. [Statistics and goals](#12-statistics-and-goals)
-13. [Exporting to Word, PDF and EPUB](#13-exporting-to-word-pdf-and-epub)
-14. [Opening the project in Obsidian](#14-opening-the-project-in-obsidian)
-15. [Keyboard shortcuts](#15-keyboard-shortcuts)
-16. [Side-by-side panels](#16-side-by-side-panels)
-17. [Updates](#17-updates)
-18. [Dante in the browser](#18-dante-in-the-browser)
+5. [Help inside Dante](#5-help-inside-dante)
+6. [Writing](#6-writing)
+7. [Side-by-side panels](#7-side-by-side-panels)
+8. [Appearance and spelling](#8-appearance-and-spelling)
+9. [Keyboard shortcuts](#9-keyboard-shortcuts)
+10. [Organising the manuscript](#10-organising-the-manuscript)
+11. [Properties, title and synopsis](#11-properties-title-and-synopsis)
+12. [Story Bible and Notes](#12-story-bible-and-notes)
+13. [Tables and boards](#13-tables-and-boards)
+14. [Statistics and goals](#14-statistics-and-goals)
+15. [Snapshots](#15-snapshots)
+16. [Writing with other people](#16-writing-with-other-people)
+17. [Exporting to Word, PDF and EPUB](#17-exporting-to-word-pdf-and-epub)
+18. [Gamebooks](#18-gamebooks)
 19. [Backup copies](#19-backup-copies)
-20. [Help inside Dante](#20-help-inside-dante)
-21. [Appearance and spelling](#21-appearance-and-spelling)
-22. [Gamebooks](#22-gamebooks)
+20. [Updates](#20-updates)
+21. [Dante in the browser](#21-dante-in-the-browser)
+22. [Opening the project in Obsidian](#22-opening-the-project-in-obsidian)
 
 ## 1. What Dante is
 
@@ -55,7 +55,7 @@ For this reason the same project also opens in Obsidian or in any text editor, s
 
 ### How to
 
-1. Install Dante (see In depth for your system), or open it in the browser without installing anything (chapter 18). Those who try Dante for the first time find the steps one by one in the page [Trying Dante](beta.md) (in Italian).
+1. Install Dante (see In depth for your system), or open it in the browser without installing anything (chapter 21). Those who try Dante for the first time find the steps one by one in the page [Trying Dante](beta.md) (in Italian).
 2. When it opens, choose one of these ways:
    - **New project**: write the title, choose where to save it and press Create. Dante creates a folder named after the novel.
    - **Open folder…**: opens an existing project, also one created on another computer.
@@ -64,13 +64,13 @@ For this reason the same project also opens in Obsidian or in any text editor, s
 
    ![The start screen, with the buttons at the top and the recent projects below](img/benvenuto.png)
 
-   With **New project** this form appears: title, **subtitle** (if there is one), authors, language and cover. The cover is a simple drawing that Dante prepares with the title and the authors: choose a shape and some colours, leave it as it is, or press **Use a picture of yours…** and choose a photo or a drawing from the computer. Everything can be changed later in **Settings** (chapter 13).
+   With **New project** this form appears: title, **subtitle** (if there is one), authors, language and cover. The cover is a simple drawing that Dante prepares with the title and the authors: choose a shape and some colours, leave it as it is, or press **Use a picture of yours…** and choose a photo or a drawing from the computer. Everything can be changed later in **Settings** (chapter 17).
 
    ![The form for a new project: title, authors, language, cover and folder](img/nuovo-progetto.png)
 3. Open **Settings** (the gear in the bar on the left). On the left is the list of pages, in two groups: **This novel**, with the choices saved in the project, and **Dante on this computer**, with those that hold for every project; the box **Search the settings** at the top finds the right page from a word. In the page **You** of the second group write **your name**: it signs comments and revisions and counts the words you write each day. There is no button to save: every change saves itself after a moment.
 4. In the tab **This novel** check **title**, **author** and **language of the novel** (Italian, English, Spanish or French, from a menu): the language decides, for example, the hyphenation and the names of the folders.
 
-A new project already has the property **status** for the scenes (idea, draft, revised, done), the **point of view** linked to the characters and two views ready in the section **Tables and boards**: a board of the scenes by status and a table of the scenes (chapter 11). The first scene, empty, shows in grey three lines on how to begin, which vanish as soon as you write.
+A new project already has the property **status** for the scenes (idea, draft, revised, done), the **point of view** linked to the characters and two views ready in the section **Tables and boards**: a board of the scenes by status and a table of the scenes (chapter 13). The first scene, empty, shows in grey three lines on how to begin, which vanish as soon as you write.
 
 The projects opened recently stay listed on the start screen. To go back there, use **Close project** in the bar on the left, or Cmd+W / Ctrl+W with the cursor in the text. Dante remembers the size and the position of the window and reopens it as it was.
 
@@ -79,9 +79,9 @@ Every project also holds a file with the title of the novel and the extension **
 ### In depth
 
 - **Where to download it**: the installer and the portable copy for Windows, the packages for Linux and the .dmg for Mac are in the Download section of [dante.lucadj.eu](https://dante.lucadj.eu), which leads to the latest published version. The files have the version number in their name, for example `Dante-setup-1.2.0.exe`.
-- **macOS**: there are two files: `Dante-<version>-mac-apple-silicon.dmg` for Macs with an M1 chip or later (from 2020) and `Dante-<version>-mac-intel.dmg` for earlier ones. To know which one you have, open the Apple menu > About This Mac: if you see "Chip Apple" choose apple-silicon, if you see "Intel" choose intel. macOS 10.15 (Catalina) or later is needed; on Catalina first install the Safari updates up to 15.6 (System Preferences > Software Update). The engine that Catalina gives to apps is still that of Safari 13, too old for Dante: on Catalina Dante restarts by itself when it opens, to use the engine of the updated Safari (a solution still on trial). If Dante cannot start, in place of the empty window it shows a report to copy and send to those who look after Dante, with the versions of macOS and Safari added at the end; the same report can be copied at any time from Settings > Updates and support > Report a problem. Open the .dmg and drag Dante into the Applications folder. The app is not signed by Apple, so the first time macOS blocks it: close the warning, then go to System Settings > Privacy & Security and press **Open Anyway** beside the message about Dante. On versions of macOS before Sequoia a right click on the app > Open is enough. It is needed once for each .dmg you download; later versions arrive with the automatic update (chapter 17). With Dante in Applications the double click on .dante files works.
+- **macOS**: there are two files: `Dante-<version>-mac-apple-silicon.dmg` for Macs with an M1 chip or later (from 2020) and `Dante-<version>-mac-intel.dmg` for earlier ones. To know which one you have, open the Apple menu > About This Mac: if you see "Chip Apple" choose apple-silicon, if you see "Intel" choose intel. macOS 10.15 (Catalina) or later is needed; on Catalina first install the Safari updates up to 15.6 (System Preferences > Software Update). The engine that Catalina gives to apps is still that of Safari 13, too old for Dante: on Catalina Dante restarts by itself when it opens, to use the engine of the updated Safari (a solution still on trial). If Dante cannot start, in place of the empty window it shows a report to copy and send to those who look after Dante, with the versions of macOS and Safari added at the end; the same report can be copied at any time from Settings > Updates and support > Report a problem. Open the .dmg and drag Dante into the Applications folder. The app is not signed by Apple, so the first time macOS blocks it: close the warning, then go to System Settings > Privacy & Security and press **Open Anyway** beside the message about Dante. On versions of macOS before Sequoia a right click on the app > Open is enough. It is needed once for each .dmg you download; later versions arrive with the automatic update (chapter 20). With Dante in Applications the double click on .dante files works.
 - The settings are in two groups. Those of the **novel** (title, structure, numbering, types, goals, export) are saved in `dante.yaml` inside the project and travel with it. Those of the **application** (interface language, theme, interface size, look of the text in the editor, spell checker, your name) stay on the computer and hold for every project.
-- A new project is born with its main folders ready, named in the language of the novel (chapter 6).
+- A new project is born with its main folders ready, named in the language of the novel (chapter 10).
 - **Launch file**: Dante writes `Title.dante` in the main folder when it creates or opens a project that has none (it recognises it by any name with that extension, so a renamed file is not duplicated). Its content is only a note: what counts is the folder it is in. The installers register the extension: document type on the Mac, registry on Windows, MIME type `application/x-dante-project` with the .deb and .rpm packages on Linux. With the portable copy and the AppImage the association is missing, but *Open with* on the file works. A second copy of Dante started by the double click hands the file to the one already open and closes. Obsidian does not show the file, because it is not a format it knows.
 
 ## 3. Importing a novel from Word or Scrivener
@@ -90,7 +90,7 @@ Every project also holds a file with the title of the novel and the extension **
 
 1. On the start screen choose **Import from another format…**, then **Word, OpenDocument, RTF, Markdown or text**, and select the file (`.docx`, `.odt`, `.rtf`, `.md` or `.txt`).
 2. The preview opens: at the top how many parts, chapters, scenes, words and characters with spaces Dante found; on the left the document as Dante reads it, with a label on the lines that become a part, a chapter or a scene and on the points where a new scene begins; on the right the result, chapter by chapter. A click on a chapter or a scene on the right shows on the left where it begins.
-3. At the top, beside each heading level of the document, choose what it becomes: parts, chapters, titled scenes, or headings left in the text. Beside **Empty lines** choose whether one empty line (or two in a row) separates the scenes. If the scenes of the document are separated by `***` there is nothing to change; if Dante splits into scenes paragraphs that belong together, choose **Do not start scenes** (the empty lines vanish) or **Stay as blank lines, no new scenes** (each empty line between two paragraphs stays a blank line of the text, chapter 5).
+3. At the top, beside each heading level of the document, choose what it becomes: parts, chapters, titled scenes, or headings left in the text. Beside **Empty lines** choose whether one empty line (or two in a row) separates the scenes. If the scenes of the document are separated by `***` there is nothing to change; if Dante splits into scenes paragraphs that belong together, choose **Do not start scenes** (the empty lines vanish) or **Stay as blank lines, no new scenes** (each empty line between two paragraphs stays a blank line of the text, chapter 6).
 4. If a line is read wrongly, click it and choose what it is: **Part title**, **Chapter title**, **Scene title**, **Scene break**, **Text** or **Leave out**. With **Also the lines like it** ticked the choice holds for all the lines of the same kind: for example all those with only a number, or all those that begin with "Chapter" followed by a number. **As Dante reads it** undoes the choice. The lines you chose yourself have a dot beside the label. An empty line too, which in the preview is a thin strip between two paragraphs, can be chosen with a click: marked as **Text** it stays a blank line of the text, without starting a scene.
 5. Press **Continue**, choose title, authors and where to create the project, and press **Import**. **Back to the preview** reopens the preview with the choices made.
 
@@ -120,8 +120,8 @@ The rest of the project enters Dante too. On the screen of the new project, unde
 - When empty lines separate the scenes, an empty line that would leave a scene of one or two paragraphs (before or after it) does not start a scene: it stays a blank line of the text, because it is almost always just a pause. If it really is a scene, click the empty line in the preview and choose **Scene break**.
 - Inside a chapter, a line with symbols only (`***`, `* * *`, `#`, `§` and the like) starts a new scene.
 - The empty lines inside one Word paragraph (two line breaks in a row) do not split it: the paragraph stays one, also when it is centred.
-- "Chapter 3: Home" becomes a chapter with the title "Home", because Dante adds the numbers (chapter 6).
-- Bold, italic, strikethrough and highlight are kept. Word comments become Dante comments and tracked changes become revisions to accept or reject, signed with the name of who made them (chapter 10). Word's footnotes and endnotes become footnotes (`^[text]`).
+- "Chapter 3: Home" becomes a chapter with the title "Home", because Dante adds the numbers (chapter 10).
+- Bold, italic, strikethrough and highlight are kept. Word comments become Dante comments and tracked changes become revisions to accept or reject, signed with the name of who made them (chapter 16). Word's footnotes and endnotes become footnotes (`^[text]`).
 - The Title style and the properties of the document give the title and the author of the novel. **Other formats**: an OpenDocument file (`.odt`, that of LibreOffice) is read like a Word file, with headings, bold, italic, strikethrough, highlight, centred or right-aligned paragraphs and footnotes, but without comments and tracked changes. An RTF file gives the paragraphs with their formatting, without headings: lines such as "Chapter 3" are recognised all the same. A Markdown file gives its headings (`#`, `##`…) and the text as written; a text file one line per paragraph. **Import** in the manuscript accepts all these formats too.
 - **Scrivener**: Dante reads the index of the project in the `.scrivx` file and the text of each document from its RTF file (`Files/Data/<id>/content.rtf` in Scrivener 3, `Files/Docs/<id>.rtf` in earlier versions), with bold, italic, strikethrough, highlight and centred or right-aligned paragraphs. The synopses come from `synopsis.txt` and end up in the property `synopsis`. The items outside the Draft (except the Trash) become `.md` files, grouped by the item at the top of the binder. Each group goes where you choose: `Story Bible/<type>/`, `Research/<group>/` or `Laboratory/<group>/`. Scrivener's Research goes straight into `Research/`. The proposed choice is the Story Bible when the name of the group is that of a type, or of its folder, in one of Dante's languages; PDFs and images are copied with their extension (`content.<ext>`). If a name is already in use, the new file takes a number. Scrivener's comments and footnotes are not imported. Each item of the Draft becomes a heading, one level lower at each folder: with more than three levels the extra ones stay headings in the text.
 
@@ -138,7 +138,7 @@ The window has four areas, from left to right:
 3. **The editor** in the middle, where you write.
 4. **The panel on the right**, with three tabs: **Properties** (data of the scene or note, snapshots, statistics), **Links** (the notes that point to this one and the other way round) and **Comments**.
 
-At the top, beside the name of the section, the warnings appear (in the picture, **1 conflict copy**, chapter 10); on the right is the title of the novel.
+At the top, beside the name of the section, the warnings appear (in the picture, **1 conflict copy**, chapter 16); on the right is the title of the novel.
 
 The two side panels hide and reopen from the buttons at the top; they widen by dragging their edge, and a double click on the edge brings them back to the normal width. Cmd+ and Cmd− (Ctrl+ and Ctrl− on Windows and Linux) enlarge and reduce the text, Cmd+0 / Ctrl+0 brings it back as before.
 
@@ -146,13 +146,35 @@ The two side panels hide and reopen from the buttons at the top; they widen by d
 
 Each section matches a folder of the project: Manuscript, Story Bible, Views for **Tables and boards** and, for **Notes**, the two folders Research and Laboratory, which stay separate on disk and in Obsidian; Statistics, Export and Settings read and write `dante.yaml` and the data in `.dante/`. The state of the tree (branches open or closed) is remembered by the computer, not by the project.
 
-## 5. Writing
+## 5. Help inside Dante
+
+### How to
+
+The **Help** icon (the question mark in the bar on the left, above the trash) opens a window with three tabs:
+
+- **First steps**: seven steps to begin, from creating the project to the export.
+- **Full guide**: this guide, with the list of the chapters on the left. A click on a reference ("chapter 15") leads to the chapter.
+
+  ![The Help window on the Full guide tab, with the chapters on the left](img/aiuto.png)
+
+- **What's new**: what changes in each version.
+
+It can be read without a connection too, because it is inside Dante. From the start screen you get there with **First steps and guide**; on the Mac also from the menu **Help** > **Dante Help** (Cmd+?). Esc closes the window.
+
+### In depth
+
+- The pages travel inside the app: the guide inside Dante is that of the installed version.
+- With the interface in Italian the tabs show the Italian pages; with any other language, the English ones.
+- The links to other pages of the repository (for example [Trying Dante](beta.md)) open on GitHub in the browser.
+- **Error messages**: when something fails (a file that cannot be written, a full disk, a folder that vanished, no connection) Dante says so with a simple sentence. The technical message stays hidden behind **Details**, to copy if you report the problem.
+
+## 6. Writing
 
 ### How to
 
 - **What to see**: at the top left choose whether to see only the selected **Scene**, the whole **Chapter**, the whole **Part** or the whole **Novel**, one scene after the other. The arrows move from one scene to the next.
-- **The bar at the top**: after the choice of what to see come the writing modes (Focus, Typewriter, Line, Full screen), the zoom and the **More** menu. **More** turns on and off the **formatting bar**, the **cards of the scene** beside the text (chapter 16), the **revisions** (chapter 10) and the **text as in the file**, with the Markdown symbols. When the revisions or the text as in the file are on, a label in the bar reminds you; a click turns it off. In a narrow window the labels of the buttons hide and the icons stay: the name shows when the mouse passes over them.
-- **Formatting**: select the text and use the bar that appears above the selection (bold, italic, highlight, comment…), or the shortcuts (chapter 15). The fixed **formatting bar** is shown or hidden from the **More** menu. For a **footnote** press the **x¹** button of the fixed bar and write the note between the brackets, right where its number goes: `^[text of the note]`. In the text it stays small and grey; in the exported book it becomes a number with the note at the foot of the page.
+- **The bar at the top**: after the choice of what to see come the writing modes (Focus, Typewriter, Line, Full screen), the zoom and the **More** menu. **More** turns on and off the **formatting bar**, the **cards of the scene** beside the text (chapter 7), the **revisions** (chapter 16) and the **text as in the file**, with the Markdown symbols. When the revisions or the text as in the file are on, a label in the bar reminds you; a click turns it off. In a narrow window the labels of the buttons hide and the icons stay: the name shows when the mouse passes over them.
+- **Formatting**: select the text and use the bar that appears above the selection (bold, italic, highlight, comment…), or the shortcuts (chapter 9). The fixed **formatting bar** is shown or hidden from the **More** menu. For a **footnote** press the **x¹** button of the fixed bar and write the note between the brackets, right where its number goes: `^[text of the note]`. In the text it stays small and grey; in the exported book it becomes a number with the note at the foot of the page.
 
   ![A selected line in the scene Perpetua, with the small formatting bar above it](img/barra-selezione.png)
 
@@ -164,7 +186,7 @@ Each section matches a folder of the project: Manuscript, Story Bible, Views for
 - **Blank lines**: in Markdown two or more empty lines between two paragraphs count as one, so an extra empty line in the file vanishes in the export and in Obsidian (which is why Dante does not show it). To really leave a blank line, without starting a new scene, press the **¶** button of the formatting bar or Alt+Enter: after the paragraph you are in a line with a pale **¶** appears, which in the book will be a blank line. The **¶** is not printed; to remove the line, put the cursor on it and delete it like any other line.
 
   *Example:* at the end of a paragraph ("…and the door closed.") press Alt+Enter and go on writing the next paragraph. In Word, PDF and EPUB there is a blank line between the two paragraphs and the scene stays one. For a stronger pause, with the separator (for example `* * *`), use the **Scene separator** button instead.
-- **Searching in the scene**: Cmd+F / Ctrl+F opens a bar above the text. Write the word: Enter (or Cmd+G / Ctrl+G) goes to the next one, Shift+Enter (or Shift+Cmd+G / Ctrl+Shift+G) goes back to the one before, **all** selects them all. The boxes limit the search to capitals as written or to whole words. The field **Replace with** changes the word in this scene only; to change it in the whole novel use **Replace** (chapter 9). Esc closes the bar.
+- **Searching in the scene**: Cmd+F / Ctrl+F opens a bar above the text. Write the word: Enter (or Cmd+G / Ctrl+G) goes to the next one, Shift+Enter (or Shift+Cmd+G / Ctrl+Shift+G) goes back to the one before, **all** selects them all. The boxes limit the search to capitals as written or to whole words. The field **Replace with** changes the word in this scene only; to change it in the whole novel use **Replace** (chapter 12). Esc closes the bar.
 
   *Try it:* open a scene, press Cmd+F / Ctrl+F and write a word that occurs several times: the first occurrence is highlighted, Enter goes to the following one.
 - **Splitting**: with the cursor at the right point, **Split into scene** (Cmd+Enter / Ctrl+Enter) moves the text that follows into a new scene; **Split into chapter** (Cmd+Shift+Enter / Ctrl+Shift+Enter) starts a new chapter from that point, with the scenes that follow.
@@ -186,7 +208,7 @@ Each section matches a folder of the project: Manuscript, Story Bible, Views for
 
   ![The same table finished, with the caption «I personaggi del capitolo»](img/tabella.png)
 - **Images**: press the **Image** button of the formatting bar and choose the file, or paste an image (Cmd+V / Ctrl+V) or drag it into the text. Dante copies it into the folder **Attachments** inside **Research** and shows it where the cursor is. Move the mouse over the image to change its width (**200**, **400**, **600** pixels or **1:1**, the original size) and its alignment (left, centre, right). A click on the image shows the text that inserts it, to change it by hand.
-- **Status bar**: under the text a line shows the words of the scene with the cursor (with its goal, if it has one), those of the selected text, of the chapter or of what is on screen, and those written today against the goal of the day. If the project measures in characters (chapter 12), the bar counts characters with spaces instead of words. It hides from **More** > **Status bar**.
+- **Status bar**: under the text a line shows the words of the scene with the cursor (with its goal, if it has one), those of the selected text, of the chapter or of what is on screen, and those written today against the goal of the day. If the project measures in characters (chapter 14), the bar counts characters with spaces instead of words. It hides from **More** > **Status bar**.
 - **Writing session**: press **Session** on the right of the status bar, choose how many minutes (from 10 to 90) and, if you like, how many words to reach, then **Start**. The bar shows the time left and the words written since you began; at the end Dante says how many words you wrote. **End** closes it early. The words added count, less those deleted, as in the statistics; in a project that measures in characters, the session asks for and counts characters.
 
   *Example:* a 25-minute session with 500 words to reach. While you write the bar shows "18:42 · 312 words of 500"; when the time is up "Goal reached: 534 words in 25 min." appears, or "Session over" if you did not get there.
@@ -207,7 +229,136 @@ Each section matches a folder of the project: Manuscript, Story Bible, Views for
 - Hyphens and dashes in the narration stay as you wrote them, like the hyphens inside words (socio-economic) and the dashes between numbers (1990–2000). In a line of dialogue opened by a dash only dashes of the same kind count as closing and reopening: an aside between hyphens inside a line opened by a dash stays as it is.
 - If a scene is changed by another program while you are editing it, your version stays and a warning offers to reload the other one.
 
-## 6. Organising the manuscript
+## 7. Side-by-side panels
+
+### How to
+
+Beside the text you can keep up to two more things open: another scene, a chapter, the card of a character, a note, an image or a view such as the timeline. Each pane can be edited, and stays open when you change section too.
+
+- **Opening beside.** Hold **Alt** (Option on a Mac) while you click: on a link `[[Lucia Mondella]]` in the text, on a scene in the tree, on a card of the Story Bible, on a note, on a view or on a result of the search. You can also use the item **Open beside** of the right-click menu, the ⧉ button in the Links tab, or drag an item onto the right edge of the window.
+- **Cards of the scene.** **More** > **Cards of the scene** in the bar of the Manuscript opens a pane that shows the cards of the Story Bible named in the scene you are writing (by name or alias) or linked with `[[…]]`. Write "Agnese" and her card appears among the tabs at the top; moving to another scene the tabs change.
+
+  ![The scene L'incontro with the pane Cards of the scene open on the card of don Abbondio](img/pannelli.png)
+
+  *Example:* in the scene **L'incontro** the pane shows the tabs of don Abbondio, Renzo, Lucia, don Rodrigo and of the village: they are the cards named in the text or in the properties. A click on a tab shows that card, which you can also edit.
+- **The next pane.** The next thing opened beside takes the place of the pane that is not pinned. With the pin 📌 the pane stays and the new one opens beside it.
+- **The buttons of the pane.** ⤢ takes the content to the middle, in its section; ⇄ swaps it with what is in the middle; × closes the pane. Drag the left edge to widen it, double click to give the text and the panes the same width.
+- **The panel on the right** (Properties, Links, Comments) shows what has the cursor: the scene in the middle or the content of the pane you clicked in.
+- **The views beside** highlight the scene you are writing, and a click on an item opens it in the middle.
+
+The same scene can be in the middle and in a pane: what you write in one appears at once in the other.
+
+### In depth
+
+- Each open file has one document in memory, shared by all the editors that show it: saving, automatic snapshots and reloading after a change on disk go through it, so two editors of the same file do not overwrite each other.
+- Before renaming or moving files, Dante writes what the editors still hold in memory; the panes follow the renamed items and close by themselves if the item is deleted.
+- The layout of the panes is saved on this computer, for each project, and not in the folder of the novel: the screen of a co-author does not change.
+- On a Mac Cmd+W does not close the window: the menu of the app uses it to close the pane or, if the cursor is not in a pane, the project. Before closing, Dante writes everything you wrote and, if the settings ask for it, makes the backup, as with the button to close the project.
+- Export, Settings and Statistics are exceptions, because they use the whole width: there the panes are hidden, not closed.
+
+## 8. Appearance and spelling
+
+How Dante and the text look while you write. They are choices of this computer: they hold for every project, unless you give a novel a look of its own, and change neither the files nor the export, which has its own settings (chapter 17).
+
+### How to
+
+Open **Settings**: in the list on the left, under **Dante on this computer**, are the pages **Appearance**, **The text in the editor** and **Writing**.
+
+- **Theme** (page **Appearance**): you choose it from five small drawings of the window, each in its own colours. **System** (light or dark like the computer, and it changes with it), **Light (paper)**, **Sepia** (warm paper, to write for a long time by day), **Dark**, **Night** (almost black with softer text, to write in the dark).
+
+  ![The Appearance page of the Settings: the five themes and the accent colours](img/aspetto.png)
+
+- **Accent colour**: the colour of active buttons, links and selections. The first circle leaves that of the theme; the others are blue, green, brick red, purple, teal and amber, in a lighter version in the dark themes.
+- **Interface size**: enlarges or shrinks the whole window of Dante, from 80% to 200%: menus, tree, panels, buttons, windows and their text. It is useful if your sight is poor or you work on a very large screen. The text in the editor grows by the same measure, besides its **Font size** (which stays separate and also changes with Cmd/Ctrl + and −).
+- **The text in the editor** (the page with this name):
+  - **Editor font**: five ready choices, or **Another installed font…**, which lists the book fonts present on the computer and with **Other…** accepts the name of any installed font.
+  - **Font size** and **Line width** (in characters).
+  - **Line spacing**: the space between the lines of a paragraph, from 1.4 to 2.4; 1.7 is the usual one.
+  - **Space between paragraphs**: an empty line, half a line or a little. In the file an empty line stays between two paragraphs all the same: only how tall it is on screen changes.
+- **A single Enter starts a new paragraph** (page **Writing**): on by default. The empty line that separates the paragraphs in the file is written by Dante and does not show (chapter 6). Off, the editor shows the empty lines as they are in the file, and **Ask about extra empty lines** appears.
+  - **First-line indent**: none, small, medium or large, as in printed books.
+  - **Justified text, as in a book**: aligns the paragraphs on the right too and breaks lines with hyphenation.
+- Beside it is a **sample** of the text, which changes with every choice.
+- **Spelling** (page **Writing**): **Underline words the spelling checker does not know** turns the checker on or off while you write.
+- **A different look for a novel**: in **Settings** > **Look of this novel** tick **Use a different look for this novel**. The theme, accent colour, font and text layout you choose there hold only when you open that novel; the others keep the look of the computer. Unticking it takes the novel back to the look of the computer. Interface size, language and spelling stay the same for every novel.
+
+*Example:* if the menus and the labels of the panels look small to you, choose **Interface size: 125%**. Everything grows at once; if the text of the editor then looks too large, lower its **Font size**.
+
+*Example:* for a page like that of a printed novel choose **Sepia**, **Space between paragraphs: A little**, **Indent: Medium** and **Justified text**. The paragraphs draw closer, each begins indented and the margins are straight.
+
+### In depth
+
+- **Interface size**: Dante enlarges its window as a browser does with the zoom, so everything keeps its proportions. In the browser version the setting is not there: you use the zoom of the browser (in Chrome and Edge the item **Zoom** of the ⋮ or ··· menu), which the browser remembers for the site. On macOS 10.15 (Catalina) and earlier the system does not let apps enlarge their window: macOS 11 or later is needed; there the screen zoom of macOS is left (System Preferences > Accessibility > Zoom). There are no keyboard shortcuts: Cmd/Ctrl + and − already change the text of the editor, and Option+Cmd + and − are those of the screen zoom of macOS.
+- Indent and space between paragraphs concern only the paragraphs of text: headings, lists, quotations, tables and centred or right-aligned paragraphs stay as they are.
+- The hyphenation of justified text uses the language of the novel; where the system does not have the rules of that language, the justified lines may have wider spaces.
+- **Spelling checker**: it is that of the system (macOS, Windows, Linux or the browser), with its dictionaries and the words you taught it; the system chooses the dictionary. Dante marks the text with the language of the novel, which the system can use to choose the right dictionary. On the Mac a right click on an underlined word gives the suggestions and **Learn Spelling**; the languages are chosen in System Settings > Keyboard > Text Input > Edit > Spelling. On Windows the languages are those installed in Settings > Time & language. Dante keeps from the checker the names and aliases of the Story Bible's cards, and the **Words of this novel** added in Settings > Writing: they are written in `dante.yaml` under `dictionary`, so they are the same on every computer and for those who write with you. Capitals count: "Renzo" does not cover "renzo".
+- **Look of a novel**: the choices stay on this computer, with the other settings of Dante, and not in the project: those who write with you in the same folder keep their own look, and on another computer the novel opens with the look of that computer. To recognise the novel even if you move or rename the folder, Dante writes the file `.dante/id` in the project, which holds only a random code. A copy of the folder made by hand has the same code, and so the same look. Making the text larger with Cmd/Ctrl + and − also changes the look of the novel, when it has one.
+- In the settings file of the app: `theme`, `accent`, `uiZoom` (1 = 100%), `fontFamily`, `fontSize`, `lineWidth`, `lineHeight`, `paragraphGap`, `indent`, `justify`, `spellcheck`.
+
+## 9. Keyboard shortcuts
+
+### How to
+
+On a Mac you use Cmd, on Windows and Linux Ctrl; Alt is the key that on the Mac is also called Option. The tables give both versions. In the app the tooltips of the buttons show only that of the system you are using. Moving the mouse over a button, the tooltip shows its shortcut.
+
+**Writing**
+
+| Mac | Windows and Linux | Action |
+| --- | --- | --- |
+| Cmd+Enter | Ctrl+Enter | Split into scene: the text after the cursor goes into a new scene (in a gamebook: new paragraph, chapter 18) |
+| Alt+Enter (in a `[[` list) | Alt+Enter (in a `[[` list) | in a gamebook, links the paragraph with a hidden reference |
+| Cmd+Shift+Enter | Ctrl+Shift+Enter | Split into chapter: starts a new chapter from the cursor |
+| Enter | Enter | new paragraph; twice in a row, a blank line that shows in the book |
+| Shift+Enter | Shift+Enter | new line in the same paragraph |
+| Alt+Enter | Alt+Enter | blank line between two paragraphs, without a new scene |
+| Cmd+B | Ctrl+B | bold |
+| Cmd+I | Ctrl+I | italic |
+| Cmd+Shift+X | Ctrl+Shift+X | strikethrough |
+| Cmd+Shift+H | Ctrl+Shift+H | highlight |
+| Cmd+Alt+M | Ctrl+Alt+M | comment on the selected text |
+| Cmd+K | Ctrl+K | link |
+| Cmd+E | Ctrl+E | code |
+| Cmd+Shift+7 | Ctrl+Shift+7 | numbered list |
+| Cmd+Shift+8 | Ctrl+Shift+8 | bulleted list |
+| Cmd+Shift+9 | Ctrl+Shift+9 | checkbox |
+| Cmd+Shift+. | Ctrl+Shift+. | quotation |
+| Cmd+Shift+E | Ctrl+Shift+E | centres the paragraph (again: back to the left) |
+| Cmd+Shift+R | Ctrl+Shift+R | aligns the paragraph right (again: back to the left) |
+| Cmd+click | Ctrl+click | follows a link on the line you are editing |
+| Cmd+Z | Ctrl+Z | undo, also an automatic typographic correction |
+| Cmd+Enter (in a comment) | Ctrl+Enter (in a comment) | adds the comment or the reply |
+
+**Tree of the manuscript**
+
+| Mac | Windows and Linux | Action |
+| --- | --- | --- |
+| Enter | Enter | opens the scene; opens or closes a chapter |
+| F2 or double click | F2 or double click | renames |
+| Alt+Cmd+↑ / ↓ | Ctrl+Alt+↑ / ↓ | moves up or down by one place |
+| Right / left arrow | Right / left arrow | opens or closes a chapter or a part |
+| Cmd+click | Ctrl+click | adds a scene to the choice, to merge them |
+| Cmd+Backspace or Delete | Ctrl+Backspace or Delete | moves to the trash |
+
+**Window**
+
+| Mac | Windows and Linux | Action |
+| --- | --- | --- |
+| Cmd+F | Ctrl+F | searches in the scene or in the note |
+| Cmd+G / Shift+Cmd+G | Ctrl+G / Ctrl+Shift+G | next / previous occurrence |
+| Cmd+Shift+F | Ctrl+Shift+F | opens and closes the search in the project |
+| Alt+Cmd+F | Ctrl+Alt+F | find and replace in the whole project |
+| Cmd++ / Cmd+− / Cmd+0 | Ctrl++ / Ctrl+− / Ctrl+0 | enlarges, reduces, resets the text |
+| Esc | Esc | leaves full screen, closes search and windows, cancels a change in progress |
+| Cmd+\\ | Ctrl+\\ | opens a pane beside, choosing with the search what to show |
+| Alt+Cmd+\\ | Ctrl+Alt+\\ | swaps the pane with what the section shows |
+| Alt+Cmd+← / Alt+Cmd+→ | Ctrl+Alt+← / Ctrl+Alt+→ | moves the cursor between the section and the panes |
+| Cmd+W | Ctrl+W | closes the pane that has the cursor; if the cursor is not in a pane, closes the project and goes back to the start screen |
+
+### In depth
+
+Cmd+Shift+7/8/9 and Cmd+Shift+. (Ctrl+Shift+7/8/9 and Ctrl+Shift+.) also work with keyboards where Shift with those keys writes other characters: Dante looks at the key pressed, not at the character. On an Italian keyboard Cmd+\\ is Cmd+ù. On the Mac Cmd+? opens the help (chapter 5).
+
+## 10. Organising the manuscript
 
 ### How to
 
@@ -223,7 +374,7 @@ Everything is done from the tree in the Manuscript section.
   *Example:* to put aside a scene you are not sure about, right click → **Move to…** → **Laboratory** → **Move**. You find it in **Notes**, in the Laboratory, without the number before its name. When you want to take it up again, right click on the note → **Move to…** → **Manuscript**, write the name of the chapter in the box, click it and choose **Inside, at the end**.
 - **Joining scenes**: hold Cmd (Ctrl on Windows and Linux) and click the scenes to join, then press **Merge** in the bar above the tree (or from the right click). The text ends up in the first scene, in reading order. With several scenes chosen the right click also offers **Set a property on the scenes…**: choose the property and the value (for example status: revised) and Dante writes it in all of them.
 - **Deleting**: right click → **Delete…**, or Cmd+Backspace / Ctrl+Backspace. The item goes to the **Trash** and can be recovered.
-- **Trash**: it opens from the bin icon at the bottom of the bar on the left, above Settings. It lists what was deleted, the most recent first, with the place it comes from. **Put back** takes it back there; if that place has been taken in the meantime, the item returns beside it with a "2" in its name. **Delete for good** and **Empty the trash** really delete it, after a confirmation. The trash also receives the scenes merged into another and the discarded conflict copies (chapter 10).
+- **Trash**: it opens from the bin icon at the bottom of the bar on the left, above Settings. It lists what was deleted, the most recent first, with the place it comes from. **Put back** takes it back there; if that place has been taken in the meantime, the item returns beside it with a "2" in its name. **Delete for good** and **Empty the trash** really delete it, after a confirmation. The trash also receives the scenes merged into another and the discarded conflict copies (chapter 16).
 - **Prologue, epilogue, interlude**: select the chapter and, in the Properties panel, choose the **Type** (prologue and epilogue have no number) or tick **No number (like an interlude)**. In the sample project the **Introduzione** is a prologue: this is why the first real chapter is called «Capitolo 1».
 
   <img src="img/tipo-capitolo.png" width="280" alt="The Properties panel of the Introduzione, with Type: Prologue">
@@ -235,7 +386,7 @@ Everything is done from the tree in the Manuscript section.
 
 A scene that ended up outside any chapter is marked in the tree as **outside chapters**: drag it into the right chapter.
 
-- **Status in the tree**: beside each scene a coloured dot says how far along it is, according to the property **status** (chapter 8): grey for idea, orange for draft, blue for revised, green for done. Moving the mouse over the dot shows "Stage: draft" (or the value the scene has). A value that is not among the expected ones has an empty circle.
+- **Status in the tree**: beside each scene a coloured dot says how far along it is, according to the property **status** (chapter 11): grey for idea, orange for draft, blue for revised, green for done. Moving the mouse over the dot shows "Stage: draft" (or the value the scene has). A value that is not among the expected ones has an empty circle.
 - **Colouring the tree by another property**: in **Settings** > **Scenes and properties** > **Scene tree** choose which property decides the colour of the dot, for example **pov** to see at a glance whose point of view each scene has. Each value has its own colour (up to eight, then the colours repeat) and moving the mouse over the dot shows, for example, "Pov: Renzo". The scenes without that property have no dot. To go back to the status choose **the stage of work** again.
 
   *Try it:* in the sample project choose **pov**: the scenes of different characters take different colours.
@@ -266,39 +417,16 @@ My novel/
     └── 900 Epilogue/
 ```
 
-- **Dot of the tree**: the chosen property is saved in `dante.yaml` as `tree.dot` (empty for the status), so it holds for everyone who works on the novel. The colours of the other values follow the order of the values expected for the property, if it has any (chapter 8), then the order in which they appear in the manuscript; capitals do not count, and of a link such as `[[Renzo Tramaglino|Renzo]]` the name shown is read.
+- **Dot of the tree**: the chosen property is saved in `dante.yaml` as `tree.dot` (empty for the status), so it holds for everyone who works on the novel. The colours of the other values follow the order of the values expected for the property, if it has any (chapter 11), then the order in which they appear in the manuscript; capitals do not count, and of a link such as `[[Renzo Tramaglino|Renzo]]` the name shown is read.
 - **Numeric prefixes**: the number at the beginning of the name (010, 020…) decides only the order and does not appear in the titles. The numbers go in tens to leave room. When you move something, Dante renames as few files as possible and updates the links that pointed to what moved. If Dante is closed halfway through a reordering, the next time the project opens it finishes it or brings everything back, and tells you which.
 - **Folder note**: a chapter or a part keeps its properties in a note with the same name as the folder (`010 Arrival/010 Arrival.md`). The property `kind` is `part`, `chapter`, `prologue` or `epilogue`; `numbered: false` removes the number. For this reason a scene cannot have the same name as its chapter.
 - **Visible numbers**: "Chapter 3: The letter" is worked out on the spot from the settings in `dante.yaml`, not from the prefix or from the text of the file.
 - **Trash**: it is the `.trash` folder of the project, the same one Obsidian uses. Dante notes in `.dante/trash.json` where each item comes from, to be able to put it back; a file put in the trash by Obsidian or by hand, whose origin Dante does not know, goes back to the Laboratory. The trash is in the folder of the novel, so co-authors see it and empty it too.
 - **Move to… and Copy to…**: a scene or a chapter that leaves the manuscript loses its numeric prefix (`030 Arrival.md` becomes `Arrival.md`), one that enters takes the number of the chosen place, renaming as few other files as possible. The properties stay. If the folder already holds a file with the same name, the new one takes a "2". When moving, the links are updated and the snapshots and the history of comments follow the scene. A copy has the text and the properties of the original but neither its snapshots nor its history, and the existing links go on leading to the original. Copying a chapter copies everything it holds, with the folder note renamed like the new folder. Only notes and folders go into the manuscript, not images or PDFs. In a gamebook the paragraphs follow their number, so in the Manuscript you choose only the folder.
-- **Merging**: the joined scenes other than the first go to the trash, and the links that pointed to them lead to the first. A scene with a conflict copy must be settled first (chapter 10).
+- **Merging**: the joined scenes other than the first go to the trash, and the links that pointed to them lead to the first. A scene with a conflict copy must be settled first (chapter 16).
 - **Scene outside chapters**: if it stays there, the export adds it at the end of the chapter before.
 
-## 7. Snapshots
-
-### How to
-
-A snapshot is a copy of a scene as it was at a certain moment, to take up again if a change does not convince you.
-
-- Dante takes one by itself before your first change to a scene, every time you open the project.
-- To take one yourself, open the **Properties** panel, write a name (optional) under **Snapshots** and press **Take snapshot**.
-- **Compare** shows what changed between the snapshot and the current text.
-
-  <img src="img/istantanee.png" width="280" alt="A snapshot called «Prima stesura» with the buttons Compare and Restore">
-
-  *Example:* in a scene take a snapshot called "First draft", then add a few words. **Compare** shows in red struck through what was only in the snapshot and in green what is only there now:
-
-  ![The comparison between the snapshot and the current text](img/confronta.png)
-- **Restore** puts the snapshot back in place of the text. The current text is saved as a snapshot first, so nothing is lost.
-- **The whole manuscript at once**: in **Settings** > **Upkeep**, under **Snapshot of the whole manuscript**, write a name (for example "First draft") and press **Take snapshot**. Every scene is saved as it is at that moment: you find it under that name among the snapshots of each scene, to compare it, and from the same list **Restore** takes every scene back to it. The current text of the scenes that change is saved first; scenes written later stay as they are and deleted ones do not come back (they are in the Trash).
-- To tidy up, in **Settings** > **Upkeep**, **Delete old snapshots** deletes the automatic ones taken before a date; those with a name always stay.
-
-### In depth
-
-The snapshots are files in `.dante/snapshots/` and follow their scene when it is moved or renamed. They concern one scene at a time: to keep the whole novel there are the backup copies (chapter 19).
-
-## 8. Properties, title and synopsis
+## 11. Properties, title and synopsis
 
 ### How to
 
@@ -307,8 +435,8 @@ The properties are the information about a scene or a note: point of view, date 
 The panel is divided into sections: the scene (title, file name, synopsis, goal), **Properties**, **Snapshots** and **Statistics**. A click on the title of a section closes or reopens it, and Dante remembers how you left it.
 
 - **Title and file name**: the **Title** is the one that appears everywhere (tree, headings, export); the **File name** is the name on disk. If the title is empty, the file name counts.
-- **Synopsis**: a few lines on what happens in the scene or in the chapter. It also appears in the views (chapter 11).
-- **Word goal** (or **Character goal**): how many words, or how many characters with spaces, the scene or the chapter must have, according to the measure chosen in Statistics. Leave it empty if you do not need it; with a goal the tree and the status bar show how far you are (chapters 5 and 6).
+- **Synopsis**: a few lines on what happens in the scene or in the chapter. It also appears in the views (chapter 13).
+- **Word goal** (or **Character goal**): how many words, or how many characters with spaces, the scene or the chapter must have, according to the measure chosen in Statistics. Leave it empty if you do not need it; with a goal the tree and the status bar show how far you are (chapters 6 and 10).
 
   <img src="img/proprieta.png" width="280" alt="The properties of the scene L'incontro: title, synopsis, status, pov, place and date">
 
@@ -327,7 +455,7 @@ All the properties with a type are listed in **Settings → Scenes and propertie
 
 ### In depth
 
-The properties are the YAML frontmatter at the top of each file, as in Obsidian. For chapters and parts they are in the folder note (chapter 6). The goal is the property `goal` (for example `goal: 3000`), read in words or in characters according to `goals.unit` in `dante.yaml`; the status shown in the tree is the property `status` (`stato` in a novel in Italian) and the colour depends on the position of the value among the allowed ones: the first grey, the last green. The template of new scenes is the file `Templates/Scene.md` (`Modelli/Scena.md` in Italian); `{{title}}` and `{{date}}` become the title of the scene and the date of the day, as in the templates of the Story Bible.
+The properties are the YAML frontmatter at the top of each file, as in Obsidian. For chapters and parts they are in the folder note (chapter 10). The goal is the property `goal` (for example `goal: 3000`), read in words or in characters according to `goals.unit` in `dante.yaml`; the status shown in the tree is the property `status` (`stato` in a novel in Italian) and the colour depends on the position of the value among the allowed ones: the first grey, the last green. The template of new scenes is the file `Templates/Scene.md` (`Modelli/Scena.md` in Italian); `{{title}}` and `{{date}}` become the title of the scene and the date of the day, as in the templates of the Story Bible.
 
 ```yaml
 ---
@@ -390,15 +518,15 @@ tree:
 
 Renaming a property rewrites only its name at the top of the files, leaving value, position and comments; in the tables and boards filters, sorting, grouping, columns and dates change. New projects in English already define age (number), date (date), place (link to a place) and owner (link to a character).
 
-## 9. Story Bible and Notes
+## 12. Story Bible and Notes
 
 ### How to
 
-- **Story Bible**: the cards of characters, places, objects, events, groups and plotlines, grouped by type. Press **New Character** (or the type you need), write the name and press Create: the card is born with the properties suggested for that type. With **Filter** you find a card among many. With a right click on a card, or with the buttons at the top of the open card, **Move to…** and **Copy to…** take it to another folder of the Story Bible, to Research, to the Laboratory or into the manuscript (chapter 6). Each card shows at the top the first image of the note: that of a property (for example `portrait: "[[Lucia.jpg]]"`) or, if there is none, the first in the text. Untick **Pictures** to see the cards without them. With **Look** beside it choose how to show them: **Across the top of the card** or **Beside the title**; **Cropped to fill the space** or **Whole**; which part to keep when it is cropped (**Top** is good for portraits, which do not lose their head that way); and the **Size**. The choices hold for all the cards and stay on this computer.
+- **Story Bible**: the cards of characters, places, objects, events, groups and plotlines, grouped by type. Press **New Character** (or the type you need), write the name and press Create: the card is born with the properties suggested for that type. With **Filter** you find a card among many. With a right click on a card, or with the buttons at the top of the open card, **Move to…** and **Copy to…** take it to another folder of the Story Bible, to Research, to the Laboratory or into the manuscript (chapter 10). Each card shows at the top the first image of the note: that of a property (for example `portrait: "[[Lucia.jpg]]"`) or, if there is none, the first in the text. Untick **Pictures** to see the cards without them. With **Look** beside it choose how to show them: **Across the top of the card** or **Beside the title**; **Cropped to fill the space** or **Whole**; which part to keep when it is cropped (**Top** is good for portraits, which do not lose their head that way); and the **Size**. The choices hold for all the cards and stay on this computer.
 
   ![The Story Bible of the sample project: the types on the left, the cards of the characters in the middle](img/bibbia.png)
 - **Types of the Story Bible**: you can add new ones (for example "Creature") and, for each type, **Edit type** (name, icon, suggested properties) and **Edit template**, that is the text every new card starts from.
-- **Notes**: everything that is neither manuscript nor Story Bible, in two folders shown one below the other. **Research** is the archive for the notes, images, PDFs and web pages gathered for the novel; the **Laboratory** is the space for drafts, outlines and ideas. **New note** creates one in the Laboratory, **Add files…** copies files from the computer into Research; to move a note from one folder to the other drag it, or use the right click → **Move to…** or **Copy to…**, which take notes, files and folders to the Story Bible or to a precise point of the manuscript too (chapter 6). Images, PDFs and HTML open inside Dante, the other files with the default program.
+- **Notes**: everything that is neither manuscript nor Story Bible, in two folders shown one below the other. **Research** is the archive for the notes, images, PDFs and web pages gathered for the novel; the **Laboratory** is the space for drafts, outlines and ideas. **New note** creates one in the Laboratory, **Add files…** copies files from the computer into Research; to move a note from one folder to the other drag it, or use the right click → **Move to…** or **Copy to…**, which take notes, files and folders to the Story Bible or to a precise point of the manuscript too (chapter 10). Images, PDFs and HTML open inside Dante, the other files with the default program.
 - **Links**: write `[[` in the text and Dante suggests the notes of the project, also by alias. It works the other way round too: if you select "Corrado" and close it between `[[ ]]` (or write `[[Corrado]]`) and Corrado is an alias of "Corrado Olivieri", Dante recognises the character and links his card. A link to a note that does not exist yet looks paler.
 - **Click on a link**: a small menu opens with **Open in the editor**, **Open in a pane** and **Preview**.
 
@@ -417,7 +545,7 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
   <img src="img/cerca.png" width="420" alt="The search for «Lucia»: cards, scenes and lines that name her">
 - **Find and replace in the whole project**: Alt+Cmd+F / Ctrl+Alt+F, or the **Replace** tab at the top of the search. Write the word to look for and the new one: below appear all the occurrences, note by note, with the old word struck through and the new one beside it. Untick those to leave as they are, or use **None** and tick only those you need. A click on a line opens the note with the word selected. **Replace** changes the ticked ones; right after, **Undo the replacement** puts everything back as it was. With **Whole words only** "Renzo" does not find "Renzino"; without **Match case** the new word takes the capitals of the old one ("RENZO" becomes "LORENZO"). The menu below limits the replacement to one section.
 
-  *Example:* to change the name of a character, search for "Renzo" and replace with "Lorenzo" in the Manuscript. Before changing a scene Dante saves a snapshot of it called "Before replacing “Renzo”", to take up again if needed (chapter 7). To change the name of the card too, rename it: the links update by themselves.
+  *Example:* to change the name of a character, search for "Renzo" and replace with "Lorenzo" in the Manuscript. Before changing a scene Dante saves a snapshot of it called "Before replacing “Renzo”", to take up again if needed (chapter 15). To change the name of the card too, rename it: the links update by themselves.
 
 **A complete example.** Open the card of **Lucia Mondella** in the Story Bible. In the text, «La casa di Lucia» is blue because it is a link: one click and choose **Preview** to read it without leaving the card. Now open the scene **Lucia** in the Manuscript and write `[[Agn`: Dante suggests **Agnese**; press Enter and the link is made. In the card of Agnese, the **Links** tab of the right panel now also lists the scene **Lucia**.
 
@@ -434,47 +562,7 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
 - The HTML pages opened in Dante do not run their scripts.
 - **Replace** changes only the text of the notes. The properties at the top of the file, the name of the note inside a link (`[[Renzo Tramaglino|Renzo]]` changes only the alias after `|`), embedded images and files, the addresses of links, HTML tags, the text of comments `{>>…<<}` and code blocks stay as they are. The revisions (`{++…++}`, `{--…--}`) are text and are changed. If a note changes between the search and the replacement, Dante searches again and skips the occurrences that are no longer there. **Undo the replacement** skips the notes changed after the replacement and lists them.
 
-## 10. Writing with other people
-
-### How to
-
-1. **Sharing**: put the folder of the project in Dropbox or Google Drive and share it with those who work with you. Each one opens it with **Open folder…**.
-2. **Signing**: the first time you open a project without having given your name yet, Dante asks for it; you change it in **Settings → You**.
-3. **Commenting**: select the text and press the speech bubble in the bar (or Cmd+Alt+M / Ctrl+Alt+M), write the comment and press Cmd+Enter / Ctrl+Enter. In the text the comment appears as a speech bubble.
-4. **Proposing changes**: choose **More** > **Track changes as revisions** in the bar at the top (your name is needed in Settings); while they are on, the label **Revisions on** stays in the bar. From then on what you write appears underlined and what you delete struck through, with your name, until someone decides.
-5. **Deciding**: the **Comments** tab of the right panel lists the comments and the changes of the text shown. For each you can **Reply**, **Resolve** (closes the discussion), **Accept** or **Reject**; at the top are **Accept all** and **Reject all**.
-6. **Reading again what was decided**: at the top of the **Comments** tab, **History** shows what happened to closed comments and changes: who accepted, rejected or resolved, when, who had proposed the change, the text before and after and the discussion. By default you see the open scene; **The whole novel** shows everything, and you can filter by person and by dates. A click on the name of the scene opens it.
-
-![The scene L'incontro with Anna's comment and revision, listed in the Comments tab](img/commenti.png)
-
-**An example.** In the scene **L'incontro** of the sample project Anna left a comment on «questo matrimonio non s'ha da fare» (the text is highlighted in yellow) and proposed writing «né» in place of «nè»: the old word is struck through in red, the new one underlined in green. In the **Comments** tab press **Accept** on the addition and on the deletion: only «né» is left in the text. You can answer the comment with **Reply**, or close it with **Resolve** when the question is settled.
-
-If another person is already working on a scene, for you that scene is read-only and a warning says who is editing it. **Edit anyway** unlocks the scene, but the changes risk overlapping.
-
-If Dropbox or Drive create a **conflict copy** (it happens when two people change the same file at the same moment), a warning appears at the top. Opening it you see the two versions side by side and choose: **Keep the file**, **Use the copy**, or **Merge as revisions** to decide the differences one by one.
-
-![A conflict copy of the scene Il latinorum: in Anna's copy the word «molto» is missing](img/conflitto.png)
-
-### In depth
-
-- Comments and revisions are written in the text with [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit), followed by a signature with name and date:
-
-```markdown
-{==this wedding must not take place,==}{>>@Anna 2026-10-14: The most famous line of the book: do we keep it at the end of the chapter?<<}{>>@Luca 2026-10-15: yes<<}
-{--nè--}{>>@Anna 2026-10-14<<}{++né++}{>>@Anna 2026-10-14<<} domani, nè mai.
-```
-
-It reads like this: `{== ==}` wraps the commented text, `{>> <<}` holds the comment (or the signature of a revision), `{-- --}` is the text to remove and `{++ ++}` the text to add. Each reply is another `{>> <<}` at the end.
-
-- In Obsidian these marks show as they are; Dante hides them and draws the text like a word processor. **More** > **Text as in the file** shows them.
-- In revision mode, writing inside an addition of your own changes it directly; writing inside someone else's addition or in a highlighted text changes the text without creating a new revision.
-- **Resolve** removes the discussion from the file. In the export the comments vanish and the pending revisions are accepted or rejected, as you choose. Words and characters are always counted as if the pending revisions were accepted.
-- **Presence**: every copy of Dante writes in `.dante/presence/<name>.json` what it is editing, and updates it every minute. Whoever opens a scene first holds it; a presence not updated for three minutes (for example after the computer was turned off) no longer counts.
-- **Conflict copies**: Dante recognises the names used by Dropbox ("Anna's conflicted copy…"), Google Drive ("(1)" beside the original), Syncthing and similar services, and keeps them out of the tree. What you discard goes to `.trash`; before merging, a snapshot keeps the file as it was. The revisions born from a merge are signed by whoever wrote the copy.
-- The log of the words written is one file per person, `.dante/sessions/<name>.json`, so two people never write the same file.
-- The **History** too is one file per person, `.dante/history/<name>.jsonl`, one line for each decision. It fills from when you use this version: the decisions taken before are not there. If you move or rename a scene, its history follows it.
-
-## 11. Tables and boards
+## 13. Tables and boards
 
 ### How to
 
@@ -530,7 +618,7 @@ widths: {name: 320, pov: 140, lane: 260}   # widths in pixels chosen by dragging
 - Each item shows the synopsis under the name, unless the file of the view says `synopsis: false`.
 - Conflict copies, templates and the views themselves never appear.
 
-## 12. Statistics and goals
+## 14. Statistics and goals
 
 ### How to
 
@@ -570,7 +658,70 @@ For single scenes, the **Properties** panel shows words, characters and reading 
 - **Sessions**: the timer of the status bar writes nothing in the project; the words it counts are those of today's writing log.
 - **Length**: at the level Parts, prologue, epilogue and chapters outside the parts end up in one row "Outside the parts", which does not enter the average and the median. At the level Scenes the column Where shows the chapter (or the part) of the scene. Measure and level are settings of the computer (`statsUnit`, `statsLevel`), not of `dante.yaml`: each person chooses their own.
 
-## 13. Exporting to Word, PDF and EPUB
+## 15. Snapshots
+
+### How to
+
+A snapshot is a copy of a scene as it was at a certain moment, to take up again if a change does not convince you.
+
+- Dante takes one by itself before your first change to a scene, every time you open the project.
+- To take one yourself, open the **Properties** panel, write a name (optional) under **Snapshots** and press **Take snapshot**.
+- **Compare** shows what changed between the snapshot and the current text.
+
+  <img src="img/istantanee.png" width="280" alt="A snapshot called «Prima stesura» with the buttons Compare and Restore">
+
+  *Example:* in a scene take a snapshot called "First draft", then add a few words. **Compare** shows in red struck through what was only in the snapshot and in green what is only there now:
+
+  ![The comparison between the snapshot and the current text](img/confronta.png)
+- **Restore** puts the snapshot back in place of the text. The current text is saved as a snapshot first, so nothing is lost.
+- **The whole manuscript at once**: in **Settings** > **Upkeep**, under **Snapshot of the whole manuscript**, write a name (for example "First draft") and press **Take snapshot**. Every scene is saved as it is at that moment: you find it under that name among the snapshots of each scene, to compare it, and from the same list **Restore** takes every scene back to it. The current text of the scenes that change is saved first; scenes written later stay as they are and deleted ones do not come back (they are in the Trash).
+- To tidy up, in **Settings** > **Upkeep**, **Delete old snapshots** deletes the automatic ones taken before a date; those with a name always stay.
+
+### In depth
+
+The snapshots are files in `.dante/snapshots/` and follow their scene when it is moved or renamed. They concern one scene at a time: to keep the whole novel there are the backup copies (chapter 19).
+
+## 16. Writing with other people
+
+### How to
+
+1. **Sharing**: put the folder of the project in Dropbox or Google Drive and share it with those who work with you. Each one opens it with **Open folder…**.
+2. **Signing**: the first time you open a project without having given your name yet, Dante asks for it; you change it in **Settings → You**.
+3. **Commenting**: select the text and press the speech bubble in the bar (or Cmd+Alt+M / Ctrl+Alt+M), write the comment and press Cmd+Enter / Ctrl+Enter. In the text the comment appears as a speech bubble.
+4. **Proposing changes**: choose **More** > **Track changes as revisions** in the bar at the top (your name is needed in Settings); while they are on, the label **Revisions on** stays in the bar. From then on what you write appears underlined and what you delete struck through, with your name, until someone decides.
+5. **Deciding**: the **Comments** tab of the right panel lists the comments and the changes of the text shown. For each you can **Reply**, **Resolve** (closes the discussion), **Accept** or **Reject**; at the top are **Accept all** and **Reject all**.
+6. **Reading again what was decided**: at the top of the **Comments** tab, **History** shows what happened to closed comments and changes: who accepted, rejected or resolved, when, who had proposed the change, the text before and after and the discussion. By default you see the open scene; **The whole novel** shows everything, and you can filter by person and by dates. A click on the name of the scene opens it.
+
+![The scene L'incontro with Anna's comment and revision, listed in the Comments tab](img/commenti.png)
+
+**An example.** In the scene **L'incontro** of the sample project Anna left a comment on «questo matrimonio non s'ha da fare» (the text is highlighted in yellow) and proposed writing «né» in place of «nè»: the old word is struck through in red, the new one underlined in green. In the **Comments** tab press **Accept** on the addition and on the deletion: only «né» is left in the text. You can answer the comment with **Reply**, or close it with **Resolve** when the question is settled.
+
+If another person is already working on a scene, for you that scene is read-only and a warning says who is editing it. **Edit anyway** unlocks the scene, but the changes risk overlapping.
+
+If Dropbox or Drive create a **conflict copy** (it happens when two people change the same file at the same moment), a warning appears at the top. Opening it you see the two versions side by side and choose: **Keep the file**, **Use the copy**, or **Merge as revisions** to decide the differences one by one.
+
+![A conflict copy of the scene Il latinorum: in Anna's copy the word «molto» is missing](img/conflitto.png)
+
+### In depth
+
+- Comments and revisions are written in the text with [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit), followed by a signature with name and date:
+
+```markdown
+{==this wedding must not take place,==}{>>@Anna 2026-10-14: The most famous line of the book: do we keep it at the end of the chapter?<<}{>>@Luca 2026-10-15: yes<<}
+{--nè--}{>>@Anna 2026-10-14<<}{++né++}{>>@Anna 2026-10-14<<} domani, nè mai.
+```
+
+It reads like this: `{== ==}` wraps the commented text, `{>> <<}` holds the comment (or the signature of a revision), `{-- --}` is the text to remove and `{++ ++}` the text to add. Each reply is another `{>> <<}` at the end.
+
+- In Obsidian these marks show as they are; Dante hides them and draws the text like a word processor. **More** > **Text as in the file** shows them.
+- In revision mode, writing inside an addition of your own changes it directly; writing inside someone else's addition or in a highlighted text changes the text without creating a new revision.
+- **Resolve** removes the discussion from the file. In the export the comments vanish and the pending revisions are accepted or rejected, as you choose. Words and characters are always counted as if the pending revisions were accepted.
+- **Presence**: every copy of Dante writes in `.dante/presence/<name>.json` what it is editing, and updates it every minute. Whoever opens a scene first holds it; a presence not updated for three minutes (for example after the computer was turned off) no longer counts.
+- **Conflict copies**: Dante recognises the names used by Dropbox ("Anna's conflicted copy…"), Google Drive ("(1)" beside the original), Syncthing and similar services, and keeps them out of the tree. What you discard goes to `.trash`; before merging, a snapshot keeps the file as it was. The revisions born from a merge are signed by whoever wrote the copy.
+- The log of the words written is one file per person, `.dante/sessions/<name>.json`, so two people never write the same file.
+- The **History** too is one file per person, `.dante/history/<name>.jsonl`, one line for each decision. It fills from when you use this version: the decisions taken before are not there. If you move or rename a scene, its history follows it.
+
+## 17. Exporting to Word, PDF and EPUB
 
 ### How to
 
@@ -612,279 +763,7 @@ The choices stay saved in the project: next time you only need to press Export.
 - The blank lines of the separator are empty paragraphs in Word, spaces of one line in PDF and EPUB and `&nbsp;` in Markdown, like the blank lines of the text. The line sign is saved in `dante.yaml` under `export.docx.lineSign`.
 - All the export settings are saved in `dante.yaml` under `export`. A new project starts from the last ones used.
 
-## 14. Opening the project in Obsidian
-
-### How to
-
-In Obsidian choose **Open folder as vault** and select the folder of the project. Scenes and cards are read and changed normally, also from the phone if the folder is synced. When you go back to Dante, the changes are already there.
-
-Two precautions:
-
-- To move, rename or join scenes and chapters use Dante: in Obsidian the numbers at the beginning of the names must be respected by hand.
-- Do not delete the odd marks between curly brackets: they are comments and revisions (chapter 10).
-
-### In depth
-
-| What | In Dante | In Obsidian |
-| --- | --- | --- |
-| Scenes and notes | formatted text | the same |
-| Properties | Properties panel | Properties panel, same values |
-| Links `[[…]]` and aliases | the same | the same |
-| Blank lines between paragraphs | line with a pale ¶ | blank line when reading; when editing `&nbsp;` may appear |
-| Comments and revisions | bubbles, underlined and struck through | CriticMarkup marks visible: `{++ … ++}`, `{-- … --}`, `{>> … <<}` |
-| Headings "Chapter 3" | worked out by Dante | they do not appear: you see the file name |
-| Views | tables, boards, timelines | YAML files in `Views/` |
-| Snapshots, presence, log | handled by Dante | files in `.dante/`, to leave alone |
-
-Obsidian creates its own folder `.obsidian/`, which Dante ignores. A file renamed in Obsidian without a numeric prefix ends up at the end of its chapter.
-
-An artificial intelligence assistant that works on files (Claude Code, Codex, Cursor and the like) can read and change a Dante project too. So that it respects the same rules (numbers in the names, folder notes, links, comments and revisions, files in `.dante/` not to touch), give it the skill in [`skills/dante`](../skills/dante/SKILL.md): a file of instructions in English, valid for novels and gamebooks in any language, with three in-depth files (settings, formatting, gamebooks) and a script that shows the manuscript in order, with words and characters with spaces, and flags problems of structure. In Claude Code it is enough to copy the folder `skills/dante` into `.claude/skills/` of the project or of your user folder; in the Claude apps you upload the folder compressed as a zip among the skills; with other assistants you paste or attach `SKILL.md`.
-
-## 15. Keyboard shortcuts
-
-### How to
-
-On a Mac you use Cmd, on Windows and Linux Ctrl; Alt is the key that on the Mac is also called Option. The tables give both versions. In the app the tooltips of the buttons show only that of the system you are using. Moving the mouse over a button, the tooltip shows its shortcut.
-
-**Writing**
-
-| Mac | Windows and Linux | Action |
-| --- | --- | --- |
-| Cmd+Enter | Ctrl+Enter | Split into scene: the text after the cursor goes into a new scene (in a gamebook: new paragraph, chapter 22) |
-| Alt+Enter (in a `[[` list) | Alt+Enter (in a `[[` list) | in a gamebook, links the paragraph with a hidden reference |
-| Cmd+Shift+Enter | Ctrl+Shift+Enter | Split into chapter: starts a new chapter from the cursor |
-| Enter | Enter | new paragraph; twice in a row, a blank line that shows in the book |
-| Shift+Enter | Shift+Enter | new line in the same paragraph |
-| Alt+Enter | Alt+Enter | blank line between two paragraphs, without a new scene |
-| Cmd+B | Ctrl+B | bold |
-| Cmd+I | Ctrl+I | italic |
-| Cmd+Shift+X | Ctrl+Shift+X | strikethrough |
-| Cmd+Shift+H | Ctrl+Shift+H | highlight |
-| Cmd+Alt+M | Ctrl+Alt+M | comment on the selected text |
-| Cmd+K | Ctrl+K | link |
-| Cmd+E | Ctrl+E | code |
-| Cmd+Shift+7 | Ctrl+Shift+7 | numbered list |
-| Cmd+Shift+8 | Ctrl+Shift+8 | bulleted list |
-| Cmd+Shift+9 | Ctrl+Shift+9 | checkbox |
-| Cmd+Shift+. | Ctrl+Shift+. | quotation |
-| Cmd+Shift+E | Ctrl+Shift+E | centres the paragraph (again: back to the left) |
-| Cmd+Shift+R | Ctrl+Shift+R | aligns the paragraph right (again: back to the left) |
-| Cmd+click | Ctrl+click | follows a link on the line you are editing |
-| Cmd+Z | Ctrl+Z | undo, also an automatic typographic correction |
-| Cmd+Enter (in a comment) | Ctrl+Enter (in a comment) | adds the comment or the reply |
-
-**Tree of the manuscript**
-
-| Mac | Windows and Linux | Action |
-| --- | --- | --- |
-| Enter | Enter | opens the scene; opens or closes a chapter |
-| F2 or double click | F2 or double click | renames |
-| Alt+Cmd+↑ / ↓ | Ctrl+Alt+↑ / ↓ | moves up or down by one place |
-| Right / left arrow | Right / left arrow | opens or closes a chapter or a part |
-| Cmd+click | Ctrl+click | adds a scene to the choice, to merge them |
-| Cmd+Backspace or Delete | Ctrl+Backspace or Delete | moves to the trash |
-
-**Window**
-
-| Mac | Windows and Linux | Action |
-| --- | --- | --- |
-| Cmd+F | Ctrl+F | searches in the scene or in the note |
-| Cmd+G / Shift+Cmd+G | Ctrl+G / Ctrl+Shift+G | next / previous occurrence |
-| Cmd+Shift+F | Ctrl+Shift+F | opens and closes the search in the project |
-| Alt+Cmd+F | Ctrl+Alt+F | find and replace in the whole project |
-| Cmd++ / Cmd+− / Cmd+0 | Ctrl++ / Ctrl+− / Ctrl+0 | enlarges, reduces, resets the text |
-| Esc | Esc | leaves full screen, closes search and windows, cancels a change in progress |
-| Cmd+\\ | Ctrl+\\ | opens a pane beside, choosing with the search what to show |
-| Alt+Cmd+\\ | Ctrl+Alt+\\ | swaps the pane with what the section shows |
-| Alt+Cmd+← / Alt+Cmd+→ | Ctrl+Alt+← / Ctrl+Alt+→ | moves the cursor between the section and the panes |
-| Cmd+W | Ctrl+W | closes the pane that has the cursor; if the cursor is not in a pane, closes the project and goes back to the start screen |
-
-### In depth
-
-Cmd+Shift+7/8/9 and Cmd+Shift+. (Ctrl+Shift+7/8/9 and Ctrl+Shift+.) also work with keyboards where Shift with those keys writes other characters: Dante looks at the key pressed, not at the character. On an Italian keyboard Cmd+\\ is Cmd+ù. On the Mac Cmd+? opens the help (chapter 20).
-
-## 16. Side-by-side panels
-
-### How to
-
-Beside the text you can keep up to two more things open: another scene, a chapter, the card of a character, a note, an image or a view such as the timeline. Each pane can be edited, and stays open when you change section too.
-
-- **Opening beside.** Hold **Alt** (Option on a Mac) while you click: on a link `[[Lucia Mondella]]` in the text, on a scene in the tree, on a card of the Story Bible, on a note, on a view or on a result of the search. You can also use the item **Open beside** of the right-click menu, the ⧉ button in the Links tab, or drag an item onto the right edge of the window.
-- **Cards of the scene.** **More** > **Cards of the scene** in the bar of the Manuscript opens a pane that shows the cards of the Story Bible named in the scene you are writing (by name or alias) or linked with `[[…]]`. Write "Agnese" and her card appears among the tabs at the top; moving to another scene the tabs change.
-
-  ![The scene L'incontro with the pane Cards of the scene open on the card of don Abbondio](img/pannelli.png)
-
-  *Example:* in the scene **L'incontro** the pane shows the tabs of don Abbondio, Renzo, Lucia, don Rodrigo and of the village: they are the cards named in the text or in the properties. A click on a tab shows that card, which you can also edit.
-- **The next pane.** The next thing opened beside takes the place of the pane that is not pinned. With the pin 📌 the pane stays and the new one opens beside it.
-- **The buttons of the pane.** ⤢ takes the content to the middle, in its section; ⇄ swaps it with what is in the middle; × closes the pane. Drag the left edge to widen it, double click to give the text and the panes the same width.
-- **The panel on the right** (Properties, Links, Comments) shows what has the cursor: the scene in the middle or the content of the pane you clicked in.
-- **The views beside** highlight the scene you are writing, and a click on an item opens it in the middle.
-
-The same scene can be in the middle and in a pane: what you write in one appears at once in the other.
-
-### In depth
-
-- Each open file has one document in memory, shared by all the editors that show it: saving, automatic snapshots and reloading after a change on disk go through it, so two editors of the same file do not overwrite each other.
-- Before renaming or moving files, Dante writes what the editors still hold in memory; the panes follow the renamed items and close by themselves if the item is deleted.
-- The layout of the panes is saved on this computer, for each project, and not in the folder of the novel: the screen of a co-author does not change.
-- On a Mac Cmd+W does not close the window: the menu of the app uses it to close the pane or, if the cursor is not in a pane, the project. Before closing, Dante writes everything you wrote and, if the settings ask for it, makes the backup, as with the button to close the project.
-- Export, Settings and Statistics are exceptions, because they use the whole width: there the panes are hidden, not closed.
-
-## 17. Updates
-
-### How to
-
-1. At every launch Dante checks whether there is a new version, and then again every six hours if it stays open. If there is none, **Dante 1.… is up to date** appears for a few seconds at the bottom right; if the check fails (for example without a connection) it says so in the same place. When there is a new version a box appears at the bottom right: **Dante 1.… is available**.
-
-   ![The update box](img/aggiornamento.png)
-2. To know what changes press **What's new**: the box lists the news of every version released after the installed one, in Italian or in English according to Dante's language. The same list is in the page [What's new](whats-new.md) and in the page of the version on GitHub.
-3. Press **Update and restart**. Dante saves the open text, downloads the new version, installs it and reopens. On Windows the window of the installer appears for a few seconds.
-4. With **Remind me later** the box vanishes and comes back at the next launch. With **Skip this version** Dante no longer proposes it: it waits for the next one. If you change your mind, **Check for updates** in Settings shows it anyway.
-
-In **Settings** > **Updates and support** you also choose the **channel**:
-
-- **Stable**, the default choice: you receive only the official versions, when the news has already been tried.
-- **Beta**: you receive the news earlier, in versions still on trial (for example *1.1.0-beta.1*), which may have some defects. If you install a beta, Dante stays on this channel until you change it.
-
-Going back from Beta to Stable Dante does not go backwards: you stay on the beta you have until a more recent stable version comes out.
-
-To check by hand, on the Mac choose **Dante** > **Check for Updates…** in the menu bar; everywhere you can open **Settings** > **Updates and support** and press **Check for updates**. There you also find the number of the installed version, useful when you report a problem, and the box not to check for updates at launch.
-
-The portable copy for Windows does not update by itself: download the new zip and replace the folder, keeping the subfolder `dante-data`.
-
-### In depth
-
-- The versions follow semantic versioning: 1.0.1 only fixes defects, 1.1.0 brings new features (first as beta 1.1.0-beta.1, -beta.2…), 2.0.0 would change something incompatible. How they come out is explained in [Rilasci di Dante](rilascio.md) (in Italian).
-- Each version is a GitHub release with a file `latest.json` that lists the signed files for each system. The Stable channel reads that of the latest official release; the Beta channel reads the list of releases and takes the highest version, beta or stable. The installed copy compares the number with its own.
-- The 0.1.x copies look for updates in the old *preview* page, which receives the `latest.json` of every new stable: so they move to 1.0 and from there choose the channel.
-- The update files are signed, and Dante checks the signature before installing: it refuses a file that is not signed or was changed.
-- What is replaced: on a Mac the app in Applications, on Windows the installed program (with the installer, which shows only a progress bar), on Linux the AppImage or the .deb/.rpm package (for the packages the system asks for the administrator password). The projects and the settings are not touched.
-- Dante does not look for updates in the portable copy, because there is no installation to replace. There the check at launch shows nothing; from the menu it says that this copy does not update by itself.
-- Without a connection the check at launch fails silently; the one from Settings shows the error.
-
-## 18. Dante in the browser
-
-Dante also exists as a web version, for those who cannot or do not want to install the app, for example on a Mac stuck on Catalina. It is the same program, with some limits listed below. The app stays the main version: if you can install it, use that.
-
-### How to
-
-1. Open **https://dante.lucadj.eu/app/** with **Chrome**, **Edge** or **Brave**. Safari and Firefox open Dante, but cannot work on the folders of the computer: there only the sample project and the trial of an import from Word, which is not saved, work.
-2. To have Dante like an app, with a window of its own and the icon in the Dock or in the Start menu, press the **Install** icon on the right of the address bar (in Chrome: a monitor with an arrow). It is optional, but handy.
-3. Press **Open folder…** and choose the folder of the novel, or **New project** and choose where to create it. The browser asks for permission to change the folder: answer **Allow** or, if it is there, **Allow on every visit**, so that next time the project reopens from the recent ones without more questions.
-
-   ![The opening screen of Dante in the browser](img/nel-browser.png)
-
-4. From here Dante works like the app: the text is saved in the files of the folder while you write.
-5. After the first opening Dante also works **without a connection**. When there is a network and a new version, the update box appears as in the app (chapter 17): **Update and restart** reloads Dante with the new version.
-
-If you close the tab right after writing, the browser may ask whether you really want to leave: choose **Stay** (or Cancel), wait a second and close again. At that moment Dante is still writing the last words.
-
-**What is missing, or works differently, in the browser:**
-
-- **No PDF**: Word, EPUB and Markdown yes, the PDF for now only in the app.
-- **Moving chapters and parts is slower**: the browser cannot rename folders, so Dante copies the files to the new position and then deletes the old one. Do not close the browser while it does so; if it happens, Dante completes the move at the next opening. Those who collaborate through Drive or Dropbox receive more changes than usual.
-- **The changes made from outside** (a co-author, Obsidian, another app) appear after a few seconds, or when you go back to Dante's tab, not at once as in the app.
-- **No "show in Finder" or "open with the default app"**: Dante says in which folder the file is and offers to download a copy. The exports end up in the `export` folder of the project, or where you choose with **Save somewhere else…**.
-- **Cmd+W (Ctrl+W) closes the browser tab**, not the pane or the project: use **Alt+Cmd+W** instead (Ctrl+Alt+W on Windows and Linux).
-- **A project opens in one tab at a time**: if it is already open elsewhere, Dante says so. Two tabs on the same project would write over each other.
-- **Images from a web address**: many sites do not let the browser download them. In that case save the image on the computer and drag it into Dante.
-- **Double click on `Title.dante`**: it works only with Dante installed from the browser (step 2) and asks for one more click to give permission on the folder.
-
-### In depth
-
-- **Privacy**: the text, the notes, the settings and your name never leave the computer. The browser works directly on the files of the chosen folder; there is no Dante server, no account, no visit statistics. Only the requests for the files of the program and for the file `version.json` that says whether there is a new version go over the network, to GitHub Pages, which like any site sees the IP address and the kind of browser. The download of an image from a web address happens only when you ask for it.
-- **How it works offline**: a *service worker* keeps in the browser all the files of the downloaded version, as one block. A new version is downloaded whole and takes the place of the old one only with **Update and restart** (or at the next opening with no Dante window open), so files of two versions never mix.
-- **Where things stay**: the settings of the application in `localStorage`, the authorised folders (the "handles" the browser gives Dante) in IndexedDB, both in the profile of the browser. Dante asks the browser not to delete them when space is short. In the worst case the settings and the list of recent projects are lost, not the novel, which is in the folder.
-- **Which folders**: Chrome refuses some system folders and the Home or Documents folder as a whole; a project subfolder is fine, including those of Google Drive, Dropbox, OneDrive and iCloud Drive.
-- **Interrupted moves**: while it copies a folder, Dante writes in `.dante/moving.json` from where to where it is moving. At the next opening, if the file is there, it completes the copy or the deletion of the original and removes it.
-- **Changes from outside**: the browser does not warn when a file changes, so Dante checks the folder again (names, sizes and dates of the files) every few seconds and when the tab comes back to the front. The folders `.dante`, `export` and `.trash` are excluded, as in the app.
-- **Two tabs**: Dante "holds" the open folder with a browser lock (*Web Locks*); a second tab or window of the same browser cannot open it until the first closes the project or the tab.
-- **macOS Catalina**: the last version of Chrome, Edge and Brave for macOS 10.15 is based on Chromium 128 (2024) and no longer receives security updates. Dante works there, but it is good to know, because the same browser is also used to browse. On Catalina Brave still publishes its last version; a Chrome already installed stays at 128.
-- **Two versions**: in `/app/` there is the latest official version, in `/beta/` the latest trial version, the same as the beta of the app. Installed from the browser they are two separate apps (the second is called *Dante beta*), but they share the settings and the list of recent projects; a novel open in one does not open in the other until you close it.
-- **Address**: Dante is on a domain of its own, `dante.lucadj.eu`, so no other page published with GitHub Pages can read its data in the browser. Until October 2026 the address was `lucadj77.github.io/dante/`, which now leads to the site: for the browser it is another site, so those who used it find their novels in the folders but must reopen them and redo the settings.
-
-## 19. Backup copies
-
-A backup copy is a zip file with the whole project, kept on the computer outside the folder of the novel. It is needed if the folder gets damaged, for example by a syncing problem with Drive or Dropbox, or if a file is deleted by mistake outside Dante.
-
-### How to
-
-- Dante makes a copy by itself when you close the project or quit Dante, if something has changed since the last one.
-- The copies are in the folder **Documents/Dante backup**, in a subfolder for each novel. Of each novel the 10 most recent stay; the oldest are deleted by themselves.
-- In **Settings → Backups** you can choose another folder, how many copies to keep, whether to make them on closing, and see when the last one was made. **Make a backup now** makes one at once, **Show the backups** opens the folder.
-- **To take up a project again**: in **Settings** > **Backups**, under **Going back to a backup**, is the list of the backups with date and time. **Open this backup** takes it out into a new folder beside the novel's, named after the novel with "(backup of…)", and opens it. The novel as it is now is not touched and stays among the recent projects: compare the two folders calmly and keep the right one. If Dante cannot open the novel, do it by hand: open the zip (double click), move the folder it holds where you like and open it with **Open folder…** from the start screen.
-- **In the browser** Dante cannot write outside the folder of the novel: in **Settings** > **Backups** there is **Download a backup (zip)**, to press now and then and keep in a safe place.
-
-### In depth
-
-- The name of each copy is the name of the folder of the project with date and time, for example `My novel 2026-10-26 18-02-11.zip`. Inside is the folder of the project as it was.
-- The `export` folder (it is made again from the novel), the trash `.trash`, the folders `.obsidian` and `.git` and the presence files of the co-authors are left out. The snapshots in `.dante/snapshots` are there.
-- Two novels with the same folder name have different subfolders ("My novel", "My novel 2"): a file `.dante-backup-of` in the subfolder says which project it belongs to.
-- The copy is first written with a temporary name and takes its name only when it is complete, so a zip with the right name is never half done.
-- The chosen folder holds for all the projects of this computer, like the other settings of the application. A synced folder (Drive, Dropbox, iCloud) is fine as a second protection, but it keeps the copy on the same service that may have caused the problem.
-
-## 20. Help inside Dante
-
-### How to
-
-The **Help** icon (the question mark in the bar on the left, above the trash) opens a window with three tabs:
-
-- **First steps**: seven steps to begin, from creating the project to the export.
-- **Full guide**: this guide, with the list of the chapters on the left. A click on a reference ("chapter 7") leads to the chapter.
-
-  ![The Help window on the Full guide tab, with the chapters on the left](img/aiuto.png)
-
-- **What's new**: what changes in each version.
-
-It can be read without a connection too, because it is inside Dante. From the start screen you get there with **First steps and guide**; on the Mac also from the menu **Help** > **Dante Help** (Cmd+?). Esc closes the window.
-
-### In depth
-
-- The pages travel inside the app: the guide inside Dante is that of the installed version.
-- With the interface in Italian the tabs show the Italian pages; with any other language, the English ones.
-- The links to other pages of the repository (for example [Trying Dante](beta.md)) open on GitHub in the browser.
-- **Error messages**: when something fails (a file that cannot be written, a full disk, a folder that vanished, no connection) Dante says so with a simple sentence. The technical message stays hidden behind **Details**, to copy if you report the problem.
-
-## 21. Appearance and spelling
-
-How Dante and the text look while you write. They are choices of this computer: they hold for every project, unless you give a novel a look of its own, and change neither the files nor the export, which has its own settings (chapter 13).
-
-### How to
-
-Open **Settings**: in the list on the left, under **Dante on this computer**, are the pages **Appearance**, **The text in the editor** and **Writing**.
-
-- **Theme** (page **Appearance**): you choose it from five small drawings of the window, each in its own colours. **System** (light or dark like the computer, and it changes with it), **Light (paper)**, **Sepia** (warm paper, to write for a long time by day), **Dark**, **Night** (almost black with softer text, to write in the dark).
-
-  ![The Appearance page of the Settings: the five themes and the accent colours](img/aspetto.png)
-
-- **Accent colour**: the colour of active buttons, links and selections. The first circle leaves that of the theme; the others are blue, green, brick red, purple, teal and amber, in a lighter version in the dark themes.
-- **Interface size**: enlarges or shrinks the whole window of Dante, from 80% to 200%: menus, tree, panels, buttons, windows and their text. It is useful if your sight is poor or you work on a very large screen. The text in the editor grows by the same measure, besides its **Font size** (which stays separate and also changes with Cmd/Ctrl + and −).
-- **The text in the editor** (the page with this name):
-  - **Editor font**: five ready choices, or **Another installed font…**, which lists the book fonts present on the computer and with **Other…** accepts the name of any installed font.
-  - **Font size** and **Line width** (in characters).
-  - **Line spacing**: the space between the lines of a paragraph, from 1.4 to 2.4; 1.7 is the usual one.
-  - **Space between paragraphs**: an empty line, half a line or a little. In the file an empty line stays between two paragraphs all the same: only how tall it is on screen changes.
-- **A single Enter starts a new paragraph** (page **Writing**): on by default. The empty line that separates the paragraphs in the file is written by Dante and does not show (chapter 5). Off, the editor shows the empty lines as they are in the file, and **Ask about extra empty lines** appears.
-  - **First-line indent**: none, small, medium or large, as in printed books.
-  - **Justified text, as in a book**: aligns the paragraphs on the right too and breaks lines with hyphenation.
-- Beside it is a **sample** of the text, which changes with every choice.
-- **Spelling** (page **Writing**): **Underline words the spelling checker does not know** turns the checker on or off while you write.
-- **A different look for a novel**: in **Settings** > **Look of this novel** tick **Use a different look for this novel**. The theme, accent colour, font and text layout you choose there hold only when you open that novel; the others keep the look of the computer. Unticking it takes the novel back to the look of the computer. Interface size, language and spelling stay the same for every novel.
-
-*Example:* if the menus and the labels of the panels look small to you, choose **Interface size: 125%**. Everything grows at once; if the text of the editor then looks too large, lower its **Font size**.
-
-*Example:* for a page like that of a printed novel choose **Sepia**, **Space between paragraphs: A little**, **Indent: Medium** and **Justified text**. The paragraphs draw closer, each begins indented and the margins are straight.
-
-### In depth
-
-- **Interface size**: Dante enlarges its window as a browser does with the zoom, so everything keeps its proportions. In the browser version the setting is not there: you use the zoom of the browser (in Chrome and Edge the item **Zoom** of the ⋮ or ··· menu), which the browser remembers for the site. On macOS 10.15 (Catalina) and earlier the system does not let apps enlarge their window: macOS 11 or later is needed; there the screen zoom of macOS is left (System Preferences > Accessibility > Zoom). There are no keyboard shortcuts: Cmd/Ctrl + and − already change the text of the editor, and Option+Cmd + and − are those of the screen zoom of macOS.
-- Indent and space between paragraphs concern only the paragraphs of text: headings, lists, quotations, tables and centred or right-aligned paragraphs stay as they are.
-- The hyphenation of justified text uses the language of the novel; where the system does not have the rules of that language, the justified lines may have wider spaces.
-- **Spelling checker**: it is that of the system (macOS, Windows, Linux or the browser), with its dictionaries and the words you taught it; the system chooses the dictionary. Dante marks the text with the language of the novel, which the system can use to choose the right dictionary. On the Mac a right click on an underlined word gives the suggestions and **Learn Spelling**; the languages are chosen in System Settings > Keyboard > Text Input > Edit > Spelling. On Windows the languages are those installed in Settings > Time & language. Dante keeps from the checker the names and aliases of the Story Bible's cards, and the **Words of this novel** added in Settings > Writing: they are written in `dante.yaml` under `dictionary`, so they are the same on every computer and for those who write with you. Capitals count: "Renzo" does not cover "renzo".
-- **Look of a novel**: the choices stay on this computer, with the other settings of Dante, and not in the project: those who write with you in the same folder keep their own look, and on another computer the novel opens with the look of that computer. To recognise the novel even if you move or rename the folder, Dante writes the file `.dante/id` in the project, which holds only a random code. A copy of the folder made by hand has the same code, and so the same look. Making the text larger with Cmd/Ctrl + and − also changes the look of the novel, when it has one.
-- In the settings file of the app: `theme`, `accent`, `uiZoom` (1 = 100%), `fontFamily`, `fontSize`, `lineWidth`, `lineHeight`, `paragraphGap`, `indent`, `justify`, `spellcheck`.
-
-## 22. Gamebooks
+## 18. Gamebooks
 
 A gamebook is made of numbered paragraphs: the reader does not read in order, but jumps from one paragraph to another according to the choices made. Dante can work on a gamebook instead of a novel. It is a module that is off by default: it is turned on project by project and changes nothing in the others.
 
@@ -967,3 +846,124 @@ In Markdown the references stay numbers and the boxes stay between lines `::: {c
 - The warnings are: orphan, dead end, unreachable from the opening paragraph, double number, link without a number, reference to a paragraph that is not there, ending box in a paragraph not marked as an ending (a paragraph with `finale: true` without an ending box is fine: the ending can be told in the text), number of the reference different from that of the paragraph.
 - The game state considers what the reader *can* have when arriving at a paragraph: the values given on at least one path from the opening paragraph, the paragraph itself included. In the text only the values that the book gives somewhere count. A value with a hyphen before it ("-careful") takes something away and is not considered. Two values are possible duplicates if they differ by at most two letters and by less than 30% of the length; a value and the same with a question mark never are.
 - In `dante.yaml` everything is under `gamebook:` (`enabled`, `start`, `short`, `onePerPage`, `showLinks`, `boxes`, and `export` with `heading`, `prefix`, `align`, `size`, `separator`, `symbol`, `links`, `bold`, `boxes`, `justify`, `indent`, `spacing`, `boxSize`, `numberBold`, `numberItalic`, `numberFont`). In Word the numbers of the paragraphs are bookmarks (`p12`) and the references internal links; in PDF and EPUB they are labels and links to the same name; the folder is `folders.manuscript`. In a novel `gamebook:` is not written.
+
+## 19. Backup copies
+
+A backup copy is a zip file with the whole project, kept on the computer outside the folder of the novel. It is needed if the folder gets damaged, for example by a syncing problem with Drive or Dropbox, or if a file is deleted by mistake outside Dante.
+
+### How to
+
+- Dante makes a copy by itself when you close the project or quit Dante, if something has changed since the last one.
+- The copies are in the folder **Documents/Dante backup**, in a subfolder for each novel. Of each novel the 10 most recent stay; the oldest are deleted by themselves.
+- In **Settings → Backups** you can choose another folder, how many copies to keep, whether to make them on closing, and see when the last one was made. **Make a backup now** makes one at once, **Show the backups** opens the folder.
+- **To take up a project again**: in **Settings** > **Backups**, under **Going back to a backup**, is the list of the backups with date and time. **Open this backup** takes it out into a new folder beside the novel's, named after the novel with "(backup of…)", and opens it. The novel as it is now is not touched and stays among the recent projects: compare the two folders calmly and keep the right one. If Dante cannot open the novel, do it by hand: open the zip (double click), move the folder it holds where you like and open it with **Open folder…** from the start screen.
+- **In the browser** Dante cannot write outside the folder of the novel: in **Settings** > **Backups** there is **Download a backup (zip)**, to press now and then and keep in a safe place.
+
+### In depth
+
+- The name of each copy is the name of the folder of the project with date and time, for example `My novel 2026-10-26 18-02-11.zip`. Inside is the folder of the project as it was.
+- The `export` folder (it is made again from the novel), the trash `.trash`, the folders `.obsidian` and `.git` and the presence files of the co-authors are left out. The snapshots in `.dante/snapshots` are there.
+- Two novels with the same folder name have different subfolders ("My novel", "My novel 2"): a file `.dante-backup-of` in the subfolder says which project it belongs to.
+- The copy is first written with a temporary name and takes its name only when it is complete, so a zip with the right name is never half done.
+- The chosen folder holds for all the projects of this computer, like the other settings of the application. A synced folder (Drive, Dropbox, iCloud) is fine as a second protection, but it keeps the copy on the same service that may have caused the problem.
+
+## 20. Updates
+
+### How to
+
+1. At every launch Dante checks whether there is a new version, and then again every six hours if it stays open. If there is none, **Dante 1.… is up to date** appears for a few seconds at the bottom right; if the check fails (for example without a connection) it says so in the same place. When there is a new version a box appears at the bottom right: **Dante 1.… is available**.
+
+   ![The update box](img/aggiornamento.png)
+2. To know what changes press **What's new**: the box lists the news of every version released after the installed one, in Italian or in English according to Dante's language. The same list is in the page [What's new](whats-new.md) and in the page of the version on GitHub.
+3. Press **Update and restart**. Dante saves the open text, downloads the new version, installs it and reopens. On Windows the window of the installer appears for a few seconds.
+4. With **Remind me later** the box vanishes and comes back at the next launch. With **Skip this version** Dante no longer proposes it: it waits for the next one. If you change your mind, **Check for updates** in Settings shows it anyway.
+
+In **Settings** > **Updates and support** you also choose the **channel**:
+
+- **Stable**, the default choice: you receive only the official versions, when the news has already been tried.
+- **Beta**: you receive the news earlier, in versions still on trial (for example *1.1.0-beta.1*), which may have some defects. If you install a beta, Dante stays on this channel until you change it.
+
+Going back from Beta to Stable Dante does not go backwards: you stay on the beta you have until a more recent stable version comes out.
+
+To check by hand, on the Mac choose **Dante** > **Check for Updates…** in the menu bar; everywhere you can open **Settings** > **Updates and support** and press **Check for updates**. There you also find the number of the installed version, useful when you report a problem, and the box not to check for updates at launch.
+
+The portable copy for Windows does not update by itself: download the new zip and replace the folder, keeping the subfolder `dante-data`.
+
+### In depth
+
+- The versions follow semantic versioning: 1.0.1 only fixes defects, 1.1.0 brings new features (first as beta 1.1.0-beta.1, -beta.2…), 2.0.0 would change something incompatible. How they come out is explained in [Rilasci di Dante](rilascio.md) (in Italian).
+- Each version is a GitHub release with a file `latest.json` that lists the signed files for each system. The Stable channel reads that of the latest official release; the Beta channel reads the list of releases and takes the highest version, beta or stable. The installed copy compares the number with its own.
+- The 0.1.x copies look for updates in the old *preview* page, which receives the `latest.json` of every new stable: so they move to 1.0 and from there choose the channel.
+- The update files are signed, and Dante checks the signature before installing: it refuses a file that is not signed or was changed.
+- What is replaced: on a Mac the app in Applications, on Windows the installed program (with the installer, which shows only a progress bar), on Linux the AppImage or the .deb/.rpm package (for the packages the system asks for the administrator password). The projects and the settings are not touched.
+- Dante does not look for updates in the portable copy, because there is no installation to replace. There the check at launch shows nothing; from the menu it says that this copy does not update by itself.
+- Without a connection the check at launch fails silently; the one from Settings shows the error.
+
+## 21. Dante in the browser
+
+Dante also exists as a web version, for those who cannot or do not want to install the app, for example on a Mac stuck on Catalina. It is the same program, with some limits listed below. The app stays the main version: if you can install it, use that.
+
+### How to
+
+1. Open **https://dante.lucadj.eu/app/** with **Chrome**, **Edge** or **Brave**. Safari and Firefox open Dante, but cannot work on the folders of the computer: there only the sample project and the trial of an import from Word, which is not saved, work.
+2. To have Dante like an app, with a window of its own and the icon in the Dock or in the Start menu, press the **Install** icon on the right of the address bar (in Chrome: a monitor with an arrow). It is optional, but handy.
+3. Press **Open folder…** and choose the folder of the novel, or **New project** and choose where to create it. The browser asks for permission to change the folder: answer **Allow** or, if it is there, **Allow on every visit**, so that next time the project reopens from the recent ones without more questions.
+
+   ![The opening screen of Dante in the browser](img/nel-browser.png)
+
+4. From here Dante works like the app: the text is saved in the files of the folder while you write.
+5. After the first opening Dante also works **without a connection**. When there is a network and a new version, the update box appears as in the app (chapter 20): **Update and restart** reloads Dante with the new version.
+
+If you close the tab right after writing, the browser may ask whether you really want to leave: choose **Stay** (or Cancel), wait a second and close again. At that moment Dante is still writing the last words.
+
+**What is missing, or works differently, in the browser:**
+
+- **No PDF**: Word, EPUB and Markdown yes, the PDF for now only in the app.
+- **Moving chapters and parts is slower**: the browser cannot rename folders, so Dante copies the files to the new position and then deletes the old one. Do not close the browser while it does so; if it happens, Dante completes the move at the next opening. Those who collaborate through Drive or Dropbox receive more changes than usual.
+- **The changes made from outside** (a co-author, Obsidian, another app) appear after a few seconds, or when you go back to Dante's tab, not at once as in the app.
+- **No "show in Finder" or "open with the default app"**: Dante says in which folder the file is and offers to download a copy. The exports end up in the `export` folder of the project, or where you choose with **Save somewhere else…**.
+- **Cmd+W (Ctrl+W) closes the browser tab**, not the pane or the project: use **Alt+Cmd+W** instead (Ctrl+Alt+W on Windows and Linux).
+- **A project opens in one tab at a time**: if it is already open elsewhere, Dante says so. Two tabs on the same project would write over each other.
+- **Images from a web address**: many sites do not let the browser download them. In that case save the image on the computer and drag it into Dante.
+- **Double click on `Title.dante`**: it works only with Dante installed from the browser (step 2) and asks for one more click to give permission on the folder.
+
+### In depth
+
+- **Privacy**: the text, the notes, the settings and your name never leave the computer. The browser works directly on the files of the chosen folder; there is no Dante server, no account, no visit statistics. Only the requests for the files of the program and for the file `version.json` that says whether there is a new version go over the network, to GitHub Pages, which like any site sees the IP address and the kind of browser. The download of an image from a web address happens only when you ask for it.
+- **How it works offline**: a *service worker* keeps in the browser all the files of the downloaded version, as one block. A new version is downloaded whole and takes the place of the old one only with **Update and restart** (or at the next opening with no Dante window open), so files of two versions never mix.
+- **Where things stay**: the settings of the application in `localStorage`, the authorised folders (the "handles" the browser gives Dante) in IndexedDB, both in the profile of the browser. Dante asks the browser not to delete them when space is short. In the worst case the settings and the list of recent projects are lost, not the novel, which is in the folder.
+- **Which folders**: Chrome refuses some system folders and the Home or Documents folder as a whole; a project subfolder is fine, including those of Google Drive, Dropbox, OneDrive and iCloud Drive.
+- **Interrupted moves**: while it copies a folder, Dante writes in `.dante/moving.json` from where to where it is moving. At the next opening, if the file is there, it completes the copy or the deletion of the original and removes it.
+- **Changes from outside**: the browser does not warn when a file changes, so Dante checks the folder again (names, sizes and dates of the files) every few seconds and when the tab comes back to the front. The folders `.dante`, `export` and `.trash` are excluded, as in the app.
+- **Two tabs**: Dante "holds" the open folder with a browser lock (*Web Locks*); a second tab or window of the same browser cannot open it until the first closes the project or the tab.
+- **macOS Catalina**: the last version of Chrome, Edge and Brave for macOS 10.15 is based on Chromium 128 (2024) and no longer receives security updates. Dante works there, but it is good to know, because the same browser is also used to browse. On Catalina Brave still publishes its last version; a Chrome already installed stays at 128.
+- **Two versions**: in `/app/` there is the latest official version, in `/beta/` the latest trial version, the same as the beta of the app. Installed from the browser they are two separate apps (the second is called *Dante beta*), but they share the settings and the list of recent projects; a novel open in one does not open in the other until you close it.
+- **Address**: Dante is on a domain of its own, `dante.lucadj.eu`, so no other page published with GitHub Pages can read its data in the browser. Until October 2026 the address was `lucadj77.github.io/dante/`, which now leads to the site: for the browser it is another site, so those who used it find their novels in the folders but must reopen them and redo the settings.
+
+## 22. Opening the project in Obsidian
+
+### How to
+
+In Obsidian choose **Open folder as vault** and select the folder of the project. Scenes and cards are read and changed normally, also from the phone if the folder is synced. When you go back to Dante, the changes are already there.
+
+Two precautions:
+
+- To move, rename or join scenes and chapters use Dante: in Obsidian the numbers at the beginning of the names must be respected by hand.
+- Do not delete the odd marks between curly brackets: they are comments and revisions (chapter 16).
+
+### In depth
+
+| What | In Dante | In Obsidian |
+| --- | --- | --- |
+| Scenes and notes | formatted text | the same |
+| Properties | Properties panel | Properties panel, same values |
+| Links `[[…]]` and aliases | the same | the same |
+| Blank lines between paragraphs | line with a pale ¶ | blank line when reading; when editing `&nbsp;` may appear |
+| Comments and revisions | bubbles, underlined and struck through | CriticMarkup marks visible: `{++ … ++}`, `{-- … --}`, `{>> … <<}` |
+| Headings "Chapter 3" | worked out by Dante | they do not appear: you see the file name |
+| Views | tables, boards, timelines | YAML files in `Views/` |
+| Snapshots, presence, log | handled by Dante | files in `.dante/`, to leave alone |
+
+Obsidian creates its own folder `.obsidian/`, which Dante ignores. A file renamed in Obsidian without a numeric prefix ends up at the end of its chapter.
+
+An artificial intelligence assistant that works on files (Claude Code, Codex, Cursor and the like) can read and change a Dante project too. So that it respects the same rules (numbers in the names, folder notes, links, comments and revisions, files in `.dante/` not to touch), give it the skill in [`skills/dante`](../skills/dante/SKILL.md): a file of instructions in English, valid for novels and gamebooks in any language, with three in-depth files (settings, formatting, gamebooks) and a script that shows the manuscript in order, with words and characters with spaces, and flags problems of structure. In Claude Code it is enough to copy the folder `skills/dante` into `.claude/skills/` of the project or of your user folder; in the Claude apps you upload the folder compressed as a zip among the skills; with other assistants you paste or attach `SKILL.md`.
