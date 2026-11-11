@@ -292,6 +292,7 @@ A snapshot is a copy of a scene as it was at a certain moment, to take up again 
 
   ![The comparison between the snapshot and the current text](img/confronta.png)
 - **Restore** puts the snapshot back in place of the text. The current text is saved as a snapshot first, so nothing is lost.
+- **The whole manuscript at once**: in **Settings** > **Upkeep**, under **Snapshot of the whole manuscript**, write a name (for example "First draft") and press **Take snapshot**. Every scene is saved as it is at that moment: you find it under that name among the snapshots of each scene, to compare it, and from the same list **Restore** takes every scene back to it. The current text of the scenes that change is saved first; scenes written later stay as they are and deleted ones do not come back (they are in the Trash).
 - To tidy up, in **Settings** > **Upkeep**, **Delete old snapshots** deletes the automatic ones taken before a date; those with a name always stay.
 
 ### In depth

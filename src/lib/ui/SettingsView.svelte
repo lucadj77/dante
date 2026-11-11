@@ -11,7 +11,9 @@
   import TextSample from "./TextSample.svelte";
   import AuthorsInput from "./AuthorsInput.svelte";
   import { propertyDef, withDef } from "$lib/core/properties";
-  import { cleanSnapshots } from "$lib/core/snapshots";
+  import { cleanSnapshots, deleteWholeSnapshot, listWholeSnapshots, restoreWholeSnapshot, takeWholeSnapshot, type WholeSnapshot } from "$lib/core/snapshots";
+  import { scenesOf } from "$lib/core/manuscript";
+  import { confirmDelete } from "./dialogs";
   import { LANGUAGES, type MessageKey } from "$lib/i18n";
   import { levelHeading } from "$lib/core/numbering";
   import { chosenColor, DOT_HUES, statusTone } from "$lib/core/statistics";
@@ -78,7 +80,7 @@
     { id: "measures", group: "novel", title: "settings.sec.measures", keys: ["settings.pages", "settings.pageUnit", "settings.pageCharacters", "settings.pageWords", "settings.goalsLink", "settings.typographyLink"] },
     { id: "look", group: "novel", title: "settings.sec.look", keys: ["look.own", "look.ownHint", "settings.theme", "appearance.accent", "settings.font"] },
     { id: "gamebook", group: "novel", title: "gamebook.title", keys: ["gamebook.enable", "gamebook.enableHint", "gamebook.folder", "gamebook.boxes", "gamebook.onePerPage", "gamebook.showLinks"] },
-    { id: "upkeep", group: "novel", title: "settings.sec.upkeep", keys: ["snap.cleanTitle", "snap.cleanHint", "snap.clean"] },
+    { id: "upkeep", group: "novel", title: "settings.sec.upkeep", keys: ["whole.title", "whole.hint", "whole.take", "snap.cleanTitle", "snap.cleanHint", "snap.clean"] },
     { id: "you", group: "app", title: "settings.sec.you", keys: ["settings.userName", "settings.userNameHint", "comments.revisionMode", "settings.interfaceLanguage"] },
     { id: "appearance", group: "app", title: "appearance.title", keys: ["settings.theme", "settings.themeLight", "settings.themeSepia", "settings.themeDark", "settings.themeNight", "appearance.accent", "appearance.uiZoom"] },
     { id: "text", group: "app", title: "appearance.page", keys: ["settings.font", "settings.fontSize", "settings.lineWidth", "appearance.lineHeight", "appearance.gap", "appearance.indent", "appearance.justify"] },
@@ -285,6 +287,49 @@
       error = failure(e);
     }
   }
+
+  /** The snapshots of the whole manuscript, and the name of the one being taken. */
+  let wholes = $state<WholeSnapshot[]>([]);
+  let wholeName = $state("");
+  let wholeBusy = $state(false);
+  let wholeMessage = $state("");
+  const scenePaths = () => scenesOf(project.manuscript).map((n) => n.path);
+  $effect(() => {
+    if (section === "upkeep") void listWholeSnapshots(project.fs).then((list) => (wholes = list));
+  });
+  async function whole(work: () => Promise<string>) {
+    wholeBusy = true;
+    wholeMessage = "";
+    try {
+      // What is being written goes to the files first.
+      await project.beforeMove?.();
+      wholeMessage = await work();
+      wholes = await listWholeSnapshots(project.fs);
+    } catch (e) {
+      wholeMessage = failure(e);
+    } finally {
+      wholeBusy = false;
+    }
+  }
+  const takeWhole = () =>
+    whole(async () => {
+      const taken = await takeWholeSnapshot(project.fs, scenePaths(), wholeName);
+      wholeName = "";
+      return t("whole.taken", { name: taken.name, n: taken.scenes });
+    });
+  const restoreWhole = (snap: WholeSnapshot) =>
+    whole(async () => {
+      if (!(await confirmDelete(t("whole.confirmRestore", { name: snap.name }), t("snap.restore")))) return "";
+      const n = await restoreWholeSnapshot(project.fs, scenePaths(), snap.id);
+      await onSaved();
+      return t("whole.restored", { n });
+    });
+  const removeWhole = (snap: WholeSnapshot) =>
+    whole(async () => {
+      if (!(await confirmDelete(t("whole.confirmDelete", { name: snap.name })))) return "";
+      await deleteWholeSnapshot(project.fs, scenePaths(), snap.id);
+      return "";
+    });
 
   /** A word being added to the novel's dictionary. */
   let newWord = $state("");
@@ -573,6 +618,25 @@
       {/if}
     {:else if section === "upkeep"}
       <div class="fields">
+        <h3>{t("whole.title")}</h3>
+        <p class="hint">{t("whole.hint")}</p>
+        <div class="define">
+          <input bind:value={wholeName} aria-label={t("whole.name")} placeholder={t("whole.name")} />
+          <button type="button" disabled={!wholeName.trim() || wholeBusy} onclick={takeWhole}>{t("whole.take")}</button>
+        </div>
+        {#if wholeMessage}<p class="hint" role="status">{wholeMessage}</p>{/if}
+        {#if wholes.length}
+          <ul class="wholes" aria-label={t("whole.title")}>
+            {#each wholes as snap (snap.id)}
+              <li>
+                <span class="what"><strong>{snap.name}</strong> <small>{snap.date.toLocaleString(app.settings.language, { dateStyle: "medium", timeStyle: "short" })} · {t("whole.scenes", { n: snap.scenes })}</small></span>
+                <button type="button" disabled={wholeBusy} onclick={() => restoreWhole(snap)}>{t("snap.restore")}</button>
+                <button type="button" disabled={wholeBusy} onclick={() => removeWhole(snap)}>{t("snap.delete")}</button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
         <h3>{t("snap.cleanTitle")}</h3>
         <label
           >{t("snap.cleanHint")}
@@ -1127,6 +1191,29 @@
     padding: 0 6px;
     border: none;
     background: none;
+    color: var(--text-muted);
+  }
+  .wholes {
+    display: grid;
+    gap: 6px;
+    margin: 8px 0 20px;
+    padding: 0;
+    list-style: none;
+  }
+  .wholes li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .wholes .what {
+    flex: 1;
+    min-width: 0;
+  }
+  .wholes small {
+    display: block;
     color: var(--text-muted);
   }
 </style>

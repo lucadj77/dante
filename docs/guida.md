@@ -292,6 +292,7 @@ Un'istantanea è una copia di una scena com'era in un certo momento, da riprende
 
   ![Il confronto tra l'istantanea e il testo attuale](img/confronta.png)
 - **Ripristina** rimette l'istantanea al posto del testo. Il testo attuale viene salvato prima come istantanea, quindi non si perde niente.
+- **Tutto il manoscritto in una volta**: in **Impostazioni** > **Manutenzione**, sotto **Istantanea di tutto il manoscritto**, scrivi un nome (per esempio «Prima stesura») e premi **Crea istantanea**. Ogni scena viene salvata com'è in quel momento: la ritrovi con quel nome tra le istantanee di ciascuna scena, per confrontarla, e dallo stesso elenco **Ripristina** riporta tutte le scene a quel punto. Il testo attuale delle scene che cambiano viene prima salvato; le scene scritte dopo restano come sono e quelle eliminate non tornano (sono nel cestino).
 - Per fare pulizia, in **Impostazioni** > **Manutenzione**, **Elimina le istantanee vecchie** cancella quelle automatiche precedenti a una data; quelle con un nome restano sempre.
 
 ### Approfondimento

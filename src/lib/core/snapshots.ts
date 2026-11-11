@@ -95,3 +95,77 @@ export async function cleanSnapshots(fs: ProjectFs, before: Date): Promise<numbe
   await visit(SNAPSHOT_ROOT);
   return removed;
 }
+
+// A snapshot of the whole manuscript is a snapshot of every scene with the same time and
+// name, so each scene shows it among its own, plus a small file that records it was taken:
+//   .dante/snapshots/whole/2026-11-11T18-40-05 First draft.json
+
+export const WHOLE_ROOT = join(SNAPSHOT_ROOT, "whole");
+
+export interface WholeSnapshot {
+  /** The file name its scenes' snapshots share, without extension. */
+  id: string;
+  date: Date;
+  name: string;
+  /** How many scenes it took. */
+  scenes: number;
+}
+
+/** Takes a snapshot of each of `scenes` under one name. */
+export async function takeWholeSnapshot(fs: ProjectFs, scenes: string[], name: string, now = new Date()): Promise<WholeSnapshot> {
+  const clean = name.replace(/[\\/:*?"<>|#^[\]]/g, " ").replace(/\s+/g, " ").trim();
+  let id = `${stamp(now)} ${clean}`;
+  for (let n = 2; await fs.exists(join(WHOLE_ROOT, `${id}.json`)); n++) id = `${stamp(now)} ${clean} (${n})`;
+  let taken = 0;
+  for (const scene of scenes) {
+    if (!(await fs.exists(scene))) continue;
+    await fs.writeText(join(snapshotDir(scene), `${id}.md`), await fs.readText(scene));
+    taken++;
+  }
+  await fs.writeText(join(WHOLE_ROOT, `${id}.json`), JSON.stringify({ scenes: taken }) + "\n");
+  return { id, date: now, name: clean, scenes: taken };
+}
+
+/** The snapshots of the whole manuscript, the latest first. */
+export async function listWholeSnapshots(fs: ProjectFs): Promise<WholeSnapshot[]> {
+  if (!(await fs.exists(WHOLE_ROOT))) return [];
+  const out: WholeSnapshot[] = [];
+  for (const entry of await fs.list(WHOLE_ROOT)) {
+    const parsed = entry.isDir || !entry.name.endsWith(".json") ? null : parseSnapshotName(entry.name);
+    if (!parsed?.name) continue;
+    let scenes = 0;
+    try {
+      scenes = Number(JSON.parse(await fs.readText(entry.path)).scenes) || 0;
+    } catch {
+      // A damaged record still names its snapshot.
+    }
+    out.push({ id: stripExt(entry.name), date: parsed.date, name: parsed.name, scenes });
+  }
+  return out.sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
+/**
+ * Puts back the text each of `scenes` had in the snapshot, keeping today's text as a snapshot
+ * first. Scenes written after it stay as they are. Returns how many scenes changed.
+ */
+export async function restoreWholeSnapshot(fs: ProjectFs, scenes: string[], id: string): Promise<number> {
+  let changed = 0;
+  for (const scene of scenes) {
+    const file = join(snapshotDir(scene), `${id}.md`);
+    if (!(await fs.exists(file)) || !(await fs.exists(scene))) continue;
+    if ((await fs.readText(file)) === (await fs.readText(scene))) continue;
+    await restoreSnapshot(fs, scene, file);
+    changed++;
+  }
+  return changed;
+}
+
+/** Deletes a snapshot of the whole manuscript from each of `scenes`. */
+export async function deleteWholeSnapshot(fs: ProjectFs, scenes: string[], id: string): Promise<void> {
+  for (const scene of scenes) {
+    const file = join(snapshotDir(scene), `${id}.md`);
+    if (await fs.exists(file)) await fs.remove(file);
+  }
+  const record = join(WHOLE_ROOT, `${id}.json`);
+  if (await fs.exists(record)) await fs.remove(record);
+}

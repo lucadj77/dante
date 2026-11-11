@@ -73,3 +73,28 @@ describe("snapshots when everything is renumbered", () => {
     expect((await listSnapshots(fs, "Manuscript/030 B.md")).map((s) => s.name)).toEqual(["B"]);
   });
 });
+
+describe("snapshots of the whole manuscript", () => {
+  it("takes every scene under one name, and puts back only what changed", async () => {
+    const { takeWholeSnapshot, listWholeSnapshots, restoreWholeSnapshot, deleteWholeSnapshot } = await import("../snapshots");
+    const a = "Manuscript/010 Uno/010 A.md";
+    const b = "Manuscript/010 Uno/020 B.md";
+    const fs = new MemoryFs({ [a]: "Prima A.", [b]: "Prima B." });
+    const taken = await takeWholeSnapshot(fs, [a, b], "Prima stesura", new Date(2026, 10, 11, 18, 40, 5));
+    expect(taken).toMatchObject({ id: "2026-11-11T18-40-05 Prima stesura", name: "Prima stesura", scenes: 2 });
+    // Each scene shows it among its own snapshots.
+    expect((await listSnapshots(fs, a)).map((s) => s.name)).toEqual(["Prima stesura"]);
+    await fs.writeText(a, "Dopo A.");
+    await fs.writeText("Manuscript/010 Uno/030 C.md", "Nuova.");
+    const scenes = [a, b, "Manuscript/010 Uno/030 C.md"];
+    expect(await listWholeSnapshots(fs)).toMatchObject([{ name: "Prima stesura", scenes: 2 }]);
+    expect(await restoreWholeSnapshot(fs, scenes, taken.id)).toBe(1);
+    expect(await fs.readText(a)).toBe("Prima A.");
+    expect(await fs.readText("Manuscript/010 Uno/030 C.md")).toBe("Nuova.");
+    // What was there before going back is kept as a snapshot of its own.
+    expect(await Promise.all((await listSnapshots(fs, a)).map((s) => fs.readText(s.path)))).toContain("Dopo A.");
+    await deleteWholeSnapshot(fs, scenes, taken.id);
+    expect(await listWholeSnapshots(fs)).toEqual([]);
+    expect((await listSnapshots(fs, b)).length).toBe(0);
+  });
+});

@@ -311,3 +311,27 @@ test("sets a footnote apart from the text it is written in", async ({ page }) =>
   await expect(editor.locator(".md-footnote").first()).toHaveText("^[Allora sotto la Spagna.]");
   await expect(editor).toContainText("era lontana.");
 });
+
+test("takes a snapshot of the whole manuscript and goes back to it", async ({ page }) => {
+  await openSample(page);
+  page.on("dialog", (dialog) => void dialog.accept());
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="upkeep"]').click();
+  await page.getByRole("textbox", { name: "Nome, per esempio Prima stesura" }).fill("Prima stesura");
+  await page.getByRole("button", { name: "Crea istantanea" }).click();
+  await expect(page.getByText("«Prima stesura» creata")).toBeVisible();
+  // Something written after it goes away when the manuscript is taken back.
+  await page.locator('nav button[data-section="manuscript"]').click();
+  const editor = page.locator(".cm-content").first();
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+Home");
+  await page.keyboard.type("Una frase di troppo. ");
+  await expect(editor).toContainText("Una frase di troppo.");
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="upkeep"]').click();
+  await page.getByRole("list", { name: "Istantanea di tutto il manoscritto" }).getByRole("button", { name: "Ripristina" }).click();
+  await expect(page.getByText("Scene riportate a quel punto: 1.")).toBeVisible();
+  await page.locator('nav button[data-section="manuscript"]').click();
+  await expect(page.locator(".cm-content").first()).toContainText("L’historia si può veramente deffinire");
+  await expect(page.locator(".cm-content").filter({ hasText: "Una frase di troppo." })).toHaveCount(0);
+});
