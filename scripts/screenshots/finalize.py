@@ -18,6 +18,9 @@ CROPS = {
     'esportazione-full': ('esportazione', (50, 30, 700, 640)),
     'struttura-full': ('struttura', (36, 27, 1290, 425)),
     'scheda': ('scheda', None),
+    'aspetto-full': ('aspetto', (52, 40, 900, 320)),
+    'libro-game-full': ('libro-game', (52, 0, 1448, 700)),
+    'grafo-full': ('grafo', (312, 40, 916, 640)),
 }
 os.makedirs(OUT, exist_ok=True)
 for f in sorted(glob.glob(os.path.join(os.path.dirname(__file__), 'shots/f-*.png'))):

@@ -14,6 +14,19 @@ export async function start(opts = {}) {
     window.__TAURI_INTERNALS__ = { metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } }, transformCallback: () => 0,
       invoke: async (cmd, args) => { console.log('invoke', cmd, JSON.stringify(args)); if (cmd === 'read_text') return yaml[args.root] ?? 'title: x\n'; if (cmd === 'path_exists') return true; if (cmd==='list_dir') return []; if (cmd==='plugin:app|version') return '1.0.3'; if (cmd==='updates_supported') return !!window.__updates; if (cmd==='check_update') return { rid: 1, currentVersion: '1.0.3', version: '1.1.0', body: '', rawJson: { news: { it: [{ version: '1.1.0', notes: ['**Copertina**: immagine, testi e colori.'] }], en: [{ version: '1.1.0', notes: ['**Cover**: picture, texts and colours.'] }] } } }; return null; } };
   }, [{ path: "/Users/luca/Romanzi/L'eredità", title: "L'eredità", opened: '2026-10-17T09:00:00Z' }, { path: '/Users/luca/Romanzi/Il faro', title: 'Il faro', opened: '2026-10-02T09:00:00Z' }]);
+  // A folder of the browser's private storage stands in for the folder the user would choose.
+  if (opts.picker) await page.addInitScript((name) => {
+    const handles = new Map();
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (value, key) {
+      if (value instanceof FileSystemHandle) { const id = `shot-handle:${handles.size}`; handles.set(id, value); value = id; }
+      return put.call(this, value, key);
+    };
+    const result = Object.getOwnPropertyDescriptor(IDBRequest.prototype, 'result');
+    const back = (x) => (typeof x === 'string' && handles.has(x) ? handles.get(x) : x);
+    Object.defineProperty(IDBRequest.prototype, 'result', { configurable: true, get() { const r = result.get.call(this); return Array.isArray(r) ? r.map(back) : back(r); } });
+    window.showDirectoryPicker = async () => (await navigator.storage.getDirectory()).getDirectoryHandle(name, { create: true });
+  }, opts.picker);
   if (opts.updates) await page.addInitScript(() => { window.__updates = true; });
   await page.goto('http://127.0.0.1:5173/');
   await page.waitForTimeout(1500);

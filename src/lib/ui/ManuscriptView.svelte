@@ -915,9 +915,9 @@
           <div class="add gamebook-add">
             <button title={t("gamebook.newParagraphTip")} aria-label={t("gamebook.new.title")} onclick={openNewParagraph}><Icon name="scene" /><span>{t("gamebook.paragraphShort")}</span></button>
             <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
-            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
-            <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><span class="glyph" aria-hidden="true">⇣</span><span>{t("gamebook.reorder.button")}</span></button>
-            <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><span class="glyph" aria-hidden="true">🕸</span><span>{t("gamebook.graph.button")}</span></button>
+            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><Icon name="shuffle" /><span>{t("gamebook.shuffle.button")}</span></button>
+            <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><Icon name="sortDown" /><span>{t("gamebook.reorder.button")}</span></button>
+            <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><Icon name="graph" /><span>{t("gamebook.graph.button")}</span></button>
           </div>
           {/if}
         </div>

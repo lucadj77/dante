@@ -771,6 +771,9 @@ Dante esiste anche come versione web, per chi non può o non vuole installare l'
 1. Apri **https://dante.lucadj.eu/app/** con **Chrome**, **Edge** o **Brave**. Safari e Firefox aprono Dante, ma non possono lavorare sulle cartelle del computer: lì funzionano solo il progetto di esempio e la prova di un'importazione da Word, che non viene salvata.
 2. Per avere Dante come un'app, con una finestra propria e l'icona nel Dock o nel menu Start, premi l'icona **Installa** a destra nella barra degli indirizzi (in Chrome: un monitor con una freccia). È facoltativo, ma comodo.
 3. Premi **Apri cartella…** e scegli la cartella del romanzo, oppure **Nuovo progetto** e scegli dove crearlo. Il browser chiede il permesso di modificare la cartella: rispondi **Consenti** o, se c'è, **Consenti a ogni visita**, così la volta dopo il progetto si riapre dai recenti senza altre domande.
+
+   ![La schermata iniziale di Dante nel browser](img/nel-browser.png)
+
 4. Da qui Dante funziona come l'app: il testo viene salvato nei file della cartella mentre scrivi.
 5. Dopo la prima apertura Dante funziona anche **senza connessione**. Quando c'è rete e una versione nuova, compare il riquadro dell'aggiornamento come nell'app (capitolo 17): **Aggiorna e riavvia** ricarica Dante con la nuova versione.
 
@@ -828,6 +831,9 @@ L'icona **Aiuto** (il punto di domanda nella barra a sinistra, sopra il cestino)
 
 - **Primi passi**: sette passi per cominciare, dalla creazione del progetto all'esportazione.
 - **Guida completa**: questa guida, con l'elenco dei capitoli a sinistra. Un clic su un rimando («capitolo 7») porta al capitolo.
+
+  ![La finestra dell'Aiuto sulla scheda Guida completa, con i capitoli a sinistra](img/aiuto.png)
+
 - **Novità**: cosa cambia in ogni versione.
 
 Si legge anche senza connessione, perché è dentro Dante. Dalla schermata iniziale ci si arriva con **Primi passi e guida**; sul Mac anche dal menu **Aiuto** > **Aiuto di Dante** (Cmd+?). Esc chiude la finestra.
@@ -848,6 +854,9 @@ Come appaiono Dante e il testo mentre scrivi. Sono scelte di questo computer: va
 Apri **Impostazioni**: nell'elenco a sinistra, sotto **Dante su questo computer**, ci sono le pagine **Aspetto**, **Il testo nell'editor** e **Scrittura**.
 
 - **Tema** (pagina **Aspetto**): si sceglie da cinque piccoli disegni della finestra, ognuno con i suoi colori. **Di sistema** (chiaro o scuro come il computer, e cambia con lui), **Chiaro (carta)**, **Seppia** (carta calda, per scrivere a lungo di giorno), **Scuro**, **Notte** (quasi nero con il testo più tenue, per scrivere al buio).
+
+  ![La pagina Aspetto delle Impostazioni: i cinque temi e i colori d'accento](img/aspetto.png)
+
 - **Colore d'accento**: il colore di pulsanti attivi, collegamenti e selezioni. Il primo cerchio lascia quello del tema; gli altri sono blu, verde, rosso mattone, viola, verde acqua e ambra, in una versione più chiara nei temi scuri.
 - **Dimensione dell'interfaccia**: ingrandisce o rimpicciolisce tutta la finestra di Dante, da 80% a 200%: menu, albero, pannelli, pulsanti, finestre e il loro testo. È utile se ci vedi poco o lavori su uno schermo molto grande. Il testo nell'editor cresce nella stessa misura, oltre alla sua **Dimensione del font** (che resta separata e si cambia anche con Cmd/Ctrl + e −).
 - **Il testo nell'editor** (la pagina con questo nome):
@@ -894,6 +903,9 @@ Dante legge, scrive, controlla, rimescola ed esporta il libro. I paragrafi resta
 - **L'albero**: al posto di capitoli e scene mostra i paragrafi in ordine di numero. Accanto a ogni paragrafo ci sono il numero (con un lucchetto se è fisso, un'ancora se è relativo a un altro), il titolo, un triangolo di avviso se c'è qualcosa da controllare (passa con il mouse per leggere cosa) e la lunghezza, in azzurro se il paragrafo è corto e in rosso se supera una pagina. I paragrafi ancora vuoti hanno il titolo in corsivo grigio. In cima, una riga riassume il libro: quanti paragrafi, quanti vuoti, quanti orfani (nessuno ci arriva), quanti vicoli ciechi (non portano da nessuna parte e non sono finali) e quante pagine.
 - **Da dove si arriva e dove si va**: con **Mostra sotto ogni paragrafo dell'albero da dove si arriva e dove porta** compare sotto ogni paragrafo una riga con i numeri che ci portano (←) e quelli a cui rimanda (→). Un clic su un numero apre quel paragrafo.
 - **Il pannello Paragrafo**: in **Proprietà**, sopra le altre sezioni, mostra numero e tipo, lunghezza e pagine, i paragrafi da cui si arriva e quelli a cui porta (ognuno si apre con un clic) e gli avvisi. Il numero si cambia scrivendone un altro: Dante aggiorna anche l'alias e tutti i rimandi che portano a quel paragrafo, e rifiuta un numero già usato. Accanto si sceglie se il numero è **libero** o **fisso**, e sotto si segna se il paragrafo è un finale. La nota del paragrafo (proprietà `note`) si scrive nel campo **Sinossi**. Sopra il testo, il divisore mostra numero e titolo.
+
+  ![Un libro game: a sinistra i paragrafi con numero, avvisi e lunghezza, a destra il pannello Paragrafo](img/libro-game.png)
+
 - **Nell'editor** i rimandi come `[[Il cortile|2]]` si vedono come il solo numero, e i box (scelte, parole chiave, finali e gli altri) come riquadri colorati. Le righe `:::` che aprono e chiudono un box si nascondono e ricompaiono quando il cursore ci passa sopra. Elenchi e tabelle dentro un callout (`> [!note]`) si vedono come nel resto del testo; in una tabella dentro un callout Tab e Invio funzionano come nelle altre tabelle.
 
 **Scrivere**
@@ -913,6 +925,9 @@ Mentre il modulo è acceso l'albero non si riordina trascinando e non si dividon
 **Numerare**
 
 - **Rimescolare la numerazione**: il pulsante **Rimescola** in cima all'albero apre una finestra con l'anteprima: per ogni paragrafo il numero di prima e quello di dopo. I paragrafi fissi (con il lucchetto) e il paragrafo iniziale restano dove sono, i relativi si spostano insieme alla loro ancora; fra tante prove Dante sceglie quella in cui un paragrafo e quelli a cui rimanda sono più lontani. **Nuova proposta** rifà il sorteggio. Premendo **Rimescola** Dante salva un'istantanea di ogni file che tocca, cambia i numeri e aggiorna in tutto il libro rimandi, alias e articoli («al 7» diventa «all'8»). Sotto l'anteprima, **Numeri scritti come testo** elenca i numeri di paragrafo scritti a mano nel testo («torna al paragrafo 3»): il rimescolamento non li tocca, quindi conviene trasformarli in rimandi con `[[` prima.
+
+  ![La finestra Rimescola la numerazione, con il numero di dopo e quello di prima per ogni paragrafo](img/rimescola.png)
+
 - **Riordinare in ordine di lettura**: il pulsante **Riordina** usa la stessa finestra, ma invece di sorteggiare numera i paragrafi in sequenza nell'ordine in cui il lettore li incontra: il paragrafo iniziale, poi quelli a cui rimanda nell'ordine in cui compaiono nel testo (i rimandi nascosti dopo), poi i loro, e così via. I fissi restano dove sono, i relativi seguono la loro ancora, i paragrafi che nessuno raggiunge vanno in fondo. Serve per lavorare sul libro in ordine prima di rimescolarlo.
 - **Tornare indietro**: nella stessa finestra, **Operazioni precedenti** elenca i rimescolamenti fatti. **Solo la numerazione** rimette i numeri di allora, con rimandi e articoli, e lascia il testo scritto dopo; **Tutto** riporta ogni file com'era prima dell'operazione. Un singolo paragrafo si può sempre ripristinare dalle sue istantanee.
 
@@ -922,6 +937,9 @@ Mentre il modulo è acceso l'albero non si riordina trascinando e non si dividon
 - **Stato di gioco**: Dante legge ciò che il lettore ottiene e ciò che gli viene chiesto in due modi. Nelle proprietà dei box un valore assegna qualcosa al lettore («studioso») e lo stesso valore con il punto interrogativo segna il paragrafo che chiede se ce l'ha («studioso?»); il valore conta in qualunque proprietà sia scritto, quindi «riflessi» tra le parole chiave risponde a «riflessi?» tra i caratteri. Nel testo, una frase come «Segna la parola chiave **lavanda**» o «Cerchia la caratteristica **studioso**» assegna, e una come «Se hai la parola chiave **lavanda**» o «Se possiedi uno **scudo piccolo**» chiede; se la frase nomina più valori («Se hai cerchiato **studioso** o **riflessivo**») ne basta uno. Seguendo i rimandi dal paragrafo iniziale, Dante segnala i valori **chiesti ma mai assegnati** (forse scritti in modo diverso dove si danno), quelli **chiesti prima di poterli avere** (si assegnano solo in paragrafi da cui non si passa prima di arrivare lì: la strada che li richiede non si potrà mai prendere) e, solo come informazione, quelli **assegnati ma mai chiesti**.
 - **Barra di stato**: sotto il testo, **Libro game** dice quanti problemi trovano i controlli (in rosso se ce ne sono); passando sopra col mouse si vede il dettaglio, un clic apre la scheda **Controlli**.
 - **Grafo**: il pulsante **Grafo** in cima all'albero scrive la nota **Grafo del libro game** nella cartella del progetto e la apre. La nota contiene lo schema dei paragrafi in Mermaid (un formato di diagrammi che si scrive come testo e si legge anche in altri programmi): frecce piene per i rimandi nel testo, tratteggiate per quelli nascosti, in blu l'inizio, in rosso i finali, in arancione i paragrafi irraggiungibili. **A tutto schermo** mostra il grafo su tutta la finestra: la rotella ingrandisce, trascinando si sposta, un clic su un paragrafo lo apre, Esc chiude. Premendo di nuovo **Grafo** lo schema si aggiorna e il testo scritto intorno resta. Qualsiasi blocco ```` ```mermaid ```` in una nota o in una scena viene disegnato allo stesso modo.
+
+  ![Il grafo del libro game: in blu il paragrafo iniziale, tratteggiati in arancione quelli irraggiungibili](img/grafo.png)
+
 - **Statistiche**: in un libro game le pagine sono contate come nella riga in cima all'albero, quindi tengono conto di **Ogni paragrafo inizia su una pagina nuova**.
 
 **Esportare**

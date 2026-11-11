@@ -771,6 +771,9 @@ Dante also exists as a web version, for those who cannot or do not want to insta
 1. Open **https://dante.lucadj.eu/app/** with **Chrome**, **Edge** or **Brave**. Safari and Firefox open Dante, but cannot work on the folders of the computer: there only the sample project and the trial of an import from Word, which is not saved, work.
 2. To have Dante like an app, with a window of its own and the icon in the Dock or in the Start menu, press the **Install** icon on the right of the address bar (in Chrome: a monitor with an arrow). It is optional, but handy.
 3. Press **Open folder…** and choose the folder of the novel, or **New project** and choose where to create it. The browser asks for permission to change the folder: answer **Allow** or, if it is there, **Allow on every visit**, so that next time the project reopens from the recent ones without more questions.
+
+   ![The opening screen of Dante in the browser](img/nel-browser.png)
+
 4. From here Dante works like the app: the text is saved in the files of the folder while you write.
 5. After the first opening Dante also works **without a connection**. When there is a network and a new version, the update box appears as in the app (chapter 17): **Update and restart** reloads Dante with the new version.
 
@@ -828,6 +831,9 @@ The **Help** icon (the question mark in the bar on the left, above the trash) op
 
 - **First steps**: seven steps to begin, from creating the project to the export.
 - **Full guide**: this guide, with the list of the chapters on the left. A click on a reference ("chapter 7") leads to the chapter.
+
+  ![The Help window on the Full guide tab, with the chapters on the left](img/aiuto.png)
+
 - **What's new**: what changes in each version.
 
 It can be read without a connection too, because it is inside Dante. From the start screen you get there with **First steps and guide**; on the Mac also from the menu **Help** > **Dante Help** (Cmd+?). Esc closes the window.
@@ -848,6 +854,9 @@ How Dante and the text look while you write. They are choices of this computer: 
 Open **Settings**: in the list on the left, under **Dante on this computer**, are the pages **Appearance**, **The text in the editor** and **Writing**.
 
 - **Theme** (page **Appearance**): you choose it from five small drawings of the window, each in its own colours. **System** (light or dark like the computer, and it changes with it), **Light (paper)**, **Sepia** (warm paper, to write for a long time by day), **Dark**, **Night** (almost black with softer text, to write in the dark).
+
+  ![The Appearance page of the Settings: the five themes and the accent colours](img/aspetto.png)
+
 - **Accent colour**: the colour of active buttons, links and selections. The first circle leaves that of the theme; the others are blue, green, brick red, purple, teal and amber, in a lighter version in the dark themes.
 - **Interface size**: enlarges or shrinks the whole window of Dante, from 80% to 200%: menus, tree, panels, buttons, windows and their text. It is useful if your sight is poor or you work on a very large screen. The text in the editor grows by the same measure, besides its **Font size** (which stays separate and also changes with Cmd/Ctrl + and −).
 - **The text in the editor** (the page with this name):
@@ -894,6 +903,9 @@ Dante reads, writes, checks, shuffles and exports the book. The paragraphs stay 
 - **The tree**: in place of chapters and scenes it shows the paragraphs in order of number. Beside each paragraph are the number (with a padlock if it is fixed, an anchor if it is relative to another), the title, a warning triangle if there is something to check (move the mouse over it to read what) and the length, in light blue if the paragraph is short and in red if it exceeds one page. The paragraphs still empty have their title in grey italic. At the top, a line sums up the book: how many paragraphs, how many empty, how many orphans (no paragraph leads there), how many dead ends (they lead nowhere and are not endings) and how many pages.
 - **Where you come from and where you go**: with **Show under each paragraph in the tree where it comes from and where it leads** a line appears under each paragraph with the numbers that lead there (←) and those it refers to (→). A click on a number opens that paragraph.
 - **The Paragraph panel**: in **Properties**, above the other sections, it shows number and type, length and pages, the paragraphs you come from and those it leads to (each opens with a click) and the warnings. The number is changed by writing another: Dante also updates the alias and all the references that lead to that paragraph, and refuses a number already in use. Beside it you choose whether the number is **free** or **fixed**, and below you mark whether the paragraph is an ending. The note of the paragraph (property `note`) is written in the field **Synopsis**. Above the text, the divider shows number and title.
+
+  ![A gamebook: on the left the paragraphs with number, warnings and length, on the right the Paragraph panel](img/libro-game.png)
+
 - **In the editor** references such as `[[The courtyard|2]]` show as the number alone, and the boxes (choices, keywords, endings and the others) as coloured frames. The lines `:::` that open and close a box hide and come back when the cursor passes over them. Lists and tables inside a callout (`> [!note]`) show as in the rest of the text; in a table inside a callout Tab and Enter work as in the other tables.
 
 **Writing**
@@ -913,6 +925,9 @@ While the module is on the tree is not reordered by dragging and scenes are not 
 **Numbering**
 
 - **Shuffling the numbers**: the **Shuffle** button at the top of the tree opens a window with the preview: for each paragraph the number before and the one after. The fixed paragraphs (with the padlock) and the opening paragraph stay where they are, the relative ones move together with their anchor; among many attempts Dante chooses the one where a paragraph and those it refers to are furthest apart. **Try again** draws again. Pressing **Shuffle** Dante saves a snapshot of every file it touches, changes the numbers and updates the references and the aliases in the whole book. Under the preview, **Numbers written as text** lists the paragraph numbers written by hand in the text ("go back to paragraph 3"): the shuffle does not touch them, so it is better to turn them into references with `[[` first.
+
+  ![The Shuffle the numbers window, with the number after and the one before for each paragraph](img/rimescola.png)
+
 - **Reordering in reading order**: the **Reorder** button uses the same window, but instead of drawing it numbers the paragraphs in sequence in the order the reader meets them: the opening paragraph, then those it refers to in the order they appear in the text (the hidden references after), then theirs, and so on. The fixed ones stay where they are, the relative ones follow their anchor, the paragraphs nobody reaches go at the end. It is useful to work on the book in order before shuffling it.
 - **Going back**: in the same window, **Earlier operations** lists the shuffles made. **Numbers only** puts back the numbers of that time, with the references, and leaves the text written afterwards; **Everything** brings each file back as it was before the operation. A single paragraph can always be restored from its snapshots.
 
@@ -922,6 +937,9 @@ While the module is on the tree is not reordered by dragging and scenes are not 
 - **Game state**: Dante reads what the reader obtains and what is asked of them in two ways. In the properties of the boxes a value gives something to the reader ("careful") and the same value with a question mark marks the paragraph that asks whether they have it ("careful?"); the value counts in whatever property it is written, so "reflexes" among the keywords answers "reflexes?" among the traits. In the text, a sentence such as "Note the keyword **lantern**" or "Circle the trait **careful**" gives, and one such as "If you have the keyword **lantern**" asks; if the sentence names several values one is enough. Following the references from the opening paragraph, Dante flags the values **asked for but never given** (perhaps written differently where they are given), those **asked for before they can be had** (they are given only in paragraphs you do not pass through before getting there: the path that requires them can never be taken) and, only as information, those **given but never asked for**.
 - **Status bar**: under the text, **Gamebook** says how many problems the checks find (in red if there are any); moving the mouse over it shows the detail, a click opens the **Checks** tab.
 - **Graph**: the **Graph** button at the top of the tree writes the note **Gamebook graph** in the folder of the project and opens it. The note holds the diagram of the paragraphs in Mermaid (a format of diagrams that is written as text and can be read in other programs too): solid arrows for the references in the text, dashed for the hidden ones, the beginning in blue, the endings in red, the unreachable paragraphs in orange. **Full screen** shows the graph on the whole window: the wheel zooms, dragging moves it, a click on a paragraph opens it, Esc closes. Pressing **Graph** again updates the diagram and the text written around it stays. Any ```` ```mermaid ```` block in a note or in a scene is drawn the same way.
+
+  ![The gamebook graph: the opening paragraph in blue, the unreachable ones dashed in orange](img/grafo.png)
+
 - **Statistics**: in a gamebook the pages are counted as in the line at the top of the tree, so they take **Each paragraph starts on a new page** into account.
 
 **Exporting**

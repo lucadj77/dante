@@ -59,6 +59,9 @@ export const PATHS = {
   anchor: "M12 4a2 2 0 1 0 0 4a2 2 0 1 0 0-4z M12 8v13 M5 13a7 7 0 0 0 14 0 M9 12h6",
   comment: "M4 5h16v11H10l-5 4v-4H4z",
   link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
+  shuffle: "M3 7h4l10 10h4 M18 14l3 3-3 3 M3 17h4l3-3 M14 10l3-3h4 M18 4l3 3-3 3",
+  sortDown: "M7 4v16 M3 16l4 4 4-4 M14 6h7 M14 11h5 M14 16h3",
+  graph: "M6 3.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z M18 9.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z M6 15.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z M8.3 7l7.4 4 M8.3 17l7.4-4",
 } as const;
 export type IconName = keyof typeof PATHS;
 

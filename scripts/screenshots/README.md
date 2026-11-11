@@ -6,7 +6,7 @@ The images in `docs/img` are taken from the app in the browser, with the sample 
 npm run dev -- --port 5173                     # in another terminal
 cd scripts/screenshots
 mkdir -p shots && pandoc il-faro.md -o "shots/Il faro.docx"   # the Word file for chapter 3
-node start.mjs && node sections.mjs            # raw shots in shots/; a name (start.mjs tabella) redoes one
+node start.mjs && node sections.mjs && node recent.mjs            # raw shots in shots/; a name (start.mjs tabella) redoes one
 python3 finalize.py                            # crops, shrinks and writes docs/img
 ```
 
