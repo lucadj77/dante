@@ -45,7 +45,7 @@
         stats = s;
         named = mentions(s, index, p.project.settings);
         words = frequentWords(s.scenes.map((x) => x.text), p.project.settings.language, 40);
-        style = styleReport(s.scenes, p.project.settings.language);
+        style = styleReport(s.scenes, p.project.settings.language, { longSentence: p.project.settings.style.longSentence, window: p.project.settings.style.repetitionWindow });
         logs = await readLogs(p.project.fs);
         const game = gamebookOf(index, p.project.settings);
         gamePages = game ? gamebookMarks(game, p.project.settings).summary.pages : null;
@@ -242,7 +242,7 @@
         { label: t("stats.characters"), value: n(stats.characters) },
         { label: t("statsView.chapters"), value: n(stats.chapters.length) },
         { label: t("statsView.scenes"), value: n(stats.scenes.length) },
-        { label: t("stats.readingTime"), value: t("statsView.hours", { h: n(readingMinutes(stats.words) / 60, 1) }) },
+        { label: t("stats.readingTime"), value: t("statsView.hours", { h: n(readingMinutes(stats.words, p.project.settings.style.readingSpeed) / 60, 1) }) },
       ] as tile (tile.label)}
         <div class="tile" data-tip={tile.hint}>
           <span class="value">{tile.value}</span>
@@ -464,10 +464,10 @@
         <div class="tiles">
           {#each [
             { label: t("style.average"), value: n(style.average, 1), hint: t("style.averageHint") },
-            { label: t("style.long"), value: n(style.longCount), hint: t("style.longHint", { n: 40 }) },
+            { label: t("style.long"), value: n(style.longCount), hint: t("style.longHint", { n: p.project.settings.style.longSentence }) },
             { label: t("style.adverbs"), value: n(style.adverbCount), hint: t("style.adverbsHint", { n: n((style.adverbCount / style.words) * 1000, 1) }) },
             { label: t("style.dialogue"), value: `${n((style.dialogue / style.words) * 100)}%`, hint: t("style.dialogueHint") },
-            { label: t("style.repetitions"), value: n(style.repetitionCount), hint: t("style.repetitionsHint", { n: 30 }) },
+            { label: t("style.repetitions"), value: n(style.repetitionCount), hint: t("style.repetitionsHint", { n: p.project.settings.style.repetitionWindow }) },
           ] as tile (tile.label)}
             <div class="tile" data-tip={tile.hint}>
               <span class="value">{tile.value}</span>

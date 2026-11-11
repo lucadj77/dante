@@ -13,6 +13,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **The novel's names no longer underlined by the spelling checker**: the names and aliases of the Story Bible's cards are no longer marked as mistakes. Other words of the novel are added in Settings > Writing > Words of this novel, and hold on every computer.
 - **Snapshot of the whole manuscript**: in Settings > Upkeep you can set a milestone with a name, such as "First draft", for all the scenes together, and later take the whole manuscript back to it.
 - **Lists to pick from instead of writing with commas**: folders, filter values and groups of a view, suggested properties of a type and allowed values of a property are added one at a time, choosing among those Dante already knows or writing new ones.
+- **Adjustable style thresholds and reading speed**: in Settings > Measures and goals you choose above how many words a sentence is long, within how many words a word is repeated and how many words a minute the reader reads.
 - **A look for each novel**: in Settings > Look of this novel you can give a novel its own theme, accent colour, font and text layout. The choices stay on this computer and not in the project: those who write with you keep their own look.
 - **Undo for moves, splits and merges**: after moving, splitting or merging scenes and chapters, **Undo** appears at the bottom of the tree (also Cmd+Z / Ctrl+Z with the tree active) and puts everything back as it was, links included.
 - **Going back to a backup from Dante**: Settings > Backups lists the backups; **Open this backup** takes it out into a new folder beside the novel and opens it, without touching the novel as it is now.
@@ -36,6 +37,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+- **Date in templates**: `{{date}}` in a template gives the day where you are, also right after midnight.
 - **The same number everywhere**: with revisions pending, the Properties panel, the tables and the writing log also counted the deleted text and the revision marks. They now count as the Statistics do: added text counts, deleted text does not.
 - **Interrupted moves**: if Dante closed while it was reordering scenes or chapters, some files kept a temporary name and no longer showed in the tree. Dante now puts the files back or finishes the move when the project is opened again, and says so in a notice.
 - **Guide**: the chapter on installing, the name of the setting "A single Enter starts a new paragraph" and the names of the Mac menu items are corrected.

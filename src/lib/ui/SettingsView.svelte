@@ -14,6 +14,7 @@
   import { cleanSnapshots, deleteWholeSnapshot, listWholeSnapshots, restoreWholeSnapshot, takeWholeSnapshot, type WholeSnapshot } from "$lib/core/snapshots";
   import { scenesOf } from "$lib/core/manuscript";
   import { confirmDelete } from "./dialogs";
+  import { today } from "$lib/core/critic";
   import { LANGUAGES, type MessageKey } from "$lib/i18n";
   import { levelHeading } from "$lib/core/numbering";
   import { chosenColor, DOT_HUES, statusTone } from "$lib/core/statistics";
@@ -77,7 +78,7 @@
     { id: "cover", group: "novel", title: "cover.title", keys: ["cover.hint", "cover.imageChoose", "cover.template", "cover.palette", "cover.texts", "cover.textColor", "cover.outline"] },
     { id: "structure", group: "novel", title: "settings.structure", keys: ["settings.parts", "settings.numbering", "settings.label", "heading.separator", "settings.restart", "kind.part", "kind.chapter"] },
     { id: "scenes", group: "novel", title: "settings.sec.scenes", keys: ["settings.sceneTemplate", "settings.sceneTemplateEdit", "property.defined", "property.definedHint", "settings.tree", "settings.treeDot"] },
-    { id: "measures", group: "novel", title: "settings.sec.measures", keys: ["settings.pages", "settings.pageUnit", "settings.pageCharacters", "settings.pageWords", "settings.goalsLink", "settings.typographyLink"] },
+    { id: "measures", group: "novel", title: "settings.sec.measures", keys: ["settings.pages", "settings.pageUnit", "settings.pageCharacters", "settings.pageWords", "settings.style", "settings.longSentence", "settings.repetitionWindow", "settings.readingSpeed", "settings.goalsLink", "settings.typographyLink"] },
     { id: "look", group: "novel", title: "settings.sec.look", keys: ["look.own", "look.ownHint", "settings.theme", "appearance.accent", "settings.font"] },
     { id: "gamebook", group: "novel", title: "gamebook.title", keys: ["gamebook.enable", "gamebook.enableHint", "gamebook.folder", "gamebook.boxes", "gamebook.onePerPage", "gamebook.showLinks"] },
     { id: "upkeep", group: "novel", title: "settings.sec.upkeep", keys: ["whole.title", "whole.hint", "whole.take", "snap.cleanTitle", "snap.cleanHint", "snap.clean"] },
@@ -181,7 +182,7 @@
   );
 
   const levels = $derived<("part" | "chapter")[]>(novel.structure.parts ? ["part", "chapter"] : ["chapter"]);
-  let cleanBefore = $state(new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
+  let cleanBefore = $state(today(new Date(Date.now() - 30 * 864e5)));
   let cleaned = $state("");
   let reportCopied = $state("");
 
@@ -347,6 +348,7 @@
     try {
       const settings = JSON.parse(text) as NovelSettings;
       settings.authors = settings.authors.map((a) => a.trim()).filter(Boolean);
+      for (const key of ["longSentence", "repetitionWindow", "readingSpeed"] as const) settings.style[key] = Math.max(1, Math.round(Number(settings.style[key]) || 0)) || { longSentence: 40, repetitionWindow: 30, readingSpeed: 230 }[key];
       settings.pages.size = Math.max(1, Math.round(Number(settings.pages.size) || 0)) || (settings.pages.unit === "words" ? 250 : 1800);
       settings.language = settings.language.trim() || "en";
       written = text;
@@ -520,6 +522,12 @@
           <input type="number" min="1" step="1" bind:value={novel.pages.size} />
           <small>{t("settings.pagesHint")}</small>
         </label>
+
+        <h3>{t("settings.style")}</h3>
+        <p class="hint">{t("settings.styleHint")}</p>
+        <label>{t("settings.longSentence")} <input type="number" min="5" step="1" bind:value={novel.style.longSentence} /></label>
+        <label>{t("settings.repetitionWindow")} <input type="number" min="2" step="1" bind:value={novel.style.repetitionWindow} /></label>
+        <label>{t("settings.readingSpeed")} <input type="number" min="50" step="10" bind:value={novel.style.readingSpeed} /></label>
 
         <h3>{t("settings.elsewhere")}</h3>
         <div class="elsewhere">

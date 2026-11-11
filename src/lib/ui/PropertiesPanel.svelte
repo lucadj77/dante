@@ -287,8 +287,8 @@
         </tr>
         <tr>
           <th>{t("stats.readingTime")}</th>
-          <td>{sceneStats ? t("stats.minutes", { n: readingMinutes(sceneStats.words) }) : "–"}</td>
-          {#if !alone}<td>{t("stats.minutes", { n: readingMinutes(viewStats.words) })}</td>{/if}
+          <td>{sceneStats ? t("stats.minutes", { n: readingMinutes(sceneStats.words, p.project.settings.style.readingSpeed) }) : "–"}</td>
+          {#if !alone}<td>{t("stats.minutes", { n: readingMinutes(viewStats.words, p.project.settings.style.readingSpeed) })}</td>{/if}
         </tr>
       </tbody>
     </table>

@@ -13,6 +13,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Nomi del romanzo non più sottolineati dal correttore**: i nomi e gli alias delle schede della Bibbia non vengono più segnati come errori. Altre parole del romanzo si aggiungono in Impostazioni > Scrittura > Parole di questo romanzo, e valgono su ogni computer.
 - **Istantanea di tutto il manoscritto**: in Impostazioni > Manutenzione puoi fissare un punto con un nome, come «Prima stesura», per tutte le scene insieme, e più avanti riportare l'intero manoscritto a quel punto.
 - **Elenchi da scegliere invece che da scrivere con le virgole**: cartelle, valori del filtro e gruppi di una vista, proprietà suggerite di un tipo e valori ammessi di una proprietà si aggiungono uno alla volta, scegliendo tra quelli che Dante conosce già o scrivendone di nuovi.
+- **Soglie dello stile e velocità di lettura regolabili**: in Impostazioni > Misure e obiettivi scegli da quante parole una frase è lunga, entro quante parole una parola è ripetuta e quante parole al minuto legge il lettore.
 - **Un aspetto per ogni romanzo**: in Impostazioni > Aspetto di questo romanzo puoi dare a un romanzo il suo tema, colore d'accento, font e resa del testo. Le scelte restano su questo computer e non nel progetto: chi scrive con te tiene il suo aspetto.
 - **Annullare spostamenti, divisioni e fusioni**: dopo aver spostato, diviso o fuso scene e capitoli, in fondo all'albero compare **Annulla** (anche Cmd+Z / Ctrl+Z con l'albero attivo), che rimette tutto com'era, collegamenti compresi.
 - **Riprendere una copia di sicurezza da Dante**: in Impostazioni > Copie di sicurezza c'è l'elenco delle copie; **Apri questa copia** la estrae in una cartella nuova accanto al romanzo e la apre, senza toccare il romanzo di adesso.
@@ -36,6 +37,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Data dei modelli**: `{{date}}` in un modello dà il giorno di dove sei, anche subito dopo mezzanotte.
 - **Lo stesso numero dappertutto**: con revisioni in sospeso il pannello Proprietà, le tabelle e il registro di scrittura contavano anche il testo cancellato e i segni delle revisioni. Ora contano come le Statistiche: il testo aggiunto vale, quello cancellato no.
 - **Spostamenti interrotti**: se Dante si chiudeva mentre riordinava scene o capitoli, alcuni file restavano con un nome provvisorio e non comparivano più nell'albero. Ora alla riapertura Dante rimette i file dov'erano o porta a termine lo spostamento, e lo dice con un avviso.
 - **Guida**: corretti il capitolo sull'installazione, il nome dell'impostazione «Invio singolo per iniziare un nuovo paragrafo» e i nomi delle voci di menu del Mac.

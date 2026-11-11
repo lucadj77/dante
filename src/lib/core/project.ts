@@ -1888,6 +1888,7 @@ export class Project {
 /** A template's text for a new note: {{title}} and {{date}} filled in. */
 function fillTemplate(template: string, title: string): string {
   const clean = sanitizeTitle(title) || "Untitled";
-  const date = new Date().toISOString().slice(0, 10);
+  // The day where the writer is: after midnight the UTC date would still be yesterday.
+  const date = today();
   return template.replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
 }

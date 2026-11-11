@@ -319,6 +319,15 @@ export interface NovelSettings {
     unit: PageUnit;
     size: number;
   };
+  /** What the statistics on style look for, and how fast a reader is taken to read. */
+  style: {
+    /** A sentence is long above this many words. */
+    longSentence: number;
+    /** A word used again within this many words is a repetition. */
+    repetitionWindow: number;
+    /** Words read in a minute, for the reading time. */
+    readingSpeed: number;
+  };
   export: {
     /** The format chosen last on the export page. */
     format: ExportFormat;
@@ -547,6 +556,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     tree: { dot: "", colors: {} },
     gamebook: defaultGamebook(language),
     pages: { unit: "characters", size: 1800 },
+    style: { longSentence: 40, repetitionWindow: 30, readingSpeed: 230 },
     export: {
       format: "docx",
       epubId: "",
@@ -678,6 +688,12 @@ export function parseSettings(text: string): NovelSettings {
     : isObject(raw) && typeof raw.author === "string"
       ? authorsOf(raw.author)
       : [];
+  // Thresholds are whole numbers above zero; anything else goes back to the usual value.
+  const usual = defaultSettings(language).style;
+  for (const key of Object.keys(usual) as (keyof NovelSettings["style"])[]) {
+    const value = Math.round(Number(settings.style[key]));
+    settings.style[key] = value > 0 ? value : usual[key];
+  }
   const dictionary = isObject(raw) ? raw.dictionary : undefined;
   settings.dictionary = Array.isArray(dictionary) ? [...new Set(dictionary.filter((w): w is string => typeof w === "string").map((w) => w.trim()).filter(Boolean))] : [];
   // Files written before chapterBreak existed said only whether chapters start a new page.

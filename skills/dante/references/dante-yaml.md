@@ -72,6 +72,10 @@ tree:
 pages:
   unit: characters              # what makes a page: characters (with spaces) or words
   size: 1800                    # 1,800 characters is the Italian "cartella"; 250 for words
+style:                         # what the statistics on style look for
+  longSentence: 40              # a sentence is long above this many words
+  repetitionWindow: 30          # a word used again within this many words is a repetition
+  readingSpeed: 230             # words a minute, for the reading time
 export:
   format: docx                  # docx, pdf, epub, md: the one chosen last
   epubId: ""                    # keeps the ebook's identity across exports; do not change
