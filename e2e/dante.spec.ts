@@ -350,3 +350,14 @@ test("imports a Markdown file from the single import button", async ({ page }) =
   await expect(preview).toContainText("Capitolo uno");
   await expect(preview).toContainText("2 capitoli");
 });
+
+test("makes a new view from a template", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="views"]').click();
+  await page.getByRole("button", { name: "+ Nuova vista" }).click();
+  await page.getByRole("textbox", { name: "Nome della nuova vista" }).fill("Personaggi in tabella");
+  await page.getByRole("combobox", { name: "Da che cosa partire" }).selectOption("characters");
+  await page.getByRole("button", { name: "Crea", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Personaggi in tabella" })).toBeVisible();
+  await expect(page.getByRole("table").getByText("Don Abbondio").first()).toBeVisible();
+});

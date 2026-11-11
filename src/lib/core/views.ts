@@ -56,6 +56,30 @@ export function defaultView(type: ViewKind = "table"): ViewSpec {
   return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true, order: [], widths: {} };
 }
 
+export type ViewTemplate = "empty" | "board" | "characters" | "timeline" | "chapters";
+export const VIEW_TEMPLATES: ViewTemplate[] = ["empty", "board", "characters", "timeline", "chapters"];
+
+/**
+ * A new view already set up for a common use, with the properties this novel has: the board
+ * of the scenes by stage of work, the table of the characters, the scenes on the timeline by
+ * their date, the cards of the chapters.
+ */
+export function viewTemplate(
+  template: ViewTemplate,
+  settings: Pick<NovelSettings, "properties" | "types" | "goals">,
+  status: { name: string; values: string[] },
+): ViewSpec {
+  const date = Object.entries(settings.properties).find(([, def]) => def.kind === "date")?.[0] ?? "date";
+  if (template === "board") return { ...defaultView("kanban"), items: "scene", group_by: status.name, groups: [...status.values], fields: ["pov"] };
+  if (template === "characters") {
+    const type = "character" in settings.types ? "character" : (Object.keys(settings.types)[0] ?? "note");
+    return { ...defaultView("table"), items: type, fields: [...(settings.types[type]?.properties ?? [])] };
+  }
+  if (template === "timeline") return { ...defaultView("timeline"), items: "scene", date, fields: ["pov"] };
+  if (template === "chapters") return { ...defaultView("cards"), items: "chapter", fields: [settings.goals.unit] };
+  return { ...defaultView("table"), items: "scene" };
+}
+
 /**
  * The views a new novel starts with: a board of the scenes by stage of work, and a table of them,
  * with the length in the unit the project measures in.

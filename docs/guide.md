@@ -568,7 +568,7 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
 
 A view shows scenes, chapters or cards of the Story Bible at a glance, as a **Table**, a **List**, **Cards**, a **Board** or a **Timeline**.
 
-1. In the section **Tables and boards** a new project already has a board of the scenes by status and a table of the scenes. In a project that has none, press **Create the starting views**; for another view press **New view** and give it a name.
+1. In the section **Tables and boards** a new project already has a board of the scenes by status and a table of the scenes. In a project that has none, press **Create the starting views**; for another view press **New view** and give it a name. Under the name you can choose **what to start from**: a table to set up, the board of the scenes by status, the table of the characters, the timeline of the scenes or the cards of the chapters; then you change it as you like from the view's settings.
 2. At the top choose how to show it (table, list, cards, board, timeline).
 3. With **⚙ Settings** choose what to list (scenes, chapters and parts, all the notes or a type of the Story Bible), from which folders, with which conditions (**Only when**), how to sort, how to group and which fields to show. At the bottom is **Delete this view**.
 

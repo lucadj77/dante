@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
-import { arrange, collect, dateKey, defaultView, excerpt, group, moveBefore, parseView, propertiesTarget, serializeView, shiftEnd, starterViews, timeline, values, type ViewSpec } from "../views";
+import { arrange, collect, dateKey, defaultView, excerpt, group, moveBefore, parseView, propertiesTarget, serializeView, shiftEnd, starterViews, timeline, values, viewTemplate, type ViewSpec } from "../views";
 
 function sample() {
   return new MemoryFs({
@@ -184,5 +184,25 @@ describe("column widths in views", () => {
     expect(view.widths).toEqual({ name: 320, pov: 140, lane: 260 });
     expect(parseView(serializeView(view))).toEqual(view);
     expect(serializeView(defaultView())).not.toContain("widths");
+  });
+});
+
+describe("view templates", () => {
+  const settings = {
+    properties: { stato: { kind: "text" as const, values: ["bozza", "finita"], note_type: "" }, giorno: { kind: "date" as const, values: [], note_type: "" } },
+    types: { character: { name: "Personaggio", folder: "Personaggi", icon: "", properties: ["età", "ruolo"] } },
+    goals: { unit: "characters" as const },
+  } as unknown as Parameters<typeof viewTemplate>[1];
+  const status = { name: "stato", values: ["bozza", "finita"] };
+
+  it("sets a board up with the novel's stages", () => {
+    expect(viewTemplate("board", settings, status)).toMatchObject({ type: "kanban", items: "scene", group_by: "stato", groups: ["bozza", "finita"] });
+  });
+  it("puts the characters in a table with their properties", () => {
+    expect(viewTemplate("characters", settings, status)).toMatchObject({ type: "table", items: "character", fields: ["età", "ruolo"] });
+  });
+  it("uses the novel's date property for the timeline and its unit for the chapters", () => {
+    expect(viewTemplate("timeline", settings, status)).toMatchObject({ type: "timeline", date: "giorno" });
+    expect(viewTemplate("chapters", settings, status)).toMatchObject({ type: "cards", items: "chapter", fields: ["characters"] });
   });
 });

@@ -568,7 +568,7 @@ Rinominare una proprietà riscrive solo il suo nome in testa ai file, lasciando 
 
 Una vista mostra scene, capitoli o schede della Bibbia in un colpo d'occhio, come **Tabella**, **Lista**, **Schede**, **Bacheca** o **Linea del tempo**.
 
-1. Nella sezione **Tabelle e bacheche** un progetto nuovo ha già una bacheca delle scene per stato e una tabella delle scene. In un progetto che non ne ha, premi **Crea le viste di partenza**; per un'altra vista premi **Nuova vista** e dalle un nome.
+1. Nella sezione **Tabelle e bacheche** un progetto nuovo ha già una bacheca delle scene per stato e una tabella delle scene. In un progetto che non ne ha, premi **Crea le viste di partenza**; per un'altra vista premi **Nuova vista** e dalle un nome. Sotto il nome puoi scegliere **da che cosa partire**: una tabella da impostare, la bacheca delle scene per stato, la tabella dei personaggi, la linea del tempo delle scene o le schede dei capitoli; poi la cambi come vuoi dalle impostazioni della vista.
 2. In alto scegli come mostrarla (tabella, lista, schede, bacheca, linea del tempo).
 3. Con **⚙ Impostazioni** scegli cosa elencare (scene, capitoli e parti, tutte le note o un tipo della Bibbia), da quali cartelle, con quali condizioni (**Solo se**), come ordinare, come raggruppare e quali campi mostrare. In fondo c'è **Elimina questa vista**.
 

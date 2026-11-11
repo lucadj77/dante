@@ -21,12 +21,15 @@
     moveBefore,
     shiftEnd,
     VIEW_KINDS,
+    VIEW_TEMPLATES,
+    viewTemplate,
     starterViews,
     type Group,
     type Moment,
     type ViewKind,
     type ViewRow,
     type ViewSpec,
+    type ViewTemplate,
   } from "$lib/core/views";
   import { projectStatus } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
@@ -68,6 +71,7 @@
   let error = $state("");
   let settingsOpen = $state(false);
   let creating = $state(false);
+  let template = $state<ViewTemplate>("empty");
   let newName = $state("");
   let renaming = $state(false);
   let nameDraft = $state("");
@@ -232,7 +236,10 @@
     if (!name) return;
     creating = false;
     newName = "";
-    if (await create(name, { ...defaultView("table"), items: "scene" })) settingsOpen = true;
+    const view = viewTemplate(template, p.project.settings, projectStatus(p.project.settings));
+    // An empty table opens its settings, where everything is still to choose.
+    if ((await create(name, view)) && template === "empty") settingsOpen = true;
+    template = "empty";
   }
 
   async function createStarters() {
@@ -505,6 +512,9 @@
       >
         <!-- svelte-ignore a11y_autofocus -->
         <input bind:value={newName} placeholder={t("views.newName")} aria-label={t("views.newName")} autofocus onkeydown={(e) => e.key === "Escape" && (creating = false)} />
+        <select bind:value={template} aria-label={t("views.template")} title={t("views.template")}>
+          {#each VIEW_TEMPLATES as id (id)}<option value={id}>{t(`views.template.${id}`)}</option>{/each}
+        </select>
         <button class="primary" disabled={!newName.trim()}>{t("views.create")}</button>
       </form>
     {:else}
