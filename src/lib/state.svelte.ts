@@ -26,6 +26,8 @@ export interface AppSettings {
   /** The system's spelling checker in the editor. */
   spellcheck: boolean;
   userName: string;
+  /** The name was asked for at the first project opened: it is not asked again. */
+  nameAsked: boolean;
   /** The formatting bar under the manuscript toolbar. */
   formatBar: boolean;
   /** Revision mode: changes are written as CriticMarkup signed with the user name. */
@@ -79,6 +81,7 @@ function defaults(): AppSettings {
     justify: false,
     spellcheck: true,
     userName: "",
+    nameAsked: false,
     formatBar: true,
     revisions: false,
     statsUnit: "",

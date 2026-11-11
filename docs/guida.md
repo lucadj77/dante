@@ -439,7 +439,7 @@ Rinominare una proprietà riscrive solo il suo nome in testa ai file, lasciando 
 ### Come si fa
 
 1. **Condividere**: metti la cartella del progetto in Dropbox o Google Drive e condividila con chi lavora con te. Ognuno la apre con **Apri cartella…**.
-2. **Firmarsi**: ognuno scrive il proprio nome in **Impostazioni → Tu**.
+2. **Firmarsi**: la prima volta che apri un progetto senza aver ancora detto il tuo nome, Dante te lo chiede; lo cambi in **Impostazioni → Tu**.
 3. **Commentare**: seleziona il testo e premi 💬 (o Cmd+Alt+M / Ctrl+Alt+M), scrivi il commento e premi Cmd+Invio / Ctrl+Invio. Nel testo il commento appare come una nuvoletta.
 4. **Proporre modifiche**: scegli **Altro** > **Segna le modifiche come revisioni** nella barra in alto (serve il tuo nome nelle Impostazioni); finché sono attive nella barra resta l'etichetta **Revisioni attive**. Da quel momento quello che scrivi appare sottolineato e quello che cancelli barrato, con il tuo nome, finché qualcuno non decide.
 5. **Decidere**: la scheda **Commenti** del pannello destro elenca commenti e modifiche del testo mostrato. Per ciascuno puoi **Rispondi**, **Risolvi** (chiude la discussione), **Accetta** o **Rifiuta**; in cima ci sono **Accetta tutte** e **Rifiuta tutte**.

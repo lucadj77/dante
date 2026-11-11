@@ -3,7 +3,8 @@
   import { onMount, untrack } from "svelte";
   import { onDisk } from "$lib/platform";
   import type { Project } from "$lib/core/project";
-  import { app, openLook, t, zoom } from "$lib/state.svelte";
+  import { app, openLook, saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import Dialog from "./Dialog.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import { BrowserFs } from "$lib/browserFs";
   import type { MessageKey } from "$lib/i18n";
@@ -60,6 +61,16 @@
   } from "./panes.svelte";
 
   let { project, onClose, onOpenProject }: { project: Project; onClose: () => void; onOpenProject?: (path: string) => Promise<void> } = $props();
+
+  // The name signs comments and revisions and counts the day's writing: whoever opens a
+  // shared folder without one is asked once, at once, instead of finding out days later.
+  // svelte-ignore state_referenced_locally
+  let askName = $state(onDisk(project.fs) && !app.settings.userName.trim() && !app.settings.nameAsked);
+  let nameTyped = $state("");
+  function answerName(name: string) {
+    askName = false;
+    saveAppSettings({ ...app.settings, userName: name.trim() || app.settings.userName, nameAsked: true });
+  }
   /** A reordering cut short was settled when the project opened: said once, until dismissed. */
   let recovered = $state(untrack(() => project.recovered));
 
@@ -611,6 +622,27 @@
   ondrop={() => (dragActive = dropOver = false)}
 />
 
+{#if askName}
+  <Dialog label={t("name.title")} onClose={() => answerName("")} width={440}>
+    <form
+      class="ask-name"
+      onsubmit={(e) => {
+        e.preventDefault();
+        answerName(nameTyped);
+      }}
+    >
+      <h2>{t("name.title")}</h2>
+      <p>{t("name.why")}</p>
+      <!-- svelte-ignore a11y_autofocus -->
+      <input bind:value={nameTyped} aria-label={t("settings.userName")} placeholder={t("settings.userName")} autofocus />
+      <div class="ask-actions">
+        <button type="button" onclick={() => answerName("")}>{t("name.later")}</button>
+        <button type="submit" class="primary" disabled={!nameTyped.trim()}>{t("name.save")}</button>
+      </div>
+    </form>
+  </Dialog>
+{/if}
+
 {#if showTrash}
   <TrashDialog
     {project}
@@ -1042,5 +1074,23 @@
   }
   .panel-toggle.alone {
     margin-left: auto;
+  }
+  .ask-name {
+    display: grid;
+    gap: 10px;
+  }
+  .ask-name h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+  .ask-name p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .ask-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>

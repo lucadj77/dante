@@ -439,7 +439,7 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
 ### How to
 
 1. **Sharing**: put the folder of the project in Dropbox or Google Drive and share it with those who work with you. Each one opens it with **Open folder…**.
-2. **Signing**: each one writes their name in **Settings → You**.
+2. **Signing**: the first time you open a project without having given your name yet, Dante asks for it; you change it in **Settings → You**.
 3. **Commenting**: select the text and press 💬 (or Cmd+Alt+M / Ctrl+Alt+M), write the comment and press Cmd+Enter / Ctrl+Enter. In the text the comment appears as a speech bubble.
 4. **Proposing changes**: choose **More** > **Track changes as revisions** in the bar at the top (your name is needed in Settings); while they are on, the label **Revisions on** stays in the bar. From then on what you write appears underlined and what you delete struck through, with your name, until someone decides.
 5. **Deciding**: the **Comments** tab of the right panel lists the comments and the changes of the text shown. For each you can **Reply**, **Resolve** (closes the discussion), **Accept** or **Reject**; at the top are **Accept all** and **Reject all**.
