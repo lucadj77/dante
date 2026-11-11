@@ -212,6 +212,8 @@ select {
 .md-code { font-family: ui-monospace, monospace; font-size: 0.9em; background: var(--bg-panel); border-radius: 3px; }
 .md-wikilink { color: var(--wikilink); }
 .md-highlight { background: rgba(245, 214, 70, 0.45); border-radius: 2px; }
+.md-footnote { color: var(--text-muted); font-size: 0.88em; }
+.md-footnote-call { color: var(--accent); font-size: 0.8em; vertical-align: super; line-height: 0; }
 .md-blank-line { color: var(--text-muted); opacity: 0.45; font-family: Georgia, serif; user-select: none; }
 .md-bullet { display: inline-block; width: 0.7em; }
 /* The marker of a list item, in a box as wide as the item's indent: the text hangs after it. */

@@ -436,3 +436,46 @@ describe("saved export profiles", () => {
     expect(serializeSettings(settings, text)).not.toContain("profiles");
   });
 });
+
+describe("footnotes", () => {
+  const novel = () =>
+    new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\n",
+      "Manuscript/010 Uno/010 Scena.md":
+        'Arrivò a Bari ^[Allora si chiamava *Barium*.] di sera. Il porto[^porto] era vuoto e nessuno parlava.\n\n[^porto]: Quello vecchio,\n    non il nuovo.\n',
+    });
+
+  it("takes both ways of writing a note out of the text", async () => {
+    const { takeFootnotes } = await import("../export/book");
+    const { body, notes } = takeFootnotes("Uno ^[nota [con] parentesi] due[^a] tre[^b].\n\n[^a]: La prima.\n");
+    expect(notes).toEqual(["nota [con] parentesi", "La prima."]);
+    expect(body.replace(/[-]/g, "°").trim()).toBe("Uno° due° tre[^b].");
+  });
+
+  it("keeps the notes in the book, counted with its text", async () => {
+    const book = await buildBook(await Project.open(novel()));
+    const runs = book.entries[0].scenes[0].blocks.flatMap((b) => ("runs" in b ? b.runs : []));
+    const notes = runs.filter((r) => r.footnote).map((r) => r.footnote!.map((n) => (n.italic ? `*${n.text}*` : n.text)).join(""));
+    expect(notes).toEqual(["Allora si chiamava *Barium*.", "Quello vecchio, non il nuovo."]);
+    expect(runs.map((r) => r.text).join("")).toBe("Arrivò a Bari di sera. Il porto era vuoto e nessuno parlava.");
+    expect(book.words).toBe(21);
+  });
+
+  it("writes them in each format", async () => {
+    const project = await Project.open(novel());
+    const book = await buildBook(project);
+    const opts = project.settings.export.docx;
+    expect(bookToTypst(book, opts, { words: "parole" })).toContain('#"Arrivò a Bari"#footnote[#"Allora si chiamava "#emph("Barium")#"."]#" di sera.');
+    expect(bookToMarkdown(book, opts)).toContain("Arrivò a Bari^[Allora si chiamava *Barium*.] di sera. Il porto^[Quello vecchio, non il nuovo.] era vuoto");
+    const epub = new TextDecoder().decode(bookToEpub(book, { ...opts, compress: false } as typeof opts, "id"));
+    expect(epub).toContain('Il porto<sup><a epub:type="noteref" role="doc-noteref" class="noteref" id="fnref2" href="#fn2">2</a></sup> era vuoto');
+    expect(epub).toContain('id="fn1" class="footnote"><p><a href="#fnref1">1</a>. Allora si chiamava <em>Barium</em>.</p></aside>');
+    const bytes = await docxBytes(bookToDocx(book, opts, { words: "parole" }));
+    expect(await documentXml(bytes)).toContain('<w:footnoteReference w:id="2"/>');
+    const JSZip = (await import("jszip")).default;
+    const xml = await (await JSZip.loadAsync(bytes)).file("word/footnotes.xml")!.async("string");
+    expect(xml).toContain("Quello vecchio, non il nuovo.");
+    // A second export starts its notes again from one.
+    expect(await documentXml(await docxBytes(bookToDocx(book, opts, { words: "parole" })))).toContain('<w:footnoteReference w:id="1"/>');
+  });
+});

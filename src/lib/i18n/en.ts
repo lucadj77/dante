@@ -200,6 +200,7 @@ export const en = {
   "format.code": "Code: inline, or a block over several lines (⌘E)",
   "format.link": "Link (⌘K)",
   "format.wikilink": "Link to a note",
+  "format.footnote": "Footnote",
   "format.separator": "Scene separator",
   "format.blankLine": "Blank line, no new scene (⌥↩)",
   "format.table": "Table: Tab goes to the next cell, Enter adds a row, the bar above changes rows and columns",

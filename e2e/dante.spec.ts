@@ -301,3 +301,13 @@ test("saves the export choices as a profile and goes back to them", async ({ pag
   await saved.selectOption("Per il lettore");
   await expect(page.getByRole("radio", { name: /EPUB/ })).toBeChecked();
 });
+
+test("sets a footnote apart from the text it is written in", async ({ page }) => {
+  await openSample(page);
+  const editor = page.locator(".cm-content").first();
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+Home");
+  await page.keyboard.type("Milano ^[Allora sotto la Spagna.] era lontana. ");
+  await expect(editor.locator(".md-footnote").first()).toHaveText("^[Allora sotto la Spagna.]");
+  await expect(editor).toContainText("era lontana.");
+});

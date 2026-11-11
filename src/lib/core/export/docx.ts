@@ -7,6 +7,7 @@ import {
   Footer,
   Header,
   HeadingLevel,
+  FootnoteReferenceRun,
   ImageRun,
   InternalHyperlink,
   LineRuleType,
@@ -120,13 +121,25 @@ export function hasContents(book: Book, opts: DocxSettings): boolean {
   return opts.toc && !book.gamebook && book.entries.some((e) => e.heading);
 }
 
+/** The footnotes of the document being written, by the number Word knows them by. */
+let footnotes: Record<string, { children: Paragraph[] }> = {};
+
+/** The call of a footnote, its text put with the document's notes. */
+function footnote(items: Run[]): TextRun {
+  const id = Object.keys(footnotes).length + 1;
+  footnotes[id] = { children: [new Paragraph({ children: paragraphRuns(items) })] };
+  return new FootnoteReferenceRun(id) as unknown as TextRun;
+}
+
 /**
  * The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize`
  * points. A gamebook's references lead to the bookmark of their paragraph.
  */
 function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun | InternalHyperlink)[] {
   const one = (r: Run) =>
-    r.image
+    r.footnote
+      ? footnote(r.footnote)
+      : r.image
       ? imageRun(r.image, maxWidth, fontSize)
       : r.lineBreak
       ? new TextRun({ break: 1 })
@@ -225,6 +238,7 @@ function headingStyles(opts: DocxSettings, typeset: boolean) {
 /** Renders the book as a standard manuscript or as a typeset book. */
 /** Renders the book as a Word document; `coverPng`, a 2:3 image, fills the first page. */
 export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string; length?: string }, coverPng?: Uint8Array): Document {
+  footnotes = {};
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -477,6 +491,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     title,
     // Word asks to update the table of contents on opening: that is when it gets its page numbers.
     features: contents ? { updateFields: true } : undefined,
+    footnotes,
     styles: {
       default: {
         document: { run: { font: opts.font, size: opts.fontSize * 2 } },

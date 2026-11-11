@@ -8,6 +8,7 @@ import { embedPreview } from "./embeds";
 import { ImageWidget, imageDecorations, imageInput } from "./images";
 import { isImagePath } from "../core/images";
 import { isBlankLine } from "../core/blankLines";
+import { findFootnotes } from "../core/footnotes";
 import { aligned, alignedEditing, alignmentTheme, paragraphAround } from "./alignment";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
@@ -38,6 +39,8 @@ const WIKILINK = /\[\[([^\[\]|\n]+)(\|([^\[\]\n]+))?\]\]/g;
 // it is used: no lookbehind, which macOS 10.15 does not know).
 const HIGHLIGHT = /==(?=\S)([^=\n]+?)==(?!\})/g;
 const highlight = Decoration.mark({ class: "md-highlight" });
+const footnote = Decoration.mark({ class: "md-footnote" });
+const footnoteCall = Decoration.mark({ class: "md-footnote-call" });
 const alignLines = {
   left: Decoration.line({ class: "md-align-left" }),
   center: Decoration.line({ class: "md-align-center" }),
@@ -251,6 +254,8 @@ function build(view: EditorView, focused: boolean): DecorationSet {
         found.push({ from: end - 2, to: end, deco: hide });
       }
     }
+    // Footnotes stay as they are written, set apart from the text they belong to.
+    for (const note of findFootnotes(text)) found.push({ from: from + note.from, to: from + note.to, deco: note.kind === "inline" ? footnote : footnoteCall });
     for (const m of text.matchAll(WIKILINK)) {
       // An embedded image draws itself.
       if (text[m.index! - 1] === "!" && isImagePath(m[1].split("#")[0].trim())) continue;

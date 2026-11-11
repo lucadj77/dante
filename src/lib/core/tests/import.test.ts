@@ -36,7 +36,7 @@ describe("reading Word documents", () => {
     expect(readDocument(xml)).toEqual([{ kind: "paragraph", text: "*one two* {--gone--}{>>@Anna 2026-10-14<<} {++new++}{>>@Anna 2026-10-14<<}" }]);
   });
 
-  it("keeps comments and footnotes as comments", async () => {
+  it("keeps comments as comments and footnotes as footnotes", async () => {
     const bytes = new Uint8Array(
       await Packer.toBuffer(
         new Document({
@@ -62,7 +62,7 @@ describe("reading Word documents", () => {
     );
     const content = await readDocx(bytes, { note: "Note" });
     expect(content.blocks).toEqual([
-      { kind: "paragraph", text: "{==The wind smelled of salt.==}{>>@Anna Bianchi 2026-10-14: too early?<<}{>>Note: True story.<<}" },
+      { kind: "paragraph", text: "{==The wind smelled of salt.==}{>>@Anna Bianchi 2026-10-14: too early?<<}^[True story.]" },
     ]);
   });
 

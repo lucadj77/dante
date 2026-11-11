@@ -16,6 +16,7 @@ import { isBlankLine, normalizeBlankLines } from "../blankLines";
 import { findBoxes, type BoxType } from "../gamebook/boxes";
 import { CALLOUT_OPEN, calloutColor, calloutTitle } from "../callouts";
 import type { GamebookExportSettings } from "../settings";
+import { closingBracket } from "../footnotes";
 
 // A gamebook's references, through typography and the parser: LINK_OPEN, the number of the
 // paragraph, LINK_MID, the text shown, LINK_CLOSE.
@@ -38,7 +39,7 @@ function linkRuns(items: Run[], bold: boolean, clickable: boolean): Run[] {
   const out: Run[] = [];
   let link: string | undefined;
   for (const r of items) {
-    if (r.image || r.lineBreak || !r.text.includes(LINK_OPEN) && !r.text.includes(LINK_CLOSE) && !link) {
+    if (r.image || r.lineBreak || r.footnote || !r.text.includes(LINK_OPEN) && !r.text.includes(LINK_CLOSE) && !link) {
       out.push(r);
       continue;
     }
@@ -141,6 +142,8 @@ export interface Run {
   link?: string;
   /** Size in points, where it differs from the text's, as in a gamebook's boxes. */
   size?: number;
+  /** A footnote called at this point: the run has no text, the note's is here. */
+  footnote?: Run[];
 }
 
 /** An image of the text, with the size it shows at, in pixels (96 to the inch). */
@@ -180,9 +183,94 @@ export type Block = (
 ) & { box?: BoxMark };
 
 // Where an image stood, inside the text that goes through typography and the parser: one
-// private-use character per image, its number counted from IMAGE_BASE.
+// private-use character per image, its number counted from IMAGE_BASE. Footnotes have the
+// rest of the private-use characters, counted from NOTE_BASE.
 const IMAGE_BASE = 0xe000;
-const IMAGE_MARK = /[\ue000-\uf8ff]/g;
+const IMAGE_MARK = /[\ue000-\uefff]/g;
+const IMAGE_MAX = 0x1000;
+const NOTE_BASE = 0xf000;
+const NOTE_MARK = /[\uf000-\uf8ff]/g;
+const NOTE_MAX = 0x900;
+
+/** A footnote's definition: `[^1]: text`, with the indented lines that continue it. */
+const NOTE_DEFINITION = /^\[\^([^\]\s]+)\]:[ \t]*(.*(?:\n(?: {2,}|\t).*)*)\n?/gm;
+
+/**
+ * Takes the footnotes out of a text: `^[written here]` and `[^1]` with its `[^1]: text`
+ * elsewhere in the same text. Each call becomes one private-use character; the texts of
+ * the notes come back in the order of their calls. A call without a definition stays as
+ * it is written.
+ */
+export function takeFootnotes(text: string): { body: string; notes: string[] } {
+  const defined = new Map<string, string>();
+  let body = text.replace(NOTE_DEFINITION, (_, id: string, note: string) => {
+    defined.set(id, note.replace(/\n[ \t]+/g, " ").trim());
+    return "";
+  });
+  const notes: string[] = [];
+  const mark = (note: string) => {
+    if (notes.length >= NOTE_MAX) return "";
+    notes.push(note);
+    return String.fromCharCode(NOTE_BASE + notes.length - 1);
+  };
+  let out = "";
+  let last = 0;
+  const call = /\^\[|\[\^([^\]\s]+)\]/g;
+  for (let m = call.exec(body); m; m = call.exec(body)) {
+    if (m.index > 0 && body[m.index - 1] === "\\") continue;
+    let end: number;
+    let note: string | undefined;
+    if (m[1] !== undefined) {
+      note = defined.get(m[1]);
+      end = m.index + m[0].length;
+    } else {
+      const close = closingBracket(body, m.index + 1);
+      if (close < 0) continue;
+      note = body.slice(m.index + 2, close).replace(/\s*\n\s*/g, " ").trim();
+      end = close + 1;
+    }
+    if (note === undefined) continue;
+    // The call stands against the word before it, as in print.
+    out += body.slice(last, m.index).replace(/[ \t]+$/, "") + mark(note);
+    last = end;
+    call.lastIndex = end;
+  }
+  body = out + body.slice(last);
+  return { body, notes };
+}
+
+/** The runs with each footnote's character turned into a run that holds the note. */
+function noteRuns(items: Run[], notes: Run[][]): Run[] {
+  const out: Run[] = [];
+  for (const r of items) {
+    if (r.image || r.lineBreak || r.text.search(NOTE_MARK) < 0) {
+      out.push(r);
+      continue;
+    }
+    let last = 0;
+    for (const m of r.text.matchAll(NOTE_MARK)) {
+      if (m.index! > last) out.push({ ...r, text: r.text.slice(last, m.index) });
+      last = m.index! + 1;
+      const footnote = notes[m[0].charCodeAt(0) - NOTE_BASE];
+      if (footnote?.length) out.push({ text: "", footnote });
+    }
+    if (last < r.text.length) out.push({ ...r, text: r.text.slice(last) });
+  }
+  return out;
+}
+
+/** The blocks with their footnotes in place; `notes` are the texts takeFootnotes gave. */
+export function applyFootnotes(blocks: Block[], notes: string[]): Block[] {
+  if (!notes.length) return blocks;
+  const parsed = notes.map((note) => cellRuns(note.replace(NOTE_MARK, "")));
+  const fix = (items: Run[]) => noteRuns(items, parsed);
+  return blocks.map((b) => {
+    if (b.type === "table") return { ...b, header: b.header.map(fix), rows: b.rows.map((row) => row.map(fix)), caption: b.caption && fix(b.caption) };
+    if (b.type === "image") return b.caption ? { ...b, caption: fix(b.caption) } : b;
+    if ("runs" in b) return { ...b, runs: fix(b.runs) };
+    return b;
+  });
+}
 
 export interface BookScene {
   /** Heading above the scene, possibly on two lines; empty when scenes have none. */
@@ -457,6 +545,8 @@ function allRuns(blocks: Block[]): Run[] {
     if (b.type === "table" || b.type === "image") out.push(...(b.caption ?? []));
     else if (b.type !== "break" && b.type !== "blank") out.push(...b.runs);
   }
+  // The notes are text of the book too.
+  for (const r of [...out]) if (r.footnote) out.push(...r.footnote);
   return out;
 }
 
@@ -490,7 +580,7 @@ async function takeImages(project: Project, notePath: string, text: string, conv
   for (const embed of found) {
     const path = embed.wiki ? resolveLink(embed.target.split("#")[0], notePath, project.files) : resolveImagePath(embed.target, notePath, project.files);
     let image: BookImage | null = null;
-    if (path && images.length < 0x1900) {
+    if (path && images.length < IMAGE_MAX) {
       try {
         let data = await project.fs.readBytes(path);
         let mime = imageMime(path);
@@ -576,8 +666,11 @@ export async function buildBook(
     for (const image of images) image.alt = typeset(image.alt);
     // Alignment tags come out before typography, which would change the quotes in them.
     const marked = gamebook ? markBoxes(markLinks(body, numbers), settings.gamebook.boxes) : { text: body, colors: [] };
-    const { text, aligns } = extractAlignments(cleanSource(marked.text, options.revisions));
-    const parsed = markdownToBlocks(typeset(text), aligns, images);
+    const noted = takeFootnotes(cleanSource(marked.text, options.revisions));
+    const { text, aligns } = extractAlignments(noted.body);
+    // A reference inside a note is its paragraph's number, without the link.
+    const notes = noted.notes.map((note) => typeset(note.replace(/\u{F0003}\d+\u{F0004}|\u{F0005}/gu, "")));
+    const parsed = applyFootnotes(markdownToBlocks(typeset(text), aligns, images), notes);
     const colors = gx.boxes === "gray" ? marked.colors.map(() => "#868e96") : marked.colors;
     const blocks = gamebook
       ? applyLinks(applyBoxes(parsed, colors), gx.bold, gx.links).map((b) => {

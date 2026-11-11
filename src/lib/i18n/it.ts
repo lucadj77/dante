@@ -200,6 +200,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "format.code": "Codice: in linea, o blocco su più righe (⌘E)",
   "format.link": "Link (⌘K)",
   "format.wikilink": "Collegamento a una nota",
+  "format.footnote": "Nota a piè di pagina",
   "format.separator": "Separatore di scena",
   "format.blankLine": "Riga vuota, senza nuova scena (⌥↩)",
   "format.table": "Tabella: Tab passa alla cella successiva, Invio aggiunge una riga, la barra sopra cambia righe e colonne",

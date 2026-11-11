@@ -29,10 +29,30 @@ h1.number, h2.number, h3.number, h4.number { font-weight: ${gx.numberBold ? "bol
 /** Stands for the file of a gamebook's paragraph until the chapters are laid out. */
 const LINK_HREF = "dante-link:";
 
+/** The notes called in the file being written, waiting for its end, and how many the book has so far. */
+let pendingNotes: string[] = [];
+let noteCount = 0;
+
+/** The call of a footnote, a link to the note at the end of its file and back. */
+function noteCall(items: Run[], imageFile?: (image: BookImage) => string): string {
+  const n = ++noteCount;
+  pendingNotes.push(`<aside epub:type="footnote" role="doc-footnote" id="fn${n}" class="footnote"><p><a href="#fnref${n}">${n}</a>. ${runs(items, imageFile)}</p></aside>`);
+  return `<sup><a epub:type="noteref" role="doc-noteref" class="noteref" id="fnref${n}" href="#fn${n}">${n}</a></sup>`;
+}
+
+/** The notes called since the last time, under a rule; empty when there are none. */
+function takeNotes(): string {
+  if (!pendingNotes.length) return "";
+  const html = `<section epub:type="footnotes" class="footnotes">\n<hr/>\n${pendingNotes.join("\n")}\n</section>`;
+  pendingNotes = [];
+  return html;
+}
+
 /** A paragraph's runs as XHTML; `imageFile` gives where an image inside the text is in the book. */
 function runs(items: Run[], imageFile?: (image: BookImage) => string): string {
   return items
     .map((r) => {
+      if (r.footnote) return noteCall(r.footnote, imageFile);
       if (r.image) {
         if (!imageFile) return "";
         return `<img class="inline" src="${imageFile(r.image)}" alt="${escapeXml(r.image.alt)}" style="width: ${Math.round(r.image.width)}px; max-width: 100%;"/>`;
@@ -95,6 +115,11 @@ div.image p.caption { text-indent: 0; font-style: italic; font-size: 0.9em; marg
 .epigraph { margin: 30% 0 0 30%; }
 .epigraph p { text-align: right; text-indent: 0; font-style: italic; }
 .epigraph p.source { font-style: normal; margin-top: 0.5em; }
+.footnotes { margin-top: 2em; font-size: 0.85em; }
+.footnotes hr { width: 25%; margin: 0 0 0.6em; border: 0; border-top: 1px solid; }
+.footnote p { text-indent: 0; text-align: left; margin-bottom: 0.3em; }
+a.noteref { text-decoration: none; }
+sup { line-height: 0; font-size: 0.75em; }
 .colophon p { text-align: center; text-indent: 0; font-size: 0.85em; margin-top: 1em; }
 `;
 
@@ -130,6 +155,8 @@ const COVER_EXT: Record<EpubCover["mediaType"], string> = { "image/png": "png", 
 
 /** Renders the book as an EPUB file. `id` identifies the book across exports. */
 export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new Date(), css = "", cover?: EpubCover): Uint8Array {
+  pendingNotes = [];
+  noteCount = 0;
   const language = book.language || "en";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -243,7 +270,7 @@ export function bookToEpub(book: Book, opts: DocxSettings, id: string, now = new
   let inPart = false;
   let current: { label: string; body: string[] } | null = null;
   const flush = () => {
-    if (current) add(current.label, page(current.label || title, language, current.body.join("\n")), false, inPart);
+    if (current) add(current.label, page(current.label || title, language, [...current.body, takeNotes()].filter(Boolean).join("\n")), false, inPart);
     current = null;
   };
   for (const e of book.entries as BookEntry[]) {

@@ -10,7 +10,7 @@ import { BLANK_LINE } from "../core/blankLines";
 export type Format = "bold" | "italic" | "strike" | "highlight";
 export type LineFormat = "quote" | "bullet" | "ordered" | "task";
 export type AlignAction = "alignCenter" | "alignRight";
-export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "separator" | "blankLine" | "table" | "image" | "comment";
+export type Action = Format | LineFormat | AlignAction | "heading" | "code" | "link" | "wikilink" | "footnote" | "separator" | "blankLine" | "table" | "image" | "comment";
 
 const MARKERS: Record<Format, string> = { bold: "**", italic: "*", strike: "~~", highlight: "==" };
 
@@ -171,6 +171,17 @@ export function insertWikilink(state: EditorState): TransactionSpec {
   }));
 }
 
+/** A footnote where the cursor is: ^[selection], or ^[] with the cursor inside. */
+export function insertFootnote(state: EditorState): TransactionSpec {
+  return state.changeByRange(({ from, to }) => ({
+    changes: [
+      { from, insert: "^[" },
+      { from: to, insert: "]" },
+    ],
+    range: from === to ? EditorSelection.cursor(from + 2) : EditorSelection.range(from + 2, to + 2),
+  }));
+}
+
 /** A scene separator on its own paragraph after the current line. */
 export function insertSeparator(state: EditorState): TransactionSpec {
   const line = state.doc.lineAt(state.selection.main.to);
@@ -223,6 +234,8 @@ function transaction(state: EditorState, action: Exclude<Action, "comment" | "im
       return insertLink(state);
     case "wikilink":
       return insertWikilink(state);
+    case "footnote":
+      return insertFootnote(state);
     case "separator":
       return insertSeparator(state);
     case "blankLine":
@@ -256,7 +269,7 @@ export const ACTIONS: (Action | null)[] = [
   "bold", "italic", "strike", "highlight", null,
   "heading", "quote", "bullet", "ordered", "task", null,
   "alignCenter", "alignRight", null,
-  "code", "link", "wikilink", "separator", "blankLine", "table", "image", null,
+  "code", "link", "wikilink", "footnote", "separator", "blankLine", "table", "image", null,
   "comment",
 ];
 
@@ -276,6 +289,7 @@ export const ICONS: Record<Action, { text: string; style?: string; icon?: IconNa
   code: { text: "</>", style: "font-family: ui-monospace, monospace; font-size: 12px" },
   link: { text: "🔗︎" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
+  footnote: { text: "x¹", style: "font-family: Georgia, serif; font-size: 13px" },
   separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
   blankLine: { text: "¶", style: "font-family: Georgia, serif; opacity: .75" },
   table: { text: "▦", icon: "table" },

@@ -35,6 +35,7 @@ function inlineImage(r: Run, maxWidth: number): string {
 
 /** A run of text; images are no wider than `maxWidth` inches. */
 function run(r: Run, maxWidth = 6.5): string {
+  if (r.footnote) return `#footnote[${r.footnote.map((n) => run(n, maxWidth)).join("")}]`;
   if (r.image) return inlineImage(r, maxWidth);
   if (r.lineBreak) return "#linebreak()";
   if (r.code) return `#raw(${str(r.text)})`;
