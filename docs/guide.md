@@ -134,7 +134,7 @@ The window has four areas, from left to right:
 
 ![The workspace with the four areas numbered](img/area-di-lavoro.png)
 
-1. **The bar of the sections**, with an icon for each: Manuscript, Story Bible, Notes, Tables and boards, Statistics, Export, Settings, as well as Search, Help, Trash and Close project. Moving the mouse over an icon shows its name; widening the bar keeps the names visible.
+1. **The bar of the sections**, with an icon for each: Manuscript, Story Bible, Notes, Tables and boards, Statistics, Export, Settings, as well as Search, Help, Trash and Close project. Beside each icon is its name; **Hide names**, at the bottom of the bar, narrows it to the icons alone (as in the pictures of this guide), and then the name appears when you move the mouse over an icon.
 2. **The panel on the left**: in the Manuscript it is the tree of parts, chapters and scenes; in the other sections it is the list of notes and files.
 3. **The editor** in the middle, where you write.
 4. **The panel on the right**, with three tabs: **Properties** (data of the scene or note, snapshots, statistics), **Links** (the notes that point to this one and the other way round) and **Comments**.
@@ -317,7 +317,7 @@ The panel is divided into sections: the scene (title, file name, synopsis, goal)
 - **For every scene**: the property enters the template of new scenes and appears, empty, in every scene, with the label **every scene**. It is written in the file of a scene only when you give it a value, so the other scenes stay as they are.
 - **Changing a property**: the small box with the symbol before the name (**T**, **#**, **↗**…) is a button. Moving the mouse over it shows the type; a click opens the definition: type, allowed values, name and, if it is the property that colours the dots of the tree, their colours. You can choose whether it is a text, a number, a date, a checkbox, a list or a link to a note. For a text or a list you can give the allowed values: a drop-down menu will appear. From then on the property works that way in all the notes of the project.
 - **Renaming a property in the whole novel**: in the definition, write the new name in **Name in the whole novel** and press **Rename**. Dante changes the name in all the scenes and notes, in the tables and boards and in the settings. If a note already has a property with the new name, there the two stay separate and Dante tells you. The status and the properties that Dante reads by name (title, synopsis, goal, type, aliases) cannot be renamed.
-- **Colours of the dots**: opening the definition of the property that colours the dots of the tree (the status, or the one chosen in Settings), under **Colours of the dot in the outline** you see each value with its colour. A click on the small square of the colour changes it; **Usual colour** goes back to the one before.
+- **Colours of the dots**: opening the definition of the property that colours the dots of the tree (the status, or the one chosen in Settings), under **Colours of the dot in the tree** you see each value with its colour. A click on the small square of the colour changes it; **Usual colour** goes back to the one before.
 
   <img src="img/tipo-proprieta.png" width="280" alt="The box that opens by clicking the symbol T beside «stato»: type Text, allowed values idea, bozza, rivista, finita, and the colour of the dot for each value">
 
@@ -482,7 +482,7 @@ A view shows scenes, chapters or cards of the Story Bible at a glance, as a **Ta
 
 1. In the section **Tables and boards** a new project already has a board of the scenes by status and a table of the scenes. In a project that has none, press **Create the starting views**; for another view press **New view** and give it a name.
 2. At the top choose how to show it (table, list, cards, board, timeline).
-3. With **⚙ Settings** choose what to list (scenes, chapters and parts, all the notes or a type of the Story Bible), from which folders, with which conditions (**Only when**), how to sort, how to group and which fields to show.
+3. With **⚙ Settings** choose what to list (scenes, chapters and parts, all the notes or a type of the Story Bible), from which folders, with which conditions (**Only when**), how to sort, how to group and which fields to show. At the bottom is **Delete this view**.
 
 The sample project already has four views. The **Board** puts the scenes in columns according to the status:
 

@@ -550,12 +550,14 @@
         </div>
         {#if !p.embedded}
           <button aria-pressed={settingsOpen} aria-expanded={settingsOpen} data-tip={t("tip.views.settings")} onclick={() => (settingsOpen = !settingsOpen)}>⚙ {t("views.settings")}</button>
-          <button class="danger" onclick={remove}>{t("views.delete")}</button>
         {/if}
       </header>
 
       {#if settingsOpen && !p.embedded}
-        <div class="settings"><ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} /></div>
+        <div class="settings">
+          <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} />
+          <p class="remove"><button class="danger" onclick={remove}>{t("views.deleteThis")}</button></p>
+        </div>
       {/if}
 
       <div class="body" bind:this={body}>
@@ -844,6 +846,9 @@
     max-height: 45%;
     overflow: auto;
   }
+  .remove {
+    margin: 0 12px 12px;
+  }
   .body {
     flex: 1;
     min-height: 0;
@@ -1069,8 +1074,11 @@
     align-items: flex-start;
     padding-bottom: 8px;
   }
+  /* Few columns share the width; many keep a readable size and the board scrolls. */
   .column {
-    flex: 0 0 240px;
+    flex: 1 1 200px;
+    min-width: 190px;
+    max-width: 320px;
     display: grid;
     gap: 6px;
     padding: 8px;

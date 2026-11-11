@@ -16,6 +16,11 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Impostazioni riordinate**: al posto delle due schede c'è un elenco di pagine a sinistra, diviso tra «Questo romanzo» e «Dante su questo computer», con una casella per cercare un'impostazione. I temi si scelgono da piccoli disegni della finestra, e struttura, colori dell'albero, pagina e testo dell'editor hanno un'anteprima a fianco.
 - **Guida più ordinata**: il capitolo sui libri game è diviso in gruppi (preparare, leggere, scrivere, numerare, controllare, esportare) e i dettagli per chi sviluppa Dante sono usciti dalla guida.
 - **Barre sopra il testo più compatte**: nel Manoscritto le barre dei comandi occupano meno righe. In una finestra stretta i pulsanti mostrano solo l'icona (il nome resta nel suggerimento), «Dividi in scena» e «Dividi in capitolo» diventano icone e la dimensione del testo passa nel menu **Altro**.
+- **Finestre che rispondono subito alla tastiera**: Cestino, Sposta in…, conflitti, confronto delle istantanee, importazione e le finestre dei libri game prendono la tastiera appena si aprono: Esc le chiude senza dover prima fare clic, Tab resta dentro la finestra e alla chiusura si torna dov'eri.
+- **Nomi nella barra delle sezioni**: la barra a sinistra parte con i nomi accanto alle icone; **Nascondi i nomi**, in fondo, la riporta alle sole icone.
+- **Parole più chiare**: nelle Statistiche «Citazioni» diventa «Menzioni»; nei progetti nuovi in italiano il tipo «Plotline» si chiama «Trama»; «albero», «scheda», «collegamento» e «Risolto» sono usati allo stesso modo dappertutto.
+- **Meno numeri ripetuti**: con una sola scena a schermo il pannello Proprietà e la barra di stato non scrivono due volte lo stesso numero, e «Oggi» sta solo nella barra di stato quando è visibile.
+- **Bacheche**: le colonne si dividono lo spazio quando sono poche, e **Elimina questa vista** è dentro le impostazioni della vista invece che sempre in vista.
 
 ### Corretto
 

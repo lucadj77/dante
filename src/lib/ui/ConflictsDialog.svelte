@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Dialog from "./Dialog.svelte";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import type { ConflictCopy } from "$lib/core/conflicts";
@@ -55,16 +56,7 @@
   const same = $derived(parts !== null && parts.every((x) => x.type === "same"));
 </script>
 
-<div class="overlay" role="presentation" onclick={p.onClose}>
-  <div
-    class="dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-label={t("conflicts.title")}
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.key === "Escape" && p.onClose()}
-  >
+<Dialog label={t("conflicts.title")} onClose={p.onClose} width={820}>
     <header>
       <h2>{t("conflicts.title")}</h2>
       <button onclick={p.onClose}>{t("snap.close")}</button>
@@ -109,29 +101,9 @@
         {/if}
       </div>
     {/if}
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(820px, calc(100vw - 32px));
-    max-height: calc(100vh - 64px);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 16px 20px;
-  }
   header {
     display: flex;
     justify-content: space-between;

@@ -242,3 +242,17 @@ test("moves a scene several places with the keyboard, without clicking it again"
   await page.keyboard.press("ControlOrMeta+Alt+ArrowUp");
   await expect(scenes.nth(1)).toHaveText(first);
 });
+
+test("closes a dialog with Esc straight after opening it, and keeps Tab inside", async ({ page }) => {
+  await openSample(page);
+  const trash = page.getByRole("button", { name: "Cestino", exact: true });
+  await trash.click();
+  const dialog = page.getByRole("dialog", { name: "Cestino" });
+  await expect(dialog).toBeFocused();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trash).toBeFocused();
+});

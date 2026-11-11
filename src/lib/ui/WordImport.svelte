@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Dialog from "./Dialog.svelte";
   import ErrorText from "./ErrorText.svelte";
   import type { Snippet } from "svelte";
   import type { DocxContent } from "$lib/core/import/docx";
@@ -100,8 +101,7 @@
   };
 </script>
 
-<div class="overlay" role="presentation">
-  <div class="dialog" role="dialog" aria-modal="true" aria-label={t("import.preview.title", { file: fileName })} tabindex="-1" onkeydown={(e) => e.key === "Escape" && onCancel()}>
+<Dialog label={t("import.preview.title", { file: fileName })} onClose={onCancel} width={1100} fill outside={false}>
     <header>
       <h2>{t("import.preview.title", { file: fileName })}</h2>
       <p class="summary">
@@ -219,30 +219,9 @@
         <button disabled={busy} onclick={onCancel}>{t("welcome.cancel")}</button>
       </div>
     </footer>
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(1100px, calc(100vw - 32px));
-    height: calc(100vh - 48px);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px 20px;
-    text-align: left;
-  }
   h2 {
     font-size: 16px;
     margin: 0 0 4px;

@@ -222,8 +222,11 @@
     const root = shownRoot;
     if (!root || root.kind === "scene") return null;
     const words = shownScenes.reduce((n, path) => n + wordsOf(path, ""), 0);
+    const goal = root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0);
+    // A chapter of one scene: the same number is already there under Scene.
+    if (!goal && shownScenes.length === 1 && shownScenes[0] === active) return null;
     const label = root.kind === "manuscript" ? t("level.novel") : (headingMap.get(root.path) ?? root.title).replace(/\n/g, " · ");
-    return { label, words, goal: root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0) };
+    return { label, words, goal };
   });
   const selectedWords = $derived.by(() => {
     if (selection.path !== active || !selection.text) return 0;
@@ -1119,6 +1122,7 @@
     <SidePanel {project} path={inspected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
+      showToday={fullscreen}
       {project}
       path={inspected}
       {rev}

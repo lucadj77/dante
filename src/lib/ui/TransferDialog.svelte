@@ -4,6 +4,7 @@
 </script>
 
 <script lang="ts">
+  import Dialog from "./Dialog.svelte";
   // Moves or copies scenes, chapters, notes, files and folders to another section, or to a
   // precise place in the manuscript, without dragging: a tree of the destination to choose from.
   import type { Project } from "$lib/core/project";
@@ -193,19 +194,7 @@
   }
 </script>
 
-<div class="overlay" role="presentation" onclick={p.onClose}>
-  <div
-    class="dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-label={t(mode === "copy" ? "transfer.copyTitle" : "transfer.moveTitle", { what })}
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => {
-      if (e.key === "Escape") p.onClose();
-      if (e.key === "Enter" && picked && !(e.target instanceof HTMLButtonElement)) void apply();
-    }}
-  >
+<Dialog label={t(mode === "copy" ? "transfer.copyTitle" : "transfer.moveTitle", { what })} onClose={p.onClose} width={560} small onkeydown={(e) => e.key === "Enter" && picked && !(e.target instanceof HTMLButtonElement) && void apply()}>
     <h2>{t(mode === "copy" ? "transfer.copyTitle" : "transfer.moveTitle", { what })}</h2>
 
     <div class="sections" role="tablist">
@@ -261,30 +250,9 @@
       <button type="button" onclick={p.onClose}>{t("tree.cancel")}</button>
       <button type="button" class="primary" disabled={!picked || busy} onclick={apply}>{t(mode === "copy" ? "transfer.copy" : "transfer.move")}</button>
     </div>
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(560px, calc(100vw - 32px));
-    max-height: calc(100vh - 48px);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px 20px;
-    font-size: 13px;
-  }
   h2 {
     font-size: 16px;
     margin: 0;

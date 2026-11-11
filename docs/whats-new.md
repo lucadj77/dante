@@ -16,6 +16,11 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Settings rearranged**: instead of the two tabs there is a list of pages on the left, divided between "This novel" and "Dante on this computer", with a box to search for a setting. Themes are chosen from small drawings of the window, and structure, tree colours, page and editor text have a preview beside them.
 - **Tidier guide**: the chapter on gamebooks is divided into groups (setting up, reading, writing, numbering, checking, exporting) and the details for those who develop Dante have left the guide.
 - **More compact bars above the text**: in the Manuscript the command bars take fewer rows. In a narrow window the buttons show only their icon (the name stays in the tooltip), "Split into scene" and "Split into chapter" become icons and the text size moves into the **More** menu.
+- **Windows that answer the keyboard at once**: Trash, Move to…, conflicts, snapshot comparison, import and the gamebook windows take the keyboard as soon as they open: Esc closes them without a click first, Tab stays inside the window and closing takes you back where you were.
+- **Names in the bar of the sections**: the bar on the left starts with the names beside the icons; **Hide names**, at the bottom, takes it back to the icons alone.
+- **Clearer words**: "tree", "card", "link" and "Resolved" are used the same way everywhere; in Italian, "Citazioni" in Statistics becomes "Menzioni" and the type "Plotline" of new projects is called "Trama".
+- **Fewer repeated numbers**: with a single scene on screen the Properties panel and the status bar do not write the same number twice, and "Today" stays only in the status bar when it is visible.
+- **Boards**: the columns share the space when they are few, and **Delete this view** is inside the settings of the view instead of always in sight.
 
 ### Fixed
 

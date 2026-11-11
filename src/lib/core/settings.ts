@@ -360,7 +360,7 @@ const TYPES: Record<string, TypeNames> = {
     object: ["Oggetto", "Oggetti", ["proprietario"]],
     event: ["Evento", "Eventi", ["data", "luogo"]],
     group: ["Gruppo", "Gruppi", ["membri"]],
-    plotline: ["Plotline", "Plotline", ["stato"]],
+    plotline: ["Trama", "Trame", ["stato"]],
   },
   es: {
     character: ["Personaje", "Personajes", ["papel", "edad", "aspecto", "aliases"]],

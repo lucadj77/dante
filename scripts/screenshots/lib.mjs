@@ -6,7 +6,7 @@ export async function start(opts = {}) {
   const page = await ctx.newPage();
   page.on('console', m => { if (process.env.LOG) console.log(m.text()); });
   page.on('pageerror', e => console.log('ERR', e.message));
-  await page.addInitScript((s) => { if (!sessionStorage.getItem('init')) { localStorage.clear(); localStorage.setItem('dante.app-settings', JSON.stringify(s)); sessionStorage.setItem('init','1'); } },
+  await page.addInitScript((s) => { if (!sessionStorage.getItem('init')) { localStorage.clear(); localStorage.setItem('dante.layout', JSON.stringify({ wideNav: false })); localStorage.setItem('dante.app-settings', JSON.stringify(s)); sessionStorage.setItem('init','1'); } },
     { language: 'it', userName: 'Luca', theme: 'light', checkUpdates: false, ...(opts.settings||{}) });
   if (opts.fakeTauri) await page.addInitScript((recent) => {
     localStorage.setItem('dante.recent-projects', JSON.stringify(recent));

@@ -22,7 +22,7 @@ export const MAX_PANEL = 560;
 export const MIN_MIDDLE = 320;
 
 function load(): Layout {
-  const fallback: Layout = { wideNav: false, left: true, right: true, widths: {} };
+  const fallback: Layout = { wideNav: true, left: true, right: true, widths: {} };
   try {
     const stored = JSON.parse(localStorage.getItem(KEY) ?? "{}");
     if (!stored || typeof stored !== "object") return fallback;
