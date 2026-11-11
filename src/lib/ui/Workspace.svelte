@@ -111,6 +111,26 @@
     byLink = false;
   }
 
+  /** What the quick search lists after ">": the sections and what shows or hides around the text. */
+  const commands = $derived.by(() => {
+    const list: { label: string; run: () => void }[] = sections.map((s) => ({ label: t("command.go", { name: t(`section.${s.id}` as MessageKey) }), run: () => go(s.id) }));
+    list.push({ label: t("command.go", { name: t("section.settings") }), run: () => go("settings") });
+    list.push({ label: t("help.title"), run: () => openHelp() });
+    list.push({ label: t("trash.title"), run: () => (showTrash = true) });
+    const flag = (on: boolean, name: string, run: () => void) => list.push({ label: t(on ? "command.hide" : "command.show", { name }), run });
+    const setting = (key: "formatBar" | "statusBar" | "lineHighlight" | "namedNotes", name: string) =>
+      flag(app.settings[key], name, () => saveAppSettings({ ...app.settings, [key]: !app.settings[key] }));
+    setting("formatBar", t("more.formatBar"));
+    setting("statusBar", t("more.statusBar"));
+    setting("lineHighlight", t("tip.lineHighlight").split("\n")[0]);
+    setting("namedNotes", t("tip.namedNotes").split("\n")[0]);
+    list.push({ label: t(layout.left ? "nav.hideLeft" : "nav.showLeft"), run: () => toggle("left") });
+    list.push({ label: t(layout.right ? "nav.hideRight" : "nav.showRight"), run: () => toggle("right") });
+    list.push({ label: t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), run: () => toggle("wideNav") });
+    list.push({ label: t("app.close"), run: () => void close() });
+    return list;
+  });
+
   function back() {
     const place = previous.at(-1);
     previous = previous.slice(0, -1);
@@ -710,7 +730,7 @@
         <ReplacePanel {project} version={rev} onOpened={() => (searching = false)} />
       {:else}
         {#key searchingBeside}
-          <QuickSearch {project} version={rev} {diskRev} beside={searchingBeside} onOpened={() => (searching = false)} />
+          <QuickSearch {project} version={rev} {diskRev} {commands} beside={searchingBeside} onOpened={() => (searching = false)} />
         {/key}
       {/if}
     </div>

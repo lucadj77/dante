@@ -361,3 +361,13 @@ test("makes a new view from a template", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Personaggi in tabella" })).toBeVisible();
   await expect(page.getByRole("table").getByText("Don Abbondio").first()).toBeVisible();
 });
+
+test("runs a command from the quick search", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="search"]').click();
+  const box = page.getByRole("searchbox", { name: "Cerca in note e file" });
+  await box.fill("> statistiche");
+  await expect(page.getByRole("list", { name: "Comandi" }).getByRole("button")).toHaveText(["Vai a: Statistiche"]);
+  await box.press("Enter");
+  await expect(page.getByRole("heading", { level: 1, name: "Statistiche" })).toBeVisible();
+});

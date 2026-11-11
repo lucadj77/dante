@@ -16,6 +16,8 @@
     onOpened?: () => void;
     /** Opened to choose what a new pane shows: a result opens beside the section. */
     beside?: boolean;
+    /** What Dante can do from the keyboard: listed when the search starts with ">". */
+    commands?: { label: string; run: () => void }[];
   }
   let p: Props = $props();
   const nav = navigator();
@@ -40,6 +42,21 @@
     });
   });
 
+  /** With ">" in front the search lists Dante's commands in place of notes and files. */
+  const commandMode = $derived(!p.beside && query.trimStart().startsWith(">"));
+  const fold = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const matching = $derived.by(() => {
+    if (!commandMode) return [];
+    const words = fold(query.trimStart().slice(1)).split(/\s+/).filter(Boolean);
+    return (p.commands ?? []).filter((c) => words.every((w) => fold(c.label).includes(w)));
+  });
+
+  function runCommand(command: { run: () => void }) {
+    query = "";
+    p.onOpened?.();
+    command.run();
+  }
+
   function focusOnMount(el: HTMLInputElement) {
     el.focus();
   }
@@ -52,6 +69,11 @@
 
   /** Enter opens the first result; with Alt (Option) beside the section. */
   function onKey(e: KeyboardEvent) {
+    if (e.key === "Enter" && commandMode) {
+      e.preventDefault();
+      if (matching.length) runCommand(matching[0]);
+      return;
+    }
     if (e.key !== "Enter" || !results.length) return;
     e.preventDefault();
     openResult(results[0].path, p.beside || e.altKey);
@@ -89,6 +111,15 @@
       onkeydown={onKey}
     />
     {#if p.beside}<p class="muted">{t("search.besideHint")}</p>{/if}
+    {#if commandMode}
+      {#if matching.length === 0}<p class="muted">{t("search.noCommand")}</p>{/if}
+      <ul aria-label={t("search.commands")}>
+        {#each matching as c, i (c.label)}
+          <li><button class="command" class:first={i === 0} onclick={() => runCommand(c)}>{c.label}</button></li>
+        {/each}
+      </ul>
+    {:else}
+    {#if p.commands && !query.trim()}<p class="muted">{t("search.commandHint")}</p>{/if}
     <select bind:value={scope} aria-label={t("search.scope")}>
       <option value="all">{t("search.everywhere")}</option>
       <option value="codex">{t("section.codex")}</option>
@@ -110,6 +141,7 @@
         </li>
       {/each}
     </ul>
+    {/if}
   {/if}
 </section>
 
@@ -149,6 +181,12 @@
     font-size: 12px;
     color: var(--text-muted);
     overflow-wrap: anywhere;
+  }
+  li button.command {
+    display: block;
+  }
+  li button.command.first {
+    background: var(--bg-active);
   }
   .muted {
     color: var(--text-muted);
