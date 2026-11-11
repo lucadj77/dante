@@ -1,6 +1,6 @@
 import { pale } from "./docx";
 import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
-import { PARATEXT_LABELS, approxWords } from "./docx";
+import { PARATEXT_LABELS, approxWords, hasContents } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
 
 // The book as a Typst document, compiled to PDF by the desktop app. Every piece of text
@@ -147,6 +147,14 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       emit(`#v(${cm(opening)})`);
       for (const p of paragraphs(paratext.epigraph)) emit(`#align(right, block(width: 70%, align(right, emph[${lines(p)}])))\n`);
       if (paratext.epigraphSource.trim()) emit(`#align(right)[#${str(paratext.epigraphSource.trim())}]`);
+    });
+  }
+
+  // The table of contents, of parts and chapters, on a page of its own.
+  if (hasContents(book, opts)) {
+    page(() => {
+      emit(`#v(${cm(opening)})`);
+      emit(`#outline(title: [${lines(paratextLabels.contents)}], depth: ${chapterLevel})`);
     });
   }
 

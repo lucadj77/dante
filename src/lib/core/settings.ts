@@ -160,6 +160,8 @@ export interface DocxSettings {
   /** What starts a new line in sceneSeparator; "\\n" unless the writer picked another sign. */
   lineSign: string;
   titlePage: boolean;
+  /** A table of contents of parts and chapters after the front matter, in Word and PDF. */
+  toc: boolean;
   /** Page header: author, title and page number, or the title in a typeset book. */
   header: boolean;
   partBreak: Separator;
@@ -550,6 +552,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         sceneSeparator: "#",
         lineSign: LINE_SIGN,
         titlePage: true,
+        toc: false,
         header: true,
         partBreak: "pageBreak",
         chapterBreak: "pageBreak",

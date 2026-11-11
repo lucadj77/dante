@@ -544,6 +544,10 @@
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
     <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
+    {#if (format === "docx" || format === "pdf") && !gamebook}
+      <label class="check"><input type="checkbox" bind:checked={options.toc} /> {t("export.toc")}</label>
+      {#if options.toc && format === "docx"}<p class="hint">{t("export.tocWordHint")}</p>{/if}
+    {/if}
     {#if format !== "md"}
       <div class="cover">
         <img src={coverUrl} alt={t("cover.preview")} />

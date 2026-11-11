@@ -20,6 +20,7 @@ import {
   TabStopType,
   Table,
   TableCell,
+  TableOfContents,
   TableRow,
   TextRun,
   WidthType,
@@ -107,12 +108,17 @@ const HEADINGS = [
 ];
 
 /** Headings of the paratext, in the language of the novel. */
-export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgements: string }> = {
-  en: { authorNote: "Author’s note", acknowledgements: "Acknowledgements" },
-  it: { authorNote: "Nota dell’autore", acknowledgements: "Ringraziamenti" },
-  es: { authorNote: "Nota del autor", acknowledgements: "Agradecimientos" },
-  fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements" },
+export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgements: string; contents: string }> = {
+  en: { authorNote: "Author’s note", acknowledgements: "Acknowledgements", contents: "Contents" },
+  it: { authorNote: "Nota dell’autore", acknowledgements: "Ringraziamenti", contents: "Indice" },
+  es: { authorNote: "Nota del autor", acknowledgements: "Agradecimientos", contents: "Índice" },
+  fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements", contents: "Table des matières" },
 };
+
+/** Whether the book gets a table of contents: asked for, and with headings to list. */
+export function hasContents(book: Book, opts: DocxSettings): boolean {
+  return opts.toc && !book.gamebook && book.entries.some((e) => e.heading);
+}
 
 /**
  * The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize`
@@ -343,7 +349,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
 
   // Paratext before and after the novel, each on its own page.
   const { paratext } = book;
-  const front: Paragraph[][] = [];
+  const front: (Paragraph | Table | TableOfContents)[][] = [];
   if (paratext.dedication.trim()) {
     front.push([new Paragraph({ style: "Opening", children: [] }), ...textParagraphs(paratext.dedication, "Dedication")]);
   }
@@ -366,7 +372,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   backPage(paratextLabels.acknowledgements, paratext.acknowledgements);
   if (paratext.colophon.trim()) back.push(textParagraphs(paratext.colophon, "Colophon"));
 
-  const onNewPage = (pages: (Paragraph | Table)[][]): (Paragraph | Table)[] =>
+  const onNewPage = <T extends Paragraph | Table | TableOfContents>(pages: T[][]): (T | Paragraph)[] =>
     pages.flatMap((page) => [new Paragraph({ pageBreakBefore: true, children: [] }), ...page]);
 
   const titlePage: (Paragraph | Table)[] = [];
@@ -437,6 +443,16 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       ],
     });
   }
+  // The table of contents: Word fills it in, with the page numbers, when the file is opened.
+  const contents = hasContents(book, opts);
+  if (contents) {
+    front.push([
+      new Paragraph({ style: "Opening", children: [] }),
+      new Paragraph({ style: "Centered", keepNext: true, children: plain(paratextLabels.contents, { bold: true }) }),
+      new Paragraph({ style: "Normal", children: [] }),
+      new TableOfContents(paratextLabels.contents, { hyperlink: true, headingStyleRange: `1-${chapterLevel + 1}` }),
+    ]);
+  }
   const frontMatter = [...titlePage, ...(titlePage.length ? onNewPage(front) : onNewPage(front).slice(1))];
   if (typeset) {
     // Title page and front matter have no header and no page number; the text starts at page 1.
@@ -459,6 +475,8 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   return new Document({
     creator: book.author,
     title,
+    // Word asks to update the table of contents on opening: that is when it gets its page numbers.
+    features: contents ? { updateFields: true } : undefined,
     styles: {
       default: {
         document: { run: { font: opts.font, size: opts.fontSize * 2 } },

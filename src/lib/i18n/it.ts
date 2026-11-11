@@ -376,6 +376,8 @@ export const it: Partial<Record<MessageKey, string>> = {
   "export.indent": "Rientro dei paragrafi (cm)",
   "export.separator": "Separatore di scena",
   "export.titlePage": "Frontespizio",
+  "export.toc": "Indice dei capitoli",
+  "export.tocWordHint": "All'apertura Word chiede di aggiornare i campi del documento: rispondi Sì, è così che l'indice prende i numeri di pagina.",
   "export.header": "Intestazione con autore, titolo e numero di pagina",
   "export.revisions": "Revisioni in sospeso",
   "export.accept": "Accetta",

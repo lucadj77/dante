@@ -92,6 +92,7 @@ export:
     sceneSeparator: "#"         # used when sceneBreak is characters; "\n* * *\n" = asterisks between blank lines
     lineSign: \n                # the sign that starts a new line in sceneSeparator
     titlePage: true
+    toc: false                     # table of contents of parts and chapters, in Word and PDF
     header: true                # author, title and page number (title only in a typeset book)
     scene:                      # headings of scenes in the book; none by default
       numbering: none

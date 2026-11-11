@@ -376,6 +376,8 @@ export const en = {
   "export.indent": "Paragraph indent (cm)",
   "export.separator": "Scene separator",
   "export.titlePage": "Title page",
+  "export.toc": "Table of contents",
+  "export.tocWordHint": "On opening, Word asks to update the fields of the document: answer Yes, that is how the contents get their page numbers.",
   "export.header": "Header with author, title and page number",
   "export.revisions": "Pending revisions",
   "export.accept": "Accept",

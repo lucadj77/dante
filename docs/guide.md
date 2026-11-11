@@ -578,7 +578,7 @@ For single scenes, the **Properties** panel shows words, characters and reading 
 2. Choose the **Format**: **Word (DOCX)** to send to agents and publishers or to go on working on it; **PDF** ready to read or print; **EPUB** for ebook readers and online shops; **Markdown** to have the whole novel in one text file, to open with any editor.
 3. Choose **What to export**: the whole novel or a part of it.
 4. Choose the **Layout**: **Standard manuscript** (the format sent to publishers and agents) or **Typeset book** (for reading and printing).
-5. If you like, adjust the rest: page size, font, size, line spacing, indent, what to put before parts, chapters and scenes, title page, header, dialogue and typography, dedication, epigraph, acknowledgements and the other texts around the novel.
+5. If you like, adjust the rest: page size, font, size, line spacing, indent, what to put before parts, chapters and scenes, title page, header, dialogue and typography, dedication, epigraph, acknowledgements and the other texts around the novel. In Word and in PDF **Table of contents** adds, after the opening pages, the contents of parts and chapters with the page numbers; on opening the file, Word asks to update the fields: answer Yes, that is how the contents are filled in.
 6. Decide what to do with the **Pending revisions**: accept or reject them all in the exported file.
 7. Press **Export**. At the end Dante says how many words (or characters, if the project measures in characters) and pages it exported and offers **Open the file** and **Show in folder**.
 

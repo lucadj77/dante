@@ -578,7 +578,7 @@ Per le scene singole, il pannello **Proprietà** mostra parole, caratteri e temp
 2. Scegli il **Formato**: **Word (DOCX)** da mandare ad agenti ed editori o per continuare a lavorarci; **PDF** pronto da leggere o stampare; **EPUB** per i lettori di ebook e i negozi online; **Markdown** per avere tutto il romanzo in un unico file di testo, da aprire con qualsiasi editor.
 3. Scegli **Cosa esportare**: tutto il romanzo o una sua parte.
 4. Scegli l'**Impaginazione**: **Manoscritto standard** (il formato che si invia a editori e agenti) oppure **Libro impaginato** (da leggere e stampare).
-5. Se vuoi, regola il resto: formato della pagina, font, corpo, interlinea, rientro, cosa mettere prima di parti, capitoli e scene, frontespizio, intestazione, dialoghi e tipografia, dedica, esergo, ringraziamenti e gli altri testi intorno al romanzo.
+5. Se vuoi, regola il resto: formato della pagina, font, corpo, interlinea, rientro, cosa mettere prima di parti, capitoli e scene, frontespizio, intestazione, dialoghi e tipografia, dedica, esergo, ringraziamenti e gli altri testi intorno al romanzo. In Word e in PDF **Indice dei capitoli** aggiunge, dopo le pagine iniziali, l'indice di parti e capitoli con i numeri di pagina; aprendo il file, Word chiede di aggiornare i campi: rispondi Sì, è così che l'indice si riempie.
 6. Decidi cosa fare delle **Revisioni in sospeso**: accettarle o rifiutarle tutte nel file esportato.
 7. Premi **Esporta**. Alla fine Dante dice quante parole (o caratteri, se il progetto misura in caratteri) e pagine ha esportato e offre **Apri il file** e **Mostra nella cartella**.
 

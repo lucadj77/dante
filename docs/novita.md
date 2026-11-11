@@ -13,6 +13,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Annullare spostamenti, divisioni e fusioni**: dopo aver spostato, diviso o fuso scene e capitoli, in fondo all'albero compare **Annulla** (anche Cmd+Z / Ctrl+Z con l'albero attivo), che rimette tutto com'era, collegamenti compresi.
 - **Riprendere una copia di sicurezza da Dante**: in Impostazioni > Copie di sicurezza c'è l'elenco delle copie; **Apri questa copia** la estrae in una cartella nuova accanto al romanzo e la apre, senza toccare il romanzo di adesso.
 - **Una proprietà a più scene insieme**: scegli più scene nell'albero (Cmd/Ctrl+clic), poi clic destro > **Imposta una proprietà alle scene…** per dare a tutte lo stesso valore, per esempio lo stato.
+- **Indice dei capitoli in Word e PDF**: nell'Esportazione la spunta **Indice dei capitoli** aggiunge l'indice di parti e capitoli con i numeri di pagina, dopo frontespizio, dedica ed esergo.
 
 ### Cambiato
 

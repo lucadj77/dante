@@ -381,3 +381,40 @@ describe("callouts", () => {
     expect(blocks.some((b) => b.box?.callout?.title === "Consiglio")).toBe(true);
   });
 });
+
+describe("table of contents", () => {
+  const novel = () =>
+    new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: it\n",
+      "Manuscript/010 Uno/010 Scena.md": "Prima.",
+      "Manuscript/020 Due/010 Scena.md": "Seconda.",
+    });
+
+  it("is left out unless asked for", async () => {
+    const project = await Project.open(novel());
+    const book = await buildBook(project);
+    const opts = project.settings.export.docx;
+    expect(opts.toc).toBe(false);
+    expect(bookToTypst(book, opts, { words: "parole" })).not.toContain("#outline");
+    expect(await documentXml(await docxBytes(bookToDocx(book, opts, { words: "parole" })))).not.toContain("TOC ");
+  });
+
+  it("lists the chapters after the front matter, in Word and in the PDF", async () => {
+    const project = await Project.open(novel());
+    const book = await buildBook(project);
+    const opts = { ...project.settings.export.docx, toc: true };
+    const typst = bookToTypst(book, opts, { words: "parole" });
+    expect(typst).toContain('#outline(title: [#"Indice"], depth: 1)');
+    expect(typst.indexOf("#outline")).toBeLessThan(typst.indexOf("#heading(level: 1)"));
+    const bytes = await docxBytes(bookToDocx(book, opts, { words: "parole" }));
+    const xml = await documentXml(bytes);
+    expect(xml).toContain("TOC \\h \\o &quot;1-1&quot;");
+    expect(xml.indexOf("TOC ")).toBeLessThan(xml.indexOf("Prima."));
+    const JSZip = (await import("jszip")).default;
+    expect(await (await JSZip.loadAsync(bytes)).file("word/settings.xml")!.async("string")).toContain("w:updateFields");
+  });
+
+  it("reads the choice from dante.yaml", () => {
+    expect(parseSettings("export:\n  docx:\n    toc: true\n").export.docx.toc).toBe(true);
+  });
+});
