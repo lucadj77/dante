@@ -9,14 +9,10 @@
   import { BrowserFs } from "$lib/browserFs";
   import type { MessageKey } from "$lib/i18n";
   import ManuscriptView from "./ManuscriptView.svelte";
-  import ExportView from "./ExportView.svelte";
   import { EXPORT_FOLDER } from "$lib/core/export/files";
-  import SettingsView from "./SettingsView.svelte";
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
   import ViewsView from "./ViewsView.svelte";
-  import StatsView from "./StatsView.svelte";
-  import GamebookView from "./GamebookView.svelte";
   import { flushSessions, startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
@@ -821,13 +817,13 @@
         />
       {/key}
     {:else if section === "export"}
-      <ExportView {project} onSaved={reload} />
+      {#await import("./ExportView.svelte") then { default: ExportView }}<ExportView {project} onSaved={reload} />{/await}
     {:else if section === "settings"}
-      <SettingsView {project} onSaved={reload} onGo={go} {onOpenProject} />
+      {#await import("./SettingsView.svelte") then { default: SettingsView }}<SettingsView {project} onSaved={reload} onGo={go} {onOpenProject} />{/await}
     {:else if section === "gamebook"}
-      <GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />
+      {#await import("./GamebookView.svelte") then { default: GamebookView }}<GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />{/await}
     {:else if section === "stats"}
-      <StatsView {project} {rev} {diskRev} onSaved={reload} />
+      {#await import("./StatsView.svelte") then { default: StatsView }}<StatsView {project} {rev} {diskRev} onSaved={reload} />{/await}
     {:else if section === "views"}
       <div class="with-panes" class:on={showPanes}>
         <ViewsView {project} {rev} {diskRev} open={opened.views ?? null} onShow={(path) => (opened.views = path)} onReload={reload} />
