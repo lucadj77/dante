@@ -6,3 +6,5 @@ page=$(grep -o "__sveltekit_[a-z0-9]*" build/index.html | sort -u)
 scripts=$(grep -rho "__sveltekit_[a-z0-9]*" build/_app/immutable | sort -u)
 echo "page: $page / scripts: $scripts"
 [ -n "$page" ] && [ "$page" = "$scripts" ]
+# The page says what it may load and run: without this line any script written into it would run.
+grep -q '<meta http-equiv="content-security-policy"' build/index.html
