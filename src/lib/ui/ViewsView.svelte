@@ -117,6 +117,14 @@
     return [...(spec.items === "scene" ? ["chapter"] : spec.items === "chapter" ? ["type"] : []), ...used.slice(0, 6), p.project.settings.goals.unit];
   });
 
+  /** The values offered for a field: those the property allows, then those the notes have. */
+  function valuesOf(field: string): string[] {
+    if (!field || field === "words" || field === "characters") return [];
+    const out = new Set<string>(propertyDef(p.project.settings.properties, field)?.values ?? []);
+    for (const row of all) for (const v of values(row, field)) out.add(v);
+    return [...out].slice(0, 200);
+  }
+
   // A property with allowed values gives its columns when the view lists none.
   const groupDef = $derived(spec.group_by ? propertyDef(p.project.settings.properties, spec.group_by) : null);
   const chapters = $derived.by(() => {
@@ -555,7 +563,7 @@
 
       {#if settingsOpen && !p.embedded}
         <div class="settings">
-          <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} />
+          <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {valuesOf} {save} />
           <p class="remove"><button class="danger" onclick={remove}>{t("views.deleteThis")}</button></p>
         </div>
       {/if}

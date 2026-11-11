@@ -4,6 +4,7 @@
   import type { MessageKey } from "$lib/i18n";
   import { t } from "$lib/state.svelte";
   import { DOT_COLORS, type DotValue } from "$lib/core/statistics";
+  import ChipsInput from "./ChipsInput.svelte";
 
   interface Props {
     name: string;
@@ -20,16 +21,12 @@
     legend?: DotValue[];
     /** A new colour for a value of the dot; "" goes back to the usual one. */
     onColor?: (value: string, color: string) => void;
+    /** The values the notes already have for the property, offered as allowed ones. */
+    used?: string[];
   }
   let p: Props = $props();
 
   const kind = $derived(p.def?.kind ?? "");
-  // svelte-ignore state_referenced_locally
-  let values = $state(p.def?.values.join(", ") ?? "");
-  $effect(() => {
-    values = p.def?.values.join(", ") ?? "";
-  });
-
   function save(changes: Partial<PropertyDef>) {
     const base: PropertyDef = p.def ?? { kind: "text", values: [], note_type: "" };
     p.onSave({ ...base, ...changes });
@@ -57,7 +54,6 @@
     return /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : "#888888";
   }
 
-  const split = (text: string) => [...new Set(text.split(",").map((s) => s.trim()).filter(Boolean))];
 </script>
 
 <div class="def">
@@ -78,10 +74,10 @@
     </select>
   </label>
   {#if kind === "text" || kind === "list"}
-    <label
-      >{t(kind === "text" ? "property.valuesOne" : "property.valuesMany")}
-      <input bind:value={values} placeholder={t("property.valuesHint")} onchange={() => save({ values: split(values) })} />
-    </label>
+    <div class="values">
+      <span>{t(kind === "text" ? "property.valuesOne" : "property.valuesMany")}</span>
+      <ChipsInput values={p.def?.values ?? []} suggestions={p.used ?? []} label={t(kind === "text" ? "property.valuesOne" : "property.valuesMany")} placeholder={t("property.valuesHint")} onChange={(list) => save({ values: list })} />
+    </div>
   {:else if kind === "link"}
     <label
       >{t("property.noteType")}
@@ -138,7 +134,8 @@
     background: var(--bg-panel);
     font-size: 12px;
   }
-  label {
+  label,
+  .values {
     display: grid;
     gap: 2px;
     color: var(--text-muted);
