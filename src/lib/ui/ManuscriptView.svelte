@@ -33,8 +33,9 @@
   import WordImport from "./WordImport.svelte";
   import StatusBar from "./StatusBar.svelte";
   import { textStats } from "$lib/core/stats";
-  import { pickWordFile } from "./wordFile";
-  import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { pickDocumentFile } from "./wordFile";
+  import { readDocumentFile } from "$lib/core/import/any";
+  import type { DocxContent } from "$lib/core/import/docx";
   import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
   import type { NoteIndex } from "$lib/core/notes";
   import { gamebookMarks, gamebookOf } from "$lib/core/gamebook/marks";
@@ -449,10 +450,12 @@
 
   async function chooseWord() {
     error = "";
+    let picked = "";
     try {
-      const file = await pickWordFile();
+      const file = await pickDocumentFile(t("import.documents"));
       if (!file) return;
-      const content = await readDocx(file.bytes, { note: t("import.note") });
+      picked = file.name;
+      const content = await readDocumentFile(file.bytes, file.name, { note: t("import.note") });
       wordRoles = defaultRoles(content.blocks);
       wordBlanks = defaultBlankLines(content.blocks);
       wordMarks = {};
@@ -461,7 +464,7 @@
       wordError = "";
       word = { content, fileName: file.name };
     } catch (e) {
-      error = t("import.failed", { name: "Word", message: e instanceof Error ? e.message : String(e) });
+      error = t("import.failed", { name: picked || t("import.documents"), message: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -906,7 +909,7 @@
             {#if project.settings.structure.parts}
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
-            <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
+            <button title={t("tip.importWord")} aria-label={t("import.addDocument")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
           </div>
           {:else}
           <div class="add gamebook-add">

@@ -335,3 +335,18 @@ test("takes a snapshot of the whole manuscript and goes back to it", async ({ pa
   await expect(page.locator(".cm-content").first()).toContainText("L’historia si può veramente deffinire");
   await expect(page.locator(".cm-content").filter({ hasText: "Una frase di troppo." })).toHaveCount(0);
 });
+
+test("imports a Markdown file from the single import button", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("dante.app-settings", JSON.stringify({ language: "it", userName: "Prova" }));
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Importa da altro formato…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Da cosa vuoi importare?" });
+  await expect(dialog.getByRole("button", { name: /Scrivener/ })).toBeVisible();
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), dialog.getByRole("button", { name: /Word, OpenDocument, RTF, Markdown o testo/ }).click()]);
+  await chooser.setFiles({ name: "Il viaggio.md", mimeType: "text/markdown", buffer: Buffer.from("# Capitolo uno\n\nArrivò a Bari di sera.\n\n# Capitolo due\n\nRipartì all'alba.\n") });
+  const preview = page.getByRole("dialog", { name: /Il viaggio\.md/ });
+  await expect(preview).toContainText("Capitolo uno");
+  await expect(preview).toContainText("2 capitoli");
+});

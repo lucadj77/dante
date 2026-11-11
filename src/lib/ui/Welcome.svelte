@@ -17,13 +17,15 @@
   import { addLauncher, folderFs, OpenElsewhere, openProjectAt, openProjectIn } from "$lib/opening";
   import { allow, chooseFolder, forgetFolder, isWebPath, rememberFolder, webFolders, webFs } from "$lib/webFolders";
   import { MemoryFs } from "$lib/core/fs";
-  import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import type { DocxContent } from "$lib/core/import/docx";
+  import { readDocumentFile } from "$lib/core/import/any";
+  import Dialog from "./Dialog.svelte";
   import { ScrivenerError } from "$lib/core/import/scrivener";
   import { noteDestination, type NoteDestination } from "$lib/core/project";
   import { defaultTypes } from "$lib/core/settings";
   import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
   import WordImport from "./WordImport.svelte";
-  import { pickWordFile } from "./wordFile";
+  import { pickDocumentFile } from "./wordFile";
   import { pickScrivener } from "./scrivenerFile";
   import { openHelp } from "./help.svelte";
 
@@ -187,7 +189,7 @@
   async function importWord(bytes: Uint8Array, fileName: string) {
     error = "";
     try {
-      preview(await readDocx(bytes, { note: t("import.note") }), fileName);
+      preview(await readDocumentFile(bytes, fileName, { note: t("import.note") }), fileName);
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
     }
@@ -196,6 +198,7 @@
   /** Reads a Scrivener project and opens its preview, as a Word file's. */
   async function chooseScrivener() {
     error = "";
+    choosingImport = false;
     try {
       const picked = await pickScrivener(t("untitled"));
       if (picked) preview(picked.content, picked.name, true);
@@ -220,10 +223,14 @@
     previewing = true;
   }
 
+  /** The choice of what to import from is open. */
+  let choosingImport = $state(false);
+
   async function chooseWord() {
     error = "";
+    choosingImport = false;
     try {
-      const file = await pickWordFile();
+      const file = await pickDocumentFile(t("import.documents"));
       if (file) await importWord(file.bytes, file.name);
     } catch (e) {
       error = failure(e);
@@ -234,7 +241,7 @@
   function previewed(book: ImportedBook) {
     imported = book;
     previewing = false;
-    if (!title.trim()) title = book.title || importedFrom.replace(/\.(docx|scriv|zip)$/i, "");
+    if (!title.trim()) title = book.title || importedFrom.replace(/\.(docx|odt|rtf|md|markdown|txt|scriv|zip)$/i, "");
     creating = true;
   }
 
@@ -406,8 +413,7 @@
         <button class="primary" onclick={() => (creating = true)}>{t("welcome.new")}</button>
         <button onclick={openFolder}>{t("welcome.open")}</button>
       {/if}
-      <button onclick={chooseWord}>{t("import.word")}</button>
-      <button title={web ? t("tip.importScrivenerWeb") : t("tip.importScrivener")} onclick={chooseScrivener}>{t("import.scrivener")}</button>
+      <button onclick={() => (choosingImport = true)}>{t("import.other")}</button>
       <button onclick={openSample}>{t("welcome.sample")}</button>
     </div>
     <p class="help-link"><button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button></p>
@@ -438,6 +444,23 @@
     <p class="error"><ErrorText text={error} /></p>
   {/if}
 </main>
+
+{#if choosingImport}
+  <Dialog label={t("import.otherTitle")} onClose={() => (choosingImport = false)} width={520}>
+    <h2 class="import-title">{t("import.otherTitle")}</h2>
+    <div class="formats">
+      <button onclick={chooseWord}>
+        <strong>{t("import.documents")}</strong>
+        <span>{t("import.documentsHint")}</span>
+      </button>
+      <button onclick={chooseScrivener}>
+        <strong>Scrivener</strong>
+        <span>{web ? t("import.scrivenerHintWeb") : t("import.scrivenerHint")}</span>
+      </button>
+    </div>
+    <div class="import-close"><button onclick={() => (choosingImport = false)}>{t("tree.cancel")}</button></div>
+  </Dialog>
+{/if}
 
 <style>
   main {
@@ -593,5 +616,28 @@
   }
   .error {
     color: var(--danger);
+  }
+  .import-title {
+    margin: 0;
+    font-size: 17px;
+  }
+  .formats {
+    display: grid;
+    gap: 8px;
+  }
+  .formats button {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    text-align: left;
+  }
+  .formats span {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .import-close {
+    display: flex;
+    justify-content: flex-end;
   }
 </style>

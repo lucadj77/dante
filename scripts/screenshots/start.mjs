@@ -19,7 +19,7 @@ if (run('aggiornamento')) { const { b, page } = await start({ fakeTauri: true, u
   await b.close(); }
 
 if (run('word')) { const { b, page } = await start({ sample: false });
-  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByText('Importa da Word…').click()]);
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), (async () => { await page.getByText('Importa da altro formato…').click(); await page.getByRole('button', { name: /Word, OpenDocument/ }).click(); })()]);
   await chooser.setFiles('shots/Il faro.docx'); await page.waitForTimeout(1500);
   await page.locator('.blocks button', { hasText: 'Il guardiano del faro' }).click(); await page.waitForTimeout(400);
   await page.locator('[role=dialog]').screenshot({ path: S+'importa-word.png' });

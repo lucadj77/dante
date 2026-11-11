@@ -352,3 +352,53 @@ describe("importing into a project", () => {
     ]);
   });
 });
+
+describe("other documents", () => {
+  it("reads an OpenDocument text written by LibreOffice", async () => {
+    const { readDocumentFile } = await import("../import/any");
+    const { readFileSync } = await import("node:fs");
+    const bytes = new Uint8Array(readFileSync(new URL("./fixtures/viaggio.odt", import.meta.url)));
+    const content = await readDocumentFile(bytes, "Viaggio.ODT");
+    expect(content.title).toBe("Il viaggio");
+    expect(content.author).toBe("Ada Rossi");
+    expect(content.blocks.filter((b) => b.kind === "heading" || b.text)).toEqual([
+      { kind: "heading", level: 0, text: "Il viaggio" },
+      { kind: "paragraph", text: '<span style="display:block;text-align:center">Ada Rossi</span>' },
+      { kind: "heading", level: 1, text: "Capitolo uno" },
+      { kind: "paragraph", text: "Arrivò a **Bari** di *sera*.^[Era il 1921.] Poi ~~niente~~." },
+      { kind: "heading", level: 2, text: "Una scena" },
+      { kind: "paragraph", text: "Secondo paragrafo." },
+    ]);
+  });
+
+  it("reads Markdown, plain text and RTF", async () => {
+    const { readDocumentFile, readMarkdown, isDocument } = await import("../import/any");
+    const encode = (text: string) => new TextEncoder().encode(text);
+    expect(readMarkdown("---\ntitle: \"Il viaggio\"\nauthor: Ada\n---\n# Uno\n\nPrima riga\nseconda riga.\n\n\n\nDopo lo spazio.\n\n## Due ##\n")).toEqual({
+      title: "Il viaggio",
+      author: "Ada",
+      blocks: [
+        { kind: "heading", level: 1, text: "Uno" },
+        { kind: "paragraph", text: "Prima riga\nseconda riga." },
+        { kind: "paragraph", text: "" },
+        { kind: "paragraph", text: "" },
+        { kind: "paragraph", text: "Dopo lo spazio." },
+        { kind: "heading", level: 2, text: "Due" },
+      ],
+    });
+    expect((await readDocumentFile(encode("Uno *due*\n\n# Tre\n"), "note.txt")).blocks).toEqual([
+      { kind: "paragraph", text: "Uno \\*due\\*" },
+      { kind: "paragraph", text: "" },
+      { kind: "paragraph", text: "\\# Tre" },
+    ]);
+    // Text that is not UTF-8 is read as Windows wrote it.
+    expect((await readDocumentFile(new Uint8Array([0x70, 0x65, 0x72, 0x63, 0x68, 0xe9]), "a.txt")).blocks[0]).toEqual({ kind: "paragraph", text: "perché" });
+    const rtf = "{\\rtf1\\ansi Uno {\\b due}.\\par Tre.\\par}";
+    expect((await readDocumentFile(encode(rtf), "a.rtf")).blocks.filter((b) => b.text)).toEqual([
+      { kind: "paragraph", text: "Uno **due**." },
+      { kind: "paragraph", text: "Tre." },
+    ]);
+    expect(isDocument("x.odt")).toBe(true);
+    expect(isDocument("x.pdf")).toBe(false);
+  });
+});
