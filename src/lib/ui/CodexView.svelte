@@ -618,7 +618,9 @@
     background: var(--bg-active);
   }
   .type .icon {
-    width: 20px;
+    flex: none;
+    white-space: nowrap;
+    min-width: 20px;
     text-align: center;
   }
   .type .name {

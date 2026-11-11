@@ -1123,6 +1123,10 @@
   [draggable="true"] {
     cursor: grab;
   }
+  .column h3::first-letter,
+  .group-title::first-letter {
+    text-transform: uppercase;
+  }
   .column h3 {
     margin: -8px -8px 2px;
     padding: 8px;

@@ -110,7 +110,8 @@ button[aria-pressed="true"] {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
   background: var(--editor-bg);
@@ -345,4 +346,16 @@ select {
   font-size: 0.85em;
   font-style: italic;
   line-height: 1.4;
+}
+
+/* Who asked the system for less movement gets none: panels and marks change at once. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
