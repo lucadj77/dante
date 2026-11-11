@@ -25,6 +25,8 @@ jobs:
       # The app's build, as tauri build makes it, with no version given.
       - run: npm run build
       - run: bash .github/check-build.sh
+      # No library brought in a script that macOS 10.15 would reject.
+      - run: node .github/check-compat.mjs
 
   # The interface, in a browser: the web version with the sample project (e2e/).
   e2e:
