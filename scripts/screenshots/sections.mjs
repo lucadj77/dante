@@ -75,7 +75,7 @@ if (run('export')) { const { b, page } = await start();
   await nav(page, 'Esportazione');
   await page.screenshot({ path: S+'esportazione-full.png' });
   await nav(page, 'Impostazioni');
-  await page.getByText('Struttura', { exact: true }).first().evaluate((e) => e.scrollIntoView({ block: 'start' })); await page.waitForTimeout(300);
+  await page.locator('[data-settings="structure"]').click(); await page.waitForTimeout(500);
   await page.screenshot({ path: S+'struttura-full.png' });
   await b.close(); }
 

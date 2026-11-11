@@ -122,13 +122,69 @@ export function saveAppSettings(settings: AppSettings) {
   }
 }
 
+/** What a novel can have of its own on this computer: theme, accent, font and the page of the editor. */
+export const LOOK_KEYS = ["theme", "accent", "fontFamily", "fontSize", "lineWidth", "lineHeight", "paragraphGap", "indent", "justify"] as const;
+export type Look = Pick<AppSettings, (typeof LOOK_KEYS)[number]>;
+
+const LOOKS_KEY = "dante.project-looks";
+
+function loadLooks(): Record<string, Partial<Look>> {
+  try {
+    const stored = JSON.parse(localStorage.getItem(LOOKS_KEY) ?? "{}");
+    return stored && typeof stored === "object" && !Array.isArray(stored) ? stored : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * The look of the open novel, when it has one of its own. It is kept on this computer under
+ * the project's id, not in the project: co-authors keep theirs, and a font missing elsewhere
+ * does no harm.
+ */
+export const look = $state<{ id: string; own: Partial<Look> | null }>({ id: "", own: null });
+
+/** The look of the computer, as a novel's own look starts. */
+export function lookOf(settings: AppSettings): Look {
+  return Object.fromEntries(LOOK_KEYS.map((k) => [k, settings[k]])) as unknown as Look;
+}
+
+/** Follows the look kept for the project with this id; "" for a project that has none, or none open. */
+export function openLook(id: string) {
+  look.id = id;
+  look.own = id ? (loadLooks()[id] ?? null) : null;
+}
+
+/** Gives the open novel a look of its own (`own`), or takes it back to the computer's (null). */
+export function saveLook(id: string, own: Partial<Look> | null) {
+  look.id = id;
+  look.own = own;
+  try {
+    const looks = loadLooks();
+    if (own) looks[id] = own;
+    else delete looks[id];
+    localStorage.setItem(LOOKS_KEY, JSON.stringify(looks));
+  } catch {
+    // Not persisted; the look still applies to this session.
+  }
+}
+
+/** The settings as they apply now: the computer's, with the open novel's own look over them. */
+export function appearance(): AppSettings {
+  return look.own ? { ...app.settings, ...look.own } : app.settings;
+}
+
 const FONT_MIN = 12;
 const FONT_MAX = 32;
 
 /** Makes the text larger or smaller by `step` points, or back to the default with 0. */
 export function zoom(step: number) {
-  const size = step === 0 ? defaults().fontSize : Math.min(FONT_MAX, Math.max(FONT_MIN, app.settings.fontSize + step));
-  if (size !== app.settings.fontSize) saveAppSettings({ ...app.settings, fontSize: size });
+  const now = appearance().fontSize;
+  const size = step === 0 ? defaults().fontSize : Math.min(FONT_MAX, Math.max(FONT_MIN, now + step));
+  if (size === now) return;
+  // A novel with a look of its own keeps its size apart from the computer's.
+  if (look.own) saveLook(look.id, { ...look.own, fontSize: size });
+  else saveAppSettings({ ...app.settings, fontSize: size });
 }
 
 /** A number in the interface language, thousands always grouped. */

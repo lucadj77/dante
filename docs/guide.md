@@ -68,7 +68,7 @@ For this reason the same project also opens in Obsidian or in any text editor, s
    With **New project** this form appears: title, **subtitle** (if there is one), authors, language and cover. The cover is a simple drawing that Dante prepares with the title and the authors: choose a shape and some colours, leave it as it is, or press **Use a picture of yours…** and choose a photo or a drawing from the computer. Everything can be changed later in **Settings** (chapter 13).
 
    ![The form for a new project: title, authors, language, cover and folder](img/nuovo-progetto.png)
-3. Open **Settings** (the gear in the bar on the left). They have two tabs: **This novel**, with the choices saved in the project, and **Dante on this computer**, with those that hold for every project. In the second write **your name**: it signs comments and revisions and counts the words you write each day. There is no button to save: every change saves itself after a moment.
+3. Open **Settings** (the gear in the bar on the left). On the left is the list of pages, in two groups: **This novel**, with the choices saved in the project, and **Dante on this computer**, with those that hold for every project; the box **Search the settings** at the top finds the right page from a word. In the page **You** of the second group write **your name**: it signs comments and revisions and counts the words you write each day. There is no button to save: every change saves itself after a moment.
 4. In the tab **This novel** check **title**, **author** and **language of the novel** (Italian, English, Spanish or French, from a menu): the language decides, for example, the hyphenation and the names of the folders.
 
 A new project already has the property **status** for the scenes (idea, draft, revised, done), the **point of view** linked to the characters and two views ready in the section **Tables and boards**: a board of the scenes by status and a table of the scenes (chapter 11). The first scene, empty, shows in grey three lines on how to begin, which vanish as soon as you write.
@@ -80,7 +80,7 @@ Every project also holds a file with the title of the novel and the extension **
 ### In depth
 
 - **Where to download it**: the installer and the portable copy for Windows, the packages for Linux and the .dmg for Mac are in the Download section of [dante.lucadj.eu](https://dante.lucadj.eu), which leads to the latest published version. The files have the version number in their name, for example `Dante-setup-1.2.0.exe`.
-- **macOS**: there are two files: `Dante-<version>-mac-apple-silicon.dmg` for Macs with an M1 chip or later (from 2020) and `Dante-<version>-mac-intel.dmg` for earlier ones. To know which one you have, open the Apple menu > About This Mac: if you see "Chip Apple" choose apple-silicon, if you see "Intel" choose intel. macOS 10.15 (Catalina) or later is needed; on Catalina first install the Safari updates up to 15.6 (System Preferences > Software Update). The engine that Catalina gives to apps is still that of Safari 13, too old for Dante: on Catalina Dante restarts by itself when it opens, to use the engine of the updated Safari (a solution still on trial). If Dante cannot start, in place of the empty window it shows a report to copy and send to those who look after Dante, with the versions of macOS and Safari added at the end; the same report can be copied at any time from Settings > Report a problem. Open the .dmg and drag Dante into the Applications folder. The app is not signed by Apple, so the first time macOS blocks it: close the warning, then go to System Settings > Privacy & Security and press **Open Anyway** beside the message about Dante. On versions of macOS before Sequoia a right click on the app > Open is enough. It is needed once for each .dmg you download; later versions arrive with the automatic update (chapter 17). With Dante in Applications the double click on .dante files works.
+- **macOS**: there are two files: `Dante-<version>-mac-apple-silicon.dmg` for Macs with an M1 chip or later (from 2020) and `Dante-<version>-mac-intel.dmg` for earlier ones. To know which one you have, open the Apple menu > About This Mac: if you see "Chip Apple" choose apple-silicon, if you see "Intel" choose intel. macOS 10.15 (Catalina) or later is needed; on Catalina first install the Safari updates up to 15.6 (System Preferences > Software Update). The engine that Catalina gives to apps is still that of Safari 13, too old for Dante: on Catalina Dante restarts by itself when it opens, to use the engine of the updated Safari (a solution still on trial). If Dante cannot start, in place of the empty window it shows a report to copy and send to those who look after Dante, with the versions of macOS and Safari added at the end; the same report can be copied at any time from Settings > Updates and support > Report a problem. Open the .dmg and drag Dante into the Applications folder. The app is not signed by Apple, so the first time macOS blocks it: close the warning, then go to System Settings > Privacy & Security and press **Open Anyway** beside the message about Dante. On versions of macOS before Sequoia a right click on the app > Open is enough. It is needed once for each .dmg you download; later versions arrive with the automatic update (chapter 17). With Dante in Applications the double click on .dante files works.
 - The settings are in two groups. Those of the **novel** (title, structure, numbering, types, goals, export) are saved in `dante.yaml` inside the project and travel with it. Those of the **application** (interface language, theme, interface size, look of the text in the editor, spell checker, your name) stay on the computer and hold for every project.
 - A new project is born with its main folders ready, named in the language of the novel (chapter 6).
 - **Launch file**: Dante writes `Title.dante` in the main folder when it creates or opens a project that has none (it recognises it by any name with that extension, so a renamed file is not duplicated). Its content is only a note: what counts is the folder it is in. The installers register the extension: document type on the Mac, registry on Windows, MIME type `application/x-dante-project` with the .deb and .rpm packages on Linux. With the portable copy and the AppImage the association is missing, but *Open with* on the file works. A second copy of Dante started by the double click hands the file to the one already open and closes. Obsidian does not show the file, because it is not a format it knows.
@@ -159,7 +159,7 @@ Each section matches a folder of the project: Manuscript, Story Bible, Views for
 
   *Try it:* open a scene, select a sentence and press **I** in the bar: the sentence becomes italic. Cmd+Z / Ctrl+Z brings it back as it was.
 - **Aligning a paragraph**: put the cursor in the paragraph and use the alignment buttons of the formatting bar (centre or right), or Cmd+Shift+E / Ctrl+Shift+E and Cmd+Shift+R / Ctrl+Shift+R. A second click on the same button brings it back to the basic alignment: left while you write, justified or left in the export according to the profile. On an empty line the button starts a paragraph already aligned. Enter at the end of an aligned paragraph starts a normal one; Backspace at the beginning removes the alignment. The alignment shows in the editor and is respected in Word, PDF, EPUB and Markdown; from a Word import the centred and right-aligned paragraphs are kept. In the file the paragraph is wrapped in `<span style="display:block;text-align:center">…</span>` (or `text-align:right`): Dante hides the tag, the Markdown view shows it, and Obsidian shows the paragraph aligned with italics and bold intact.
-- **Starting a new line**: Enter begins a new paragraph. Between one paragraph and the next you see only the space, not one more line to stop on: the arrows go straight from one paragraph to the other and Backspace at the beginning of a paragraph joins it to the one before. Pressing Enter twice in a row (or Enter at the beginning of a paragraph) leaves an empty paragraph, which in the book is a blank line and in the editor shows as a pale **¶**. Shift+Enter starts a new line inside the same paragraph, for example in the lines of a poem. In lists, quotations and tables Enter does what it always does: a new item, a new row. If you prefer to see the empty lines as they are in the file, untick **A single Enter starts a new paragraph** in **Settings → Dante on this computer**; the Markdown view always shows them.
+- **Starting a new line**: Enter begins a new paragraph. Between one paragraph and the next you see only the space, not one more line to stop on: the arrows go straight from one paragraph to the other and Backspace at the beginning of a paragraph joins it to the one before. Pressing Enter twice in a row (or Enter at the beginning of a paragraph) leaves an empty paragraph, which in the book is a blank line and in the editor shows as a pale **¶**. Shift+Enter starts a new line inside the same paragraph, for example in the lines of a poem. In lists, quotations and tables Enter does what it always does: a new item, a new row. If you prefer to see the empty lines as they are in the file, untick **A single Enter starts a new paragraph** in **Settings → Writing**; the Markdown view always shows them.
 
   *Try it:* at the end of a paragraph press Enter and write: the new paragraph begins below, separated by the usual space. Now press Enter twice and write again: between the two a **¶** appears, the blank line you will see in the book.
 - **Blank lines**: in Markdown two or more empty lines between two paragraphs count as one, so an extra empty line in the file vanishes in the export and in Obsidian (which is why Dante does not show it). To really leave a blank line, without starting a new scene, press the **¶** button of the formatting bar or Alt+Enter: after the paragraph you are in a line with a pale **¶** appears, which in the book will be a blank line. The **¶** is not printed; to remove the line, put the cursor on it and delete it like any other line.
@@ -237,11 +237,11 @@ Everything is done from the tree in the Manuscript section.
 A scene that ended up outside any chapter is marked in the tree as **outside chapters**: drag it into the right chapter.
 
 - **Status in the tree**: beside each scene a coloured dot says how far along it is, according to the property **status** (chapter 8): grey for idea, orange for draft, blue for revised, green for done. Moving the mouse over the dot shows "Stage: draft" (or the value the scene has). A value that is not among the expected ones has an empty circle.
-- **Colouring the tree by another property**: in **Settings** > **This novel** > **Scene tree** choose which property decides the colour of the dot, for example **pov** to see at a glance whose point of view each scene has. Each value has its own colour (up to eight, then the colours repeat) and moving the mouse over the dot shows, for example, "Pov: Renzo". The scenes without that property have no dot. To go back to the status choose **the stage of work** again.
+- **Colouring the tree by another property**: in **Settings** > **Scenes and properties** > **Scene tree** choose which property decides the colour of the dot, for example **pov** to see at a glance whose point of view each scene has. Each value has its own colour (up to eight, then the colours repeat) and moving the mouse over the dot shows, for example, "Pov: Renzo". The scenes without that property have no dot. To go back to the status choose **the stage of work** again.
 
   *Try it:* in the sample project choose **pov**: the scenes of different characters take different colours.
 - **Word or character goals**: you can give a scene or a chapter a **Word goal** (or a **Character goal**, if the project measures in characters) in the Properties panel. The tree then shows a small bar to the right of the name, which turns green when the goal is reached; moving the mouse over it shows the words written and those to reach.
-- **Template of new scenes**: in **Settings** > **This novel** > **New scenes**, the button **Edit the template of new scenes** opens the template (it creates it the first time, with the status "idea"). Every new scene starts from there, with the same properties and the same text, for example a few questions to keep in mind. The scenes created by splitting one (Cmd+Enter / Ctrl+Enter) keep the text that follows the cursor instead.
+- **Template of new scenes**: in **Settings** > **Scenes and properties** > **New scenes**, the button **Edit the template of new scenes** opens the template (it creates it the first time, with the status "idea"). Every new scene starts from there, with the same properties and the same text, for example a few questions to keep in mind. The scenes created by splitting one (Cmd+Enter / Ctrl+Enter) keep the text that follows the cursor instead.
 
   *Example:* in the template write the properties `status: idea` and `pov:` and, in the text, "Who wants what? What stands in the way?". Every new scene is born with the status "idea", the field of the point of view ready and the two questions, to delete when you begin to write.
 
@@ -292,7 +292,7 @@ A snapshot is a copy of a scene as it was at a certain moment, to take up again 
 
   ![The comparison between the snapshot and the current text](img/confronta.png)
 - **Restore** puts the snapshot back in place of the text. The current text is saved as a snapshot first, so nothing is lost.
-- To tidy up, in Settings, **Delete old snapshots** deletes the automatic ones taken before a date; those with a name always stay.
+- To tidy up, in **Settings** > **Upkeep**, **Delete old snapshots** deletes the automatic ones taken before a date; those with a name always stay.
 
 ### In depth
 
@@ -323,7 +323,7 @@ The panel is divided into sections: the scene (title, file name, synopsis, goal)
 
   *Example:* you want to note in which season each scene takes place. Press **+ New**, write "season", choose **Text** and **Every scene of the novel**, then **Add property**. Click the **T** beside the name and write "spring, summer, autumn, winter" in the allowed values. From then on, in every scene, "season" is a menu with those four values, and a view can group the scenes by season. If you later prefer to call it "period", you rename it from the same definition.
 
-All the properties with a type are listed in **Settings → Note properties**.
+All the properties with a type are listed in **Settings → Scenes and properties**, under **Note properties**.
 
 ### In depth
 
@@ -439,7 +439,7 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
 ### How to
 
 1. **Sharing**: put the folder of the project in Dropbox or Google Drive and share it with those who work with you. Each one opens it with **Open folder…**.
-2. **Signing**: each one writes their name in **Settings → Your name**.
+2. **Signing**: each one writes their name in **Settings → You**.
 3. **Commenting**: select the text and press 💬 (or Cmd+Alt+M / Ctrl+Alt+M), write the comment and press Cmd+Enter / Ctrl+Enter. In the text the comment appears as a speech bubble.
 4. **Proposing changes**: choose **More** > **Track changes as revisions** in the bar at the top (your name is needed in Settings); while they are on, the label **Revisions on** stays in the bar. From then on what you write appears underlined and what you delete struck through, with your name, until someone decides.
 5. **Deciding**: the **Comments** tab of the right panel lists the comments and the changes of the text shown. For each you can **Reply**, **Resolve** (closes the discussion), **Accept** or **Reject**; at the top are **Accept all** and **Reject all**.
@@ -561,7 +561,7 @@ For single scenes, the **Properties** panel shows words, characters and reading 
 
 ### In depth
 
-- **Pages**: by default a page is a standard page of 1,800 characters with spaces. In **Settings → Pages** you can count in words instead (250 is a common value). In `dante.yaml`: `pages: {unit: characters, size: 1800}`.
+- **Pages**: by default a page is a standard page of 1,800 characters with spaces. In **Settings → Measures and goals** you can count in words instead (250 is a common value). In `dante.yaml`: `pages: {unit: characters, size: 1800}`.
 - **Goals** in `dante.yaml`: `goals: {unit, words, deadline, daily, days}`, where `unit` is `words` or `characters` (without `unit` words are counted: this is the case of the projects created before the choice existed), `words` and `daily` are in the chosen measure and `days` lists the writing days from 1 (Monday) to 7 (Sunday). The words or the characters needed are spread over those days only.
 - **Writing log**: Dante counts, while you write, the words and the characters added and deleted and the minutes spent writing, day by day, in `.dante/sessions/<name>.json`. Words written with other programs do not enter the log, but they enter the totals. Characters are counted from version 1.1: in the days before, the chart in characters stays empty.
 - **Mentions**: they count the name of the card and its aliases written exactly as in the note, capitals included.
@@ -741,14 +741,14 @@ The same scene can be in the middle and in a pane: what you write in one appears
 3. Press **Update and restart**. Dante saves the open text, downloads the new version, installs it and reopens. On Windows the window of the installer appears for a few seconds.
 4. With **Remind me later** the box vanishes and comes back at the next launch. With **Skip this version** Dante no longer proposes it: it waits for the next one. If you change your mind, **Check for updates** in Settings shows it anyway.
 
-In **Settings** > **Dante on this computer** > **Updates** you also choose the **channel**:
+In **Settings** > **Updates and support** you also choose the **channel**:
 
 - **Stable**, the default choice: you receive only the official versions, when the news has already been tried.
 - **Beta**: you receive the news earlier, in versions still on trial (for example *1.1.0-beta.1*), which may have some defects. If you install a beta, Dante stays on this channel until you change it.
 
 Going back from Beta to Stable Dante does not go backwards: you stay on the beta you have until a more recent stable version comes out.
 
-To check by hand, on the Mac choose **Dante** > **Check for Updates…** in the menu bar; everywhere you can open **Settings** > **Updates** and press **Check for updates**. There you also find the number of the installed version, useful when you report a problem, and the box not to check for updates at launch.
+To check by hand, on the Mac choose **Dante** > **Check for Updates…** in the menu bar; everywhere you can open **Settings** > **Updates and support** and press **Check for updates**. There you also find the number of the installed version, useful when you report a problem, and the box not to check for updates at launch.
 
 The portable copy for Windows does not update by itself: download the new zip and replace the folder, keeping the subfolder `dante-data`.
 
@@ -810,7 +810,7 @@ A backup copy is a zip file with the whole project, kept on the computer outside
 - The copies are in the folder **Documents/Dante backup**, in a subfolder for each novel. Of each novel the 10 most recent stay; the oldest are deleted by themselves.
 - In **Settings → Backups** you can choose another folder, how many copies to keep, whether to make them on closing, and see when the last one was made. **Make a backup now** makes one at once, **Show the backups** opens the folder.
 - **To take up a project again**: open the zip (double click), move the folder it holds where you like and open it with **Open folder…** from the start screen. It is better not to overwrite the damaged folder until you have checked that the copy is the right one.
-- **In the browser** Dante cannot write outside the folder of the novel: in Settings there is **Download a backup (zip)**, to press now and then and keep in a safe place.
+- **In the browser** Dante cannot write outside the folder of the novel: in **Settings** > **Backups** there is **Download a backup (zip)**, to press now and then and keep in a safe place.
 
 ### In depth
 
@@ -841,25 +841,26 @@ It can be read without a connection too, because it is inside Dante. From the st
 
 ## 21. Appearance and spelling
 
-How Dante and the text look while you write. They are choices of this computer: they hold for every project and change neither the files nor the export, which has its own settings (chapter 13).
+How Dante and the text look while you write. They are choices of this computer: they hold for every project, unless you give a novel a look of its own, and change neither the files nor the export, which has its own settings (chapter 13).
 
 ### How to
 
-Open **Settings** > **Dante on this computer**.
+Open **Settings**: in the list on the left, under **Dante on this computer**, are the pages **Appearance**, **The text in the editor** and **Writing**.
 
-- **Theme**: **System** (light or dark like the computer, and it changes with it), **Light (paper)**, **Sepia** (warm paper, to write for a long time by day), **Dark**, **Night** (almost black with softer text, to write in the dark).
+- **Theme** (page **Appearance**): you choose it from five small drawings of the window, each in its own colours. **System** (light or dark like the computer, and it changes with it), **Light (paper)**, **Sepia** (warm paper, to write for a long time by day), **Dark**, **Night** (almost black with softer text, to write in the dark).
 - **Accent colour**: the colour of active buttons, links and selections. The first circle leaves that of the theme; the others are blue, green, brick red, purple, teal and amber, in a lighter version in the dark themes.
 - **Interface size**: enlarges or shrinks the whole window of Dante, from 80% to 200%: menus, tree, panels, buttons, windows and their text. It is useful if your sight is poor or you work on a very large screen. The text in the editor grows by the same measure, besides its **Font size** (which stays separate and also changes with Cmd/Ctrl + and −).
-- **The text in the editor**:
+- **The text in the editor** (the page with this name):
   - **Editor font**: five ready choices, or **Another installed font…**, which lists the book fonts present on the computer and with **Other…** accepts the name of any installed font.
   - **Font size** and **Line width** (in characters).
   - **Line spacing**: the space between the lines of a paragraph, from 1.4 to 2.4; 1.7 is the usual one.
   - **Space between paragraphs**: an empty line, half a line or a little. In the file an empty line stays between two paragraphs all the same: only how tall it is on screen changes.
-  - **A single Enter starts a new paragraph**: on by default. The empty line that separates the paragraphs in the file is written by Dante and does not show (chapter 5). Off, the editor shows the empty lines as they are in the file, and **Ask about extra empty lines** appears.
+- **A single Enter starts a new paragraph** (page **Writing**): on by default. The empty line that separates the paragraphs in the file is written by Dante and does not show (chapter 5). Off, the editor shows the empty lines as they are in the file, and **Ask about extra empty lines** appears.
   - **First-line indent**: none, small, medium or large, as in printed books.
   - **Justified text, as in a book**: aligns the paragraphs on the right too and breaks lines with hyphenation.
-- Below is an **example** of the text with the choices made.
-- **Spelling**: **Underline words the spelling checker does not know** turns the checker on or off while you write.
+- Beside it is a **sample** of the text, which changes with every choice.
+- **Spelling** (page **Writing**): **Underline words the spelling checker does not know** turns the checker on or off while you write.
+- **A different look for a novel**: in **Settings** > **Look of this novel** tick **Use a different look for this novel**. The theme, accent colour, font and text layout you choose there hold only when you open that novel; the others keep the look of the computer. Unticking it takes the novel back to the look of the computer. Interface size, language and spelling stay the same for every novel.
 
 *Example:* if the menus and the labels of the panels look small to you, choose **Interface size: 125%**. Everything grows at once; if the text of the editor then looks too large, lower its **Font size**.
 
@@ -871,6 +872,7 @@ Open **Settings** > **Dante on this computer**.
 - Indent and space between paragraphs concern only the paragraphs of text: headings, lists, quotations, tables and centred or right-aligned paragraphs stay as they are.
 - The hyphenation of justified text uses the language of the novel; where the system does not have the rules of that language, the justified lines may have wider spaces.
 - **Spelling checker**: it is that of the system (macOS, Windows, Linux or the browser), with its dictionaries and the words you taught it; the system chooses the dictionary. Dante marks the text with the language of the novel, which the system can use to choose the right dictionary. On the Mac a right click on an underlined word gives the suggestions and **Learn Spelling**; the languages are chosen in System Settings > Keyboard > Text Input > Edit > Spelling. On Windows the languages are those installed in Settings > Time & language. A personal dictionary inside Dante, the same on every computer, is not there yet.
+- **Look of a novel**: the choices stay on this computer, with the other settings of Dante, and not in the project: those who write with you in the same folder keep their own look, and on another computer the novel opens with the look of that computer. To recognise the novel even if you move or rename the folder, Dante writes the file `.dante/id` in the project, which holds only a random code. A copy of the folder made by hand has the same code, and so the same look. Making the text larger with Cmd/Ctrl + and − also changes the look of the novel, when it has one.
 - In the settings file of the app: `theme`, `accent`, `uiZoom` (1 = 100%), `fontFamily`, `fontSize`, `lineWidth`, `lineHeight`, `paragraphGap`, `indent`, `justify`, `spellcheck`.
 
 ## 22. Gamebooks
@@ -883,7 +885,7 @@ Dante reads, writes, checks, shuffles and exports the book. The paragraphs stay 
 
 **Setting up**
 
-- **Turning the module on**: open **Settings** > **This novel** > **Gamebook** and tick **This project is a gamebook**. In **Paragraphs folder** write the folder, inside the project, that holds the paragraphs (for example `Paragraphs`).
+- **Turning the module on**: open **Settings** > **Gamebook** and tick **This project is a gamebook**. In **Paragraphs folder** write the folder, inside the project, that holds the paragraphs (for example `Paragraphs`).
 - **Box types**: in **Settings** > **Gamebook** > **Box types** each book has its own: emoji, name, colour, starting text and the property of the paragraph the box is linked to. By default there are six: 🤔 choice, ❤️ trait, ✏️ item, ✅ encounter, 😢 ending, 🆗 confirmed.
 - **Lengths and pages**: **Short paragraph under** says below which length a paragraph is short, in the unit of the novel (words or characters with spaces). The page is that of the **Pages** settings. **Each paragraph starts on a new page** counts the pages as in a printed gamebook; off, it counts the text run on. It is the same choice as **Between paragraphs** in the export: changing one changes the other too.
 

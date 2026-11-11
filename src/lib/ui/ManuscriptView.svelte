@@ -7,7 +7,7 @@
   import { enclosing, GAMEBOOK_AFTER, GAMEBOOK_POSITION, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
   import type { Project } from "$lib/core/project";
-  import { app, t } from "$lib/state.svelte";
+  import { app, appearance, t } from "$lib/state.svelte";
   import Icon from "./Icon.svelte";
   import FormatBar from "./FormatBar.svelte";
   import ManuscriptToolbar from "./ManuscriptToolbar.svelte";
@@ -1035,7 +1035,7 @@
       <p class="error" role="alert"><ErrorText text={error} /></p>
     {/if}
     <div class="page" class:typewriter bind:this={page}>
-      <div class="column" style="max-width: {app.settings.lineWidth}ch">
+      <div class="column" style="max-width: {appearance().lineWidth}ch">
         {#if items.length === 0}
           <p class="empty">{t("editor.empty")}</p>
         {/if}

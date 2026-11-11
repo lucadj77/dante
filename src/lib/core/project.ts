@@ -99,6 +99,8 @@ const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules"
 
 /** The reordering under way, kept on disk until it is finished. */
 const MOVE_JOURNAL = ".dante/moves.json";
+/** The project's id, under which this computer keeps what belongs to it, such as its own look. */
+const ID_FILE = ".dante/id";
 interface MoveJournal {
   /** Every file of the project before the moves, for the links. */
   before: string[];
@@ -156,6 +158,8 @@ export class Project {
   private indexing: Promise<NoteIndex> | null = null;
   /** Set when opening found a reordering cut short: it was undone, or brought to its end. */
   recovered: "undone" | "completed" | null = null;
+  /** The id this computer keeps the project's own things under; "" until one is needed. */
+  id = "";
 
   /**
    * @param language Language of a project that has no settings file yet, usually the
@@ -226,7 +230,25 @@ export class Project {
       // A folder that cannot be written now opens all the same: the journal waits for next time.
     }
     await project.reload();
+    try {
+      if (await fs.exists(ID_FILE)) project.id = (await fs.readText(ID_FILE)).trim();
+    } catch {
+      // No id: the project follows the look of the computer.
+    }
     return project;
+  }
+
+  /**
+   * A name for this project that stays when its folder is moved or renamed, written in the
+   * project the first time something on this computer is kept under it.
+   */
+  async ensureId(): Promise<string> {
+    if (!this.id) {
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
+      await this.fs.writeText(ID_FILE, id + "\n");
+      this.id = id;
+    }
+    return this.id;
   }
 
   async reload(): Promise<void> {

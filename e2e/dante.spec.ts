@@ -88,9 +88,10 @@ test("shows the scenes on a board, with a card to change them", async ({ page })
 test("changes theme and page layout from the settings", async ({ page }) => {
   await openSample(page);
   await page.locator('nav button[data-section="settings"]').click();
-  await page.getByRole("tab", { name: "Dante su questo computer" }).click();
-  await page.locator("select:has(option[value=sepia])").selectOption("sepia");
+  await page.locator('[data-settings="appearance"]').click();
+  await page.getByRole("radio", { name: "Seppia" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-palette", "sepia");
+  await page.locator('[data-settings="text"]').click();
   await page.getByRole("combobox", { name: /^Rientro/ }).selectOption("1.5");
   await page.getByLabel("Testo giustificato, come in un libro").check();
   await page.locator('nav button[data-section="manuscript"]').click();
@@ -103,11 +104,36 @@ test("changes theme and page layout from the settings", async ({ page }) => {
   expect(await page.locator(".cm-line.md-gap").count()).toBe(0);
 });
 
+test("finds a settings page by a word, and gives the novel a look of its own", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="settings"]').click();
+  // The search leaves only the pages that hold the word, and shows the first.
+  await page.getByRole("searchbox", { name: "Cerca nelle impostazioni" }).fill("interlinea");
+  await expect(page.locator("[data-settings]")).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText("Il testo nell'editor");
+  await page.getByRole("searchbox", { name: "Cerca nelle impostazioni" }).fill("");
+  // The novel's own look applies while it is open, and leaves the computer's as it was.
+  await page.locator('[data-settings="look"]').click();
+  await page.getByLabel("Usa un aspetto diverso per questo romanzo").check();
+  await page.getByRole("radio", { name: /Notte/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-palette", "night");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("dante.app-settings")!).theme)).not.toBe("night");
+  await page.locator('nav button[data-section="close"], nav button[title^="Chiudi progetto"]').first().click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-palette", "night");
+  await page.getByText("Prova il progetto di esempio").click();
+  await expect(page.locator("html")).toHaveAttribute("data-palette", "night");
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="look"]').click();
+  await page.getByLabel("Usa un aspetto diverso per questo romanzo").uncheck();
+  await expect(page.locator("html")).not.toHaveAttribute("data-palette", "night");
+});
+
 test("names the stage under each scene's dot, or the property chosen for it", async ({ page }) => {
   await openSample(page);
   await page.locator(".row .status").first().hover();
   await expect(page.getByRole("tooltip")).toHaveText("Stato: finita");
   await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="scenes"]').click();
   await page.getByLabel("Il pallino accanto a ogni scena mostra").selectOption("pov");
   await page.locator('nav button[data-section="manuscript"]').click();
   const dot = page.locator(".row", { hasText: "La passeggiata" }).locator(".status");
@@ -133,6 +159,7 @@ test("goes from the statistics to the very passage", async ({ page }) => {
 test("opens the exported book with a cover made from a picture of the writer's", async ({ page }) => {
   await openSample(page);
   await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="cover"]').click();
   // A red square as the picture: the cover drawn from it is red where the texts are not.
   const png = await page.evaluate(async () => {
     const canvas = document.createElement("canvas");

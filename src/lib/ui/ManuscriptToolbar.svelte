@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import { app, appearance, saveAppSettings, t, zoom } from "$lib/state.svelte";
   import Icon from "./Icon.svelte";
   import { panes, SCENE_SHEETS, toggleSceneSheets } from "./panes.svelte";
 
@@ -61,7 +61,7 @@
   {/if}
   <div class="zoom" role="group" aria-label={t("toolbar.size")}>
     <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
-    <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
+    <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{appearance().fontSize}</button>
     <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
   </div>
   <div class="more">
@@ -95,7 +95,7 @@
         <div class="menu-zoom narrow" role="group" aria-label={t("toolbar.size")}>
           <span>{t("toolbar.size")}</span>
           <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
-          <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
+          <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{appearance().fontSize}</button>
           <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
         </div>
       </div>

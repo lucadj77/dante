@@ -6,12 +6,17 @@
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
   import CoverPicker from "./CoverPicker.svelte";
-  import AppearanceSettings from "./AppearanceSettings.svelte";
+  import ThemePicker from "./ThemePicker.svelte";
+  import EditorTextSettings from "./EditorTextSettings.svelte";
+  import TextSample from "./TextSample.svelte";
   import AuthorsInput from "./AuthorsInput.svelte";
   import { propertyDef, withDef } from "$lib/core/properties";
   import { cleanSnapshots } from "$lib/core/snapshots";
-  import { LANGUAGES } from "$lib/i18n";
-  import { app, saveAppSettings, t, type AppSettings } from "$lib/state.svelte";
+  import { LANGUAGES, type MessageKey } from "$lib/i18n";
+  import { levelHeading } from "$lib/core/numbering";
+  import { chosenColor, DOT_HUES, statusTone } from "$lib/core/statistics";
+  import { UI_ZOOMS, uiZoom } from "$lib/uiZoom.svelte";
+  import { app, appearance, look, lookOf, num, saveAppSettings, saveLook, t, type AppSettings, type Look } from "$lib/state.svelte";
   import { inTauri } from "$lib/tauriFs";
   import { WEB_BUILD } from "$lib/build";
   import { checkForUpdates, updateChannel, updates } from "$lib/updates.svelte";
@@ -19,7 +24,13 @@
   import { onDisk } from "$lib/platform";
   import { navigator as dante } from "./navigation";
 
-  let { project, onSaved }: { project: Project; onSaved: () => Promise<void> } = $props();
+  interface Props {
+    project: Project;
+    onSaved: () => Promise<void>;
+    /** Opens another section of the workspace, for the choices kept there. */
+    onGo?: (section: "stats" | "export") => void;
+  }
+  let { project, onSaved, onGo }: Props = $props();
   const nav = dante();
 
   /** Opens the template of new scenes, made first if there is none. */
@@ -47,9 +58,92 @@
   });
   let newProperty = $state("");
   let error = $state("");
-  let tab = $state<"novel" | "app">(lastTab.tab);
+
+  // The sections: those of the novel, saved in the project, and those of this computer. Each
+  // is a short page; `keys` are the texts it holds, which the search field looks through.
+  type SectionId = "book" | "cover" | "structure" | "scenes" | "measures" | "look" | "gamebook" | "upkeep" | "you" | "appearance" | "text" | "writing" | "backup" | "updates";
+  interface SectionDef {
+    id: SectionId;
+    group: "novel" | "app";
+    title: MessageKey;
+    keys: MessageKey[];
+  }
+  const SECTIONS: SectionDef[] = [
+    { id: "book", group: "novel", title: "settings.sec.book", keys: ["settings.title", "settings.subtitle", "settings.authors", "settings.language"] },
+    { id: "cover", group: "novel", title: "cover.title", keys: ["cover.hint", "cover.imageChoose", "cover.template", "cover.palette", "cover.texts", "cover.textColor", "cover.outline"] },
+    { id: "structure", group: "novel", title: "settings.structure", keys: ["settings.parts", "settings.numbering", "settings.label", "heading.separator", "settings.restart", "kind.part", "kind.chapter"] },
+    { id: "scenes", group: "novel", title: "settings.sec.scenes", keys: ["settings.sceneTemplate", "settings.sceneTemplateEdit", "property.defined", "property.definedHint", "settings.tree", "settings.treeDot"] },
+    { id: "measures", group: "novel", title: "settings.sec.measures", keys: ["settings.pages", "settings.pageUnit", "settings.pageCharacters", "settings.pageWords", "settings.goalsLink", "settings.typographyLink"] },
+    { id: "look", group: "novel", title: "settings.sec.look", keys: ["look.own", "look.ownHint", "settings.theme", "appearance.accent", "settings.font"] },
+    { id: "gamebook", group: "novel", title: "gamebook.title", keys: ["gamebook.enable", "gamebook.enableHint", "gamebook.folder", "gamebook.boxes", "gamebook.onePerPage", "gamebook.showLinks"] },
+    { id: "upkeep", group: "novel", title: "settings.sec.upkeep", keys: ["snap.cleanTitle", "snap.cleanHint", "snap.clean"] },
+    { id: "you", group: "app", title: "settings.sec.you", keys: ["settings.userName", "settings.userNameHint", "comments.revisionMode", "settings.interfaceLanguage"] },
+    { id: "appearance", group: "app", title: "appearance.title", keys: ["settings.theme", "settings.themeLight", "settings.themeSepia", "settings.themeDark", "settings.themeNight", "appearance.accent", "appearance.uiZoom"] },
+    { id: "text", group: "app", title: "appearance.page", keys: ["settings.font", "settings.fontSize", "settings.lineWidth", "appearance.lineHeight", "appearance.gap", "appearance.indent", "appearance.justify"] },
+    { id: "writing", group: "app", title: "toolbar.writing", keys: ["appearance.paragraphs", "appearance.paragraphsHint", "appearance.askBlankLines", "appearance.spelling", "appearance.spellcheck"] },
+    { id: "backup", group: "app", title: "backup.title", keys: ["backup.hint", "backup.folder", "backup.onClose", "backup.keep", "backup.now", "backup.download"] },
+    { id: "updates", group: "app", title: "settings.sec.updates", keys: ["update.title", "update.atStart", "update.channel", "update.check", "support.title", "support.hint", "support.copy"] },
+  ];
+  const available = $derived(
+    SECTIONS.filter((s) => s.id !== "backup" || onDisk(project.fs)),
+  );
+  let query = $state("");
+  const listed = $derived.by(() => {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return available;
+    return available.filter((s) => {
+      const text = [s.title, ...s.keys].map((k) => t(k)).join(" ").toLowerCase();
+      return words.every((w) => text.includes(w));
+    });
+  });
+  let chosen = $state<SectionId>(lastSection.id);
+  /** The page shown: the one chosen, or the first that the search leaves in the list. */
+  const section = $derived(listed.some((s) => s.id === chosen) ? chosen : (listed[0]?.id ?? null));
+  const current = $derived(SECTIONS.find((s) => s.id === section) ?? null);
   $effect(() => {
-    lastTab.tab = tab;
+    lastSection.id = chosen;
+  });
+  function show(id: SectionId) {
+    query = "";
+    chosen = id;
+  }
+
+  // The look of this novel alone, kept on this computer under the project's id.
+  const sampleLook = "sample";
+  async function setOwnLook(on: boolean) {
+    error = "";
+    try {
+      const id = onDisk(project.fs) ? await project.ensureId() : sampleLook;
+      saveLook(id, on ? lookOf(appearance()) : null);
+    } catch (e) {
+      error = failure(e);
+    }
+  }
+  function setLook(patch: Partial<Look>) {
+    if (look.own) saveLook(look.id, { ...look.own, ...patch });
+  }
+  const ownLook = $derived(look.own ? ({ ...lookOf(app.settings), ...look.own } as Look) : null);
+
+  // What the previews draw.
+  const headings = $derived.by(() => {
+    const st = novel.structure;
+    const chapter = (n: number, title: string) => levelHeading(st.chapter, n, title, novel.language).text;
+    return {
+      part: st.parts ? levelHeading(st.part, 1, t("sample.partTitle"), novel.language, true).text : null,
+      chapters: [chapter(1, t("sample.chapterTitle")), chapter(2, t("sample.chapterTitle2"))],
+    };
+  });
+  const HUES = ["#d9534f", "#e8913a", "#c7a923", "#4ea65a", "#2fa3a3", "#4a7fd6", "#8c63d6", "#d064a6"];
+  /** The values of the dot's property that have a colour of their own, as the tree will show them. */
+  const dots = $derived.by(() => {
+    const status = projectStatus(novel);
+    const name = novel.tree.dot.trim() || status.name;
+    const isStatus = name.toLowerCase() === status.name.toLowerCase();
+    const values = isStatus ? status.values : (propertyDef(novel.properties, name)?.values ?? []);
+    return values.slice(0, 8).map((value, i) => {
+      const tone = isStatus ? statusTone(value, status.values) : null;
+      return { value, colour: chosenColor(novel, name, value) || (tone !== null ? `var(--status-${tone})` : HUES[i % DOT_HUES]) };
+    });
   });
 
   /** The app's settings change at once, field by field, so nothing else changed meanwhile is lost. */
@@ -189,292 +283,532 @@
 </script>
 
 <script lang="ts" module>
-  /** The tab shown, kept while the app is open. */
-  const lastTab = { tab: "novel" as "novel" | "app" };
+  /** The page shown, kept while the app is open. */
+  const lastSection = { id: "book" as "book" | "cover" | "structure" | "scenes" | "measures" | "look" | "gamebook" | "upkeep" | "you" | "appearance" | "text" | "writing" | "backup" | "updates" };
 </script>
 
-<div class="settings">
-  <div class="tabs" role="tablist">
-    <button role="tab" aria-selected={tab === "novel"} onclick={() => (tab = "novel")}>{t("settings.tabNovel")}</button>
-    <button role="tab" aria-selected={tab === "app"} onclick={() => (tab = "app")}>{t("settings.tabApp")}</button>
-    <span class="status" role="status">{#if error}<span class="error"><ErrorText text={error} /></span>{:else}{saving ? t("settings.saving") : t("settings.autosave")}{/if}</span>
-  </div>
-  <form onsubmit={(e) => e.preventDefault()}>
-    {#if tab === "novel"}
-    <p class="hint">{t("settings.tabNovelHint")}</p>
-    <label>{t("settings.title")} <input bind:value={novel.title} /></label>
-    <label>{t("settings.subtitle")} <input bind:value={novel.subtitle} /></label>
-    <AuthorsInput bind:authors={novel.authors} />
-    <label
-      >{t("settings.language")}
-      <select bind:value={novel.language}>
-        {#each languages as l (l.code)}
-          <option value={l.code}>{l.name}</option>
-        {/each}
-      </select>
-    </label>
-
-    <h3>{t("cover.title")}</h3>
-    <p class="hint">{t("cover.hint")}</p>
-    <CoverPicker bind:cover={novel.cover} text={novel} {project} />
-
-    <h3>{t("settings.structure")}</h3>
-    <label class="check"><input type="checkbox" bind:checked={novel.structure.parts} /> {t("settings.parts")}</label>
-    {#each levels as kind (kind)}
-      <fieldset>
-        <legend>{t(`kind.${kind}`)}</legend>
-        <HeadingLevel
-          bind:level={novel.structure[kind]}
-          language={novel.language}
-          sample={kind === "part" ? t("sample.partTitle") : t("sample.chapterTitle")}
-          feminine={kind === "part"}
-        />
-      </fieldset>
-    {/each}
-    {#if novel.structure.parts}
-      <label class="check"
-        ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
-      >
-    {/if}
-
-    <h3>{t("gamebook.title")}</h3>
-    <label class="check"><input type="checkbox" bind:checked={novel.gamebook.enabled} /> {t("gamebook.enable")}</label>
-    <p class="hint">{t("gamebook.enableHint")}</p>
-    {#if novel.gamebook.enabled}
-      <label
-        >{t("gamebook.folder")}
-        <input bind:value={novel.folders.manuscript} />
-        <small>{t("gamebook.folderHint")}</small>
-      </label>
-      <label>{t("gamebook.start")} <input type="number" min="1" step="1" bind:value={novel.gamebook.start} /></label>
-      <label
-        >{t(novel.pages.unit === "words" ? "gamebook.shortWords" : "gamebook.shortCharacters")}
-        <input type="number" min="0" step="50" bind:value={novel.gamebook.short} />
-        <small>{t("gamebook.shortHint")}</small>
-      </label>
-      <label class="check"><input
-          type="checkbox"
-          bind:checked={novel.gamebook.onePerPage}
-          onchange={() => {
-            // The export lays the paragraphs out the same way.
-            const gx = novel.gamebook.export;
-            if (novel.gamebook.onePerPage) gx.separator = "pageBreak";
-            else if (gx.separator === "pageBreak") gx.separator = "blankLine";
-          }}
-        /> {t("gamebook.onePerPage")}</label>
-      <label class="check"><input type="checkbox" bind:checked={novel.gamebook.showLinks} /> {t("gamebook.showLinks")}</label>
-      <h4>{t("gamebook.boxes")}</h4>
-      <p class="hint">{t("gamebook.boxesHint")}</p>
-      {#each novel.gamebook.boxes as box, i (i)}
-        <fieldset class="box-type">
-          <legend>{box.emoji} {box.name}</legend>
-          <div class="box-row">
-            <label>{t("gamebook.boxEmoji")} <input class="emoji" bind:value={box.emoji} /></label>
-            <label>{t("gamebook.boxName")} <input bind:value={box.name} /></label>
-            <label>{t("gamebook.boxColor")} <input type="color" bind:value={box.color} /></label>
-          </div>
-          <label>{t("gamebook.boxText")} <input bind:value={box.text} /></label>
-          <label>{t("gamebook.boxProperty")} <input bind:value={box.property} placeholder={t("gamebook.boxPropertyNone")} /></label>
-          <label class="check"><input type="checkbox" bind:checked={box.ending} /> {t("gamebook.boxEnding")}</label>
-          <div class="define">
-            <button type="button" class="danger" disabled={novel.gamebook.boxes.length <= 1} onclick={() => (novel.gamebook.boxes = novel.gamebook.boxes.filter((_, j) => j !== i))}>{t("gamebook.boxRemove")}</button>
-          </div>
-        </fieldset>
+{#snippet group(id: "novel" | "app", title: MessageKey, hint: MessageKey)}
+  {@const items = listed.filter((s) => s.group === id)}
+  {#if items.length}
+    <div class="group">
+      <span class="caption" title={t(hint)}>{t(title)}</span>
+      {#each items as s (s.id)}
+        <button type="button" class="item" data-settings={s.id} aria-current={section === s.id ? "page" : undefined} onclick={() => (chosen = s.id)}>{t(s.title)}</button>
       {/each}
-      <div class="define">
-        <button
-          type="button"
-          onclick={() => {
-            const n = novel.gamebook.boxes.length + 1;
-            novel.gamebook.boxes = [...novel.gamebook.boxes, { id: `box${Date.now().toString(36)}`, emoji: "⭐", name: t("gamebook.boxNew", { n }), color: "#888888", text: "", property: "", ending: false }];
-          }}>{t("gamebook.boxAdd")}</button
-        >
-      </div>
-    {/if}
-
-    <h3>{t("settings.tree")}</h3>
-    <label
-      >{t("settings.treeDot")}
-      <select bind:value={novel.tree.dot}>
-        <option value="">{t("settings.treeDotStatus", { name: projectStatus(novel).name })}</option>
-        {#each dotChoices as name (name)}
-          <option value={name}>{name}</option>
-        {/each}
-      </select>
-    </label>
-    <p class="hint">{t("settings.treeDotHint")}</p>
-
-    <h3>{t("settings.sceneTemplate")}</h3>
-    <p class="hint">{t("settings.sceneTemplateHint")}</p>
-    <div class="define"><button type="button" onclick={editSceneTemplate}>{t("settings.sceneTemplateEdit")}</button></div>
-
-    <h3>{t("property.defined")}</h3>
-    <p class="hint">{t("property.definedHint")}</p>
-    {#each Object.keys(novel.properties) as name (name)}
-      <fieldset class="property">
-        <legend>{name}</legend>
-        <PropertyDefEditor
-          {name}
-          def={novel.properties[name]}
-          types={novel.types}
-          hint={false}
-          onSave={(def) => (novel.properties = withDef(novel.properties, name, def))}
-        />
-      </fieldset>
-    {:else}
-      <p class="hint">{t("property.none")}</p>
-    {/each}
-    <div class="define">
-      <input bind:value={newProperty} placeholder={t("property.name")} aria-label={t("property.name")} />
-      <button
-        type="button"
-        disabled={!newProperty.trim()}
-        onclick={() => {
-          const name = newProperty.trim();
-          if (!propertyDef(novel.properties, name)) novel.properties = withDef(novel.properties, name, { kind: "text", values: [], note_type: "" });
-          newProperty = "";
-        }}>{t("property.add")}</button
-      >
     </div>
+  {/if}
+{/snippet}
 
-    <h3>{t("settings.pages")}</h3>
-    <label
-      >{t("settings.pageUnit")}
-      <select
-        bind:value={novel.pages.unit}
-        onchange={() => {
-          // Switching unit keeps a custom size, but not the other unit's usual one.
-          if (novel.pages.unit === "words" && novel.pages.size === 1800) novel.pages.size = 250;
-          if (novel.pages.unit === "characters" && novel.pages.size === 250) novel.pages.size = 1800;
-        }}
-      >
-        <option value="characters">{t("settings.pageCharacters")}</option>
-        <option value="words">{t("settings.pageWords")}</option>
-      </select>
-    </label>
-    <label
-      >{t(novel.pages.unit === "words" ? "settings.pageSizeWords" : "settings.pageSizeCharacters")}
-      <input type="number" min="1" step="1" bind:value={novel.pages.size} />
-      <small>{t("settings.pagesHint")}</small>
-    </label>
-
-    <h3>{t("snap.cleanTitle")}</h3>
-    <label
-      >{t("snap.cleanHint")}
-      <input type="date" bind:value={cleanBefore} />
-    </label>
-    <div class="clean">
-      <button type="button" onclick={clean}>{t("snap.clean")}</button>
-      {#if cleaned}<span>{cleaned}</span>{/if}
-    </div>
-    {:else}
-    <p class="hint">{t("settings.tabAppHint")}</p>
-    <label
-      >{t("settings.userName")} <input value={app.settings.userName} oninput={(e) => setApp({ userName: e.currentTarget.value })} />
-      <small>{t("settings.userNameHint")}</small>
-    </label>
-    <label class="check" title={t("tip.revisions")}
-      ><input type="checkbox" checked={app.settings.revisions} disabled={!app.settings.userName.trim()} onchange={(e) => setApp({ revisions: e.currentTarget.checked })} /> {t("comments.revisionMode")}</label
-    >
-    <label
-      >{t("settings.interfaceLanguage")}
-      <select value={app.settings.language} onchange={(e) => setApp({ language: e.currentTarget.value })}>
-        {#each Object.entries(LANGUAGES) as [code, lang] (code)}
-          <option value={code}>{lang.name}</option>
-        {/each}
-      </select>
-    </label>
-    <AppearanceSettings />
-
-    {#if onDisk(project.fs)}
-      <h3>{t("backup.title")}</h3>
-      {#if inTauri()}
-        <p class="hint">{t("backup.hint")}</p>
-        <div class="field">
-          <span class="label">{t("backup.folder")}</span>
-          <span class="path">{app.settings.backupFolder || backupDefault}</span>
-          <div class="clean">
-            <button type="button" onclick={chooseBackupFolder}>{t("backup.choose")}</button>
-            {#if app.settings.backupFolder}<button type="button" onclick={() => setApp({ backupFolder: "" })}>{t("backup.useDefault")}</button>{/if}
-          </div>
-        </div>
-        <label class="check"><input type="checkbox" checked={app.settings.backupOnClose} onchange={(e) => setApp({ backupOnClose: e.currentTarget.checked })} /> {t("backup.onClose")}</label>
+<div class="settings">
+  <nav class="sections" aria-label={t("section.settings")}>
+    <input type="search" class="search" bind:value={query} placeholder={t("settings.search")} aria-label={t("settings.search")} />
+    {@render group("novel", "settings.tabNovel", "settings.tabNovelHint")}
+    {@render group("app", "settings.tabApp", "settings.tabAppHint")}
+    {#if !listed.length}<p class="hint">{t("settings.noMatch")}</p>{/if}
+  </nav>
+  <div class="page">
+    {#if current}
+    <header>
+      <h2>{t(current.title)}</h2>
+      <span class="scope">{t(current.group === "novel" ? "settings.tabNovel" : "settings.tabApp")} · {t(current.id === "look" ? "look.scope" : current.group === "novel" ? "settings.tabNovelHint" : "settings.tabAppHint")}</span>
+      <span class="status" role="status">{#if error}<span class="error"><ErrorText text={error} /></span>{:else}{saving ? t("settings.saving") : t("settings.autosave")}{/if}</span>
+    </header>
+    <form onsubmit={(e) => e.preventDefault()} data-page={section}>
+    {#if section === "book"}
+      <div class="fields">
+        <label>{t("settings.title")} <input bind:value={novel.title} /></label>
+        <label>{t("settings.subtitle")} <input bind:value={novel.subtitle} /></label>
+        <AuthorsInput bind:authors={novel.authors} />
         <label
-          >{t("backup.keep")}
-          <input type="number" min="1" max="100" value={app.settings.backupKeep} onchange={(e) => setApp({ backupKeep: clamp(e.currentTarget.value, 1, 100, app.settings.backupKeep) })} />
+          >{t("settings.language")}
+          <select bind:value={novel.language}>
+            {#each languages as l (l.code)}
+              <option value={l.code}>{l.name}</option>
+            {/each}
+          </select>
         </label>
-        <p class="hint">{backup?.latest ? t("backup.last", { date: backupDate(backup.latest), count: backup.count }) : t("backup.none")}</p>
-        <div class="clean">
-          <button type="button" disabled={backingUp} onclick={makeBackup}>{backingUp ? t("backup.running") : t("backup.now")}</button>
-          {#if backup?.latest}<button type="button" onclick={showBackups}>{t("backup.show")}</button>{/if}
-          {#if backupMessage}<span>{backupMessage}</span>{/if}
+      </div>
+    {:else if section === "cover"}
+      <div class="fields wide">
+        <p class="hint">{t("cover.hint")}</p>
+        <CoverPicker bind:cover={novel.cover} text={novel} {project} />
+      </div>
+    {:else if section === "structure"}
+      <div class="fields">
+        <label class="check"><input type="checkbox" bind:checked={novel.structure.parts} /> {t("settings.parts")}</label>
+        {#each levels as kind (kind)}
+          <fieldset>
+            <legend>{t(`kind.${kind}`)}</legend>
+            <HeadingLevel
+              bind:level={novel.structure[kind]}
+              language={novel.language}
+              sample={kind === "part" ? t("sample.partTitle") : t("sample.chapterTitle")}
+              feminine={kind === "part"}
+            />
+          </fieldset>
+        {/each}
+        {#if novel.structure.parts}
+          <label class="check"
+            ><input type="checkbox" bind:checked={novel.structure.chapter.restartEachPart} /> {t("settings.restart")}</label
+          >
+        {/if}
+      </div>
+      <aside class="preview" aria-label={t("settings.previewStructure")}>
+        <span class="caption">{t("settings.previewStructure")}</span>
+        <div class="outline">
+          {#if headings.part}<div class="part">{headings.part}</div>{/if}
+          {#each headings.chapters as chapter, i (i)}
+            <div class="chapter" class:nested={!!headings.part}>{chapter}</div>
+            <div class="scene" class:nested={!!headings.part}>{t(i === 0 ? "sample.sceneTitle" : "sample.sceneTitle2")}</div>
+          {/each}
         </div>
-      {:else}
-        <p class="hint">{t("backup.browserHint")}</p>
-        <div class="clean">
-          <button type="button" disabled={backingUp} onclick={makeBackup}>{t("backup.download")}</button>
-          {#if backupMessage}<span>{backupMessage}</span>{/if}
+      </aside>
+    {:else if section === "scenes"}
+      <div class="fields">
+        <h3>{t("settings.sceneTemplate")}</h3>
+        <p class="hint">{t("settings.sceneTemplateHint")}</p>
+        <div class="define"><button type="button" onclick={editSceneTemplate}>{t("settings.sceneTemplateEdit")}</button></div>
+
+        <h3>{t("settings.tree")}</h3>
+        <label
+          >{t("settings.treeDot")}
+          <select bind:value={novel.tree.dot}>
+            <option value="">{t("settings.treeDotStatus", { name: projectStatus(novel).name })}</option>
+            {#each dotChoices as name (name)}
+              <option value={name}>{name}</option>
+            {/each}
+          </select>
+        </label>
+        <p class="hint">{t("settings.treeDotHint")}</p>
+
+        <h3>{t("property.defined")}</h3>
+        <p class="hint">{t("property.definedHint")}</p>
+        {#each Object.keys(novel.properties) as name (name)}
+          <fieldset class="property">
+            <legend>{name}</legend>
+            <PropertyDefEditor
+              {name}
+              def={novel.properties[name]}
+              types={novel.types}
+              hint={false}
+              onSave={(def) => (novel.properties = withDef(novel.properties, name, def))}
+            />
+          </fieldset>
+        {:else}
+          <p class="hint">{t("property.none")}</p>
+        {/each}
+        <div class="define">
+          <input bind:value={newProperty} placeholder={t("property.name")} aria-label={t("property.name")} />
+          <button
+            type="button"
+            disabled={!newProperty.trim()}
+            onclick={() => {
+              const name = newProperty.trim();
+              if (!propertyDef(novel.properties, name)) novel.properties = withDef(novel.properties, name, { kind: "text", values: [], note_type: "" });
+              newProperty = "";
+            }}>{t("property.add")}</button
+          >
+        </div>
+      </div>
+      <aside class="preview" aria-label={t("settings.previewDot")}>
+        <span class="caption">{t("settings.previewDot")}</span>
+        <div class="outline">
+          {#each dots as dot (dot.value)}
+            <div class="scene"><i class="dot" style:background={dot.colour}></i>{dot.value}</div>
+          {:else}
+            <p class="hint">{t("settings.dotNoValues")}</p>
+          {/each}
+        </div>
+      </aside>
+    {:else if section === "measures"}
+      <div class="fields">
+        <h3>{t("settings.pages")}</h3>
+        <label
+          >{t("settings.pageUnit")}
+          <select
+            bind:value={novel.pages.unit}
+            onchange={() => {
+              // Switching unit keeps a custom size, but not the other unit's usual one.
+              if (novel.pages.unit === "words" && novel.pages.size === 1800) novel.pages.size = 250;
+              if (novel.pages.unit === "characters" && novel.pages.size === 250) novel.pages.size = 1800;
+            }}
+          >
+            <option value="characters">{t("settings.pageCharacters")}</option>
+            <option value="words">{t("settings.pageWords")}</option>
+          </select>
+        </label>
+        <label
+          >{t(novel.pages.unit === "words" ? "settings.pageSizeWords" : "settings.pageSizeCharacters")}
+          <input type="number" min="1" step="1" bind:value={novel.pages.size} />
+          <small>{t("settings.pagesHint")}</small>
+        </label>
+
+        <h3>{t("settings.elsewhere")}</h3>
+        <div class="elsewhere">
+          <p>{t("settings.goalsLink", { unit: t(novel.goals.unit === "characters" ? "stats.characters" : "stats.words") })}</p>
+          <button type="button" onclick={() => onGo?.("stats")}>{t("settings.openStats")}</button>
+        </div>
+        <div class="elsewhere">
+          <p>{t("settings.typographyLink")}</p>
+          <button type="button" onclick={() => onGo?.("export")}>{t("settings.openExport")}</button>
+        </div>
+      </div>
+      <aside class="preview" aria-label={t("settings.previewPage")}>
+        <span class="caption">{t("settings.previewPage")}</span>
+        <div class="sheet" aria-hidden="true">
+          {#each Array(14) as _, i (i)}<i class:short={i % 5 === 4}></i>{/each}
+        </div>
+        <span class="holds">{t(novel.pages.unit === "words" ? "settings.pageHoldsWords" : "settings.pageHoldsChars", { n: num(Number(novel.pages.size) || 0) })}</span>
+      </aside>
+    {:else if section === "look"}
+      <div class="fields">
+        <label class="check"><input type="checkbox" checked={!!look.own} onchange={(e) => void setOwnLook(e.currentTarget.checked)} /> {t("look.own")}</label>
+        <p class="hint">{t("look.ownHint")}</p>
+        {#if ownLook}
+          <ThemePicker value={ownLook} set={setLook} />
+          <h3>{t("appearance.page")}</h3>
+          <EditorTextSettings value={ownLook} set={setLook} />
+        {/if}
+      </div>
+      {#if ownLook}
+        <aside class="preview" aria-label={t("appearance.sample")}>
+          <span class="caption">{t("appearance.sample")}</span>
+          <TextSample value={ownLook} />
+        </aside>
+      {/if}
+    {:else if section === "gamebook"}
+      <div class="fields">
+        <label class="check"><input type="checkbox" bind:checked={novel.gamebook.enabled} /> {t("gamebook.enable")}</label>
+        <p class="hint">{t("gamebook.enableHint")}</p>
+        {#if novel.gamebook.enabled}
+          <label
+            >{t("gamebook.folder")}
+            <input bind:value={novel.folders.manuscript} />
+            <small>{t("gamebook.folderHint")}</small>
+          </label>
+          <div class="row">
+            <label>{t("gamebook.start")} <input type="number" min="1" step="1" bind:value={novel.gamebook.start} /></label>
+            <label
+              >{t(novel.pages.unit === "words" ? "gamebook.shortWords" : "gamebook.shortCharacters")}
+              <input type="number" min="0" step="50" bind:value={novel.gamebook.short} />
+            </label>
+          </div>
+          <p class="hint">{t("gamebook.shortHint")}</p>
+          <label class="check"><input
+              type="checkbox"
+              bind:checked={novel.gamebook.onePerPage}
+              onchange={() => {
+                // The export lays the paragraphs out the same way.
+                const gx = novel.gamebook.export;
+                if (novel.gamebook.onePerPage) gx.separator = "pageBreak";
+                else if (gx.separator === "pageBreak") gx.separator = "blankLine";
+              }}
+            /> {t("gamebook.onePerPage")}</label>
+          <label class="check"><input type="checkbox" bind:checked={novel.gamebook.showLinks} /> {t("gamebook.showLinks")}</label>
+        {/if}
+      </div>
+      {#if novel.gamebook.enabled}
+        <div class="fields second">
+          <h3>{t("gamebook.boxes")}</h3>
+          <p class="hint">{t("gamebook.boxesHint")}</p>
+          {#each novel.gamebook.boxes as box, i (i)}
+            <fieldset class="box-type">
+              <legend><span class="chip" style:background={box.color}></span>{box.emoji} {box.name}</legend>
+              <div class="box-row">
+                <label>{t("gamebook.boxEmoji")} <input class="emoji" bind:value={box.emoji} /></label>
+                <label>{t("gamebook.boxName")} <input bind:value={box.name} /></label>
+                <label>{t("gamebook.boxColor")} <input type="color" bind:value={box.color} /></label>
+              </div>
+              <label>{t("gamebook.boxText")} <input bind:value={box.text} /></label>
+              <label>{t("gamebook.boxProperty")} <input bind:value={box.property} placeholder={t("gamebook.boxPropertyNone")} /></label>
+              <label class="check"><input type="checkbox" bind:checked={box.ending} /> {t("gamebook.boxEnding")}</label>
+              <div class="define">
+                <button type="button" class="danger" disabled={novel.gamebook.boxes.length <= 1} onclick={() => (novel.gamebook.boxes = novel.gamebook.boxes.filter((_, j) => j !== i))}>{t("gamebook.boxRemove")}</button>
+              </div>
+            </fieldset>
+          {/each}
+          <div class="define">
+            <button
+              type="button"
+              onclick={() => {
+                const n = novel.gamebook.boxes.length + 1;
+                novel.gamebook.boxes = [...novel.gamebook.boxes, { id: `box${Date.now().toString(36)}`, emoji: "⭐", name: t("gamebook.boxNew", { n }), color: "#888888", text: "", property: "", ending: false }];
+              }}>{t("gamebook.boxAdd")}</button
+            >
+          </div>
         </div>
       {/if}
-    {/if}
-
-    {#if inTauri() || WEB_BUILD}
-      <h3>{t("update.title")}</h3>
-      {#if updates.version}<p class="hint">{t("update.version", { version: updates.version })}</p>{/if}
-      {#if updates.supported}
-        <label class="check"><input type="checkbox" checked={app.settings.checkUpdates} onchange={(e) => setApp({ checkUpdates: e.currentTarget.checked })} /> {t("update.atStart")}</label>
-        {#if inTauri()}
-          <label
-            >{t("update.channel")}
-            <select
-              value={updateChannel()}
-              onchange={(e) => {
-                setApp({ updateChannel: e.currentTarget.value as "stable" | "beta" });
-                void checkForUpdates();
-              }}
-            >
-              <option value="stable">{t("update.channelStable")}</option>
-              <option value="beta">{t("update.channelBeta")}</option>
+    {:else if section === "upkeep"}
+      <div class="fields">
+        <h3>{t("snap.cleanTitle")}</h3>
+        <label
+          >{t("snap.cleanHint")}
+          <input type="date" bind:value={cleanBefore} />
+        </label>
+        <div class="clean">
+          <button type="button" onclick={clean}>{t("snap.clean")}</button>
+          {#if cleaned}<span>{cleaned}</span>{/if}
+        </div>
+      </div>
+    {:else if section === "you"}
+      <div class="fields">
+        <label
+          >{t("settings.userName")} <input value={app.settings.userName} oninput={(e) => setApp({ userName: e.currentTarget.value })} />
+          <small>{t("settings.userNameHint")}</small>
+        </label>
+        <label class="check" title={t("tip.revisions")}
+          ><input type="checkbox" checked={app.settings.revisions} disabled={!app.settings.userName.trim()} onchange={(e) => setApp({ revisions: e.currentTarget.checked })} /> {t("comments.revisionMode")}</label
+        >
+        <label
+          >{t("settings.interfaceLanguage")}
+          <select value={app.settings.language} onchange={(e) => setApp({ language: e.currentTarget.value })}>
+            {#each Object.entries(LANGUAGES) as [code, lang] (code)}
+              <option value={code}>{lang.name}</option>
+            {/each}
+          </select>
+        </label>
+      </div>
+    {:else if section === "appearance"}
+      <div class="fields wide">
+        {#if look.own}
+          <div class="elsewhere">
+            <p>{t("look.active")}</p>
+            <button type="button" onclick={() => show("look")}>{t("look.open")}</button>
+          </div>
+        {/if}
+        <ThemePicker value={app.settings} set={setApp} />
+        {#if uiZoom.where === "browser"}
+          <div class="field"><span class="label">{t("appearance.uiZoom")}</span></div>
+        {:else}
+          <label class="narrow"
+            >{t("appearance.uiZoom")}
+            <select value={app.settings.uiZoom} disabled={uiZoom.where !== "app"} onchange={(e) => setApp({ uiZoom: Number(e.currentTarget.value) })}>
+              {#each UI_ZOOMS as z (z)}<option value={z}>{Math.round(z * 100)}%{z === 1 ? ` (${t("appearance.usual")})` : ""}</option>{/each}
+              {#if !UI_ZOOMS.includes(app.settings.uiZoom)}<option value={app.settings.uiZoom}>{Math.round(app.settings.uiZoom * 100)}%</option>{/if}
             </select>
           </label>
-          <p class="hint">{t(updateChannel() === "beta" ? "update.channelBetaHint" : "update.channelStableHint")}</p>
         {/if}
-        <div class="clean">
-          <button type="button" disabled={updates.state === "checking" || updates.state === "downloading"} onclick={() => void checkForUpdates()}
-            >{t("update.check")}</button
-          >
-          {#if updates.state === "checking"}<span>{t("update.checking")}</span>
-          {:else if updates.state === "current"}<span>{t("update.current")}</span>
-          {:else if updates.available}<span>{t("update.available", { version: updates.available.version })}</span>
-          {:else if updates.state === "error"}<span class="error">{t("update.failed", { message: updates.error })}</span>{/if}
-        </div>
-      {:else if updates.version}
-        <p class="hint">{t("update.unsupported")}</p>
-      {/if}
-    {/if}
+        <p class="hint">{t(uiZoom.where === "browser" ? "appearance.uiZoomBrowser" : uiZoom.where === "old-mac" ? "appearance.uiZoomOldMac" : "appearance.uiZoomHint")}</p>
+      </div>
+    {:else if section === "text"}
+      <div class="fields">
+        {#if look.own}
+          <div class="elsewhere">
+            <p>{t("look.active")}</p>
+            <button type="button" onclick={() => show("look")}>{t("look.open")}</button>
+          </div>
+        {/if}
+        <EditorTextSettings value={lookOf(app.settings)} set={setApp} />
+      </div>
+      <aside class="preview" aria-label={t("appearance.sample")}>
+        <span class="caption">{t("appearance.sample")}</span>
+        <TextSample value={lookOf(app.settings)} />
+      </aside>
+    {:else if section === "writing"}
+      <div class="fields">
+        <label class="check"><input type="checkbox" checked={app.settings.paragraphs} onchange={(e) => setApp({ paragraphs: e.currentTarget.checked })} /> {t("appearance.paragraphs")}</label>
+        <p class="hint">{t("appearance.paragraphsHint")}</p>
+        {#if !app.settings.paragraphs}
+          <label class="check"><input type="checkbox" checked={app.settings.askBlankLines} onchange={(e) => setApp({ askBlankLines: e.currentTarget.checked })} /> {t("appearance.askBlankLines")}</label>
+          <p class="hint">{t("appearance.askBlankLinesHint")}</p>
+        {/if}
+        <h3>{t("appearance.spelling")}</h3>
+        <label class="check"><input type="checkbox" checked={app.settings.spellcheck} onchange={(e) => setApp({ spellcheck: e.currentTarget.checked })} /> {t("appearance.spellcheck")}</label>
+        <p class="hint">{t("appearance.spellcheckHint")}</p>
+      </div>
+    {:else if section === "backup"}
+      <div class="fields">
+        {#if inTauri()}
+          <p class="hint">{t("backup.hint")}</p>
+          <div class="field">
+            <span class="label">{t("backup.folder")}</span>
+            <span class="path">{app.settings.backupFolder || backupDefault}</span>
+            <div class="clean">
+              <button type="button" onclick={chooseBackupFolder}>{t("backup.choose")}</button>
+              {#if app.settings.backupFolder}<button type="button" onclick={() => setApp({ backupFolder: "" })}>{t("backup.useDefault")}</button>{/if}
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" checked={app.settings.backupOnClose} onchange={(e) => setApp({ backupOnClose: e.currentTarget.checked })} /> {t("backup.onClose")}</label>
+          <label class="narrow"
+            >{t("backup.keep")}
+            <input type="number" min="1" max="100" value={app.settings.backupKeep} onchange={(e) => setApp({ backupKeep: clamp(e.currentTarget.value, 1, 100, app.settings.backupKeep) })} />
+          </label>
+          <p class="hint">{backup?.latest ? t("backup.last", { date: backupDate(backup.latest), count: backup.count }) : t("backup.none")}</p>
+          <div class="clean">
+            <button type="button" disabled={backingUp} onclick={makeBackup}>{backingUp ? t("backup.running") : t("backup.now")}</button>
+            {#if backup?.latest}<button type="button" onclick={showBackups}>{t("backup.show")}</button>{/if}
+            {#if backupMessage}<span>{backupMessage}</span>{/if}
+          </div>
+        {:else}
+          <p class="hint">{t("backup.browserHint")}</p>
+          <div class="clean">
+            <button type="button" disabled={backingUp} onclick={makeBackup}>{t("backup.download")}</button>
+            {#if backupMessage}<span>{backupMessage}</span>{/if}
+          </div>
+        {/if}
+      </div>
+    {:else if section === "updates"}
+      <div class="fields">
+        {#if inTauri() || WEB_BUILD}
+          <h3>{t("update.title")}</h3>
+          {#if updates.version}<p class="hint">{t("update.version", { version: updates.version })}</p>{/if}
+          {#if updates.supported}
+            <label class="check"><input type="checkbox" checked={app.settings.checkUpdates} onchange={(e) => setApp({ checkUpdates: e.currentTarget.checked })} /> {t("update.atStart")}</label>
+            {#if inTauri()}
+              <label class="narrow"
+                >{t("update.channel")}
+                <select
+                  value={updateChannel()}
+                  onchange={(e) => {
+                    setApp({ updateChannel: e.currentTarget.value as "stable" | "beta" });
+                    void checkForUpdates();
+                  }}
+                >
+                  <option value="stable">{t("update.channelStable")}</option>
+                  <option value="beta">{t("update.channelBeta")}</option>
+                </select>
+              </label>
+              <p class="hint">{t(updateChannel() === "beta" ? "update.channelBetaHint" : "update.channelStableHint")}</p>
+            {/if}
+            <div class="clean">
+              <button type="button" disabled={updates.state === "checking" || updates.state === "downloading"} onclick={() => void checkForUpdates()}
+                >{t("update.check")}</button
+              >
+              {#if updates.state === "checking"}<span>{t("update.checking")}</span>
+              {:else if updates.state === "current"}<span>{t("update.current")}</span>
+              {:else if updates.available}<span>{t("update.available", { version: updates.available.version })}</span>
+              {:else if updates.state === "error"}<span class="error">{t("update.failed", { message: updates.error })}</span>{/if}
+            </div>
+          {:else if updates.version}
+            <p class="hint">{t("update.unsupported")}</p>
+          {/if}
+        {/if}
 
-    <h3>{t("support.title")}</h3>
-    <p class="hint">{t("support.hint")}</p>
-    <div class="clean">
-      <button type="button" onclick={copyReport}>{t("support.copy")}</button>
-      {#if reportCopied}<span>{reportCopied}</span>{/if}
-    </div>
+        <h3>{t("support.title")}</h3>
+        <p class="hint">{t("support.hint")}</p>
+        <div class="clean">
+          <button type="button" onclick={copyReport}>{t("support.copy")}</button>
+          {#if reportCopied}<span>{reportCopied}</span>{/if}
+        </div>
+      </div>
     {/if}
-  </form>
+    </form>
+    {/if}
+  </div>
 </div>
 
 <style>
+  /* A list of sections on the left and one short page on the right, as wide as the window
+     allows: fields in a column, and what they change drawn beside them. Grid and flex only,
+     so it lays out the same on the Safari of macOS 10.15. */
   .settings {
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
     height: 100%;
+    min-height: 0;
+  }
+  .sections {
     overflow: auto;
-    padding: 24px 32px 64px;
+    padding: 16px 12px 24px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .search {
+    width: 100%;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .group {
+    display: grid;
+    gap: 1px;
+    margin-top: 12px;
+  }
+  .caption {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .item {
+    border: none;
+    border-radius: 6px;
+    background: none;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .item:hover {
+    background: var(--bg-hover);
+  }
+  .item[aria-current="page"] {
+    background: var(--bg-active);
+    font-weight: 500;
+  }
+  .page {
+    overflow: auto;
+    padding: 20px 32px 64px;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 16px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  .scope,
+  .status {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .status {
+    margin-left: auto;
   }
   form {
-    max-width: 560px;
+    display: grid;
+    grid-template-columns: minmax(0, 560px) minmax(240px, 1fr);
+    gap: 8px 40px;
+    align-items: start;
+    max-width: 1180px;
+  }
+  .fields {
+    grid-column: 1;
+    min-width: 0;
+  }
+  .fields.wide {
+    grid-column: 1 / -1;
+    max-width: 860px;
+  }
+  .fields.second {
+    grid-column: 2;
+    max-width: 520px;
+  }
+  .preview {
+    grid-column: 2;
+    position: sticky;
+    top: 0;
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+    min-width: 0;
+  }
+  .preview .caption {
+    padding: 0;
   }
   h3 {
     font-size: 15px;
     margin: 20px 0 8px;
+  }
+  .fields > h3:first-child {
+    margin-top: 0;
   }
   label {
     display: grid;
@@ -494,6 +828,18 @@
     gap: 8px;
     color: var(--text);
   }
+  label.narrow {
+    max-width: 260px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 12px;
+  }
+  .row label {
+    flex: 1;
+    min-width: 160px;
+  }
   fieldset {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -506,38 +852,6 @@
   }
   small {
     font-size: 12px;
-  }
-  .tabs {
-    position: sticky;
-    top: -24px;
-    z-index: 1;
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-    max-width: 560px;
-    margin: -24px 0 16px;
-    padding-top: 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-  }
-  .tabs button {
-    border: none;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    background: none;
-    padding: 6px 12px;
-    font-size: 14px;
-    color: var(--text-muted);
-  }
-  .tabs button[aria-selected="true"] {
-    color: var(--text);
-    border-bottom-color: var(--accent);
-  }
-  .status {
-    margin-left: auto;
-    padding: 6px 0;
-    font-size: 12px;
-    color: var(--text-muted);
   }
   .hint {
     color: var(--text-muted);
@@ -555,9 +869,12 @@
   .box-row input.emoji {
     width: 4em;
   }
-  h4 {
-    margin: 14px 0 4px;
-    font-size: 13px;
+  .chip {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    border-radius: 3px;
   }
   fieldset.property {
     padding: 4px 12px 0;
@@ -574,6 +891,7 @@
   }
   .clean {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     align-items: center;
   }
@@ -592,5 +910,111 @@
   }
   .error {
     color: var(--danger);
+  }
+  /* A choice kept in another section, with the way there. */
+  .elsewhere {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-panel);
+    font-size: 13px;
+  }
+  .elsewhere p {
+    flex: 1;
+    margin: 0;
+  }
+  .elsewhere button {
+    flex: none;
+  }
+  /* The previews: the headings as a small tree, the dots, a page. */
+  .outline {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    max-width: 360px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-panel);
+    font-size: 13px;
+    white-space: pre-line;
+  }
+  .outline .part {
+    font-weight: 600;
+  }
+  .outline .chapter {
+    font-weight: 500;
+  }
+  .outline .scene {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 16px;
+    color: var(--text-muted);
+  }
+  .outline .nested {
+    margin-left: 16px;
+  }
+  .outline .hint {
+    margin: 0;
+    white-space: normal;
+  }
+  .dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .sheet {
+    display: grid;
+    align-content: start;
+    gap: 7px;
+    width: 150px;
+    height: 212px;
+    padding: 20px 18px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--editor-bg);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  }
+  .sheet i {
+    display: block;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--text-muted);
+    opacity: 0.5;
+  }
+  .sheet i.short {
+    width: 55%;
+    margin-bottom: 6px;
+  }
+  .holds {
+    font-size: 13px;
+  }
+  /* A narrower window: the preview goes under the fields, then the sections go above the page. */
+  @media (max-width: 1150px) {
+    form {
+      grid-template-columns: minmax(0, 620px);
+    }
+    .preview,
+    .fields.second {
+      grid-column: 1;
+      position: static;
+    }
+  }
+  @media (max-width: 760px) {
+    .settings {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .sections {
+      max-height: 40vh;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
   }
 </style>

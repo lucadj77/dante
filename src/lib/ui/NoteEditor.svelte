@@ -3,7 +3,7 @@
   import type { Project } from "$lib/core/project";
   import { createSceneEditor, type SceneEditor } from "$lib/editor/sceneEditor";
   import { ACTIONS, ICONS, applyFormat } from "$lib/editor/formatting";
-  import { app, t } from "$lib/state.svelte";
+  import { app, appearance, t } from "$lib/state.svelte";
   import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
   import { pendingFind, takeFind } from "./find.svelte";
   import Icon from "./Icon.svelte";
@@ -166,7 +166,7 @@
     </div>
   {/if}
   <div class="page">
-    <div class="column" style={props.compact ? "" : `max-width: ${app.settings.lineWidth}ch`}>
+    <div class="column" style={props.compact ? "" : `max-width: ${appearance().lineWidth}ch`}>
       <div class="editor" bind:this={host}></div>
     </div>
   </div>

@@ -1,8 +1,9 @@
 <script lang="ts">
   import { projectKey } from "$lib/platform";
   import { onMount, untrack } from "svelte";
+  import { onDisk } from "$lib/platform";
   import type { Project } from "$lib/core/project";
-  import { app, t, zoom } from "$lib/state.svelte";
+  import { app, openLook, t, zoom } from "$lib/state.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import { BrowserFs } from "$lib/browserFs";
   import type { MessageKey } from "$lib/i18n";
@@ -508,6 +509,11 @@
   }
 
   onMount(() => startPresence(project));
+  // The look this computer keeps for this novel, if it has one of its own.
+  onMount(() => {
+    openLook(onDisk(project.fs) ? project.id : "sample");
+    return () => openLook("");
+  });
 
   // The panes of this project, as they were left; they follow renamed items and close with
   // deleted ones, and what is typed in them is written before files move.
@@ -780,7 +786,7 @@
     {:else if section === "export"}
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
-      <SettingsView {project} onSaved={reload} />
+      <SettingsView {project} onSaved={reload} onGo={go} />
     {:else if section === "gamebook"}
       <GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />
     {:else if section === "stats"}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import "../app.css";
-  import { app, t } from "$lib/state.svelte";
+  import { app, appearance, t } from "$lib/state.svelte";
   import { applyAppearance } from "$lib/themes";
   import { applyMenuLabels, applyUiZoom } from "$lib/uiZoom.svelte";
   import Tooltip from "$lib/ui/Tooltip.svelte";
@@ -20,7 +20,7 @@
   $effect(() => {
     const root = document.documentElement;
     root.lang = app.settings.language;
-    applyAppearance(root, app.settings, systemDark);
+    applyAppearance(root, appearance(), systemDark);
   });
   $effect(() => {
     applyUiZoom(app.settings.uiZoom);
