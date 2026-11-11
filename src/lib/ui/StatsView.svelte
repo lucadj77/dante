@@ -2,6 +2,7 @@
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
+  import { GOAL } from "$lib/core/manuscript";
   import { parseSettings, SETTINGS_FILE, type NovelSettings, type PageUnit } from "$lib/core/settings";
   import { dayKey, isWritingDay, netOf, readLogs, streak, wordsByDay, type WritingLog } from "$lib/core/sessions";
   import { frequentWords, goalProgress, lengthAnalysis, manuscriptStats, mentions, pageCount, type LengthLevel, type LengthUnit, type ManuscriptStats, type Mention, type WordCount } from "$lib/core/statistics";
@@ -92,6 +93,24 @@
 
   /** A note after the goals were converted to the other unit; "" when there is none. */
   let converted = $state("");
+  /** The goals of scenes and chapters still in the old unit, with what they would become. */
+  let ownGoals = $state.raw<{ path: string; title: string; goal: number; to: number }[]>([]);
+  let convertingOwn = $state(false);
+
+  async function convertOwnGoals() {
+    convertingOwn = true;
+    error = "";
+    try {
+      await p.project.setPropertiesEach(ownGoals.map((g) => ({ path: g.path, changes: { [GOAL]: g.to } })));
+      converted = t("statsView.ownGoalsDone", { n: ownGoals.length });
+      ownGoals = [];
+      await p.onSaved();
+    } catch (e) {
+      error = failure(e);
+    } finally {
+      convertingOwn = false;
+    }
+  }
 
   /**
    * Measures in words or in characters. The novel's and the daily goal are converted at the
@@ -100,6 +119,7 @@
   async function setUnit(next: PageUnit) {
     error = "";
     converted = "";
+    ownGoals = [];
     try {
       const fs = p.project.fs;
       const fresh = (await fs.exists(SETTINGS_FILE)) ? parseSettings(await fs.readText(SETTINGS_FILE)) : p.project.settings;
@@ -115,7 +135,11 @@
       const small = next === "characters" ? 50 : 10;
       const g = fresh.goals;
       await p.project.saveSettings({ ...fresh, goals: { ...g, unit: next, words: convert(g.words, big), daily: convert(g.daily, small) } });
-      if (g.words || g.daily) converted = t("statsView.goalUnitConverted", { ratio: ratio.toLocaleString(app.settings.language, { maximumFractionDigits: 1 }) });
+      const own = (await p.project.ownGoals()).map((item) => ({ ...item, to: convert(item.goal, small) }));
+      const shown = ratio.toLocaleString(app.settings.language, { maximumFractionDigits: 1 });
+      if (g.words || g.daily) converted = t("statsView.goalUnitConverted", { ratio: shown });
+      else if (own.length) converted = t("statsView.goalUnitRatio", { ratio: shown });
+      ownGoals = own;
       await p.onSaved();
     } catch (e) {
       error = failure(e);
@@ -238,6 +262,20 @@
         </div>
       </div>
       {#if converted}<p class="muted small">{converted}</p>{/if}
+      {#if ownGoals.length}
+        <div class="own-goals">
+          <p>{t("statsView.ownGoals", { n: ownGoals.length })}</p>
+          <ul>
+            {#each ownGoals as g (g.path)}
+              <li><span>{g.title}</span><span class="num">{n(g.goal)} → {n(g.to)}</span></li>
+            {/each}
+          </ul>
+          <div class="own-actions">
+            <button class="primary" disabled={convertingOwn} onclick={convertOwnGoals}>{t("statsView.ownGoalsConvert", { n: ownGoals.length })}</button>
+            <button disabled={convertingOwn} onclick={() => (ownGoals = [])}>{t("statsView.ownGoalsKeep")}</button>
+          </div>
+        </div>
+      {/if}
       <form
         class="goals"
         onsubmit={(e) => {
@@ -760,5 +798,40 @@
   .words .count {
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+  }
+  .own-goals {
+    display: grid;
+    gap: 8px;
+    max-width: 560px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .own-goals p {
+    margin: 0;
+  }
+  .own-goals ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 180px;
+    overflow: auto;
+  }
+  .own-goals li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+  }
+  .own-goals .num {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text-muted);
+  }
+  .own-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 </style>

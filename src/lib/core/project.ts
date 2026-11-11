@@ -3,6 +3,7 @@ import { readProperties, renameProperty, replaceBody, splitNote, writeProperties
 import {
   enclosing,
   findNode,
+  flatten,
   folderNotePath,
   GOAL,
   loadManuscript,
@@ -794,13 +795,29 @@ export class Project {
 
   /** The same change to the properties of several scenes, chapters or parts at once. */
   async setPropertiesOf(paths: string[], changes: Properties): Promise<void> {
-    for (const path of paths) {
+    await this.setPropertiesEach(paths.map((path) => ({ path, changes })));
+  }
+
+  /** Changes to the properties of several scenes, chapters or parts, each its own, in one step. */
+  async setPropertiesEach(items: { path: string; changes: Properties }[]): Promise<void> {
+    for (const { path, changes } of items) {
       const file = this.propertiesFile(path);
       const text = (await this.fs.exists(file)) ? await this.fs.readText(file) : "";
       const updated = writeProperties(text, changes);
       if (updated !== text) await this.fs.writeText(file, updated);
     }
     await this.reload();
+  }
+
+  /** The scenes, chapters and parts that have a goal of their own, in reading order. */
+  async ownGoals(): Promise<{ path: string; title: string; goal: number }[]> {
+    const out: { path: string; title: string; goal: number }[] = [];
+    for (const node of flatten(this.manuscript)) {
+      if (node.kind === "manuscript") continue;
+      const goal = Number((await this.properties(node.path))[GOAL]);
+      if (Number.isFinite(goal) && goal > 0) out.push({ path: node.path, title: node.title, goal });
+    }
+    return out;
   }
 
   /**

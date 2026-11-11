@@ -24,6 +24,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Clearer words**: "tree", "card", "link" and "Resolved" are used the same way everywhere; in Italian, "Citazioni" in Statistics becomes "Menzioni" and the type "Plotline" of new projects is called "Trama".
 - **Fewer repeated numbers**: with a single scene on screen the Properties panel and the status bar do not write the same number twice, and "Today" stays only in the status bar when it is visible.
 - **Boards**: the columns share the space when they are few, and **Delete this view** is inside the settings of the view instead of always in sight.
+- **Scene and chapter goals converted**: when you switch between words and characters, Dante also lists the goals of single scenes and chapters with the value they would have and converts them all with one click.
 - **The name, asked at once**: those who open a project without having written their name yet are asked for it once, at the first opening, so that comments, revisions and the day's count start at once.
 
 ### Fixed

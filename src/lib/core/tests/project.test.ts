@@ -398,3 +398,23 @@ describe("own titles", () => {
     expect(fs.files.get("Manuscript/020 Letter/020 Letter.md")).not.toContain("title:");
   });
 });
+
+describe("goals of scenes and chapters", () => {
+  it("lists the items with a goal of their own and changes them in one step", async () => {
+    const fs = new MemoryFs({
+      "dante.yaml": "title: Test\nlanguage: en\n",
+      "Manuscript/010 One/010 One.md": "---\ngoal: 3000\n---\n",
+      "Manuscript/010 One/010 First.md": "---\ngoal: 1500\n---\nText.",
+      "Manuscript/010 One/020 Second.md": "No goal.",
+    });
+    const p = await Project.open(fs);
+    const goals = await p.ownGoals();
+    expect(goals.map((g) => [g.path, g.goal])).toEqual([
+      ["Manuscript/010 One", 3000],
+      ["Manuscript/010 One/010 First.md", 1500],
+    ]);
+    await p.setPropertiesEach(goals.map((g) => ({ path: g.path, changes: { goal: g.goal * 6 } })));
+    expect((await p.ownGoals()).map((g) => g.goal)).toEqual([18000, 9000]);
+    expect(fs.files.get("Manuscript/010 One/020 Second.md")).toBe("No goal.");
+  });
+});

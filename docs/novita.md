@@ -24,6 +24,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Parole più chiare**: nelle Statistiche «Citazioni» diventa «Menzioni»; nei progetti nuovi in italiano il tipo «Plotline» si chiama «Trama»; «albero», «scheda», «collegamento» e «Risolto» sono usati allo stesso modo dappertutto.
 - **Meno numeri ripetuti**: con una sola scena a schermo il pannello Proprietà e la barra di stato non scrivono due volte lo stesso numero, e «Oggi» sta solo nella barra di stato quando è visibile.
 - **Bacheche**: le colonne si dividono lo spazio quando sono poche, e **Elimina questa vista** è dentro le impostazioni della vista invece che sempre in vista.
+- **Obiettivi di scene e capitoli convertiti**: cambiando misura tra parole e caratteri, Dante elenca anche gli obiettivi propri di scene e capitoli con il valore che avrebbero e li converte tutti con un clic.
 - **Il nome, chiesto subito**: chi apre un progetto senza aver ancora scritto il proprio nome se lo sente chiedere una volta, alla prima apertura, così commenti, revisioni e conteggio del giorno partono subito.
 
 ### Corretto
