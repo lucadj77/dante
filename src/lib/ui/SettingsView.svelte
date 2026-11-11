@@ -20,7 +20,7 @@
   import { inTauri } from "$lib/tauriFs";
   import { WEB_BUILD } from "$lib/build";
   import { checkForUpdates, updateChannel, updates } from "$lib/updates.svelte";
-  import { backupFolder, backupInfo, backupNow, defaultBackupFolder, downloadBackup, type BackupInfo } from "$lib/backups";
+  import { backupFolder, backupInfo, backupNames, backupNow, defaultBackupFolder, downloadBackup, extractBackup, type BackupInfo } from "$lib/backups";
   import { onDisk } from "$lib/platform";
   import { navigator as dante } from "./navigation";
 
@@ -29,8 +29,10 @@
     onSaved: () => Promise<void>;
     /** Opens another section of the workspace, for the choices kept there. */
     onGo?: (section: "stats" | "export") => void;
+    /** Opens the project in another folder of the computer, in place of this one. */
+    onOpenProject?: (path: string) => Promise<void>;
   }
-  let { project, onSaved, onGo }: Props = $props();
+  let { project, onSaved, onGo, onOpenProject }: Props = $props();
   const nav = dante();
 
   /** Opens the template of new scenes, made first if there is none. */
@@ -200,11 +202,34 @@
   const dateTime = $derived(new Intl.DateTimeFormat(app.settings.language, { dateStyle: "medium", timeStyle: "short" }));
   if (inTauri()) void defaultBackupFolder().then((f) => (backupDefault = f), () => {});
 
+  /** The zips kept for this project, the most recent first. */
+  let backupList = $state.raw<string[]>([]);
+  let opening = $state("");
+
   async function loadBackups() {
     try {
       backup = await backupInfo(project, app.settings);
+      backupList = await backupNames(project, app.settings);
     } catch {
       backup = null;
+      backupList = [];
+    }
+  }
+
+  /** Takes a backup out into a new folder beside the novel's and opens it; this novel is not touched. */
+  async function openBackup(name: string) {
+    opening = name;
+    backupMessage = "";
+    try {
+      const title = name.replace(/ \d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.zip$/, "");
+      const stamp = /(\d{4}-\d{2}-\d{2}) (\d{2})-(\d{2})-\d{2}\.zip$/.exec(name);
+      const path = await extractBackup(project, name, t("backup.copyName", { name: title, date: stamp ? `${stamp[1]} ${stamp[2]}.${stamp[3]}` : "" }), app.settings);
+      if (onOpenProject) await onOpenProject(path);
+      else backupMessage = t("backup.extracted", { path });
+    } catch (e) {
+      backupMessage = failure(e);
+    } finally {
+      opening = "";
     }
   }
   $effect(() => {
@@ -639,6 +664,18 @@
             {#if backup?.latest}<button type="button" onclick={showBackups}>{t("backup.show")}</button>{/if}
             {#if backupMessage}<span>{backupMessage}</span>{/if}
           </div>
+          {#if backupList.length}
+              <h3>{t("backup.listTitle")}</h3>
+              <p class="hint">{t("backup.listHint")}</p>
+              <ul class="backups">
+                {#each backupList as name (name)}
+                  <li>
+                    <span>{backupDate(name)}</span>
+                    <button type="button" disabled={!!opening} onclick={() => openBackup(name)}>{opening === name ? t("backup.opening") : t("backup.open")}</button>
+                  </li>
+                {/each}
+              </ul>
+          {/if}
         {:else}
           <p class="hint">{t("backup.browserHint")}</p>
           <div class="clean">
@@ -907,6 +944,24 @@
   .path {
     font-size: 13px;
     overflow-wrap: anywhere;
+  }
+  .backups {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .backups li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
   .error {
     color: var(--danger);

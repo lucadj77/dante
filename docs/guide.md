@@ -809,7 +809,7 @@ A backup copy is a zip file with the whole project, kept on the computer outside
 - Dante makes a copy by itself when you close the project or quit Dante, if something has changed since the last one.
 - The copies are in the folder **Documents/Dante backup**, in a subfolder for each novel. Of each novel the 10 most recent stay; the oldest are deleted by themselves.
 - In **Settings → Backups** you can choose another folder, how many copies to keep, whether to make them on closing, and see when the last one was made. **Make a backup now** makes one at once, **Show the backups** opens the folder.
-- **To take up a project again**: open the zip (double click), move the folder it holds where you like and open it with **Open folder…** from the start screen. It is better not to overwrite the damaged folder until you have checked that the copy is the right one.
+- **To take up a project again**: in **Settings** > **Backups**, under **Going back to a backup**, is the list of the backups with date and time. **Open this backup** takes it out into a new folder beside the novel's, named after the novel with "(backup of…)", and opens it. The novel as it is now is not touched and stays among the recent projects: compare the two folders calmly and keep the right one. If Dante cannot open the novel, do it by hand: open the zip (double click), move the folder it holds where you like and open it with **Open folder…** from the start screen.
 - **In the browser** Dante cannot write outside the folder of the novel: in **Settings** > **Backups** there is **Download a backup (zip)**, to press now and then and keep in a safe place.
 
 ### In depth

@@ -151,6 +151,7 @@
         project = null;
         letGo();
       }}
+      onOpenProject={async (path) => show(await openProjectAt(path))}
     />
   {/key}
 {:else}

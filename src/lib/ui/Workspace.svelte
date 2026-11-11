@@ -59,7 +59,7 @@
     type Pane,
   } from "./panes.svelte";
 
-  let { project, onClose }: { project: Project; onClose: () => void } = $props();
+  let { project, onClose, onOpenProject }: { project: Project; onClose: () => void; onOpenProject?: (path: string) => Promise<void> } = $props();
   /** A reordering cut short was settled when the project opened: said once, until dismissed. */
   let recovered = $state(untrack(() => project.recovered));
 
@@ -786,7 +786,7 @@
     {:else if section === "export"}
       <ExportView {project} onSaved={reload} />
     {:else if section === "settings"}
-      <SettingsView {project} onSaved={reload} onGo={go} />
+      <SettingsView {project} onSaved={reload} onGo={go} {onOpenProject} />
     {:else if section === "gamebook"}
       <GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />
     {:else if section === "stats"}

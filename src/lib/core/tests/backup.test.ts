@@ -31,3 +31,25 @@ describe("backup", () => {
     expect(backupStamp(new Date(2026, 9, 26, 9, 5, 3))).toBe("2026-10-26 09-05-03");
   });
 });
+
+describe("taking a backup out of its zip", () => {
+  it("writes the same files in an empty folder, without the zip's own folder", async () => {
+    const { MemoryFs } = await import("../fs");
+    const { unzipProject } = await import("../backup");
+    const fs = new MemoryFs({ "dante.yaml": "title: Prova\n", "Manoscritto/010 Uno/010 Scena.md": "Testo.", ".dante/id": "abc\n", "Ricerca/foto.png": "PNG" });
+    const copy = new MemoryFs({});
+    expect(await unzipProject(copy, await zipProject(fs, "Prova"))).toBe(4);
+    expect([...copy.files.keys()].sort()).toEqual([...fs.files.keys()].sort());
+    for (const path of fs.files.keys()) expect(new TextDecoder().decode(await copy.readBytes(path))).toBe(fs.files.get(path));
+  });
+
+  it("writes nothing outside the folder", async () => {
+    const { zipSync, strToU8 } = await import("fflate");
+    const { MemoryFs } = await import("../fs");
+    const { unzipProject } = await import("../backup");
+    const copy = new MemoryFs({});
+    const zip = zipSync({ "Prova/../fuori.md": strToU8("x"), "Prova/dentro.md": strToU8("y"), "Prova//vuoto.md": strToU8("z") });
+    expect(await unzipProject(copy, zip)).toBe(1);
+    expect([...copy.files.keys()]).toEqual(["dentro.md"]);
+  });
+});

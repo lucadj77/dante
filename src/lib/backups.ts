@@ -1,7 +1,7 @@
 // Backups of the open project: zip files the desktop app keeps in a folder of the computer
 // (src-tauri/src/backup.rs), or that a browser downloads.
 
-import { backupStamp, zipProject } from "./core/backup";
+import { backupStamp, unzipProject, zipProject } from "./core/backup";
 import type { Project } from "./core/project";
 import { folderName } from "./platform";
 import { app, type AppSettings } from "./state.svelte";
@@ -59,6 +59,35 @@ export async function backupInfo(project: Project, settings: AppSettings = app.s
   if (!(project.fs instanceof TauriFs)) return null;
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<BackupInfo>("list_backups", { root: project.fs.root, dest: await backupFolder(settings), name: backupName(project) });
+}
+
+/** The backups kept for the project, as file names, the most recent first. */
+export async function backupNames(project: Project, settings: AppSettings = app.settings): Promise<string[]> {
+  const info = await backupInfo(project, settings);
+  if (!info?.dir) return [];
+  const entries = await new TauriFs(info.dir).list("");
+  return entries.filter((e) => !e.isDir && e.name.endsWith(".zip") && !e.name.startsWith(".")).map((e) => e.name).sort().reverse();
+}
+
+/**
+ * Takes a backup out of its zip into a new folder beside the project's, named
+ * `folder` (with a number after it when the name is taken), and returns that folder's path.
+ * The project and the backup stay as they are.
+ */
+export async function extractBackup(project: Project, name: string, folder: string, settings: AppSettings = app.settings): Promise<string> {
+  if (!(project.fs instanceof TauriFs)) throw new Error("Backups are opened by the desktop app");
+  const info = await backupInfo(project, settings);
+  if (!info?.dir) throw new Error("No backups for this project");
+  const { dirname, join } = await import("@tauri-apps/api/path");
+  const parent = new TauriFs(await dirname(project.fs.root));
+  const clean = folder.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim() || "Dante";
+  let target = clean;
+  for (let n = 2; await parent.exists(target); n++) target = `${clean} ${n}`;
+  const zip = await new TauriFs(info.dir).readBytes(name);
+  await parent.mkdir(target);
+  const path = await join(parent.root, target);
+  await unzipProject(new TauriFs(path), zip);
+  return path;
 }
 
 /** In a browser: the project as a zip, downloaded. */
