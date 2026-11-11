@@ -177,6 +177,13 @@ Mi ritrovai per una selva oscura.
         assert!(pdf.starts_with(b"%PDF"));
     }
 
+    /// A book as the export writes it, with a table of contents and two footnotes.
+    #[test]
+    fn compiles_footnotes_and_the_table_of_contents() {
+        let pdf = compile(include_str!("fixtures/notes-and-contents.typ"), &root()).expect("compiles");
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
     #[test]
     fn syntax_error_is_reported() {
         let err = compile("Testo\n#let x = (1, 2\n", &root()).unwrap_err();
