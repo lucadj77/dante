@@ -6,7 +6,7 @@
   import { tick, type Snippet } from "svelte";
   import { enclosing, GAMEBOOK_AFTER, GAMEBOOK_POSITION, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
-  import type { Project } from "$lib/core/project";
+  import { StaleUndoError, type Project, type StructureChange } from "$lib/core/project";
   import { app, appearance, t } from "$lib/state.svelte";
   import Icon from "./Icon.svelte";
   import FormatBar from "./FormatBar.svelte";
@@ -306,6 +306,30 @@
     } catch (e) {
       error = failure(e);
     }
+  }
+
+  /** The last move, split or merge, while Dante can still take it back. */
+  let undoable = $state<StructureChange | null>(null);
+  $effect(() => {
+    void rev;
+    void localRev;
+    undoable = project.lastChange?.kind ?? null;
+  });
+
+  function undoChange() {
+    if (!project.lastChange) return;
+    let stale = false;
+    void run(async () => {
+      try {
+        await project.undoLastChange();
+      } catch (e) {
+        if (!(e instanceof StaleUndoError)) throw e;
+        stale = true;
+      }
+    }).then(() => {
+      if (stale) error = t("undo.stale");
+      onDiskChange();
+    });
   }
 
   function register(path: string, handle: SceneHandle | null) {
@@ -744,6 +768,12 @@
       moreOpen = false;
       return;
     }
+    // Undo with the keyboard in the tree takes back the last move; in the text it stays the editor's.
+    if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "z" && undoable && treeList?.contains(document.activeElement)) {
+      event.preventDefault();
+      undoChange();
+      return;
+    }
     // Esc that closed something else first, such as the suggestions, stays there.
     if (event.key === "Escape" && fullscreen && !event.defaultPrevented && !menu) void toggleFullscreen();
   }
@@ -927,6 +957,20 @@
           />
         {/each}
       </ul>
+      {#if undoable}
+        <p class="undo" role="status">
+          <span>{t(`undo.done.${undoable}`)}</span>
+          <button title={t("undo.tip")} onclick={undoChange}>{t("undo.action")}</button>
+          <button
+            class="close"
+            aria-label={t("help.close")}
+            onclick={() => {
+              project.lastChange = null;
+              undoable = null;
+            }}>×</button
+          >
+        </p>
+      {/if}
     </aside>
   {/if}
 
@@ -1192,6 +1236,33 @@
     background: var(--bg-panel);
     overflow: auto;
     padding: 8px;
+  }
+  .undo {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .undo span {
+    flex: 1;
+    min-width: 0;
+  }
+  .undo button {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  .undo button.close {
+    border: none;
+    background: none;
+    padding: 2px 4px;
   }
   .gamebook-summary {
     margin: 4px 10px 2px;

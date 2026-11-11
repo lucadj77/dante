@@ -256,3 +256,16 @@ test("closes a dialog with Esc straight after opening it, and keeps Tab inside",
   await expect(dialog).toBeHidden();
   await expect(trash).toBeFocused();
 });
+
+test("takes back a scene moved by mistake", async ({ page }) => {
+  await openSample(page);
+  const rows = page.getByRole("tree").getByRole("treeitem");
+  const before = await rows.allInnerTexts();
+  await page.getByRole("treeitem", { name: "La passeggiata" }).click();
+  await page.keyboard.press("ControlOrMeta+Alt+ArrowDown");
+  await expect.poll(() => rows.allInnerTexts()).not.toEqual(before);
+  await expect(page.getByRole("status").filter({ hasText: "Spostamento fatto." })).toBeVisible();
+  await page.getByRole("button", { name: "Annulla", exact: true }).click();
+  await expect.poll(() => rows.allInnerTexts()).toEqual(before);
+  await expect(page.getByRole("status").filter({ hasText: "Spostamento fatto." })).toBeHidden();
+});

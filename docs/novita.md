@@ -10,6 +10,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Menu del Mac nella lingua dell'interfaccia**: le voci della barra dei menu (Cerca aggiornamenti…, Modifica, Finestra, Aiuto di Dante e le altre) seguono la lingua scelta in Dante.
 - **Guida completa in inglese**: con l'interfaccia in inglese l'Aiuto apre la guida completa in inglese, capitolo per capitolo come quella in italiano.
 - **Un aspetto per ogni romanzo**: in Impostazioni > Aspetto di questo romanzo puoi dare a un romanzo il suo tema, colore d'accento, font e resa del testo. Le scelte restano su questo computer e non nel progetto: chi scrive con te tiene il suo aspetto.
+- **Annullare spostamenti, divisioni e fusioni**: dopo aver spostato, diviso o fuso scene e capitoli, in fondo all'albero compare **Annulla** (anche Cmd+Z / Ctrl+Z con l'albero attivo), che rimette tutto com'era, collegamenti compresi.
 
 ### Cambiato
 

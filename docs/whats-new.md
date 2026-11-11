@@ -10,6 +10,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Mac menu in the language of the interface**: the items of the menu bar (Check for Updates…, Edit, Window, Dante Help and the others) follow the language chosen in Dante.
 - **Full guide in English**: with the interface in English, Help opens the full guide in English, chapter by chapter like the Italian one.
 - **A look for each novel**: in Settings > Look of this novel you can give a novel its own theme, accent colour, font and text layout. The choices stay on this computer and not in the project: those who write with you keep their own look.
+- **Undo for moves, splits and merges**: after moving, splitting or merging scenes and chapters, **Undo** appears at the bottom of the tree (also Cmd+Z / Ctrl+Z with the tree active) and puts everything back as it was, links included.
 
 ### Changed
 
