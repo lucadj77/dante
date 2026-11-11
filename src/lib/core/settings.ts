@@ -176,6 +176,13 @@ export interface DocxSettings {
   omitSingleSceneHeading: boolean;
 }
 
+/** A set of export choices kept under a name, such as "For the publisher". */
+export interface ExportProfile {
+  format: ExportFormat;
+  cover: boolean;
+  docx: DocxSettings;
+}
+
 /** A kind of note, such as a character or a place, defined in dante.yaml. */
 export interface NoteType {
   /** Name shown in the app, such as "Character". */
@@ -326,6 +333,8 @@ export interface NovelSettings {
     paratext: ParatextSettings;
     /** Revisions in CriticMarkup are accepted or rejected in the exported text. */
     revisions: "accept" | "reject";
+    /** Export choices saved under a name, to go back to without setting them again. */
+    profiles: Record<string, ExportProfile>;
   };
 }
 
@@ -579,6 +588,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         colophon: "",
       },
       revisions: "accept",
+      profiles: {},
     },
   };
 }
@@ -648,6 +658,16 @@ export function parseSettings(text: string): NovelSettings {
   if (!(gx.boxSize >= 0 && gx.boxSize <= 48)) gx.boxSize = 0;
   if (typeof gx.numberFont !== "string") gx.numberFont = "";
   settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
+  // Saved export profiles are a free list: each is completed with the usual choices.
+  const profiles = isObject(raw) && isObject(raw.export) && isObject(raw.export.profiles) ? raw.export.profiles : {};
+  settings.export.profiles = {};
+  for (const [name, value] of Object.entries(profiles)) {
+    if (!name.trim() || !isObject(value)) continue;
+    const base = defaultSettings(language).export;
+    const profile = merge<ExportProfile>({ format: base.format, cover: base.cover, docx: base.docx }, value);
+    if (!EXPORT_FORMATS.includes(profile.format)) profile.format = "docx";
+    settings.export.profiles[name] = profile;
+  }
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;
   settings.authors = Array.isArray(authors)
@@ -713,6 +733,12 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
       const gamebook = value as GamebookSettings;
       if (!gamebook.enabled && !doc.hasIn(["gamebook"])) return;
       doc.setIn(path, doc.createNode(gamebook));
+      return;
+    }
+    // Saved export profiles are written whole, so a deleted one leaves the file.
+    if (path.length === 2 && path[0] === "export" && path[1] === "profiles") {
+      if (Object.keys(value as object).length) doc.setIn(path, doc.createNode(value));
+      else doc.deleteIn(path);
       return;
     }
     if (path.length === 1 && path[0] === "properties") {

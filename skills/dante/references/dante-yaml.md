@@ -120,6 +120,8 @@ export:
     acknowledgements: ""
     colophon: ""
   revisions: accept             # pending CriticMarkup revisions: accept or reject in the export
+  profiles:                     # export choices saved under a name; each holds format, cover and docx as above
+    Per la stampa: { format: pdf, cover: true, docx: { profile: typeset, toc: true } }
 ```
 
 An Italian project has the same keys with Italian names and values where they are the writer's

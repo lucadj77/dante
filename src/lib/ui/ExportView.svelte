@@ -11,7 +11,7 @@
   import { coverSvg, svgUrl } from "$lib/core/cover";
   import { coverPicture, coverPng, imageToPng } from "./coverImage";
   import type { Project } from "$lib/core/project";
-  import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ExportProfile, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
   import { app, num, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
@@ -98,6 +98,34 @@
   // svelte-ignore state_referenced_locally
   let epubCss = $state(project.settings.export.epubCss.trim() ? project.settings.export.epubCss : EPUB_CSS);
 
+  // Export choices kept under a name ("For the publisher", "For print"), in the project.
+  // svelte-ignore state_referenced_locally
+  let profiles = $state<Record<string, ExportProfile>>(structuredClone($state.snapshot(project.settings.export.profiles)));
+  let profileName = $state("");
+  const present = (): ExportProfile => ({ format, cover: useCover, docx: $state.snapshot(options) });
+  /** The saved profile the page shows now, unchanged; "" when the choices differ from every one. */
+  const currentProfile = $derived.by(() => {
+    const now = JSON.stringify(present());
+    return Object.keys(profiles).find((name) => JSON.stringify(profiles[name]) === now) ?? "";
+  });
+  function applyProfile(name: string) {
+    const saved = profiles[name];
+    if (!saved) return;
+    options = structuredClone($state.snapshot(saved.docx));
+    format = saved.format === "pdf" && !inTauri() && project.fs instanceof BrowserFs ? "docx" : saved.format;
+    useCover = saved.cover;
+    profileName = name;
+  }
+  function saveProfile() {
+    const name = profileName.trim();
+    if (name) profiles = { ...profiles, [name]: present() };
+  }
+  function deleteProfile(name: string) {
+    const { [name]: _gone, ...rest } = profiles;
+    profiles = rest;
+    if (profileName === name) profileName = "";
+  }
+
   const FORMATS: Record<ExportFormat, { ext: string; name: string; mime: string }> = {
     docx: { ext: "docx", name: "Word", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
     pdf: { ext: "pdf", name: "PDF", mime: "application/pdf" },
@@ -121,6 +149,7 @@
     settings.export.format = format;
     settings.export.epubId = epubId;
     settings.export.cover = useCover;
+    settings.export.profiles = $state.snapshot(profiles);
     // The default stylesheet is not copied into the project, so later versions of Dante can improve it.
     settings.export.epubCss = epubCss.trim() === EPUB_CSS.trim() ? "" : epubCss;
     settings.structure = $state.snapshot(structure);
@@ -399,6 +428,22 @@
     </div>
     {#if folder}<p class="hint">{t("export.folderHint")}</p>{/if}
     {#if web}<p class="hint">{t("export.folderWeb", { path: whereIs(project.fs, EXPORT_FOLDER) })} {t("export.noPdfWeb")}</p>{/if}
+    <div class="profiles">
+      <label
+        >{t("export.saved")}
+        <select aria-label={t("export.saved")} value={currentProfile} onchange={(e) => applyProfile(e.currentTarget.value)}>
+          <option value="">{Object.keys(profiles).length ? t("export.savedChanged") : t("export.savedNone")}</option>
+          {#each Object.keys(profiles) as name (name)}<option value={name}>{name}</option>{/each}
+        </select>
+      </label>
+      <label
+        >{t("export.savedName")}
+        <input bind:value={profileName} placeholder={t("export.savedPlaceholder")} />
+      </label>
+      <button type="button" disabled={!profileName.trim() || currentProfile === profileName.trim()} onclick={saveProfile}>{t("export.savedSave")}</button>
+      {#if currentProfile}<button type="button" onclick={() => deleteProfile(currentProfile)}>{t("export.savedDelete")}</button>{/if}
+    </div>
+    <p class="hint">{t("export.savedHint")}</p>
     <div class="formats" role="radiogroup" aria-label={t("export.format")}>
       {#each EXPORT_FORMATS.filter((f) => !(web && f === "pdf")) as f (f)}
         <label class="format" class:chosen={format === f}>
@@ -879,5 +924,18 @@
   }
   .error {
     color: var(--danger);
+  }
+  .profiles {
+    margin-bottom: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+  }
+  .profiles label {
+    display: grid;
+    gap: 4px;
+    flex: 1 1 180px;
+    margin: 0;
   }
 </style>

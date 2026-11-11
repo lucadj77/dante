@@ -14,6 +14,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Riprendere una copia di sicurezza da Dante**: in Impostazioni > Copie di sicurezza c'è l'elenco delle copie; **Apri questa copia** la estrae in una cartella nuova accanto al romanzo e la apre, senza toccare il romanzo di adesso.
 - **Una proprietà a più scene insieme**: scegli più scene nell'albero (Cmd/Ctrl+clic), poi clic destro > **Imposta una proprietà alle scene…** per dare a tutte lo stesso valore, per esempio lo stato.
 - **Indice dei capitoli in Word e PDF**: nell'Esportazione la spunta **Indice dei capitoli** aggiunge l'indice di parti e capitoli con i numeri di pagina, dopo frontespizio, dedica ed esergo.
+- **Profili di esportazione salvati**: le scelte dell'Esportazione si salvano sotto un nome («Per l'editore», «Per la stampa») e si riprendono da un elenco, senza rifarle ogni volta.
 
 ### Cambiato
 
@@ -21,7 +22,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 - **Guida più ordinata**: il capitolo sui libri game è diviso in gruppi (preparare, leggere, scrivere, numerare, controllare, esportare) e i dettagli per chi sviluppa Dante sono usciti dalla guida.
 - **Barre sopra il testo più compatte**: nel Manoscritto le barre dei comandi occupano meno righe. In una finestra stretta i pulsanti mostrano solo l'icona (il nome resta nel suggerimento), «Dividi in scena» e «Dividi in capitolo» diventano icone e la dimensione del testo passa nel menu **Altro**.
 - **Finestre che rispondono subito alla tastiera**: Cestino, Sposta in…, conflitti, confronto delle istantanee, importazione e le finestre dei libri game prendono la tastiera appena si aprono: Esc le chiude senza dover prima fare clic, Tab resta dentro la finestra e alla chiusura si torna dov'eri.
-- **Nomi nella barra delle sezioni**: la barra a sinistra parte con i nomi accanto alle icone; **Nascondi i nomi**, in fondo, la riporta alle sole icone.
+- **Nomi nella barra delle sezioni**: in una finestra larga la barra a sinistra parte con i nomi accanto alle icone; **Nascondi i nomi**, in fondo, la riporta alle sole icone.
 - **Parole più chiare**: nelle Statistiche «Citazioni» diventa «Menzioni»; nei progetti nuovi in italiano il tipo «Plotline» si chiama «Trama»; «albero», «scheda», «collegamento» e «Risolto» sono usati allo stesso modo dappertutto.
 - **Meno numeri ripetuti**: con una sola scena a schermo il pannello Proprietà e la barra di stato non scrivono due volte lo stesso numero, e «Oggi» sta solo nella barra di stato quando è visibile.
 - **Bacheche**: le colonne si dividono lo spazio quando sono poche, e **Elimina questa vista** è dentro le impostazioni della vista invece che sempre in vista.

@@ -134,7 +134,7 @@ La finestra ha quattro zone, da sinistra a destra:
 
 ![L'area di lavoro con le quattro zone numerate](img/area-di-lavoro.png)
 
-1. **La barra delle sezioni**, con un'icona per ciascuna: Manoscritto, Bibbia, Note, Tabelle e bacheche, Statistiche, Esportazione, Impostazioni, oltre a Cerca, Aiuto, Cestino e Chiudi progetto. Accanto a ogni icona c'è il nome; **Nascondi i nomi**, in fondo alla barra, la stringe alle sole icone (nelle immagini di questa guida è così), e allora il nome compare passando col mouse.
+1. **La barra delle sezioni**, con un'icona per ciascuna: Manoscritto, Bibbia, Note, Tabelle e bacheche, Statistiche, Esportazione, Impostazioni, oltre a Cerca, Aiuto, Cestino e Chiudi progetto. In una finestra larga accanto a ogni icona c'è il nome; **Nascondi i nomi**, in fondo alla barra, la stringe alle sole icone (nelle immagini di questa guida è così, e così parte in una finestra stretta), e allora il nome compare passando col mouse. **Mostra i nomi** li riporta.
 2. **Il pannello a sinistra**: nel Manoscritto è l'albero di parti, capitoli e scene; nelle altre sezioni è l'elenco di note e file.
 3. **L'editor** al centro, dove scrivi.
 4. **Il pannello a destra**, con tre schede: **Proprietà** (dati della scena o nota, istantanee, statistiche), **Collegamenti** (le note che rimandano a questa e viceversa) e **Commenti**.
@@ -578,7 +578,7 @@ Per le scene singole, il pannello **Proprietà** mostra parole, caratteri e temp
 2. Scegli il **Formato**: **Word (DOCX)** da mandare ad agenti ed editori o per continuare a lavorarci; **PDF** pronto da leggere o stampare; **EPUB** per i lettori di ebook e i negozi online; **Markdown** per avere tutto il romanzo in un unico file di testo, da aprire con qualsiasi editor.
 3. Scegli **Cosa esportare**: tutto il romanzo o una sua parte.
 4. Scegli l'**Impaginazione**: **Manoscritto standard** (il formato che si invia a editori e agenti) oppure **Libro impaginato** (da leggere e stampare).
-5. Se vuoi, regola il resto: formato della pagina, font, corpo, interlinea, rientro, cosa mettere prima di parti, capitoli e scene, frontespizio, intestazione, dialoghi e tipografia, dedica, esergo, ringraziamenti e gli altri testi intorno al romanzo. In Word e in PDF **Indice dei capitoli** aggiunge, dopo le pagine iniziali, l'indice di parti e capitoli con i numeri di pagina; aprendo il file, Word chiede di aggiornare i campi: rispondi Sì, è così che l'indice si riempie.
+5. Se vuoi, regola il resto: formato della pagina, font, corpo, interlinea, rientro, cosa mettere prima di parti, capitoli e scene, frontespizio, intestazione, dialoghi e tipografia, dedica, esergo, ringraziamenti e gli altri testi intorno al romanzo. In Word e in PDF **Indice dei capitoli** aggiunge, dopo le pagine iniziali, l'indice di parti e capitoli con i numeri di pagina; aprendo il file, Word chiede di aggiornare i campi: rispondi Sì, è così che l'indice si riempie. Quando le scelte ti vanno bene, scrivi un nome in **Nome del profilo** e premi **Salva profilo**: da **Profilo salvato** le riprendi tutte in un colpo, per esempio «Per l'editore» e «Per la stampa».
 6. Decidi cosa fare delle **Revisioni in sospeso**: accettarle o rifiutarle tutte nel file esportato.
 7. Premi **Esporta**. Alla fine Dante dice quante parole (o caratteri, se il progetto misura in caratteri) e pagine ha esportato e offre **Apri il file** e **Mostra nella cartella**.
 

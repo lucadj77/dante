@@ -418,3 +418,21 @@ describe("table of contents", () => {
     expect(parseSettings("export:\n  docx:\n    toc: true\n").export.docx.toc).toBe(true);
   });
 });
+
+describe("saved export profiles", () => {
+  it("keeps them in dante.yaml, completes them, and removes a deleted one", async () => {
+    const { serializeSettings } = await import("../settings");
+    const settings = parseSettings("title: Test\nexport:\n  profiles:\n    Per la stampa:\n      format: pdf\n      docx:\n        profile: typeset\n        toc: true\n");
+    const saved = settings.export.profiles["Per la stampa"];
+    expect(saved.format).toBe("pdf");
+    expect(saved.docx.profile).toBe("typeset");
+    expect(saved.docx.toc).toBe(true);
+    // What the file leaves out is as usual.
+    expect(saved.docx.font).toBe(settings.export.docx.font);
+    expect(saved.cover).toBe(false);
+    const text = serializeSettings(settings, "title: Test\n");
+    expect(parseSettings(text).export.profiles).toEqual(settings.export.profiles);
+    settings.export.profiles = {};
+    expect(serializeSettings(settings, text)).not.toContain("profiles");
+  });
+});

@@ -286,3 +286,18 @@ test("sets a property on several scenes at once", async ({ page }) => {
     await expect(page.locator("aside.side").getByLabel("stato", { exact: true })).toHaveValue("rivista");
   }
 });
+
+test("saves the export choices as a profile and goes back to them", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="export"]').click();
+  const saved = page.getByRole("combobox", { name: "Profilo salvato" });
+  await page.locator("label.format", { hasText: "EPUB" }).click();
+  await page.getByLabel("Nome del profilo").fill("Per il lettore");
+  await page.getByRole("button", { name: "Salva profilo" }).click();
+  await expect(saved).toHaveValue("Per il lettore");
+  // Another choice: the page no longer shows the profile, until it is chosen again.
+  await page.locator("label.format", { hasText: "Word" }).click();
+  await expect(saved).toHaveValue("");
+  await saved.selectOption("Per il lettore");
+  await expect(page.getByRole("radio", { name: /EPUB/ })).toBeChecked();
+});

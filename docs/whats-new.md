@@ -14,6 +14,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Going back to a backup from Dante**: Settings > Backups lists the backups; **Open this backup** takes it out into a new folder beside the novel and opens it, without touching the novel as it is now.
 - **One property for several scenes**: choose several scenes in the tree (Cmd/Ctrl+click), then right click > **Set a property on the scenes…** to give all of them the same value, for example the status.
 - **Table of contents in Word and PDF**: in Export the box **Table of contents** adds the contents of parts and chapters with the page numbers, after title page, dedication and epigraph.
+- **Saved export profiles**: the choices of Export are saved under a name ("For the publisher", "For print") and taken up again from a list, without setting them every time.
 
 ### Changed
 
@@ -21,7 +22,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 - **Tidier guide**: the chapter on gamebooks is divided into groups (setting up, reading, writing, numbering, checking, exporting) and the details for those who develop Dante have left the guide.
 - **More compact bars above the text**: in the Manuscript the command bars take fewer rows. In a narrow window the buttons show only their icon (the name stays in the tooltip), "Split into scene" and "Split into chapter" become icons and the text size moves into the **More** menu.
 - **Windows that answer the keyboard at once**: Trash, Move to…, conflicts, snapshot comparison, import and the gamebook windows take the keyboard as soon as they open: Esc closes them without a click first, Tab stays inside the window and closing takes you back where you were.
-- **Names in the bar of the sections**: the bar on the left starts with the names beside the icons; **Hide names**, at the bottom, takes it back to the icons alone.
+- **Names in the bar of the sections**: in a wide window the bar on the left starts with the names beside the icons; **Hide names**, at the bottom, takes it back to the icons alone.
 - **Clearer words**: "tree", "card", "link" and "Resolved" are used the same way everywhere; in Italian, "Citazioni" in Statistics becomes "Menzioni" and the type "Plotline" of new projects is called "Trama".
 - **Fewer repeated numbers**: with a single scene on screen the Properties panel and the status bar do not write the same number twice, and "Today" stays only in the status bar when it is visible.
 - **Boards**: the columns share the space when they are few, and **Delete this view** is inside the settings of the view instead of always in sight.
