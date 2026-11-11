@@ -27,6 +27,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Clearer start screen**: three choices (new project, open folder, import), each with a line that says what it does; the sample project and the guide are below.
+- **Title of gamebook pages**: the Page button asks for the title at once, as for paragraphs.
 - **Guide reordered by task**: the chapters now follow what you do (starting, writing, organising, revising, publishing, safety and updates) and no longer the order in which features arrived; the "chapter N" references are updated. The chapters on the browser, help, look and gamebooks now have pictures.
 - **The same icons on every computer**: folders, files, warnings, gamebook padlocks and the comment bubble are now line drawings like the other icons, in place of emoji that changed between Mac and Windows. Emoji stay for Bible types and boxes, where you choose them.
 - **Finishing touches**: the Synopsis field looks like the other fields, board column names start with a capital and, if you asked the system to reduce motion, Dante turns its animations off.

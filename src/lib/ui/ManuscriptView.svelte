@@ -27,6 +27,7 @@
   import { dirname } from "$lib/core/path";
   import ShuffleDialog from "./ShuffleDialog.svelte";
   import TransferDialog from "./TransferDialog.svelte";
+  import Dialog from "./Dialog.svelte";
   import NewParagraphDialog from "./NewParagraphDialog.svelte";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
@@ -418,8 +419,19 @@
   /** In a gamebook: a page without a number (rules, an introduction), next to the selected paragraph's folder. */
   function newPage() {
     const node = selected ? findNode(selected) : null;
-    const dir = node?.kind === "scene" ? dirname(node.path) : (node?.path ?? tree.path);
-    void run(() => project.createPage(dir, t("gamebook.newPageTitle")), "start");
+    newPageIn = node?.kind === "scene" ? dirname(node.path) : (node?.path ?? tree.path);
+    newPageTitle = "";
+  }
+
+  /** The folder a new page is being named for; the title is asked first, as for a paragraph. */
+  let newPageIn = $state<string | null>(null);
+  let newPageTitle = $state("");
+
+  function createPage() {
+    const dir = newPageIn;
+    const title = newPageTitle.trim() || t("gamebook.newPageTitle");
+    newPageIn = null;
+    if (dir !== null) void run(() => project.createPage(dir, title), "start");
   }
 
   /** New scene in the selected chapter, or right after the selected scene. */
@@ -1201,6 +1213,27 @@
     </SidePanel>
 {/snippet}
 
+{#if newPageIn !== null}
+  <Dialog label={t("gamebook.newPage")} onClose={() => (newPageIn = null)} width={420}>
+    <form
+      class="page-form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        createPage();
+      }}
+    >
+      <h2>{t("gamebook.newPage")}</h2>
+      <!-- svelte-ignore a11y_autofocus -->
+      <label>{t("gamebook.pageTitle")} <input bind:value={newPageTitle} placeholder={t("gamebook.newPageTitle")} autofocus /></label>
+      <p class="muted">{t("gamebook.pageTitleHint")}</p>
+      <div class="page-actions">
+        <button type="button" onclick={() => (newPageIn = null)}>{t("tree.cancel")}</button>
+        <button type="submit" class="primary">{t("gamebook.new.create")}</button>
+      </div>
+    </form>
+  </Dialog>
+{/if}
+
 {#if newParagraphIn !== null}
   {@const scope = newParagraphIn}
   {@const book = noteIndex ? gamebookOf(noteIndex, project.settings) : null}
@@ -1514,5 +1547,28 @@
   .error {
     color: var(--danger);
     padding: 0 12px;
+  }
+  .page-form {
+    display: grid;
+    gap: 10px;
+  }
+  .page-form h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .page-form label {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .page-form .muted {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .page-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>

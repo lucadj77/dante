@@ -27,6 +27,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Schermata iniziale più chiara**: tre scelte (nuovo progetto, apri cartella, importa), ognuna con una riga che dice cosa fa; il progetto di esempio e la guida stanno sotto.
+- **Titolo delle pagine dei libri game**: il pulsante Pagina chiede subito il titolo, come per i paragrafi.
 - **Guida riordinata per compito**: i capitoli seguono ora quello che si fa (iniziare, scrivere, organizzare, rivedere, pubblicare, sicurezza e aggiornamenti) e non più l'ordine in cui le funzioni sono arrivate; i rimandi «capitolo N» sono aggiornati. I capitoli su browser, aiuto, aspetto e libri game hanno ora le immagini.
 - **Icone uguali su ogni computer**: cartelle, file, avvisi, lucchetti dei libri game e il fumetto dei commenti sono ora disegnati a tratto come il resto delle icone, al posto delle emoji che cambiavano tra Mac e Windows. Le emoji restano per i tipi della Bibbia e i box, dove le scegli tu.
 - **Rifiniture**: il campo Sinossi ha lo stesso aspetto degli altri campi, i nomi delle colonne in bacheca hanno l'iniziale maiuscola e, se nel sistema hai chiesto di ridurre le animazioni, Dante le spegne.

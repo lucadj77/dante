@@ -408,15 +408,24 @@
       {/if}
     </form>
   {:else}
-    <div class="actions">
+    <!-- Three ways to start, each with a line that says what it does. -->
+    <div class="choices">
       {#if folders}
-        <button class="primary" onclick={() => (creating = true)}>{t("welcome.new")}</button>
-        <button onclick={openFolder}>{t("welcome.open")}</button>
+        <button class="choice main" aria-label={t("welcome.new")} aria-describedby="welcome-new" onclick={() => (creating = true)}>
+          <strong>{t("welcome.new")}</strong><span id="welcome-new">{t("welcome.newHint")}</span>
+        </button>
+        <button class="choice" aria-label={t("welcome.open")} aria-describedby="welcome-open" onclick={openFolder}>
+          <strong>{t("welcome.open")}</strong><span id="welcome-open">{t("welcome.openHint")}</span>
+        </button>
       {/if}
-      <button onclick={() => (choosingImport = true)}>{t("import.other")}</button>
-      <button onclick={openSample}>{t("welcome.sample")}</button>
+      <button class="choice" aria-label={t("import.other")} aria-describedby="welcome-import" onclick={() => (choosingImport = true)}>
+        <strong>{t("import.other")}</strong><span id="welcome-import">{t("welcome.importHint")}</span>
+      </button>
     </div>
-    <p class="help-link"><button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button></p>
+    <p class="help-link">
+      <button onclick={openSample}>{t("welcome.sample")}</button>
+      <button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button>
+    </p>
     {#if !folders}
       <p class="note">{t("welcome.browser")}</p>
     {/if}
@@ -481,6 +490,34 @@
   p {
     color: var(--text-muted);
     line-height: 1.5;
+  }
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .choice {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    padding: 12px 14px;
+    text-align: left;
+    border-radius: 10px;
+  }
+  .choice strong {
+    font-size: 15px;
+  }
+  .choice span {
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--text-muted);
+  }
+  .choice.main {
+    border-color: var(--accent);
+  }
+  .choice.main strong {
+    color: var(--accent);
   }
   .actions {
     display: flex;
@@ -595,7 +632,11 @@
     font-size: 13px;
   }
   .help-link {
-    margin: 12px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin: 14px 0 0;
     font-size: 13px;
   }
   .destinations {
