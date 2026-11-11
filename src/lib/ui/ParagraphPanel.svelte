@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   // In a gamebook: the paragraph's number, where it comes from, where it leads, and what is
   // wrong with it.
   import { gamebookOf, paragraphMark, type ParagraphMark } from "$lib/core/gamebook/marks";
@@ -234,7 +235,7 @@
     {#if mark.warnings.length}
       <ul class="warnings">
         {#each mark.warnings as w (w)}
-          <li>⚠ {t(`gamebook.warning.${w}` as MessageKey)}</li>
+          <li><Icon name="warning" size={14} /> {t(`gamebook.warning.${w}` as MessageKey)}</li>
         {/each}
       </ul>
     {/if}

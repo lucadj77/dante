@@ -24,6 +24,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Icone uguali su ogni computer**: cartelle, file, avvisi, lucchetti dei libri game e il fumetto dei commenti sono ora disegnati a tratto come il resto delle icone, al posto delle emoji che cambiavano tra Mac e Windows. Le emoji restano per i tipi della Bibbia e i box, dove le scegli tu.
+- **Rifiniture**: il campo Sinossi ha lo stesso aspetto degli altri campi, i nomi delle colonne in bacheca hanno l'iniziale maiuscola e, se nel sistema hai chiesto di ridurre le animazioni, Dante le spegne.
 - **Progetti grandi più pronti**: dopo una modifica fatta da fuori, uno spostamento o un'impostazione salvata, l'app rilegge solo i file cambiati invece di tutte le note.
 - **Impostazioni riordinate**: al posto delle due schede c'è un elenco di pagine a sinistra, diviso tra «Questo romanzo» e «Dante su questo computer», con una casella per cercare un'impostazione. I temi si scelgono da piccoli disegni della finestra, e struttura, colori dell'albero, pagina e testo dell'editor hanno un'anteprima a fianco.
 - **Guida più ordinata**: il capitolo sui libri game è diviso in gruppi (preparare, leggere, scrivere, numerare, controllare, esportare) e i dettagli per chi sviluppa Dante sono usciti dalla guida.

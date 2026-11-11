@@ -4,6 +4,7 @@
 </script>
 
 <script lang="ts">
+  import Icon, { type IconName } from "./Icon.svelte";
   import Dialog from "./Dialog.svelte";
   // Moves or copies scenes, chapters, notes, files and folders to another section, or to a
   // precise place in the manuscript, without dragging: a tree of the destination to choose from.
@@ -32,7 +33,7 @@
     path: string;
     label: string;
     depth: number;
-    icon: string;
+    icon: IconName;
     /** A scene in the manuscript: something goes before or after it, not inside. */
     scene: boolean;
     disabled: boolean;
@@ -90,7 +91,7 @@
   const headingMap = headings(project.manuscript, project.settings);
 
   function manuscriptRows(): Row[] {
-    const rows: Row[] = [{ path: manuscriptRoot, label: t("section.manuscript"), depth: 0, icon: "📖", scene: false, disabled: false }];
+    const rows: Row[] = [{ path: manuscriptRoot, label: t("section.manuscript"), depth: 0, icon: "manuscript", scene: false, disabled: false }];
     const walk = (node: ManuscriptNode, depth: number) => {
       for (const child of node.children) {
         const scene = child.kind === "scene";
@@ -100,7 +101,7 @@
           path: child.path,
           label: (headingMap.get(child.path) ?? child.title).replace(/\n/g, " · "),
           depth,
-          icon: scene ? "·" : child.kind === "part" ? "▤" : "▢",
+          icon: scene ? "scene" : child.kind === "part" ? "part" : "chapter",
           scene,
           disabled: blocked(child.path),
         });
@@ -113,10 +114,10 @@
 
   function folderRows(root: string): Row[] {
     const rootLabel = t(`section.${section}` as MessageKey);
-    const rows: Row[] = [{ path: root, label: rootLabel, depth: 0, icon: "📁", scene: false, disabled: blocked(root) }];
+    const rows: Row[] = [{ path: root, label: rootLabel, depth: 0, icon: "folder", scene: false, disabled: blocked(root) }];
     const inside = project.folders.filter((f) => f !== root && isWithin(f, root)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
     for (const folder of inside) {
-      rows.push({ path: folder, label: basename(folder), depth: folder.slice(root.length + 1).split("/").length, icon: "📁", scene: false, disabled: blocked(folder) });
+      rows.push({ path: folder, label: basename(folder), depth: folder.slice(root.length + 1).split("/").length, icon: "folder", scene: false, disabled: blocked(folder) });
     }
     return rows;
   }
@@ -222,7 +223,7 @@
               void apply();
             }}
           >
-            <span class="icon" aria-hidden="true">{row.icon}</span>
+            <span class="icon"><Icon name={row.icon} size={14} /></span>
             <span class="label">{row.label}</span>
           </button>
         </li>

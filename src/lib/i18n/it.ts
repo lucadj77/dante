@@ -583,7 +583,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "comments.placeholder": "Scrivi un commento (⌘↵ per aggiungerlo)",
   "comments.add": "Commenta",
   "comments.noEditor": "Fai clic in una scena o in una nota per vederne i commenti.",
-  "comments.none": "Nessun commento o revisione qui. Seleziona del testo e premi 💬︎ (⌘⌥M) per commentare.",
+  "comments.none": "Nessun commento o revisione qui. Seleziona del testo e premi ⌘⌥M, o il fumetto nella barra, per commentare.",
   "comments.acceptAll": "Accetta tutte",
   "comments.rejectAll": "Rifiuta tutte",
   "comments.confirmAcceptAll": "Accettare tutte le {count} modifiche nel testo mostrato?",

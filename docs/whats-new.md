@@ -24,6 +24,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **The same icons on every computer**: folders, files, warnings, gamebook padlocks and the comment bubble are now line drawings like the other icons, in place of emoji that changed between Mac and Windows. Emoji stay for Bible types and boxes, where you choose them.
+- **Finishing touches**: the Synopsis field looks like the other fields, board column names start with a capital and, if you asked the system to reduce motion, Dante turns its animations off.
 - **Large projects respond sooner**: after a change made from outside, a move or a saved setting, the app reads again only the files that changed instead of every note.
 - **Settings rearranged**: instead of the two tabs there is a list of pages on the left, divided between "This novel" and "Dante on this computer", with a box to search for a setting. Themes are chosen from small drawings of the window, and structure, tree colours, page and editor text have a preview beside them.
 - **Tidier guide**: the chapter on gamebooks is divided into groups (setting up, reading, writing, numbering, checking, exporting) and the details for those who develop Dante have left the guide.

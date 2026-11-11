@@ -583,7 +583,7 @@ export const en = {
   "comments.placeholder": "Write a comment (⌘↵ to add)",
   "comments.add": "Comment",
   "comments.noEditor": "Click in a scene or note to see its comments.",
-  "comments.none": "No comments or revisions here. Select some text and press 💬︎ (⌘⌥M) to comment.",
+  "comments.none": "No comments or revisions here. Select some text and press ⌘⌥M, or the speech bubble in the bar, to comment.",
   "comments.acceptAll": "Accept all",
   "comments.rejectAll": "Reject all",
   "comments.confirmAcceptAll": "Accept all {count} changes in the text shown?",

@@ -1,6 +1,6 @@
 import { EditorSelection, Prec, StateField, type EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap, showTooltip, type Tooltip } from "@codemirror/view";
-import type { IconName } from "$lib/ui/Icon.svelte";
+import type { IconName } from "$lib/ui/icons";
 import { criticHandler } from "./critic";
 import { toggleAlign } from "./alignment";
 import { chooseImages } from "./images";
@@ -287,14 +287,14 @@ export const ICONS: Record<Action, { text: string; style?: string; icon?: IconNa
   alignCenter: { text: "≡", icon: "alignCenter" },
   alignRight: { text: "≡", icon: "alignRight" },
   code: { text: "</>", style: "font-family: ui-monospace, monospace; font-size: 12px" },
-  link: { text: "🔗︎" },
+  link: { text: "∞", icon: "link" },
   wikilink: { text: "[[ ]]", style: "font-size: 12px" },
   footnote: { text: "x¹", style: "font-family: Georgia, serif; font-size: 13px" },
   separator: { text: "✱✱✱", style: "font-size: 10px; letter-spacing: 1px" },
   blankLine: { text: "¶", style: "font-family: Georgia, serif; opacity: .75" },
   table: { text: "▦", icon: "table" },
-  image: { text: "🖼︎", icon: "image" },
-  comment: { text: "💬︎" },
+  image: { text: "▣", icon: "image" },
+  comment: { text: "✎", icon: "comment" },
 };
 
 export type FormattingLabels = Record<Action, string>;

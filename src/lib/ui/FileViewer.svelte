@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  import type { IconName } from "./icons";
   const IMAGES: Record<string, string> = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
@@ -24,8 +25,8 @@
     return "other";
   }
 
-  export function fileIcon(path: string): string {
-    return { note: "📄", image: "🖼", pdf: "📕", html: "🌐", text: "📃", other: "📎" }[fileKind(path)];
+  export function fileIcon(path: string): IconName {
+    return ({ note: "notes", image: "image", pdf: "pdf", html: "web", text: "scene", other: "attach" } as const)[fileKind(path)];
   }
 
   export function mimeType(path: string): string {

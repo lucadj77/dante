@@ -1,5 +1,6 @@
 import { EditorState, Facet, Prec, RangeSetBuilder, StateField, Transaction, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, keymap, WidgetType, type DecorationSet } from "@codemirror/view";
+import { iconElement } from "$lib/ui/icons";
 import { discussion, parseCritic, today, trackChange, type CriticItem } from "$lib/core/critic";
 
 /** What the editor asks of the interface about comments. */
@@ -62,7 +63,8 @@ class Bubble extends WidgetType {
   toDOM(view: EditorView) {
     const el = document.createElement("span");
     el.className = "cm-critic-bubble";
-    el.textContent = this.count > 1 ? `💬︎${this.count}` : "💬︎";
+    el.append(iconElement("comment", 14));
+    if (this.count > 1) el.append(String(this.count));
     el.title = this.title;
     el.addEventListener("mousedown", (e) => {
       e.preventDefault();

@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import type { ManuscriptNode } from "$lib/core/manuscript";
   import type { PageUnit } from "$lib/core/settings";
   import type { TreeMark } from "$lib/core/statistics";
@@ -175,14 +176,14 @@
           class="num"
           class:fixed={para.numberType === "fixed"}
           class:relative={para.numberType === "relative"}
-          title={t(`gamebook.type.${para.numberType}` as MessageKey)}>{para.numberType === "fixed" ? "🔒" : para.numberType === "relative" ? "⚓" : ""}{para.number}</span
+          title={t(`gamebook.type.${para.numberType}` as MessageKey)}>{#if para.numberType === "fixed"}<Icon name="lock" size={11} />{:else if para.numberType === "relative"}<Icon name="anchor" size={11} />{/if}{para.number}</span
         >
       {:else if p.game && isScene}
-        <span class="num page" title={t("gamebook.pageHint")}>📄</span>
+        <span class="num page" title={t("gamebook.pageHint")}><Icon name="notes" size={13} /></span>
       {/if}
       <span class="label" class:empty-paragraph={para?.empty} title={para?.empty ? t("gamebook.empty") : undefined}>{label}</span>
       {#if para && para.warnings.length}
-        <span class="warning" title={warningText} aria-label={warningText}>⚠</span>
+        <span class="warning" title={warningText} role="img" aria-label={warningText}><Icon name="warning" size={13} /></span>
       {/if}
       {#if para}
         <span class="length {para.band}" title={tu("gamebook.length", p.unit, { n: num(para.length) })}>{num(para.length)}</span>

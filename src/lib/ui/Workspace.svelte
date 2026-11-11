@@ -734,7 +734,7 @@
         <h1 class="section-name">{section === "files" ? filesRoot || project.settings.title : t(`section.${section}`)}</h1>
         {#if conflicts.length}
           <button class="conflicts" title={t("tip.conflicts")} onclick={() => (showConflicts = true)}
-            >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
+            ><Icon name="warning" size={14} /> {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
           >
         {/if}
         {#if recovered}

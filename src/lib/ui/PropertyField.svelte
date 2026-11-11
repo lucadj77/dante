@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import { coerce, problem, type PropertyDef } from "$lib/core/properties";
   import { t } from "$lib/state.svelte";
   import PropertyInput from "./PropertyInput.svelte";
@@ -98,7 +99,7 @@
       {#each p.def.values as v (v)}
         <option value={v}>{v}</option>
       {/each}
-      {#if text && issue}<option value={text}>{text} ⚠</option>{/if}
+      {#if text && issue}<option value={text}>{text} ⚠︎</option>{/if}
     </select>
   {:else if p.def?.kind === "list" && p.def.values.length}
     <div class="chips" role="group" aria-label={p.name}>
@@ -106,7 +107,7 @@
         <button type="button" class="chip" aria-pressed={has(v)} onclick={() => toggle(v)}>{v}</button>
       {/each}
       {#each listed.filter((v) => !p.def!.values.some((x) => x.toLowerCase() === v.toLowerCase())) as v (v)}
-        <button type="button" class="chip odd" aria-pressed="true" title={t("property.notAllowed")} onclick={() => toggle(v)}>{v} ⚠</button>
+        <button type="button" class="chip odd" aria-pressed="true" title={t("property.notAllowed")} onclick={() => toggle(v)}>{v} <Icon name="warning" size={12} /></button>
       {/each}
     </div>
   {:else}

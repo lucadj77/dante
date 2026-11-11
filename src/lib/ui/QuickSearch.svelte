@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import type { SearchResult } from "$lib/core/notes";
   import { dirname, isWithin } from "$lib/core/path";
   import type { Project } from "$lib/core/project";
@@ -102,7 +103,7 @@
       {#each results as r (r.path)}
         <li>
           <button onclick={(e) => (p.beside || e.altKey ? openResult(r.path, true) : (preview = r.path))} title={r.path}>
-            <span class="title"><span aria-hidden="true">{fileIcon(r.path)}</span> {r.title}</span>
+            <span class="title"><Icon name={fileIcon(r.path)} size={14} /> {r.title}</span>
             <span class="where">{dirname(r.path)}</span>
             {#if r.snippet}<span class="snippet">{r.snippet}</span>{/if}
           </button>

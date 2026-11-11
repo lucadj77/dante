@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import Dialog from "./Dialog.svelte";
   // In a gamebook: shuffles the paragraphs' numbers, with a preview, the numbers written in
   // the prose to look at again, and the earlier operations to undo.
@@ -121,7 +122,7 @@
                 <td class="n muted">{r.paragraph.number}</td>
                 <td>
                   {r.paragraph.title}
-                  {#if r.paragraph.numberType === "fixed" || (r.paragraph.numberType === "free" && r.paragraph.number === start)}<span class="tag">🔒</span>{/if}
+                  {#if r.paragraph.numberType === "fixed" || (r.paragraph.numberType === "free" && r.paragraph.number === start)}<span class="tag"><Icon name="lock" size={12} /></span>{/if}
                   {#if r.paragraph.numberType === "relative"}<span class="tag">↳ {r.paragraph.anchor}</span>{/if}
                 </td>
               </tr>
@@ -131,7 +132,7 @@
       </div>
     {:else}
       <ul class="errors">
-        {#each result.errors as e, i (i)}<li>⚠ {describe(e)}</li>{/each}
+        {#each result.errors as e, i (i)}<li><Icon name="warning" size={14} /> {describe(e)}</li>{/each}
       </ul>
     {/if}
 

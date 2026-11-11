@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import Dialog from "./Dialog.svelte";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
@@ -88,7 +89,7 @@
         {#each items as item (item.path)}
           <li>
             <div class="what">
-              <span class="name">{item.isDir ? "📁 " : ""}{shown(item)}</span>
+              <span class="name">{#if item.isDir}<Icon name="folder" size={14} /> {/if}{shown(item)}</span>
               <span class="from">
                 {#if item.from}{t("trash.from", { path: place(item.from) || "/" })}{:else}{t("trash.unknown")}{/if}{#if item.date}
                   · {dateFormat.format(new Date(item.date))}{/if}

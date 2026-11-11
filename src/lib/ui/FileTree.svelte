@@ -34,6 +34,7 @@
 </script>
 
 <script lang="ts">
+  import Icon from "./Icon.svelte";
   import { tick } from "svelte";
   import { t } from "$lib/state.svelte";
   import { fileIcon } from "./FileViewer.svelte";
@@ -180,7 +181,7 @@
         }}
       >
         <span class="twisty" aria-hidden="true">{node.dir ? (expanded.has(node.path) ? "▾" : "▸") : ""}</span>
-        <span class="icon" aria-hidden="true">{node.dir ? "📁" : (p.icon?.(node.path) ?? fileIcon(node.path))}</span>
+        <span class="icon" aria-hidden="true">{#if node.dir}<Icon name="folder" size={15} />{:else if p.icon?.(node.path)}{p.icon(node.path)}{:else}<Icon name={fileIcon(node.path)} size={15} />{/if}</span>
         {#if p.renaming === node.path}
           <input
             class="rename"
