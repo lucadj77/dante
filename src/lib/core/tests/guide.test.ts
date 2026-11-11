@@ -55,11 +55,27 @@ describe("guide", () => {
     expect(page.html).not.toContain("javascript:");
   });
 
-  it("reads the whole guide, with every chapter of the index", () => {
-    const md = readFileSync(new URL("../../../../docs/guida.md", import.meta.url), "utf8");
+  const read = (file: string) => readFileSync(new URL(`../../../../docs/${file}`, import.meta.url), "utf8");
+
+  it.each(["guida.md", "guide.md"])("reads the whole of %s, with every chapter of the index", (file) => {
+    const md = read(file);
     const page = guideToHtml(md, { image: (src) => src });
     const ids = new Set(page.headings.map((h) => h.id));
     for (const [, anchor] of md.matchAll(/\]\(#([^)]+)\)/g)) expect(ids.has(decodeURIComponent(anchor))).toBe(true);
     expect(page.html.replace(/<code>[^<]*<\/code>/g, "")).not.toMatch(/\*\*|\]\(/);
+  });
+
+  it("keeps the English guide in step with the Italian one", () => {
+    const shape = (file: string) => {
+      const md = read(file);
+      return {
+        chapters: [...md.matchAll(/^## (\d+)\. /gm)].map((m) => m[1]),
+        sections: [...md.matchAll(/^### /gm)].length,
+        images: [...md.matchAll(/img\/[\w-]+\.png/g)].map((m) => m[0]),
+        bullets: [...md.matchAll(/^ *- /gm)].length,
+        rows: [...md.matchAll(/^\|/gm)].length,
+      };
+    };
+    expect(shape("guide.md")).toEqual(shape("guida.md"));
   });
 });

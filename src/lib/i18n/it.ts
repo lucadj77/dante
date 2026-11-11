@@ -1015,7 +1015,6 @@ export const it: Partial<Record<MessageKey, string>> = {
   "help.news": "Novità",
   "help.chapters": "Capitoli",
   "help.close": "Chiudi",
-  "help.italianOnly": "La guida completa per ora è solo in italiano.",
   "help.loading": "Caricamento…",
   "help.top": "Torna su",
   "welcome.help": "Primi passi e guida",

@@ -11,6 +11,7 @@
     "primi-passi.md": () => import("../../../docs/primi-passi.md?raw"),
     "first-steps.md": () => import("../../../docs/first-steps.md?raw"),
     "guida.md": () => import("../../../docs/guida.md?raw"),
+    "guide.md": () => import("../../../docs/guide.md?raw"),
     "novita.md": () => import("../../../docs/novita.md?raw"),
     "whats-new.md": () => import("../../../docs/whats-new.md?raw"),
   };
@@ -22,10 +23,10 @@
   const english = $derived(!app.settings.language.startsWith("it"));
   const files = $derived<Record<HelpPage, string>>({
     first: english ? "first-steps.md" : "primi-passi.md",
-    guide: "guida.md",
+    guide: english ? "guide.md" : "guida.md",
     news: english ? "whats-new.md" : "novita.md",
   });
-  const pageOf = (file: string): HelpPage | null => (Object.entries(files).find(([, f]) => f === file)?.[0] as HelpPage) ?? (file === "guida.md" ? "guide" : null);
+  const pageOf = (file: string): HelpPage | null => (Object.entries(files).find(([, f]) => f === file)?.[0] as HelpPage) ?? (file === "guida.md" || file === "guide.md" ? "guide" : null);
 
   let page = $state.raw<GuidePage | null>(null);
   let content = $state<HTMLElement>();
@@ -112,7 +113,6 @@
     <button class="close" aria-label={t("help.close")} title={t("help.close")} onclick={() => (help.open = false)}><Icon name="cross" /></button>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <article bind:this={content} onclick={click}>
-      {#if help.page === "guide" && english}<p class="note">{t("help.italianOnly")}</p>{/if}
       {#if page}
         <!-- Made by guideToHtml from Dante's own pages, with everything else escaped. -->
         {@html page.html}

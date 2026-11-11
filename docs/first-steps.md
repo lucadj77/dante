@@ -1,6 +1,6 @@
 # First steps
 
-Your first novel in Dante, in ten minutes. Shortcuts are written first as on a Mac, then as on Windows and Linux, for example Cmd+Enter / Ctrl+Enter. The full guide is in Italian for now: [Guida](guida.md).
+Your first novel in Dante, in ten minutes. Shortcuts are written first as on a Mac, then as on Windows and Linux, for example Cmd+Enter / Ctrl+Enter. Everything else is in the [full guide](guide.md).
 
 1. **Create the project.** On the start screen press **New project**, write the title, press **Choose a folder…** and then **Create**. Dante makes a folder named after the novel, with a first chapter and a first scene. To just look around, press **Try the sample project** instead.
 2. **Write.** Click in the scene and write. Dante saves as you type: there is no Save button.
