@@ -32,7 +32,7 @@
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
   import { linkTarget, resolveAlias, resolveLink } from "$lib/core/wikilinks";
   import LinkMenu, { type LinkMenuRequest } from "./LinkMenu.svelte";
-  import { bibleNames, NameMatcher } from "$lib/core/mentions";
+  import { bibleNames, knownWords, NameMatcher } from "$lib/core/mentions";
   import { NAMES_EVENT } from "$lib/editor/mentions";
   import { imageMime, nameFromUrl, resolveImagePath, sniffImage } from "$lib/core/images";
   import type { LinkSuggestion } from "$lib/editor/links";
@@ -162,11 +162,15 @@
   let index = $state.raw<NoteIndex | null>(null);
   /** The names of the Story Bible the editors underline; rebuilt with the index. */
   let names: NameMatcher | null = null;
+  /** The words the spelling checker leaves alone: those names and the novel's own words. */
+  let known: Set<string> | null = null;
   $effect(() => {
     void rev;
     void project.index().then((i) => {
       index = i;
-      names = new NameMatcher(bibleNames(i, project.settings));
+      const found = bibleNames(i, project.settings);
+      names = new NameMatcher(found);
+      known = knownWords(found, project.settings.dictionary);
       window.dispatchEvent(new Event(NAMES_EVENT));
     });
   });
@@ -255,6 +259,7 @@
         linkMenu = { target, from, path: linked(target, from), x: at.x, y: at.y, edit };
       },
       names: () => (app.settings.namedNotes && names ? { matcher: names, own: from } : null),
+      knownWords: () => known,
       named(found, at, link) {
         const target = linkTarget(found.path, from, project.files);
         linkMenu = { target, from, path: found.path, x: at.x, y: at.y, edit: () => {}, named: { name: found.name, link: () => link(target) } };

@@ -39,3 +39,21 @@ describe("names of the Story Bible in the text", () => {
     expect(matcher.find("Anna e Bruno").map((f) => f.name)).toEqual(["Bruno"]);
   });
 });
+
+describe("the novel's own words", () => {
+  it("takes the words of names and aliases, and those the writer added", async () => {
+    const { knownWords, findKnownWords } = await import("../mentions");
+    const known = knownWords([{ name: "Lucia Mondella", path: "a", type: "character" }, { name: "l'Innominato", path: "b", type: "character" }], ["bravi", "Pescarenico"]);
+    expect([...known].sort()).toEqual(["Innominato", "Lucia", "Mondella", "Pescarenico", "bravi"]);
+    const text = "Lucia vide i bravi dell'Innominato; lucia no.";
+    expect(findKnownWords(text, known).map((r) => text.slice(r.from, r.to))).toEqual(["Lucia", "bravi", "Innominato"]);
+  });
+
+  it("is kept in dante.yaml, and leaves it when empty", async () => {
+    const { parseSettings, serializeSettings } = await import("../settings");
+    const settings = parseSettings("title: T\ndictionary:\n  - bravi\n  - bravi\n  - ' Pescarenico '\n");
+    expect(settings.dictionary).toEqual(["bravi", "Pescarenico"]);
+    expect(serializeSettings(settings, "title: T\n")).toContain("dictionary:\n  - bravi\n  - Pescarenico");
+    expect(serializeSettings({ ...settings, dictionary: [] }, "title: T\ndictionary:\n  - bravi\n")).not.toContain("dictionary");
+  });
+});

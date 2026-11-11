@@ -82,7 +82,7 @@
     { id: "you", group: "app", title: "settings.sec.you", keys: ["settings.userName", "settings.userNameHint", "comments.revisionMode", "settings.interfaceLanguage"] },
     { id: "appearance", group: "app", title: "appearance.title", keys: ["settings.theme", "settings.themeLight", "settings.themeSepia", "settings.themeDark", "settings.themeNight", "appearance.accent", "appearance.uiZoom"] },
     { id: "text", group: "app", title: "appearance.page", keys: ["settings.font", "settings.fontSize", "settings.lineWidth", "appearance.lineHeight", "appearance.gap", "appearance.indent", "appearance.justify"] },
-    { id: "writing", group: "app", title: "toolbar.writing", keys: ["appearance.paragraphs", "appearance.paragraphsHint", "appearance.askBlankLines", "appearance.spelling", "appearance.spellcheck"] },
+    { id: "writing", group: "app", title: "toolbar.writing", keys: ["appearance.paragraphs", "appearance.paragraphsHint", "appearance.askBlankLines", "appearance.spelling", "appearance.spellcheck", "dictionary.title", "dictionary.hint"] },
     { id: "backup", group: "app", title: "backup.title", keys: ["backup.hint", "backup.folder", "backup.onClose", "backup.keep", "backup.now", "backup.download"] },
     { id: "updates", group: "app", title: "settings.sec.updates", keys: ["update.title", "update.atStart", "update.channel", "update.check", "support.title", "support.hint", "support.copy"] },
   ];
@@ -284,6 +284,14 @@
     } catch (e) {
       error = failure(e);
     }
+  }
+
+  /** A word being added to the novel's dictionary. */
+  let newWord = $state("");
+  function addWords() {
+    const words = newWord.split(/[\s,;]+/).filter((w) => w && !novel.dictionary.includes(w));
+    if (words.length) novel.dictionary = [...novel.dictionary, ...new Set(words)];
+    newWord = "";
   }
 
   /** Writes the novel's settings as `text` has them. */
@@ -640,6 +648,31 @@
         <h3>{t("appearance.spelling")}</h3>
         <label class="check"><input type="checkbox" checked={app.settings.spellcheck} onchange={(e) => setApp({ spellcheck: e.currentTarget.checked })} /> {t("appearance.spellcheck")}</label>
         <p class="hint">{t("appearance.spellcheckHint")}</p>
+        <h3>{t("dictionary.title")}</h3>
+        <p class="hint">{t("dictionary.hint")}</p>
+        <div class="define">
+          <input
+            bind:value={newWord}
+            aria-label={t("dictionary.word")}
+            placeholder={t("dictionary.word")}
+            onkeydown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              addWords();
+            }}
+          />
+          <button type="button" disabled={!newWord.trim()} onclick={addWords}>{t("dictionary.add")}</button>
+        </div>
+        {#if novel.dictionary.length}
+          <ul class="words" aria-label={t("dictionary.title")}>
+            {#each novel.dictionary as word (word)}
+              <li>
+                {word}
+                <button type="button" title={t("dictionary.remove", { word })} aria-label={t("dictionary.remove", { word })} onclick={() => (novel.dictionary = novel.dictionary.filter((w) => w !== word))}>×</button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
     {:else if section === "backup"}
       <div class="fields">
@@ -1071,5 +1104,29 @@
       border-right: none;
       border-bottom: 1px solid var(--border);
     }
+  }
+  .words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .words li {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  .words button {
+    min-width: 0;
+    padding: 0 6px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
   }
 </style>

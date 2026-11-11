@@ -14,6 +14,7 @@ change them from the project.
 title: The Return
 subtitle: ""
 authors: [Ada Rossi]            # one name each, in cover order
+dictionary: [Pescarenico]       # words the spelling checker leaves alone (Story Bible names already are)
 language: en                    # the book's language: dictionaries, hyphenation, quotes, labels
 folders:
   codex: Story Bible

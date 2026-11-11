@@ -257,6 +257,8 @@ export interface NovelSettings {
   authors: string[];
   /** Language of the novel (not of the interface), as a BCP 47 code. */
   language: string;
+  /** Words of this novel the spelling checker leaves alone, besides the names of the Story Bible. */
+  dictionary: string[];
   folders: {
     codex: string;
     research: string;
@@ -522,6 +524,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     title: "",
     subtitle: "",
     authors: [],
+    dictionary: [],
     language,
     folders: defaultFolders(language),
     types: defaultTypes(language),
@@ -675,6 +678,8 @@ export function parseSettings(text: string): NovelSettings {
     : isObject(raw) && typeof raw.author === "string"
       ? authorsOf(raw.author)
       : [];
+  const dictionary = isObject(raw) ? raw.dictionary : undefined;
+  settings.dictionary = Array.isArray(dictionary) ? [...new Set(dictionary.filter((w): w is string => typeof w === "string").map((w) => w.trim()).filter(Boolean))] : [];
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
@@ -738,6 +743,12 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
     // Saved export profiles are written whole, so a deleted one leaves the file.
     if (path.length === 2 && path[0] === "export" && path[1] === "profiles") {
       if (Object.keys(value as object).length) doc.setIn(path, doc.createNode(value));
+      else doc.deleteIn(path);
+      return;
+    }
+    // The novel's own words leave the file with the last of them.
+    if (path.length === 1 && path[0] === "dictionary") {
+      if ((value as string[]).length) doc.setIn(path, doc.createNode(value));
       else doc.deleteIn(path);
       return;
     }

@@ -1,6 +1,6 @@
 import { RangeSetBuilder, StateEffect } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
-import type { NameFound, NameMatcher } from "$lib/core/mentions";
+import { findKnownWords, type NameFound, type NameMatcher } from "$lib/core/mentions";
 import { linkHandler } from "./links";
 
 /** Sent on the window when the names change, or the underlining is turned on or off. */
@@ -79,9 +79,46 @@ const highlighter = ViewPlugin.fromClass(
   },
 );
 
+const known = Decoration.mark({ attributes: { spellcheck: "false" } });
+
+/** The novel's names and words in the visible text, kept from the spelling checker. */
+function buildKnown(view: EditorView): DecorationSet {
+  const words = view.state.facet(linkHandler)?.knownWords?.();
+  const builder = new RangeSetBuilder<Decoration>();
+  if (!words?.size) return builder.finish();
+  for (const { from, to } of view.visibleRanges) {
+    const start = view.state.doc.lineAt(from);
+    const end = view.state.doc.lineAt(to);
+    for (let n = start.number; n <= end.number; n++) {
+      const line = view.state.doc.line(n);
+      for (const found of findKnownWords(line.text, words)) builder.add(line.from + found.from, line.from + found.to, known);
+    }
+  }
+  return builder.finish();
+}
+
+const knownWords = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    private listener = () => this.view.dispatch({ effects: refresh.of(null) });
+    constructor(readonly view: EditorView) {
+      this.decorations = buildKnown(view);
+      window.addEventListener(NAMES_EVENT, this.listener);
+    }
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged || update.transactions.some((tr) => tr.effects.some((e) => e.is(refresh)))) this.decorations = buildKnown(update.view);
+    }
+    destroy() {
+      window.removeEventListener(NAMES_EVENT, this.listener);
+    }
+  },
+  { decorations: (plugin) => plugin.decorations },
+);
+
 /** Dotted underlining of the names of the Story Bible, with their menu on a right click. */
 export const namedNotes = [
   highlighter,
+  knownWords,
   EditorView.baseTheme({
     ".md-named": { textDecorationLine: "underline", textDecorationStyle: "dotted", textDecorationColor: "var(--text-muted, #888)", textUnderlineOffset: "3px" },
   }),
