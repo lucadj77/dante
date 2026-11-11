@@ -194,6 +194,48 @@ describe("project", () => {
   });
 });
 
+describe("interrupted moves", () => {
+  /** A file system whose renames stop working after a number of them, as when Dante is closed. */
+  function failing(after: number) {
+    const fs = sample();
+    const rename = fs.rename.bind(fs);
+    let made = 0;
+    let broken = true;
+    fs.rename = async (from, to) => {
+      if (broken && made++ >= after) throw new Error("closed");
+      await rename(from, to);
+    };
+    return { fs, mend: () => (broken = false) };
+  }
+
+  it("puts the files back when the renames had not reached their new names", async () => {
+    const { fs, mend } = failing(1);
+    const p = await Project.open(fs);
+    const before = paths(p);
+    await expect(p.move("Manuscript/010 Return", "Manuscript", 3)).rejects.toThrow("closed");
+    // The chapter is under a temporary name that the tree does not show.
+    expect(paths(await Project.open(fs)).length).toBeLessThan(before.length);
+    mend();
+    const again = await Project.open(fs);
+    expect(again.recovered).toBe("undone");
+    expect(paths(again)).toEqual(before);
+    expect(fs.files.has(".dante/moves.json")).toBe(false);
+    expect((await Project.open(fs)).recovered).toBe(null);
+  });
+
+  it("finishes the job when the files had their new names already", async () => {
+    const { fs, mend } = failing(2);
+    const p = await Project.open(fs);
+    await expect(p.move("Manuscript/010 Return", "Manuscript", 3)).rejects.toThrow("closed");
+    mend();
+    const again = await Project.open(fs);
+    expect(again.recovered).toBe("completed");
+    expect(again.node("Manuscript/030 Return").notePath).toBe("Manuscript/030 Return/030 Return.md");
+    expect(fs.files.get("Codex/Marta.md")).toBe("Seen in [[010 Arrival]] and [[020 House|the house]].");
+    expect(fs.files.has(".dante/moves.json")).toBe(false);
+  });
+});
+
 describe("new project", () => {
   it("creates settings, section folders and a first scene in the novel's language", async () => {
     const fs = new MemoryFs({});

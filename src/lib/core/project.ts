@@ -97,6 +97,19 @@ export function canRenameProperty(settings: NovelSettings, name: string): boolea
 
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules", EXPORT_FOLDER]);
 
+/** The reordering under way, kept on disk until it is finished. */
+const MOVE_JOURNAL = ".dante/moves.json";
+interface MoveJournal {
+  /** Every file of the project before the moves, for the links. */
+  before: string[];
+  moves: Move[];
+  /** The snapshots' folders that follow their scenes, once known. */
+  snapshots?: Move[];
+  /** The steps completed: "files", "snapshots", "history". */
+  done: string[];
+}
+const tempName = (m: Move, i: number) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`);
+
 /** Scenes cannot be merged while one of them has a conflict copy to settle. */
 export class MergeConflictError extends Error {
   constructor(public path: string) {
@@ -141,6 +154,8 @@ export class Project {
   /** Scenes already copied to a snapshot in this session. */
   private snapshotted = new Set<string>();
   private indexing: Promise<NoteIndex> | null = null;
+  /** Set when opening found a reordering cut short: it was undone, or brought to its end. */
+  recovered: "undone" | "completed" | null = null;
 
   /**
    * @param language Language of a project that has no settings file yet, usually the
@@ -205,6 +220,11 @@ export class Project {
 
   static async open(fs: ProjectFs, language = "en"): Promise<Project> {
     const project = new Project(fs, language);
+    try {
+      project.recovered = await project.recoverMoves();
+    } catch {
+      // A folder that cannot be written now opens all the same: the journal waits for next time.
+    }
     await project.reload();
     return project;
   }
@@ -1410,6 +1430,141 @@ export class Project {
     return this.conflicts.filter((c) => c.original === path).map((c) => c.path);
   }
 
+  private async writeJournal(journal: MoveJournal): Promise<void> {
+    await this.fs.writeText(MOVE_JOURNAL, JSON.stringify(journal));
+  }
+
+  /** Two passes through temporary names, so that swapping two names never collides. */
+  private async twoPass(moves: Move[]): Promise<void> {
+    const temps = moves.map(tempName);
+    for (let i = 0; i < moves.length; i++) await this.fs.rename(moves[i].from, temps[i]);
+    for (let i = 0; i < moves.length; i++) await this.fs.rename(temps[i], moves[i].to);
+  }
+
+  /**
+   * Settles renames that stopped between the two passes. With the first temporary name still
+   * there the second pass had not begun, and everything goes back where it was; without it the
+   * second pass was under way, and it is completed. Returns whether the renames are all made.
+   */
+  private async settle(moves: Move[]): Promise<boolean> {
+    const temps = moves.map(tempName);
+    const waiting: boolean[] = [];
+    for (const temp of temps) waiting.push(await this.fs.exists(temp));
+    if (!waiting.some(Boolean)) {
+      // No temporary name left: either nothing had started, or everything was renamed a moment
+      // before the journal could say so. A name that is gone, with the new ones all there, tells.
+      let arrived = true;
+      let left = false;
+      for (const m of moves) {
+        if (!(await this.fs.exists(m.to))) arrived = false;
+        if (!(await this.fs.exists(m.from))) left = true;
+      }
+      return moves.length > 0 && arrived && left;
+    }
+    const forward = !waiting[0];
+    for (let i = 0; i < moves.length; i++) {
+      if (!waiting[i]) continue;
+      const target = forward ? moves[i].to : moves[i].from;
+      // Never over a file that is there: the temporary name stays, to be looked at by hand.
+      if (!(await this.fs.exists(target))) await this.fs.rename(temps[i], target);
+    }
+    return forward;
+  }
+
+  /**
+   * Finishes or undoes a reordering that was interrupted, when the project opens.
+   * Returns what was done, for the notice shown to the writer.
+   */
+  private async recoverMoves(): Promise<"undone" | "completed" | null> {
+    if (!(await this.fs.exists(MOVE_JOURNAL))) return null;
+    let journal: MoveJournal | null = null;
+    try {
+      const read = JSON.parse(await this.fs.readText(MOVE_JOURNAL)) as MoveJournal;
+      if (Array.isArray(read.moves) && Array.isArray(read.before) && Array.isArray(read.done)) journal = read;
+    } catch {
+      // An unreadable journal says nothing: it is dropped below.
+    }
+    let result: "undone" | "completed" | null = null;
+    if (journal) {
+      if (!journal.done.includes("files")) {
+        // Nothing to settle means the renames had not started, or had all been made a moment
+        // before the journal said so: the files are where they should be either way.
+        if (await this.settle(journal.moves)) journal.done.push("files");
+        else result = "undone";
+      }
+      if (journal.done.includes("files")) {
+        if (journal.snapshots && !journal.done.includes("snapshots")) {
+          // Snapshots put back are moved again from the start by finishMoves.
+          if (await this.settle(journal.snapshots)) journal.done.push("snapshots");
+          else delete journal.snapshots;
+        }
+        this.files = journal.before;
+        await this.finishMoves(journal);
+        result = "completed";
+      }
+    }
+    await this.fs.remove(MOVE_JOURNAL);
+    return result;
+  }
+
+  /**
+   * What follows the renames: folder notes take their folders' names, snapshots and the record
+   * of comments follow their scenes, wikilinks are rewritten. Each step is noted in the journal,
+   * so that an interrupted run takes up where it stopped.
+   */
+  private async finishMoves(journal: MoveJournal): Promise<Map<string, string>> {
+    const { before, moves } = journal;
+    const renames = new Map<string, string>();
+    for (const file of before) {
+      let to = file;
+      for (const m of moves) to = rebase(to, m.from, m.to);
+      if (to !== file) renames.set(file, to);
+    }
+    for (const m of moves) {
+      if (isMarkdown(m.from)) continue;
+      const oldNote = join(m.to, basename(m.from) + ".md");
+      const newNote = folderNotePath(m.to);
+      if (oldNote !== newNote) {
+        if (await this.fs.exists(oldNote)) await this.fs.rename(oldNote, newNote);
+        if (before.includes(folderNotePath(m.from))) renames.set(folderNotePath(m.from), newNote);
+      }
+    }
+
+    // Snapshots follow their scene, again through temporary names.
+    if (!journal.done.includes("snapshots")) {
+      const snapshotMoves: Move[] = [];
+      for (const [from, to] of renames) {
+        if (isMarkdown(from) && (await this.fs.exists(snapshotDir(from)))) {
+          snapshotMoves.push({ from: snapshotDir(from), to: snapshotDir(to) });
+        }
+      }
+      journal.snapshots = snapshotMoves;
+      await this.writeJournal(journal);
+      await this.twoPass(snapshotMoves);
+      journal.done.push("snapshots");
+      await this.writeJournal(journal);
+    }
+
+    // The record of comments and revisions follows its scenes too.
+    if (!journal.done.includes("history")) {
+      await moveHistory(this.fs, renames);
+      journal.done.push("history");
+      await this.writeJournal(journal);
+    }
+
+    const after = before.map((f) => renames.get(f) ?? f);
+    for (const file of before) {
+      if (!isMarkdown(file)) continue;
+      const newPath = renames.get(file) ?? file;
+      if (!(await this.fs.exists(newPath))) continue;
+      const text = await this.fs.readText(newPath);
+      const updated = rewriteLinks(text, file, renames, before, after, newPath);
+      if (updated !== null) await this.fs.writeText(newPath, updated);
+    }
+    await this.fs.remove(MOVE_JOURNAL);
+    return renames;
+  }
+
   private movedPath(moves: Move[], path: string): string {
     return moves.find((m) => m.from === path)?.to ?? path;
   }
@@ -1431,49 +1586,14 @@ export class Project {
       }),
     );
 
-    // Two passes through temporary names, so that swapping two names never collides.
-    const temps = moves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
-    for (let i = 0; i < moves.length; i++) await this.fs.rename(moves[i].from, temps[i]);
-    for (let i = 0; i < moves.length; i++) await this.fs.rename(temps[i], moves[i].to);
-
-    const renames = new Map<string, string>();
-    for (const file of before) {
-      let to = file;
-      for (const m of moves) to = rebase(to, m.from, m.to);
-      if (to !== file) renames.set(file, to);
-    }
-    for (const m of moves) {
-      if (isMarkdown(m.from)) continue;
-      const oldNote = join(m.to, basename(m.from) + ".md");
-      const newNote = folderNotePath(m.to);
-      if (oldNote !== newNote && (await this.fs.exists(oldNote))) {
-        await this.fs.rename(oldNote, newNote);
-        renames.set(folderNotePath(m.from), newNote);
-      }
-    }
-
-    // Snapshots follow their scene, again through temporary names.
-    const snapshotMoves: Move[] = [];
-    for (const [from, to] of renames) {
-      if (isMarkdown(from) && (await this.fs.exists(snapshotDir(from)))) {
-        snapshotMoves.push({ from: snapshotDir(from), to: snapshotDir(to) });
-      }
-    }
-    const snapshotTemps = snapshotMoves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
-    for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotMoves[i].from, snapshotTemps[i]);
-    for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotTemps[i], snapshotMoves[i].to);
-
-    // The record of comments and revisions follows its scenes too.
-    await moveHistory(this.fs, renames);
-
-    const after = before.map((f) => renames.get(f) ?? f);
-    for (const file of before) {
-      if (!isMarkdown(file)) continue;
-      const newPath = renames.get(file) ?? file;
-      const text = await this.fs.readText(newPath);
-      const updated = rewriteLinks(text, file, renames, before, after, newPath);
-      if (updated !== null) await this.fs.writeText(newPath, updated);
-    }
+    // What is about to happen is written down first: if Dante closes halfway, the next opening
+    // puts the files back or finishes the job, and no scene stays under a hidden name.
+    const journal: MoveJournal = { before, moves, done: [] };
+    await this.writeJournal(journal);
+    await this.twoPass(moves);
+    journal.done.push("files");
+    await this.writeJournal(journal);
+    const renames = await this.finishMoves(journal);
     await this.reload();
     const moved = (path: string) => renames.get(path) ?? moves.reduce((p, m) => rebase(p, m.from, m.to), path);
     this.onMoved?.(moved);

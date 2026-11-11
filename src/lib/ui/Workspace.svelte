@@ -59,6 +59,8 @@
   } from "./panes.svelte";
 
   let { project, onClose }: { project: Project; onClose: () => void } = $props();
+  /** A reordering cut short was settled when the project opened: said once, until dismissed. */
+  let recovered = $state(project.recovered);
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
   type Section = "manuscript" | "gamebook" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
@@ -694,6 +696,11 @@
         {#if conflicts.length}
           <button class="conflicts" title={t("tip.conflicts")} onclick={() => (showConflicts = true)}
             >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
+          >
+        {/if}
+        {#if recovered}
+          <button class="conflicts" title={t(recovered === "undone" ? "moves.undoneTip" : "moves.completedTip")} onclick={() => (recovered = null)}
+            >{t(recovered === "undone" ? "moves.undone" : "moves.completed")} ✕</button
           >
         {/if}
         {#if novelTitle}<span class="project-name">{novelTitle}</span>{/if}
