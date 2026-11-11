@@ -109,10 +109,10 @@
   {/if}
   {#if !noSplit}
   <span class="cm-format-gap"></span>
-  <button class="split" title={t("tip.splitScene")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("scene")}
+  <button class="split named" title={t("tip.splitScene")} aria-label={t("split.scene")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("scene")}
     ><Icon name="scene" /><span>{t("split.scene")}</span></button
   >
-  <button class="split" title={t("tip.splitChapter")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("chapter")}
+  <button class="split named" title={t("tip.splitChapter")} aria-label={t("split.chapter")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("chapter")}
     ><Icon name="chapter" /><span>{t("split.chapter")}</span></button
   >
   {/if}
@@ -126,6 +126,31 @@
     gap: 2px;
     padding: 4px 12px;
     border-bottom: 1px solid var(--border);
+  }
+  /* A narrow bar keeps one row: the buttons that split the scene show only their icons. */
+  .format-row {
+    container-type: inline-size;
+  }
+  @container (max-width: 760px) {
+    .format-row .split.named span {
+      display: none;
+    }
+    .format-row button {
+      min-width: 25px;
+      padding-left: 3px;
+      padding-right: 3px;
+    }
+    .format-row :global(.cm-format-gap) {
+      margin: 0 2px;
+    }
+  }
+  /* WebKit without container queries (macOS 10.15): the window width stands in for the bar's. */
+  @supports not (container-type: inline-size) {
+    @media (max-width: 1400px) {
+      .format-row .split.named span {
+        display: none;
+      }
+    }
   }
   .format-row .split {
     display: inline-flex;

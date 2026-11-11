@@ -90,6 +90,14 @@
         <button role="menuitemcheckbox" aria-checked={raw} title={t("tip.raw")} onclick={() => { moreOpen = false; onToggleRaw(); }}
           ><span class="tick">{raw ? "✓" : ""}</span><Icon name="raw" />{t("more.raw")}</button
         >
+        <!-- The size of the text, here too: on a narrow bar its buttons leave the row. -->
+        <hr class="narrow" />
+        <div class="menu-zoom narrow" role="group" aria-label={t("toolbar.size")}>
+          <span>{t("toolbar.size")}</span>
+          <button class="icon-only" title={t("zoom.out")} aria-label={t("zoom.out")} onclick={() => zoom(-1)}><Icon name="zoomOut" /></button>
+          <button class="size" title={t("zoom.reset")} onclick={() => zoom(0)}>{app.settings.fontSize}</button>
+          <button class="icon-only" title={t("zoom.in")} aria-label={t("zoom.in")} onclick={() => zoom(1)}><Icon name="zoomIn" /></button>
+        </div>
       </div>
     {/if}
   </div>
@@ -189,18 +197,56 @@
     border: none;
     border-top: 1px solid var(--border);
   }
+  .narrow {
+    display: none;
+  }
+  .more-menu .menu-zoom {
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+  .more-menu .menu-zoom span {
+    flex: 1;
+  }
+  .more-menu .menu-zoom button {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 30px;
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+  }
   /* A narrow window keeps the icons; the names stay in the tooltips. */
   /* A narrower bar keeps one row: first the modes, then every button, show only their icons;
      the names stay in the tooltips. */
-  @container (max-width: 900px) {
+  @container (max-width: 1000px) {
     .modes .label,
     .chip .label {
       display: none;
     }
   }
-  @container (max-width: 560px) {
+  @container (max-width: 700px) {
     .label {
       display: none;
+    }
+    .toolbar {
+      gap: 6px 8px;
+    }
+  }
+  /* Narrower still, the size of the text moves into the menu, and the bar stays on one row. */
+  @container (max-width: 500px) {
+    .zoom {
+      display: none;
+    }
+    .more-menu hr.narrow {
+      display: block;
+    }
+    .more-menu .menu-zoom.narrow {
+      display: flex;
+    }
+    .toolbar button {
+      padding-left: 7px;
+      padding-right: 7px;
     }
   }
   /* WebKit without container queries (macOS 10.15): the window width stands in for the bar's. */
@@ -211,9 +257,24 @@
         display: none;
       }
     }
-    @media (max-width: 1000px) {
+    @media (max-width: 1200px) {
       .label {
         display: none;
+      }
+    }
+    @media (max-width: 1050px) {
+      .zoom {
+        display: none;
+      }
+      .more-menu hr.narrow {
+        display: block;
+      }
+      .more-menu .menu-zoom.narrow {
+        display: flex;
+      }
+      .toolbar button {
+        padding-left: 7px;
+        padding-right: 7px;
       }
     }
   }

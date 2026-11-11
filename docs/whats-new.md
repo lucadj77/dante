@@ -11,6 +11,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **More compact bars above the text**: in the Manuscript the command bars take fewer rows. In a narrow window the buttons show only their icon (the name stays in the tooltip), "Split into scene" and "Split into chapter" become icons and the text size moves into the **More** menu.
+
 ### Fixed
 
 - **The same number everywhere**: with revisions pending, the Properties panel, the tables and the writing log also counted the deleted text and the revision marks. They now count as the Statistics do: added text counts, deleted text does not.

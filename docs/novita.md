@@ -11,6 +11,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Barre sopra il testo più compatte**: nel Manoscritto le barre dei comandi occupano meno righe. In una finestra stretta i pulsanti mostrano solo l'icona (il nome resta nel suggerimento), «Dividi in scena» e «Dividi in capitolo» diventano icone e la dimensione del testo passa nel menu **Altro**.
+
 ### Corretto
 
 - **Lo stesso numero dappertutto**: con revisioni in sospeso il pannello Proprietà, le tabelle e il registro di scrittura contavano anche il testo cancellato e i segni delle revisioni. Ora contano come le Statistiche: il testo aggiunto vale, quello cancellato no.
