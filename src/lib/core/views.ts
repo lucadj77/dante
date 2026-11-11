@@ -49,18 +49,21 @@ export interface ViewSpec {
 }
 
 /** Fields every item has, besides its properties. */
-export const BUILT_IN = ["name", "folder", "type", "words", "chapter"] as const;
+export const BUILT_IN = ["name", "folder", "type", "words", "characters", "chapter"] as const;
 export const VIEW_EXT = ".yaml";
 
 export function defaultView(type: ViewKind = "table"): ViewSpec {
   return { type, source: [], items: "note", filter: {}, sort: "", group_by: "", groups: [], fields: [], date: "", end: "", synopsis: true, order: [], widths: {} };
 }
 
-/** The views a new novel starts with: a board of the scenes by stage of work, and a table of them. */
-export function starterViews(status: { name: string; values: string[] }, names: { board: string; scenes: string }): [string, ViewSpec][] {
+/**
+ * The views a new novel starts with: a board of the scenes by stage of work, and a table of them,
+ * with the length in the unit the project measures in.
+ */
+export function starterViews(status: { name: string; values: string[] }, names: { board: string; scenes: string }, unit: "words" | "characters" = "words"): [string, ViewSpec][] {
   return [
     [names.board, { ...defaultView("kanban"), items: "scene", group_by: status.name, groups: [...status.values], fields: ["pov"] }],
-    [names.scenes, { ...defaultView("table"), items: "scene", fields: ["chapter", status.name, "pov", "words"] }],
+    [names.scenes, { ...defaultView("table"), items: "scene", fields: ["chapter", status.name, "pov", unit] }],
   ];
 }
 
@@ -133,6 +136,8 @@ export interface ViewRow {
   type: string | null;
   folder: string;
   words: number;
+  /** Characters, spaces included. */
+  characters: number;
   /** Heading of the chapter the scene is in. */
   chapter: string;
   /** The first words of the text, for cards. */
@@ -157,6 +162,8 @@ export function values(row: ViewRow, field: string): string[] {
       return row.type ? [row.type] : [];
     case "words":
       return [String(row.words)];
+    case "characters":
+      return [String(row.characters)];
     case "chapter":
       return row.chapter ? [row.chapter] : [];
   }
@@ -205,6 +212,7 @@ export function collect(view: ViewSpec, index: NoteIndex, manuscript: Manuscript
   const row = (path: string, file: string | null, name: string): ViewRow => {
     const note = file ? index.notes.get(file) : undefined;
     const properties = note?.properties ?? {};
+    const size = note ? textStats(note.body) : { words: 0, characters: 0 };
     return {
       path,
       file,
@@ -212,7 +220,8 @@ export function collect(view: ViewSpec, index: NoteIndex, manuscript: Manuscript
       properties,
       type: file ? noteType(file, properties, settings) : null,
       folder: dirname(path),
-      words: note ? textStats(note.body).words : 0,
+      words: size.words,
+      characters: size.characters,
       chapter: chapterOf.get(path) ?? "",
       excerpt: note ? excerpt(note.body) : "",
       order: position.get(path) ?? Number.MAX_SAFE_INTEGER,
@@ -226,7 +235,14 @@ export function collect(view: ViewSpec, index: NoteIndex, manuscript: Manuscript
       if (node.kind === "manuscript" || node.kind === "scene" || !inSource(node.path)) continue;
       const r = row(node.path, node.notePath, (titles.get(node.path) ?? node.title).replace(/\n/g, " · "));
       // A chapter counts the words of its scenes.
-      r.words = flatten(node).reduce((n, c) => n + (c.kind === "scene" ? textStats(index.notes.get(c.path)?.body ?? "").words : 0), 0);
+      r.words = 0;
+      r.characters = 0;
+      for (const c of flatten(node)) {
+        if (c.kind !== "scene") continue;
+        const scene = textStats(index.notes.get(c.path)?.body ?? "");
+        r.words += scene.words;
+        r.characters += scene.characters;
+      }
       r.type = node.kind;
       rows.push(r);
     }

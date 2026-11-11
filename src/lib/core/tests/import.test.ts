@@ -188,7 +188,7 @@ describe("the structure of an imported book", () => {
     const scenes = structure([h(1, "Return"), h(2, "Arrival"), p("A."), h(2, "The house"), p("B.")], names);
     expect(scenes.hasParts).toBe(false);
     expect(scenes.parts[0].chapters[0].scenes.map((s) => s.title)).toEqual(["Arrival", "The house"]);
-    expect(counts(scenes)).toEqual({ parts: 0, chapters: 1, scenes: 2, words: 2 });
+    expect(counts(scenes)).toEqual({ parts: 0, chapters: 1, scenes: 2, words: 2, characters: 4 });
   });
 
   it("splits scenes at empty paragraphs unless they are spacing", () => {

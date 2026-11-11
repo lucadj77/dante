@@ -114,7 +114,7 @@
     if (spec.type !== "table") return [];
     // "kind" only tells a chapter's folder note what the folder is, shown as its type.
     const used = propertyNames(rows).filter((f) => f !== "aliases" && f !== "type" && f !== "kind");
-    return [...(spec.items === "scene" ? ["chapter"] : spec.items === "chapter" ? ["type"] : []), ...used.slice(0, 6), "words"];
+    return [...(spec.items === "scene" ? ["chapter"] : spec.items === "chapter" ? ["type"] : []), ...used.slice(0, 6), p.project.settings.goals.unit];
   });
 
   // A property with allowed values gives its columns when the view lists none.
@@ -140,6 +140,7 @@
       return p.project.settings.types[row.type]?.name ?? row.type;
     }
     if (field === "words") return num(row.words);
+    if (field === "characters") return num(row.characters);
     return readableLinks(display(row, field));
   }
   /** A group's heading: links by their names. */
@@ -229,7 +230,7 @@
   async function createStarters() {
     // The stage of work goes in the property the novel's language calls for, or one the project already defines.
     const status = projectStatus(p.project.settings);
-    for (const [name, view] of starterViews(status, { board: t("views.starter.board"), scenes: t("views.starter.scenes") })) await create(name, view);
+    for (const [name, view] of starterViews(status, { board: t("views.starter.board"), scenes: t("views.starter.scenes") }, p.project.settings.goals.unit)) await create(name, view);
   }
 
   async function rename() {
@@ -571,7 +572,7 @@
             <thead>
               <tr>
                 {#each ["name", ...fields] as f (f)}
-                  <th class:number={f === "words"} style:width={tableWidth ? `${widths[f]}px` : undefined}
+                  <th class:number={f === "words" || f === "characters"} style:width={tableWidth ? `${widths[f]}px` : undefined}
                     ><button data-tip={t("tip.views.sort")} onclick={() => sortBy(f)}>{label(f)}{sortMark(f)}</button><span
                       class="edge"
                       role="separator"
@@ -594,7 +595,7 @@
                   <tr class:drop-before={dropsBefore(row, g.key)} class:writing={writes(row)} {...item(row, g.rows[i + 1])}>
                     <td><button class="link" onclick={(e) => inspect(row, e)}>{row.name}</button>{@render synopsisOf(row)}</td>
                     {#each fields as f (f)}
-                      <td class:number={f === "words"}>
+                      <td class:number={f === "words" || f === "characters"}>
                         {#if editing && editing.path === row.path && editing.field === f}
                           <input
                             class="cell-input"

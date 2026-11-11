@@ -218,7 +218,7 @@ function headingStyles(opts: DocxSettings, typeset: boolean) {
 
 /** Renders the book as a standard manuscript or as a typeset book. */
 /** Renders the book as a Word document; `coverPng`, a 2:3 image, fills the first page. */
-export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string }, coverPng?: Uint8Array): Document {
+export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string; length?: string }, coverPng?: Uint8Array): Document {
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -384,7 +384,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     } else {
       titlePage.push(
         new Paragraph({ style: "FirstParagraph", children: plain(book.author) }),
-        new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(`${approxWords(book.words, book.language)} ${labels.words}`) }),
+        new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(labels.length ?? `${approxWords(book.words, book.language)} ${labels.words}`) }),
         new Paragraph({ style: "PartOpening", children: [] }),
         new Paragraph({ style: "Title", children: plain(title.toUpperCase()) }),
       );

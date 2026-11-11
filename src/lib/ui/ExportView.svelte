@@ -3,7 +3,7 @@
   import { failure } from "$lib/ui/errors";
   import { buildBook } from "$lib/core/export/book";
   import { pageCount } from "$lib/core/statistics";
-  import { bookToDocx, docxBytes } from "$lib/core/export/docx";
+  import { approxWords, bookToDocx, docxBytes } from "$lib/core/export/docx";
   import { bookToEpub, EPUB_CSS } from "$lib/core/export/epub";
   import { bookToTypst, typstImage } from "$lib/core/export/typst";
   import { bookToMarkdown } from "$lib/core/export/markdown";
@@ -333,7 +333,9 @@
       // In a gamebook what parts the paragraphs is chosen in its own section.
       const gx = project.settings.gamebook.export;
       const layout = gamebook ? { ...project.settings.export.docx, sceneBreak: gx.separator, sceneSeparator: gx.symbol, lineSign: "\\n" } : project.settings.export.docx;
-      const labels = { words: t("export.words") };
+      // The title page and the summary give the length in the unit the project measures in.
+      const inCharacters = project.settings.goals.unit === "characters";
+      const labels = { words: t("export.words"), length: inCharacters ? `${approxWords(book.characters, book.language)} ${t("export.characters")}` : undefined };
       const pages = num(pageCount(book, project.settings.pages), 1);
       const withCover = useCover && format !== "md";
       const photo = withCover ? await coverPicture(project.fs, project.settings.cover) : "";
@@ -374,7 +376,7 @@
       }
       if (where !== null) {
         saved = where || null;
-        message = t("export.done", { words: num(book.words), pages });
+        message = inCharacters ? t("export.doneCharacters", { characters: num(book.characters), pages }) : t("export.done", { words: num(book.words), pages });
       }
     } catch (e) {
       fail(e);

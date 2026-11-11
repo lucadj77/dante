@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MemoryFs } from "../fs";
 import { Project } from "../project";
-import { arrange, collect, dateKey, defaultView, excerpt, group, moveBefore, parseView, propertiesTarget, serializeView, shiftEnd, timeline, values, type ViewSpec } from "../views";
+import { arrange, collect, dateKey, defaultView, excerpt, group, moveBefore, parseView, propertiesTarget, serializeView, shiftEnd, starterViews, timeline, values, type ViewSpec } from "../views";
 
 function sample() {
   return new MemoryFs({
@@ -63,6 +63,15 @@ describe("collecting notes", () => {
       ["Chapter 2: Letter", 2, null],
     ]);
     expect(propertiesTarget(chapters[1])).toBe("Manuscript/020 Letter/020 Letter.md");
+  });
+
+  it("gives the length in characters too, and starts a new novel with its unit", async () => {
+    const { rows: chapters } = await rows({ items: "chapter" });
+    expect(chapters.every((r) => r.characters > r.words)).toBe(true);
+    expect(values(chapters[0], "characters")).toEqual([String(chapters[0].characters)]);
+    const [, table] = starterViews({ name: "stato", values: ["bozza"] }, { board: "B", scenes: "S" }, "characters");
+    expect(table[1].fields).toContain("characters");
+    expect(table[1].fields).not.toContain("words");
   });
 
   it("lists notes of a type, leaving out templates, views and folder notes", async () => {

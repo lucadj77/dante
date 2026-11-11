@@ -336,7 +336,7 @@
       <p class="summary">
         {t("import.found", { file: importedFrom })}
         {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
-        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words) })}
+        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words), characters: num(importedCounts.characters) })}
         {#if content?.notes?.length}{t("import.notes", { n: content.notes.length })}{/if}
         <button type="button" class="link" onclick={() => { creating = false; previewing = true; }}>{t("import.review")}</button>
       </p>

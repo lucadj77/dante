@@ -196,7 +196,7 @@ export class Project {
       const image = await project.addAttachment(details.coverImage.name, details.coverImage.data);
       await project.saveSettings({ ...project.settings, cover: { ...project.settings.cover, image } });
     }
-    if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views)) await project.createView(name, view);
+    if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views, settings.goals.unit)) await project.createView(name, view);
     if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
     const scene = await project.createScene(chapter, 0, names.scene);

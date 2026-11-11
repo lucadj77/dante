@@ -64,7 +64,7 @@ const cm = (n: number) => `${+n.toFixed(2)}cm`;
  * `coverSvg` opens it on a page of its own; with `coverImage`, a picture of the project,
  * the picture fills that page and `coverSvg` (the texts) lies over it.
  */
-export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = "", coverImage = ""): string {
+export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string; length?: string }, coverSvg = "", coverImage = ""): string {
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -126,7 +126,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
         if (book.subtitle) emit(`#align(center)[#v(0.5em)#text(size: 1.4em, style: "italic", ${str(book.subtitle)})]`);
         emit(`#align(center)[#v(2em)#"❧"#v(1em)#${str(book.author)}]`);
       } else {
-        emit(`#grid(columns: (1fr, 1fr), ${str(book.author)}, align(right, ${str(`${approxWords(book.words, book.language)} ${labels.words}`)}))`);
+        emit(`#grid(columns: (1fr, 1fr), ${str(book.author)}, align(right, ${str(labels.length ?? `${approxWords(book.words, book.language)} ${labels.words}`)}))`);
         emit(`#v(${cm(partOpening)})`);
         emit(`#align(center)[#${str(title.toUpperCase())}]`);
         if (book.subtitle) emit(`#align(center)[#emph(${str(book.subtitle)})]`);
