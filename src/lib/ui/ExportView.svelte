@@ -868,6 +868,7 @@
   .field {
     display: grid;
     gap: 4px;
+    margin-bottom: 12px;
   }
   .field .label {
     color: var(--text-muted);
