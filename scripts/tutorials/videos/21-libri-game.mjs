@@ -8,8 +8,6 @@ import { BOOKS, bookFiles } from '../assets/gamebook.mjs';
 export const meta = {
   n: 21,
   group: 'gamebook',
-  // only in the beta for now: a note on YouTube and on the site; take it away with the stable release
-  beta: true,
   title: { it: 'Scrivere un libro game', en: 'Writing a gamebook' },
   subtitle: { it: 'Paragrafi, scelte e rimandi, dal primo all’ultimo', en: 'Sections, choices and references, from first to last' },
 };

@@ -402,6 +402,9 @@ a:focus-visible {
 .feature:nth-child(6) {
   --c: var(--fg-2);
 }
+.feature:nth-child(7) {
+  --c: var(--green);
+}
 .feature p {
   color: var(--fg-2);
 }
