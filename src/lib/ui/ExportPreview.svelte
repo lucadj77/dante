@@ -41,6 +41,7 @@
   const size = $derived(p.options.pageSize === "custom" ? [Number(p.options.pageWidth) || 21, Number(p.options.pageHeight) || 29.7] : (PAGE_SIZES[p.options.pageSize] ?? PAGE_SIZES.a4));
   const perCm = $derived(WIDTH / size[0]);
   const perPt = $derived((perCm * 2.54) / 72);
+  const m = $derived(p.options.margins);
   const typeset = $derived(p.options.profile === "typeset");
   const paged = $derived(p.format === "docx" || p.format === "pdf");
 
@@ -95,7 +96,8 @@
       `font-style: ${h.italic ? "italic" : "normal"}`,
       `text-transform: ${h.uppercase ? "uppercase" : "none"}`,
       `line-height: ${(h.lineSpacing * 1.15).toFixed(2)}`,
-      `margin: ${(h.before * perPt).toFixed(1)}px 0 ${(h.after * perPt).toFixed(1)}px`,
+      // The first chapter opens the page: it sits as far down as chosen.
+      `margin: ${(h.top * perCm + h.before * perPt).toFixed(1)}px 0 ${(h.after * perPt).toFixed(1)}px`,
     ].join("; ");
   });
 
@@ -151,12 +153,12 @@
         class="sheet"
         style:width="{WIDTH}px"
         style:height="{size[1] * perCm}px"
-        style:padding="{2.5 * perCm}px"
+        style:padding="{m.top * perCm}px {m.right * perCm}px {m.bottom * perCm}px {m.left * perCm}px"
         style:font-family={p.options.font}
         style:font-size="{p.options.fontSize * perPt}px"
         style:line-height={typeset ? Math.max(1.2, p.options.lineSpacing * 1.15) : p.options.lineSpacing * 1.15}
       >
-        {#if p.options.header}<div class="running" style:top="{1.2 * perCm}px" style:right="{2.5 * perCm}px" style:left="{2.5 * perCm}px">{typeset ? p.settings.title : `${author} / ${p.settings.title.toUpperCase()} / 1`}</div>{/if}
+        {#if p.options.header}<div class="running" style:top="{Math.min(1.25, m.top / 2) * perCm}px" style:right="{m.right * perCm}px" style:left="{m.left * perCm}px">{typeset ? p.settings.title : `${author} / ${p.settings.title.toUpperCase()} / 1`}</div>{/if}
         <div class="heading" style={sheetHeading}>{#each lines(chapter) as line, i (i)}<div>{line}</div>{/each}</div>
         {#each [...SAMPLE, ...SAMPLE, ...SAMPLE] as text, i (i)}
           <p class:justify={typeset} style:text-indent="{i === 0 && typeset ? 0 : p.options.indent * perCm}px">{text}</p>

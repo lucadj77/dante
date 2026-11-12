@@ -74,10 +74,8 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   const paratextLabels = PARATEXT_LABELS[book.language.slice(0, 2)] ?? PARATEXT_LABELS.en;
 
   const [width, height] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
-  // Book-sized pages have narrower margins than office paper, where the manuscript keeps an inch.
-  const small = Math.min(width, height) < 18;
-  const margin = small ? 2 : 2.54;
-  const textWidth = width - 2 * margin;
+  const m = opts.margins;
+  const textWidth = width - m.left - m.right;
   // Lines measured from ascender to descender are about one font size apart; the leading adds the rest.
   const leading = Math.max(0, (opts.lineSpacing - 1) * 1.2);
   const size = opts.fontSize;
@@ -90,7 +88,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
 
   emit(`// Made by Dante from the manuscript of ${str(title)}. Edit the novel, not this file.`);
   emit(`#set document(title: ${str(title)}, author: (${book.authors.map((a) => `${str(a)},`).join(" ")}))`);
-  emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: ${cm(margin)}, header: none, footer: none)`);
+  emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: (top: ${cm(m.top)}, bottom: ${cm(m.bottom)}, left: ${cm(m.left)}, right: ${cm(m.right)}), header: none, footer: none)`);
   emit(`#set text(font: ${fonts(opts.font)}, size: ${size}pt, lang: ${str(book.language.slice(0, 2) || "en")}, hyphenate: ${typeset}, top-edge: "ascender", bottom-edge: "descender")`);
   // A gamebook's paragraphs have their own alignment, indent and space after.
   const gx = book.gamebook;
@@ -206,7 +204,9 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     return separator === "pageBreak";
   };
   const heading = (level: number, text: string, newPage: boolean, part = false) => {
-    if (newPage) emit(`#v(${cm(part ? partOpening : opening)})`);
+    // A heading that opens a page sits as far down as the writer chose.
+    const top = opts.headings[part ? "part" : "chapter"].top;
+    if (newPage && top > 0) emit(`#v(${cm(top)})`);
     emit(`#heading(level: ${level})[${lines(text)}]`);
   };
   const runs = (items: Run[]) => runsOf(items, textWidth / 2.54);
@@ -289,7 +289,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   const backPage = (label: string, text: string) => {
     if (!text.trim()) return;
     emit("#pagebreak()");
-    emit(`#v(${cm(opening)})`);
+    if (opts.headings.chapter.top > 0) emit(`#v(${cm(opts.headings.chapter.top)})`);
     emit(`#heading(level: ${chapterLevel}, outlined: false)[#${str(label)}]`);
     for (const p of paragraphs(text)) emit(`${lines(p)}\n`);
   };

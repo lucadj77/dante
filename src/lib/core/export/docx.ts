@@ -291,16 +291,27 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     return separator === "pageBreak";
   };
 
+  /**
+   * What a heading that opens a page adds to its paragraph: the break and, as space before,
+   * how far down the page it sits. Word keeps the space before of a paragraph that asks for
+   * a new page, so no empty line is needed above the heading.
+   */
+  const opening = (kind: "part" | "chapter", pageBreak: boolean) => {
+    const h = opts.headings[kind];
+    return { pageBreakBefore: pageBreak, spacing: { before: Math.round((h.top / 2.54) * 1440 + h.before * 20) } };
+  };
+  // In a manuscript the text follows the front matter in the same section: its first heading
+  // asks for the new page itself, so that no empty paragraph has to.
+  const leads = !typeset && (opts.titlePage || !!book.paratext.dedication.trim() || !!book.paratext.epigraph.trim() || hasContents(book, opts));
+  let bodyBreaks = false;
   const heading = (level: number, text: string, newPage: boolean, part = false) => {
-    const children = plain(text);
-    // Openings on a new page start lower down.
-    if (newPage) body.push(new Paragraph({ style: part ? "PartOpening" : "Opening", pageBreakBefore: started, children: [] }));
-    body.push(new Paragraph({ heading: HEADINGS[level], children }));
+    if (newPage && !body.length && leads) bodyBreaks = true;
+    body.push(new Paragraph({ heading: HEADINGS[level], ...(newPage ? opening(part ? "part" : "chapter", started || bodyBreaks) : {}), children: plain(text) }));
   };
 
   const [pageWidth, pageHeight] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
   // The width between the margins, in pixels: no image is wider.
-  const textWidth = Math.floor(((pageWidth - 2 * (Math.min(pageWidth, pageHeight) < 18 ? 2 : 2.54)) / 2.54) * 96);
+  const textWidth = Math.floor(((pageWidth - opts.margins.left - opts.margins.right) / 2.54) * 96);
 
   const runs = (items: Run[]) => paragraphRuns(items, textWidth, opts.fontSize);
 
@@ -400,7 +411,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       .map((p) => p.trim())
       .filter(Boolean)
       .map((p, i) => new Paragraph({ style: i === 0 ? "FirstParagraph" : "Normal", children: plain(p) }));
-    back.push([new Paragraph({ style: "Opening", children: [] }), new Paragraph({ heading: HEADINGS[chapterLevel], children: plain(label) }), ...paragraphs]);
+    back.push([new Paragraph({ heading: HEADINGS[chapterLevel], ...opening("chapter", true), children: plain(label) }), ...paragraphs]);
   };
   backPage(paratextLabels.authorNote, paratext.authorNote);
   backPage(paratextLabels.acknowledgements, paratext.acknowledgements);
@@ -435,12 +446,11 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
 
   const [width, height] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4;
   const twips = (cm: number) => Math.round((cm / 2.54) * 1440);
-  // Book-sized pages have narrower margins than office paper, where the manuscript keeps an inch.
-  const small = Math.min(width, height) < 18;
-  const margin = twips(small ? 2 : 2.54);
+  // Header and footer sit halfway into their margin, never further than on office paper.
+  const m = opts.margins;
   const page = {
     size: { width: twips(width), height: twips(height) },
-    margin: { top: margin, bottom: margin, left: margin, right: margin, header: twips(small ? 1 : 1.25), footer: twips(small ? 1 : 1.25) },
+    margin: { top: twips(m.top), bottom: twips(m.bottom), left: twips(m.left), right: twips(m.right), header: twips(Math.min(1.25, m.top / 2)), footer: twips(Math.min(1.25, m.bottom / 2)) },
   };
 
   const surname = surnames(book.authors);
@@ -495,10 +505,10 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       properties: { page: { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } }, type: SectionType.NEXT_PAGE },
       headers: header ? { default: header } : undefined,
       footers: footer ? { default: footer } : undefined,
-      children: [...body, ...onNewPage(back)],
+      children: [...body, ...back.flat()],
     });
   } else {
-    const children = [...frontMatter, ...(frontMatter.length && body.length ? onNewPage([body]) : body), ...onNewPage(back)];
+    const children = [...frontMatter, ...(frontMatter.length && body.length && !bodyBreaks ? onNewPage([body]) : body), ...back.flat()];
     sections.push({
       properties: { titlePage: opts.titlePage, page },
       headers: header ? { default: header, first: new Header({ children: [] }) } : undefined,

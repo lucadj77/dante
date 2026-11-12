@@ -159,6 +159,8 @@ export interface HeadingStyle {
   after: number;
   /** Between the lines of a heading on several lines, as the line spacing of the text. */
   lineSpacing: number;
+  /** How far down the page the heading sits when it opens a new page, in centimetres. */
+  top: number;
 }
 
 /**
@@ -171,9 +173,9 @@ export function defaultHeadings(docx: { profile: "manuscript" | "typeset"; fontS
   const line = Math.round(12 * docx.lineSpacing);
   const base = { font: "", align: "center" as const, uppercase: false, lineSpacing: docx.lineSpacing };
   return {
-    part: { ...base, size: typeset ? half(docx.fontSize * 1.5) : docx.fontSize, bold: true, italic: false, before: 0, after: line },
-    chapter: { ...base, size: typeset ? half(docx.fontSize * (parts ? 1.3 : 1.5)) : docx.fontSize, bold: typeset || !parts, italic: false, before: 0, after: line },
-    scene: { ...base, size: docx.fontSize, bold: false, italic: typeset, before: line, after: Math.round(line / 2) },
+    part: { ...base, size: typeset ? half(docx.fontSize * 1.5) : docx.fontSize, bold: true, italic: false, before: 0, after: line, top: typeset ? 6.3 : 7.6 },
+    chapter: { ...base, size: typeset ? half(docx.fontSize * (parts ? 1.3 : 1.5)) : docx.fontSize, bold: typeset || !parts, italic: false, before: 0, after: line, top: typeset ? 4.2 : 5 },
+    scene: { ...base, size: docx.fontSize, bold: false, italic: typeset, before: line, after: Math.round(line / 2), top: 0 },
   };
 }
 
@@ -196,6 +198,40 @@ function parseHeadings(docx: DocxSettings, raw: unknown, parts: boolean): Record
     h.before = within(h.before, 0, 300, usual[kind].before);
     h.after = within(h.after, 0, 300, usual[kind].after);
     h.lineSpacing = within(h.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, usual[kind].lineSpacing);
+    h.top = within(h.top, 0, 20, usual[kind].top);
+  }
+  return out;
+}
+
+/** The white around the text, in centimetres. */
+export interface PageMargins {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+/** Width and height of the page of an export, in centimetres. */
+export function pageDimensions(docx: Pick<DocxSettings, "pageSize" | "pageWidth" | "pageHeight">): [number, number] {
+  if (docx.pageSize === "custom") return [Number(docx.pageWidth) || 21, Number(docx.pageHeight) || 29.7];
+  const [width, height] = PAGE_SIZES[docx.pageSize] ?? PAGE_SIZES.a4;
+  return [width, height];
+}
+
+/** The margins a page starts with: an inch on office paper, two centimetres on a page the size of a book. */
+export function defaultMargins(docx: Pick<DocxSettings, "pageSize" | "pageWidth" | "pageHeight">): PageMargins {
+  const [width, height] = pageDimensions(docx);
+  const margin = Math.min(width, height) < 18 ? 2 : 2.54;
+  return { top: margin, bottom: margin, left: margin, right: margin };
+}
+
+/** Completes the margins read from a file and keeps them between half a centimetre and a third of the page. */
+function parseMargins(docx: DocxSettings, raw: unknown): PageMargins {
+  const usual = defaultMargins(docx);
+  const out = merge(usual, raw);
+  const [width, height] = pageDimensions(docx);
+  for (const side of ["top", "bottom", "left", "right"] as const) {
+    out[side] = within(out[side], 0.5, (side === "top" || side === "bottom" ? height : width) / 3, usual[side]);
   }
   return out;
 }
@@ -236,6 +272,8 @@ export interface DocxSettings {
   omitSingleSceneHeading: boolean;
   /** Font, size, alignment and space of the headings of parts, chapters and scenes. */
   headings: Record<HeadingKind, HeadingStyle>;
+  /** The margins of the page, in Word and PDF. */
+  margins: PageMargins;
 }
 
 /** A set of export choices kept under a name, such as "For the publisher". */
@@ -645,6 +683,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         sceneNumbersRestart: true,
         omitSingleSceneHeading: true,
         headings: defaultHeadings({ profile: "manuscript", fontSize: 12, lineSpacing: 2 }, false),
+        margins: { top: 2.54, bottom: 2.54, left: 2.54, right: 2.54 },
       },
       typography: {
         // Dialogue leaves as it was typed until the author picks a convention.
@@ -744,6 +783,8 @@ export function parseSettings(text: string): NovelSettings {
     if (!EXPORT_FORMATS.includes(profile.format)) profile.format = "docx";
     profile.docx.lineSpacing = within(profile.docx.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, 2);
     profile.docx.headings = parseHeadings(profile.docx, isObject(value.docx) ? value.docx.headings : undefined, settings.structure.parts);
+    if (isObject(value.docx) && value.docx.pageSize === undefined && value.docx.profile === "typeset") profile.docx.pageSize = "a5";
+    profile.docx.margins = parseMargins(profile.docx, isObject(value.docx) ? value.docx.margins : undefined);
     settings.export.profiles[name] = profile;
   }
   // Files written before several authors could be named had one "author" text.
@@ -785,6 +826,8 @@ export function parseSettings(text: string): NovelSettings {
   if (!(settings.pages.size > 0)) settings.pages.size = settings.pages.unit === "words" ? 250 : 1800;
   // Before the page size could be chosen, a typeset book was always A5.
   if (docx.pageSize === undefined && docx.profile === "typeset") settings.export.docx.pageSize = "a5";
+  // Files written before the margins could be chosen take the ones their page had.
+  settings.export.docx.margins = parseMargins(settings.export.docx, docx.margins);
   // Files written before the heading choices existed had a template such as "{label} {number}: {title}".
   const structure = isObject(raw) && isObject(raw.structure) ? raw.structure : {};
   for (const kind of ["part", "chapter"] as const) {

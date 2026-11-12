@@ -1,6 +1,6 @@
 // Made by Dante from the manuscript of "Test". Edit the novel, not this file.
 #set document(title: "Test", author: ())
-#set page(width: 14.8cm, height: 21cm, margin: 2cm, header: none, footer: none)
+#set page(width: 14.8cm, height: 21cm, margin: (top: 3cm, bottom: 2cm, left: 1.5cm, right: 2cm), header: none, footer: none)
 #set text(font: ("Times New Roman", "Libertinus Serif", "New Computer Modern"), size: 11pt, lang: "it", hyphenate: true, top-edge: "ascender", bottom-edge: "descender")
 #set par(justify: true, leading: 0.36em, spacing: 0.36em, first-line-indent: 1.27cm)
 #set smartquote(enabled: false)
@@ -15,16 +15,13 @@
 }
 #let separator(body) = align(center, block(above: 0.96em, below: 0.96em, body))
 
-#v(6.3cm)
-#align(center)[#text(size: 3em, weight: "bold", "Test")]
-#align(center)[#v(2em)#"❧"#v(1em)#""]
 
 #set page(header: align(center, text(size: 0.85em, style: "italic", "Test")), footer: align(center, text(size: 0.85em, context counter(page).display())))
 #counter(page).update(1)
 #v(6.3cm)
 #heading(level: 1)[#"Parte I: Il ritorno"]
 #pagebreak(weak: true)
-#v(4.2cm)
+#v(3cm)
 #heading(level: 2)[#"Capitolo 1: La lettera"]
 #heading(level: 3)[#"1. Alla stazione"]
 #"Il treno arrivò."

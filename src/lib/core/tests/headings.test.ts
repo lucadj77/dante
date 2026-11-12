@@ -16,12 +16,16 @@ structure:
 export:
   docx:
     profile: typeset
+    titlePage: false
     fontSize: 11
     lineSpacing: 1.3
     scene:
       numbering: arabic
       showTitle: true
     omitSingleSceneHeading: false
+    margins:
+      top: 3
+      left: 1.5
     headings:
       chapter:
         font: Georgia
@@ -32,6 +36,7 @@ export:
         before: 30
         after: 18
         lineSpacing: 1
+        top: 3
       scene:
         align: left
         bold: true
@@ -66,6 +71,12 @@ describe("heading styles", () => {
     expect(again.headings).toEqual(docx.headings);
   });
 
+  it("margins start as the page had them and stay within the page", () => {
+    expect(parseSettings("export:\n  docx:\n    profile: typeset\n").export.docx.margins).toEqual({ top: 2, bottom: 2, left: 2, right: 2 });
+    expect(parseSettings("title: T\n").export.docx.margins).toEqual({ top: 2.54, bottom: 2.54, left: 2.54, right: 2.54 });
+    expect(parseSettings("export:\n  docx:\n    margins:\n      left: 0\n      top: 80\n").export.docx.margins).toMatchObject({ left: 0.5, top: 9.9 });
+  });
+
   it("refuse numbers out of range", () => {
     const docx = parseSettings("export:\n  docx:\n    lineSpacing: 40\n    headings:\n      chapter:\n        size: -3\n        align: middle\n        lineSpacing: 0\n").export.docx;
     expect(docx.lineSpacing).toBe(3);
@@ -86,8 +97,26 @@ describe("heading styles", () => {
     expect(chapter).toMatch(/<w:spacing [^>]*w:line="240"/);
     const scene = /<w:style [^>]*w:styleId="Heading3".*?<\/w:style>/.exec(styles)?.[0] ?? "";
     expect(scene).toContain('<w:jc w:val="left"/>');
+    // A heading that opens a page carries the break and its distance from the top (3 cm and
+    // 30 points) itself: no empty paragraph above it.
+    const document = strFromU8(unzipSync(bytes)["word/document.xml"]);
+    expect(document).not.toContain('w:val="Opening"');
+    expect(document).not.toContain('w:val="PartOpening"');
+    expect(document).toMatch(/<w:pStyle w:val="Heading2"\/>(<w:pageBreakBefore\/>)?<w:spacing w:before="2301"\/>/);
+    // The margins of the page, in twentieths of a point: 3 cm above, 1.5 on the left, the usual 2 elsewhere (A5).
+    expect(document).toMatch(/<w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="850"/);
     // The text takes the free line spacing: 1.3 lines of 240.
     expect(/<w:style [^>]*w:styleId="Normal".*?<\/w:style>/.exec(styles)?.[0]).toMatch(/w:line="312"/);
+  });
+
+  it("in a manuscript the first chapter asks for its page itself, after the title page", async () => {
+    const fs = new MemoryFs({ "dante.yaml": "title: Test\n", "Manuscript/010 One/010 A.md": "Text.", "Manuscript/020 Two/010 B.md": "More." });
+    const project = await Project.open(fs);
+    const bytes = await docxBytes(bookToDocx(await buildBook(project), project.settings.export.docx, { words: "words" }));
+    const document = strFromU8(unzipSync(bytes)["word/document.xml"]);
+    // 5 cm from the top, in twentieths of a point, on both chapters; no empty paragraph carries a break.
+    expect(document.match(/<w:pStyle w:val="Heading1"\/><w:pageBreakBefore\/><w:spacing w:before="2835"\/>/g)).toHaveLength(2);
+    expect(document).not.toMatch(/<w:p><w:pPr><w:pageBreakBefore\/><\/w:pPr><\/w:p>/);
   });
 
   it("reach the PDF source, which the application compiles", async () => {
@@ -95,6 +124,8 @@ describe("heading styles", () => {
     const source = bookToTypst(book, project.settings.export.docx, { words: "parole" });
     expect(source).toContain('if it.level == 2 { set align(right); set par(leading: 0em); set text(font: ("Georgia", "Libertinus Serif", "New Computer Modern"), size: 20pt, weight: "bold", style: "italic"); block(above: 33.96pt, below: 21.96pt, upper(it.body)) }');
     expect(source).toContain("if it.level == 3 { set align(left)");
+    expect(source).toContain("margin: (top: 3cm, bottom: 2cm, left: 1.5cm, right: 2cm)");
+    expect(source).toContain("#v(3cm)\n#heading(level: 2)");
     // The same text the Rust test compiles: run with UPDATE_FIXTURES=1 to write it again.
     const fixture = new URL("../../../../src-tauri/src/fixtures/headings.typ", import.meta.url);
     if (process.env.UPDATE_FIXTURES) (await import("node:fs")).writeFileSync(fixture, source);

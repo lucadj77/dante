@@ -20,6 +20,7 @@
   import type { Project } from "$lib/core/project";
   import {
     defaultHeadings,
+    defaultMargins,
     defaultQuotes,
     EXPORT_FORMATS,
     HEADING_KINDS,
@@ -110,6 +111,20 @@
   // of the text; the ones the writer changed stay as chosen.
   const parts = $derived(project.settings.structure.parts);
   const usual = $derived(defaultHeadings({ profile: options.profile, fontSize: Number(options.fontSize) || 12, lineSpacing: Number(options.lineSpacing) || 1 }, parts));
+  // Margins left as the page gives them follow the size of the page.
+  const usualMargins = $derived(defaultMargins(options));
+  const SIDES = ["top", "bottom", "left", "right"] as const;
+  const SIDE_LABELS = { top: "export.marginTop", bottom: "export.marginBottom", left: "export.marginLeft", right: "export.marginRight" } as const;
+  const marginsChanged = $derived(SIDES.some((side) => options.margins[side] !== usualMargins[side]));
+  // svelte-ignore state_referenced_locally
+  let followedMargins = usualMargins;
+  $effect(() => {
+    const next = usualMargins;
+    untrack(() => {
+      for (const side of SIDES) if (options.margins[side] === followedMargins[side] && options.margins[side] !== next[side]) options.margins[side] = next[side];
+      followedMargins = next;
+    });
+  });
   // svelte-ignore state_referenced_locally
   let followed = usual;
   $effect(() => {
@@ -157,8 +172,9 @@
   function applyProfile(name: string) {
     const saved = profiles[name];
     if (!saved) return;
-    // A saved profile comes with its own headings: nothing to follow.
+    // A saved profile comes with its own headings and margins: nothing to follow.
     followed = defaultHeadings(saved.docx, parts);
+    followedMargins = defaultMargins(saved.docx);
     options = structuredClone($state.snapshot(saved.docx));
     format = saved.format === "pdf" && !inTauri() && project.fs instanceof BrowserFs ? "docx" : saved.format;
     useCover = saved.cover;
@@ -593,11 +609,20 @@
       <label>{t("export.fontSize")} <input type="number" min="8" max="20" bind:value={options.fontSize} /></label>
       <label
         >{t("export.lineSpacing")}
-        <input type="number" min={LINE_SPACING.min} max={LINE_SPACING.max} step="0.05" bind:value={options.lineSpacing} />
+        <input type="number" min={LINE_SPACING.min} max={LINE_SPACING.max} step="0.01" bind:value={options.lineSpacing} />
       </label>
       {#if !gamebook}<label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>{/if}
     </div>
     <p class="hint">{t("export.lineSpacingHint")}</p>
+    <fieldset class="margins">
+      <legend>{t("export.margins")}</legend>
+      <div class="row four">
+        {#each SIDES as side (side)}
+          <label>{t(SIDE_LABELS[side])} <input type="number" min="0.5" max="10" step="0.01" bind:value={options.margins[side]} /></label>
+        {/each}
+      </div>
+      {#if marginsChanged}<button type="button" class="link" onclick={() => (options.margins = { ...usualMargins })}>{t("export.marginsReset")}</button>{/if}
+    </fieldset>
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
     <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
@@ -729,13 +754,13 @@
       <fieldset>
         <legend>{t("kind.part")}</legend>
         <HeadingLevel bind:level={structure.part} language={project.settings.language} sample={t("sample.partTitle")} feminine />
-        <HeadingFormat bind:style={options.headings.part} usual={usual.part} textFont={options.font} />
+        <HeadingFormat bind:style={options.headings.part} usual={usual.part} textFont={options.font} opens />
       </fieldset>
     {/if}
     <fieldset>
       <legend>{t("kind.chapter")}</legend>
       <HeadingLevel bind:level={structure.chapter} language={project.settings.language} sample={t("sample.chapterTitle")} />
-      <HeadingFormat bind:style={options.headings.chapter} usual={usual.chapter} textFont={options.font} />
+      <HeadingFormat bind:style={options.headings.chapter} usual={usual.chapter} textFont={options.font} opens />
     </fieldset>
     <fieldset>
       <legend>{t("kind.scene")}</legend>
@@ -1079,6 +1104,14 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
+  }
+  .row.four {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .margins .link {
+    display: inline-block;
+    width: auto;
+    margin-top: 8px;
   }
   .actions {
     display: flex;
