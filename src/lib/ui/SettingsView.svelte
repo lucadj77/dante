@@ -2,7 +2,8 @@
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import type { Project } from "$lib/core/project";
-  import { NOVEL_LANGUAGES, projectStatus, type NovelSettings } from "$lib/core/settings";
+  import { defaultQuotes, NOVEL_LANGUAGES, projectStatus, QUOTE_STYLES, type NovelSettings } from "$lib/core/settings";
+  import TypographyPreview from "./TypographyPreview.svelte";
   import HeadingLevel from "./HeadingLevel.svelte";
   import PropertyDefEditor from "./PropertyDefEditor.svelte";
   import CoverPicker from "./CoverPicker.svelte";
@@ -66,7 +67,7 @@
 
   // The sections: those of the novel, saved in the project, and those of this computer. Each
   // is a short page; `keys` are the texts it holds, which the search field looks through.
-  type SectionId = "book" | "cover" | "structure" | "scenes" | "measures" | "look" | "gamebook" | "upkeep" | "you" | "appearance" | "text" | "writing" | "backup" | "updates";
+  type SectionId = "book" | "cover" | "structure" | "scenes" | "measures" | "typography" | "look" | "gamebook" | "upkeep" | "you" | "appearance" | "text" | "writing" | "backup" | "updates";
   interface SectionDef {
     id: SectionId;
     group: "novel" | "app";
@@ -78,7 +79,8 @@
     { id: "cover", group: "novel", title: "cover.title", keys: ["cover.hint", "cover.imageChoose", "cover.template", "cover.palette", "cover.texts", "cover.textColor", "cover.outline"] },
     { id: "structure", group: "novel", title: "settings.structure", keys: ["settings.parts", "settings.numbering", "settings.label", "heading.separator", "settings.restart", "kind.part", "kind.chapter"] },
     { id: "scenes", group: "novel", title: "settings.sec.scenes", keys: ["settings.sceneTemplate", "settings.sceneTemplateEdit", "property.defined", "property.definedHint", "settings.tree", "settings.treeDot"] },
-    { id: "measures", group: "novel", title: "settings.sec.measures", keys: ["settings.pages", "settings.pageUnit", "settings.pageCharacters", "settings.pageWords", "settings.style", "settings.longSentence", "settings.repetitionWindow", "settings.readingSpeed", "settings.goalsLink", "settings.typographyLink"] },
+    { id: "measures", group: "novel", title: "settings.sec.measures", keys: ["settings.pages", "settings.pageUnit", "settings.pageCharacters", "settings.pageWords", "settings.style", "settings.longSentence", "settings.repetitionWindow", "settings.readingSpeed", "statsView.goals", "statsView.goalWords", "statsView.deadline", "statsView.daily", "statsView.writingDays"] },
+    { id: "typography", group: "novel", title: "export.typography", keys: ["export.typographyHint", "export.quotes", "export.dialogueDash", "export.apostrophes", "export.ellipsis", "export.spaces", "export.whileTyping"] },
     { id: "look", group: "novel", title: "settings.sec.look", keys: ["look.own", "look.ownHint", "settings.theme", "appearance.accent", "settings.font"] },
     { id: "gamebook", group: "novel", title: "gamebook.title", keys: ["gamebook.enable", "gamebook.enableHint", "gamebook.folder", "gamebook.boxes", "gamebook.onePerPage", "gamebook.showLinks"] },
     { id: "upkeep", group: "novel", title: "settings.sec.upkeep", keys: ["whole.title", "whole.hint", "whole.take", "snap.cleanTitle", "snap.cleanHint", "snap.clean"] },
@@ -340,6 +342,15 @@
     newWord = "";
   }
 
+  /** What the goals count: characters with spaces, or words. */
+  const byChars = $derived(novel.goals.unit === "characters");
+  /** Monday to Sunday, 1 to 7, with their short names in the interface language. */
+  const weekdays = $derived([1, 2, 3, 4, 5, 6, 7].map((d) => ({ day: d, name: new Date(2024, 0, d).toLocaleDateString(app.settings.language, { weekday: "short" }) })));
+  function toggleDay(day: number) {
+    const days = novel.goals.days;
+    novel.goals.days = (days.includes(day) ? days.filter((d) => d !== day) : [...days, day]).sort();
+  }
+
   /** Writes the novel's settings as `text` has them. */
   async function save(text: string) {
     timer = undefined;
@@ -350,6 +361,8 @@
       settings.authors = settings.authors.map((a) => a.trim()).filter(Boolean);
       for (const key of ["longSentence", "repetitionWindow", "readingSpeed"] as const) settings.style[key] = Math.max(1, Math.round(Number(settings.style[key]) || 0)) || { longSentence: 40, repetitionWindow: 30, readingSpeed: 230 }[key];
       settings.pages.size = Math.max(1, Math.round(Number(settings.pages.size) || 0)) || (settings.pages.unit === "words" ? 250 : 1800);
+      for (const key of ["words", "daily"] as const) settings.goals[key] = Math.max(0, Math.round(Number(settings.goals[key]) || 0));
+      settings.goals.deadline ||= "";
       settings.language = settings.language.trim() || "en";
       written = text;
       await project.saveSettings(settings);
@@ -364,7 +377,7 @@
 
 <script lang="ts" module>
   /** The page shown, kept while the app is open. */
-  const lastSection = { id: "book" as "book" | "cover" | "structure" | "scenes" | "measures" | "look" | "gamebook" | "upkeep" | "you" | "appearance" | "text" | "writing" | "backup" | "updates" };
+  const lastSection = { id: "book" as "book" | "cover" | "structure" | "scenes" | "measures" | "typography" | "look" | "gamebook" | "upkeep" | "you" | "appearance" | "text" | "writing" | "backup" | "updates" };
 </script>
 
 {#snippet group(id: "novel" | "app", title: MessageKey, hint: MessageKey)}
@@ -529,14 +542,19 @@
         <label>{t("settings.repetitionWindow")} <input type="number" min="2" step="1" bind:value={novel.style.repetitionWindow} /></label>
         <label>{t("settings.readingSpeed")} <input type="number" min="50" step="10" bind:value={novel.style.readingSpeed} /></label>
 
-        <h3>{t("settings.elsewhere")}</h3>
+        <h3>{t("statsView.goals")}</h3>
+        <label>{t(byChars ? "statsView.goalWordsChars" : "statsView.goalWords")} <input type="number" min="0" step="1" bind:value={novel.goals.words} /></label>
+        <label class="narrow">{t("statsView.deadline")} <input type="date" bind:value={novel.goals.deadline} /></label>
+        <label>{t(byChars ? "statsView.dailyChars" : "statsView.daily")} <input type="number" min="0" step="1" bind:value={novel.goals.daily} /></label>
+        <fieldset class="weekdays">
+          <legend>{t("statsView.writingDays")}</legend>
+          {#each weekdays as w (w.day)}
+            <label class="check day"><input type="checkbox" checked={novel.goals.days.includes(w.day)} onchange={() => toggleDay(w.day)} /> {w.name}</label>
+          {/each}
+        </fieldset>
         <div class="elsewhere">
-          <p>{t("settings.goalsLink", { unit: t(novel.goals.unit === "characters" ? "stats.characters" : "stats.words") })}</p>
+          <p>{t("settings.goalUnitNote", { unit: t(byChars ? "stats.characters" : "stats.words").toLowerCase() })}</p>
           <button type="button" onclick={() => onGo?.("stats")}>{t("settings.openStats")}</button>
-        </div>
-        <div class="elsewhere">
-          <p>{t("settings.typographyLink")}</p>
-          <button type="button" onclick={() => onGo?.("export")}>{t("settings.openExport")}</button>
         </div>
       </div>
       <aside class="preview" aria-label={t("settings.previewPage")}>
@@ -545,6 +563,39 @@
           {#each Array(14) as _, i (i)}<i class:short={i % 5 === 4}></i>{/each}
         </div>
         <span class="holds">{t(novel.pages.unit === "words" ? "settings.pageHoldsWords" : "settings.pageHoldsChars", { n: num(Number(novel.pages.size) || 0) })}</span>
+      </aside>
+    {:else if section === "typography"}
+      {@const typo = novel.export.typography}
+      <div class="fields">
+        <p class="hint">{t("export.typographyHint")}</p>
+        <label
+          >{t("export.quotes")}
+          <select bind:value={typo.quotes}>
+            {#each QUOTE_STYLES as style (style)}
+              <option value={style}>{t(`export.quotes.${style}` as MessageKey)}{style === defaultQuotes(novel.language) ? ` · ${t("export.quotesUsual")}` : ""}</option>
+            {/each}
+          </select>
+        </label>
+        {#if typo.quotes !== "keep" && typo.quotes !== "dash" && typo.quotes !== "dashAttached"}
+          <p class="hint">{t("export.quotesMarksHint")}</p>
+        {/if}
+        {#if typo.quotes === "dash" || typo.quotes === "dashAttached"}
+          <p class="hint">{t(typo.quotes === "dash" ? "export.quotesDashHint" : "export.quotesDashAttachedHint")}</p>
+          <label class="narrow"
+            >{t("export.dialogueDash")}
+            <select bind:value={typo.dialogueDash}>
+              <option value="em">{t("export.dialogueEm")}</option>
+              <option value="en">{t("export.dialogueEn")}</option>
+            </select>
+          </label>
+        {/if}
+        <label class="check"><input type="checkbox" bind:checked={typo.apostrophes} /> {t("export.apostrophes")}</label>
+        <label class="check"><input type="checkbox" bind:checked={typo.ellipsis} /> {t("export.ellipsis")}</label>
+        <label class="check"><input type="checkbox" bind:checked={typo.spaces} /> {t("export.spaces")}</label>
+        <label class="check"><input type="checkbox" bind:checked={typo.whileTyping} /> {t("export.whileTyping")}</label>
+      </div>
+      <aside class="preview" aria-label={t("export.typography")}>
+        <TypographyPreview {project} typography={typo} />
       </aside>
     {:else if section === "look"}
       <div class="fields">
@@ -969,6 +1020,11 @@
     align-items: center;
     gap: 8px;
     color: var(--text);
+  }
+  .weekdays {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 14px;
   }
   label.narrow {
     max-width: 260px;

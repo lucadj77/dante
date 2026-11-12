@@ -27,6 +27,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Copie di sicurezza**: la guida ha la figura della pagina, e la nota in cima alla pagina rimanda ad **Apri questa copia**.
+- **Obiettivi e tipografia nelle Impostazioni**: la lunghezza del romanzo, la scadenza, la quota del giorno e i giorni di scrittura si scrivono anche in **Impostazioni → Misure e obiettivi**; la nuova pagina **Tipografia** ha lo stile dei dialoghi e le correzioni, con il primo dialogo del romanzo come anteprima. Statistiche ed Esportazione restano come prima.
 - **Esportazione**: più spazio tra la nota sul font e i campi che la seguono.
 - **Guida in inglese**: le figure della guida in inglese ora mostrano il programma in inglese; quelle della guida in italiano sono aggiornate alla nuova esportazione.
 - **Margini della pagina e titoli senza righe vuote**: in Pagina e copertina si scelgono i quattro margini in centimetri. Nel file Word il titolo di parti e capitoli e le pagine iniziali (frontespizio, dedica, esergo, indice) non sono più preceduti da una riga vuota: per i titoli la distanza dall'alto della pagina è uno spazio del titolo, che puoi regolare o azzerare.

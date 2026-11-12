@@ -47,3 +47,15 @@ if (run('librogame')) { const { b, page } = await start({ sample: false, setting
   await page.getByRole('button', { name: P(/^Grafo/, /graph/i) }).first().click(); await page.waitForTimeout(3500);
   await page.screenshot({ path: S + 'grafo-full.png' });
   await b.close(); }
+
+// The backups page exists only in the desktop app: a small novel kept in memory stands in for a folder.
+if (run('copie')) {
+  const title = P('Il faro', 'The Lighthouse');
+  const files = { 'dante.yaml': `title: "${title}"\nauthor: Luca\nlanguage: ${P('it', 'en')}\n`, [P('Manoscritto/01 Il ritorno/01 La lettera.md', 'Manuscript/01 The return/01 The letter.md')]: P('Il telefono squillò alle tre del mattino.\n', 'The telephone rang at three in the morning.\n') };
+  const backups = ['2026-11-12 09-41-07', '2026-11-11 18-05-32', '2026-11-10 22-17-45'].map((d) => `${title} ${d}.zip`);
+  const { b, page } = await start({ fakeTauri: true, project: { files, backups } });
+  await page.getByText(title).first().click(); await page.waitForTimeout(2500);
+  await page.locator('nav button[data-section="settings"]').click(); await page.waitForTimeout(600);
+  await page.locator('[data-settings="backup"]').click(); await page.waitForTimeout(1200);
+  await page.screenshot({ path: S+'copie-full.png' });
+  await b.close(); }

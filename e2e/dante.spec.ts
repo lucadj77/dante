@@ -128,6 +128,22 @@ test("finds a settings page by a word, and gives the novel a look of its own", a
   await expect(page.locator("html")).not.toHaveAttribute("data-palette", "night");
 });
 
+test("sets the goals and the typography of the novel from the settings", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="measures"]').click();
+  await page.getByLabel(/^Lunghezza del romanzo/).fill("90000");
+  await page.locator('[data-settings="typography"]').click();
+  await page.getByLabel("Dialoghi").selectOption("dash");
+  await expect(page.getByRole("complementary", { name: "Tipografia" })).toContainText("—");
+  // Statistics and Export read what the settings wrote.
+  await page.locator('nav button[data-section="stats"]').click();
+  await expect(page.getByRole("spinbutton", { name: /^Lunghezza del romanzo/ })).toHaveValue("90000");
+  await page.locator('nav button[data-section="export"]').click();
+  await page.locator('[data-export="typography"]').click();
+  await expect(page.getByLabel("Dialoghi")).toHaveValue("dash");
+});
+
 test("names the stage under each scene's dot, or the property chosen for it", async ({ page }) => {
   await openSample(page);
   await page.locator(".row .status").first().hover();
