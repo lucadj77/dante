@@ -1,6 +1,6 @@
 import { shortcutKeys } from "./shortcuts";
-import { EditorState, Facet, Prec, RangeSetBuilder, StateField, Transaction, type Extension } from "@codemirror/state";
-import { Decoration, EditorView, keymap, WidgetType, type DecorationSet } from "@codemirror/view";
+import { EditorState, Facet, RangeSetBuilder, StateField, Transaction, type Extension } from "@codemirror/state";
+import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
 import { iconElement } from "$lib/ui/icons";
 import { discussion, parseCritic, today, trackChange, type CriticItem } from "$lib/core/critic";
 

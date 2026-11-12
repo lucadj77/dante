@@ -304,7 +304,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     body.push(new Paragraph({ heading: HEADINGS[level], ...(newPage ? sink(part ? "part" : "chapter") : {}), children: plain(text) }));
   };
 
-  const [pageWidth, pageHeight] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
+  const [pageWidth] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
   // The width between the margins, in pixels: no image is wider.
   const textWidth = Math.floor(((pageWidth - opts.margins.left - opts.margins.right) / 2.54) * 96);
 
