@@ -21,7 +21,6 @@ import { basename, dirname, extname, isMarkdown, isWithin, join, rebase, stripEx
 import {
   defaultFolders,
   defaultSettings,
-  defaultTypes,
   knownFolders,
   parseSettings,
   projectStatus,
@@ -32,34 +31,22 @@ import {
   type NoteType,
   type NovelSettings,
 } from "./settings";
-import { restoreSnapshot, snapshotDir, takeSnapshot } from "./snapshots";
+import { snapshotDir, takeSnapshot } from "./snapshots";
 import { moveHistory } from "./history";
 import { textStats } from "./stats";
-import { addToList, newParagraphText, relabel, removeFromList, setParagraphFields, type ParagraphChanges } from "./gamebook/edit";
-import { fixArticles } from "./gamebook/articles";
-import type { GamebookIndex } from "./gamebook/paragraphs";
-import { gamebookOf } from "./gamebook/marks";
-import { graphNote, graphNotePath, mermaidGraph } from "./gamebook/graph";
+import type { ParagraphChanges } from "./gamebook/edit";
 
-/** Where the operations on a whole gamebook are recorded, to undo them. */
-const OPERATIONS = ".dante/gamebook/operations.json";
-
-export interface GamebookOperation {
-  id: string;
-  /** The name of the snapshots it took, such as "Prima del rimescolamento". */
-  name: string;
-  date: string;
-  /** Each file it changed, with the snapshot of it taken before. */
-  files: { path: string; snapshot: string }[];
-  /** The paragraphs' numbers before it, by path. */
-  numbers: Record<string, number>;
-}
+import * as gamebook from "./projectGamebook";
+import type { GamebookOperation } from "./projectGamebook";
+export type { GamebookOperation } from "./projectGamebook";
 import type { TextSize } from "./sessions";
 import { rewriteLinks } from "./wikilinks";
 import { findConflicts, mergeAsRevisions, type ConflictCopy } from "./conflicts";
 import { today } from "./critic";
 import { isView, parseView, serializeView, starterViews, VIEW_EXT, type ViewSpec } from "./views";
 import type { ImportedBook } from "./import/structure";
+import { importBookInto, importNotesInto, type NoteDestination } from "./projectImport";
+export { noteDestination, type NoteDestination } from "./projectImport";
 import type { ImportedNote } from "./import/scrivener";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
@@ -143,26 +130,6 @@ export class StaleUndoError extends Error {
   constructor() {
     super("The last change can no longer be undone");
   }
-}
-
-/** Where a group of imported notes goes: a type of the Story Bible, Research, the Laboratory, or nowhere. */
-export type NoteDestination = `codex:${string}` | "research" | "laboratory" | "skip";
-
-/**
- * The likely place of a group of notes: a folder named as a type of the Story Bible, in
- * any of Dante's languages, by its name or its folder, goes there; the rest into Research.
- */
-export function noteDestination(types: Record<string, NoteType>, group: string, research = false): NoteDestination {
-  if (research) return "research";
-  const wanted = group.trim().toLowerCase();
-  for (const [id, type] of Object.entries(types)) {
-    const names = [type.name, type.folder, ...["en", "it", "es", "fr"].flatMap((l) => {
-      const known = defaultTypes(l)[id];
-      return known ? [known.name, known.folder] : [];
-    })];
-    if (names.some((n) => n.toLowerCase() === wanted)) return `codex:${id}`;
-  }
-  return "research";
 }
 
 export class Project {
@@ -493,7 +460,7 @@ export class Project {
   // Notes and files outside the manuscript: Codex, Research, Laboratory and the rest.
 
   /** A file name in `dir` not taken yet: "Name.md", then "Name 2.md" and so on. */
-  private async freeName(dir: string, name: string): Promise<string> {
+  async freeName(dir: string, name: string): Promise<string> {
     const ext = extname(name);
     const stem = ext ? name.slice(0, -ext.length) : name;
     let candidate = join(dir, name);
@@ -870,91 +837,7 @@ export class Project {
    * Refuses a number another paragraph of the same folder already has.
    */
   async setParagraph(path: string, changes: ParagraphChanges): Promise<void> {
-    await this.beforeMove?.();
-    const index = gamebookOf(await this.index(), this.settings);
-    const paragraph = index?.get(path);
-    changes = { ...changes };
-    if (changes.numberType === "relative" && index && changes.anchor !== undefined) {
-      const r = index.resolve(changes.anchor);
-      if (r.kind !== "paragraph") throw new Error(`gamebook.noAnchor:${changes.anchor}`);
-      if (this.anchoredOn(index, r.to.path, path)) throw new Error(`gamebook.anchorCycle:${changes.anchor}`);
-      changes.number = r.to.number + (changes.offset ?? 0);
-    }
-    if (changes.number !== undefined && (!Number.isInteger(changes.number) || changes.number < 1)) throw new Error(`gamebook.badNumber:${changes.number}`);
-    if (changes.number !== undefined && index && paragraph && changes.number !== paragraph.number) {
-      // The paragraphs relative to this one move with it, keeping their distance.
-      const moved = new Map<string, number>([[path, changes.number]]);
-      const queue = [paragraph];
-      while (queue.length) {
-        const anchor = queue.shift()!;
-        for (const other of index.inScope(paragraph.scope)) {
-          if (moved.has(other.path) || other.numberType !== "relative" || !other.anchor) continue;
-          const r = index.resolve(other.anchor);
-          if (r.kind !== "paragraph" || r.to.path !== anchor.path) continue;
-          moved.set(other.path, moved.get(anchor.path)! + (other.offset ?? other.number - anchor.number));
-          queue.push(other);
-        }
-      }
-      for (const n of moved.values()) {
-        const taken = index.byNumber(paragraph.scope, n);
-        if (taken && !moved.has(taken.path)) throw new Error(`gamebook.numberTaken:${n}:${taken.title}`);
-        if (n < 1) throw new Error(`gamebook.badNumber:${n}`);
-      }
-      await this.writeNumbers(index, moved, path, changes);
-      await this.reload();
-      return;
-    }
-    const text = await this.fs.readText(path);
-    const next = setParagraphFields(text, changes);
-    if (next !== text) await this.fs.writeText(path, next);
-    await this.reload();
-  }
-
-  /** The files that a change of the numbers in `moved` rewrites: the paragraphs and those that refer to them. */
-  private touchedBy(index: GamebookIndex, moved: Map<string, number>): string[] {
-    const files = new Set<string>();
-    for (const [p, n] of moved) {
-      if (index.get(p)?.number === n) continue;
-      files.add(p);
-      for (const { from } of index.incoming(p)) files.add(from.path);
-    }
-    return [...files];
-  }
-
-  /**
-   * Gives the paragraphs in `moved` their new numbers and relabels every reference to
-   * them, correcting the articles; `own` changes one paragraph's other fields as well.
-   */
-  private async writeNumbers(index: GamebookIndex, moved: Map<string, number>, own?: string, changes?: ParagraphChanges): Promise<number> {
-    // Each file to rewrite, with the references in it to relabel.
-    const edits = new Map<string, { name: string; from: number; to: number }[]>();
-    const add = (file: string, name: string, from: number, to: number) => edits.set(file, [...(edits.get(file) ?? []), { name, from, to }]);
-    for (const [p, n] of moved) {
-      const old = index.get(p);
-      if (!old || (old.number === n && p !== own)) continue;
-      add(p, old.title, old.number, n);
-      for (const { from, reference } of index.incoming(p)) add(from.path, reference.target, old.number, n);
-    }
-    const numberOf = (target: string) => {
-      const r = index.resolve(target);
-      return r.kind !== "paragraph" ? null : (moved.get(r.to.path) ?? r.to.number);
-    };
-    let written = 0;
-    for (const [file, list] of edits) {
-      const text = await this.fs.readText(file);
-      let next = text;
-      if (file === own && changes) next = setParagraphFields(next, changes);
-      else if (moved.has(file)) next = setParagraphFields(next, { number: moved.get(file)! });
-      // Through a placeholder, so that two paragraphs that swap numbers do not catch each other's references.
-      for (const e of list) next = relabel(next, e.name, e.from, -1 - e.to);
-      for (const e of list) next = relabel(next, e.name, -1 - e.to, e.to);
-      if (this.settings.language.toLowerCase().startsWith("it")) next = fixArticles(next, numberOf).text;
-      if (next !== text) {
-        await this.fs.writeText(file, next);
-        written++;
-      }
-    }
-    return written;
+    return gamebook.setParagraph(this, path, changes);
   }
 
   /**
@@ -962,25 +845,12 @@ export class Project {
    * note at the top of the project, keeping what the writer added around it; returns its path.
    */
   async writeGamebookGraph(scope: string, intro: string): Promise<string> {
-    const index = gamebookOf(await this.index(), this.settings);
-    if (!index) throw new Error("gamebook.off");
-    const path = graphNotePath(this.settings.language);
-    const existing = (await this.fs.exists(path)) ? await this.fs.readText(path) : null;
-    const next = graphNote(existing, mermaidGraph(index, scope, this.settings.gamebook.start), intro);
-    if (next !== existing) await this.fs.writeText(path, next);
-    await this.reload();
-    return path;
+    return gamebook.writeGamebookGraph(this, scope, intro);
   }
 
   /** In a gamebook: the operations on the whole book, newest first, to undo them. */
   async gamebookOperations(): Promise<GamebookOperation[]> {
-    if (!(await this.fs.exists(OPERATIONS))) return [];
-    try {
-      const list = JSON.parse(await this.fs.readText(OPERATIONS));
-      return Array.isArray(list) ? list : [];
-    } catch {
-      return [];
-    }
+    return gamebook.gamebookOperations(this);
   }
 
   /**
@@ -989,26 +859,7 @@ export class Project {
    * so that it can be undone. Returns how many files changed.
    */
   async renumberParagraphs(numbers: Map<string, number>, name: string): Promise<number> {
-    await this.beforeMove?.();
-    const index = gamebookOf(await this.index(), this.settings);
-    if (!index) return 0;
-    const now = new Date();
-    const files: { path: string; snapshot: string }[] = [];
-    for (const path of this.touchedBy(index, numbers)) {
-      const snap = await takeSnapshot(this.fs, path, name, now);
-      if (snap) files.push({ path, snapshot: snap.path });
-    }
-    const before: Record<string, number> = {};
-    for (const p of numbers.keys()) {
-      const old = index.get(p);
-      if (old) before[p] = old.number;
-    }
-    const written = await this.writeNumbers(index, numbers);
-    const operations = await this.gamebookOperations();
-    operations.unshift({ id: now.toISOString(), name, date: now.toISOString(), files, numbers: before });
-    await this.fs.writeText(OPERATIONS, JSON.stringify(operations.slice(0, 30), null, 2));
-    await this.reload();
-    return written;
+    return gamebook.renumberParagraphs(this, numbers, name);
   }
 
   /**
@@ -1017,38 +868,7 @@ export class Project {
    * written since stays.
    */
   async undoGamebookOperation(id: string, onlyNumbers: boolean, name: string): Promise<void> {
-    const op = (await this.gamebookOperations()).find((o) => o.id === id);
-    if (!op) return;
-    if (onlyNumbers) {
-      const index = gamebookOf(await this.index(), this.settings);
-      const numbers = new Map(Object.entries(op.numbers).filter(([p]) => index?.get(p)));
-      for (const [p, n] of numbers) {
-        const p0 = index!.get(p)!;
-        const taken = index!.byNumber(p0.scope, n);
-        if (taken && !numbers.has(taken.path)) throw new Error(`gamebook.numberTaken:${n}:${taken.title}`);
-      }
-      await this.renumberParagraphs(numbers, name);
-      return;
-    }
-    await this.beforeMove?.();
-    for (const f of op.files) {
-      if (await this.fs.exists(f.snapshot)) await restoreSnapshot(this.fs, f.path, f.snapshot);
-    }
-    await this.reload();
-  }
-
-  /** Whether `anchor` follows `path`, directly or through other anchors: anchoring on it would go round in a circle. */
-  private anchoredOn(index: GamebookIndex, anchor: string, path: string): boolean {
-    const seen = new Set<string>();
-    let current = index.get(anchor);
-    while (current && !seen.has(current.path)) {
-      if (current.path === path) return true;
-      seen.add(current.path);
-      if (current.numberType !== "relative" || !current.anchor) return false;
-      const r = index.resolve(current.anchor);
-      current = r.kind === "paragraph" ? r.to : undefined;
-    }
-    return false;
+    return gamebook.undoGamebookOperation(this, id, onlyNumbers, name);
   }
 
   /**
@@ -1056,27 +876,7 @@ export class Project {
    * one relative to another paragraph, and returns its path and number.
    */
   async createParagraph(dir: string, title: string, spec: { numberType: "free" | "fixed" | "relative"; number?: number; anchor?: string; offset?: number }): Promise<{ path: string; title: string; number: number }> {
-    const clean = sanitizeTitle(title);
-    if (!clean) throw new Error("gamebook.noTitle");
-    const path = join(dir, `${clean}.md`);
-    if (await this.fs.exists(path)) throw new Error(`gamebook.exists:${clean}`);
-    const index = gamebookOf(await this.index(), this.settings);
-    let number: number;
-    if (spec.numberType === "relative") {
-      const r = spec.anchor && index ? index.resolve(spec.anchor) : null;
-      if (!r || r.kind !== "paragraph") throw new Error(`gamebook.noAnchor:${spec.anchor ?? ""}`);
-      number = r.to.number + (spec.offset ?? 0);
-    } else if (spec.numberType === "fixed") {
-      number = spec.number ?? 0;
-    } else {
-      number = index ? index.firstFreeNumber(dir) : 1;
-    }
-    if (!Number.isInteger(number) || number < 1) throw new Error(`gamebook.badNumber:${number}`);
-    const taken = index?.byNumber(dir, number);
-    if (taken) throw new Error(`gamebook.numberTaken:${number}:${taken.title}`);
-    await this.fs.writeText(path, newParagraphText({ number, numberType: spec.numberType, anchor: spec.anchor, offset: spec.offset }));
-    await this.reload();
-    return { path, title: clean, number };
+    return gamebook.createParagraph(this, dir, title, spec);
   }
 
   /**
@@ -1084,27 +884,16 @@ export class Project {
    * number in the paragraphs' folder, so that it goes before them; returns its path.
    */
   async createPage(dir: string, title: string): Promise<string> {
-    const path = await this.freeName(dir, (sanitizeTitle(title) || "Untitled") + ".md");
-    await this.fs.writeText(path, "");
-    await this.reload();
-    return path;
+    return gamebook.createPage(this, dir, title);
   }
 
   /** In a gamebook: adds a value to a list property of a paragraph (a hidden reference, a keyword), as the plugin writes it. */
   async addToParagraphList(path: string, key: string, value: string): Promise<void> {
-    await this.beforeMove?.();
-    const text = await this.fs.readText(path);
-    const next = addToList(text, key, value);
-    if (next !== text) await this.fs.writeText(path, next);
-    await this.reload();
+    return gamebook.addToParagraphList(this, path, key, value);
   }
 
   async removeFromParagraphList(path: string, key: string, value: string): Promise<void> {
-    await this.beforeMove?.();
-    const text = await this.fs.readText(path);
-    const next = removeFromList(text, key, value);
-    if (next !== text) await this.fs.writeText(path, next);
-    await this.reload();
+    return gamebook.removeFromParagraphList(this, path, key, value);
   }
 
   /**
@@ -1329,94 +1118,7 @@ export class Project {
    * file name as it is, or that repeats another, is kept as the `title` property.
    */
   async importBook(book: ImportedBook, options: { into?: string; continueChapter?: string } = {}): Promise<void> {
-    const step = 10;
-    const nextOrder = (node: ManuscriptNode) => Math.max(0, ...node.children.map((c) => c.order ?? 0)) + step;
-    const fileName = (title: string, taken: Set<string>) => {
-      const base = sanitizeTitle(title) || "Untitled";
-      let name = base;
-      for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${base} ${n}`;
-      taken.add(name.toLowerCase());
-      return name;
-    };
-    const withTitle = (title: string, file: string, body = "", synopsis = "") => {
-      const clean = title.trim();
-      const properties: Properties = {};
-      if (clean && clean !== file) properties[TITLE] = clean;
-      if (synopsis.trim()) properties[SYNOPSIS] = synopsis.trim();
-      return Object.keys(properties).length ? writeProperties(body, properties) : body;
-    };
-    if (book.hasParts && !this.settings.structure.parts) {
-      // With parts on, a folder at the top reads as a part: the chapters already there say they are not.
-      for (const c of this.manuscript.children) {
-        if (c.kind !== "chapter") continue;
-        const note = folderNotePath(c.path);
-        const text = (await this.fs.exists(note)) ? await this.fs.readText(note) : "";
-        await this.fs.writeText(note, writeProperties(text, { kind: "chapter" }));
-      }
-      await this.saveSettings({ ...this.settings, structure: { ...this.settings.structure, parts: true } });
-    }
-    const continued = options.continueChapter ? findNode(this.manuscript, options.continueChapter) : null;
-    const opening = book.parts[0]?.chapters[0];
-    if (continued && opening?.untitled) {
-      const taken = new Set([continued.fileTitle.toLowerCase(), ...continued.children.map((c) => c.fileTitle.toLowerCase())]);
-      let order = nextOrder(continued);
-      for (const scene of opening.scenes) {
-        const file = fileName(scene.title, taken);
-        await this.fs.writeText(join(continued.path, formatName(order, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : "", scene.synopsis));
-        order += step;
-      }
-      book = { ...book, parts: [{ ...book.parts[0], chapters: book.parts[0].chapters.slice(1) }, ...book.parts.slice(1)] };
-      await this.reload();
-    }
-    // Chapters go into a part only when the book has none of its own.
-    const into = options.into && !book.hasParts ? findNode(this.manuscript, options.into) : null;
-    const root = into && into.kind === "part" ? into : this.manuscript;
-    const rootTaken = new Set([...(root === this.manuscript ? [] : [root.fileTitle.toLowerCase()]), ...root.children.map((c) => c.fileTitle.toLowerCase())]);
-    let rootOrder = nextOrder(root);
-    const writeChapter = async (dir: string, order: number, chapter: ImportedBook["parts"][number]["chapters"][number], taken: Set<string>) => {
-      const name = fileName(chapter.title, taken);
-      const path = join(dir, formatName(order, name));
-      await this.fs.mkdir(path);
-      // A prologue or epilogue is said so; a chapter outside the parts must say it is one.
-      const kind = /^(prolog(?:ue|o)?|prólogo)$/i.test(chapter.title.trim())
-        ? "prologue"
-        : /^(epilog(?:ue|o)?|epílogo)$/i.test(chapter.title.trim())
-          ? "epilogue"
-          : dir === this.manuscript.path && this.settings.structure.parts
-            ? "chapter"
-            : null;
-      const note = withTitle(chapter.title, name, "", chapter.synopsis);
-      if (kind || note) await this.fs.writeText(folderNotePath(path), kind ? writeProperties(note, { kind }) : note);
-      // A scene may not share its chapter's name, or it would be read as the chapter's note.
-      const scenes = new Set([name.toLowerCase()]);
-      let sceneOrder = step;
-      for (const scene of chapter.scenes) {
-        const file = fileName(scene.title, scenes);
-        await this.fs.writeText(join(path, formatName(sceneOrder, file) + ".md"), withTitle(scene.title, file, scene.text ? scene.text + "\n" : "", scene.synopsis));
-        sceneOrder += step;
-      }
-    };
-    for (const part of book.parts) {
-      if (book.hasParts && part.title) {
-        const name = fileName(part.title, rootTaken);
-        const path = join(root.path, formatName(rootOrder, name));
-        rootOrder += step;
-        await this.fs.mkdir(path);
-        await this.fs.writeText(folderNotePath(path), writeProperties(withTitle(part.title, name, "", part.synopsis), { kind: "part" }));
-        const taken = new Set([name.toLowerCase()]);
-        let order = step;
-        for (const chapter of part.chapters) {
-          await writeChapter(path, order, chapter, taken);
-          order += step;
-        }
-      } else {
-        for (const chapter of part.chapters) {
-          await writeChapter(root.path, rootOrder, chapter, rootTaken);
-          rootOrder += step;
-        }
-      }
-    }
-    await this.reload();
+    return importBookInto(this, book, options);
   }
 
   /**
@@ -1427,41 +1129,7 @@ export class Project {
    * Research. Nothing already there is overwritten: a note with a name in use gets a number.
    */
   async importNotes(notes: ImportedNote[], destinations: Record<string, NoteDestination> = {}): Promise<void> {
-    if (!notes.length) return;
-    const { folders } = this.settings;
-    const taken = new Set<string>();
-    const free = async (dir: string, title: string, extension: string) => {
-      const base = sanitizeTitle(title) || "Untitled";
-      for (let n = 1; ; n++) {
-        const path = join(dir, `${n === 1 ? base : `${base} ${n}`}.${extension}`);
-        if (!taken.has(path.toLowerCase()) && !(await this.fs.exists(path))) {
-          taken.add(path.toLowerCase());
-          return path;
-        }
-      }
-    };
-    const clean = (name: string) => sanitizeTitle(name) || "Untitled";
-    for (const note of notes) {
-      const to = destinations[note.group] ?? noteDestination(this.settings.types, note.group, note.research);
-      if (to === "skip") continue;
-      const type = to.startsWith("codex:") ? this.settings.types[to.slice("codex:".length)] : undefined;
-      // The group's own text, or a group that is one document, is a note at the top of where it goes.
-      const own = note.title === note.group && !note.folders.length;
-      const base = type ? join(folders.codex, type.folder) : join(to === "laboratory" ? folders.laboratory : folders.research, ...(note.research || own ? [] : [clean(note.group)]));
-      const dir = join(base, ...note.folders.map(clean));
-      await this.fs.mkdir(dir);
-      if (note.file) {
-        await this.fs.writeBytes(await free(dir, note.title, note.file.extension), note.file.bytes);
-        continue;
-      }
-      const path = await free(dir, note.title, "md");
-      const body = note.text ? note.text + "\n" : "";
-      const properties: Properties = {};
-      if (note.title.trim() !== stripExt(basename(path))) properties[TITLE] = note.title.trim();
-      if (note.synopsis?.trim()) properties[SYNOPSIS] = note.synopsis.trim();
-      await this.fs.writeText(path, Object.keys(properties).length ? writeProperties(body, properties) : body);
-    }
-    await this.reload();
+    return importNotesInto(this, notes, destinations);
   }
 
   /**

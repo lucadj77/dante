@@ -1,6 +1,6 @@
 import { RangeSetBuilder, StateEffect } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
-import { findKnownWords, type NameFound, type NameMatcher } from "$lib/core/mentions";
+import { findKnownWords, type NameFound } from "$lib/core/mentions";
 import { linkHandler } from "./links";
 
 /** Sent on the window when the names change, or the underlining is turned on or off. */
