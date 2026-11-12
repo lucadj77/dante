@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { withShortcut } from "./formatLabels";
   import { keepInView } from "./keepInView";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
@@ -916,8 +917,8 @@
           </div>
           {#if !gamebook}
           <div class="add">
-            <button title={t("tip.newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
-            <button title={t("tip.newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
+            <button title={withShortcut(t("tip.newScene"), "newScene")} aria-label={t("tree.newScene")} onclick={newScene}><Icon name="scene" /><span>{t("level.scene")}</span></button>
+            <button title={withShortcut(t("tip.newChapter"), "newChapter")} aria-label={t("tree.newChapter")} onclick={() => newContainer("chapter")}><Icon name="chapter" /><span>{t("level.chapter")}</span></button>
             {#if project.settings.structure.parts}
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
@@ -925,7 +926,7 @@
           </div>
           {:else}
           <div class="add gamebook-add">
-            <button title={t("gamebook.newParagraphTip")} aria-label={t("gamebook.new.title")} onclick={openNewParagraph}><Icon name="scene" /><span>{t("gamebook.paragraphShort")}</span></button>
+            <button title={withShortcut(t("gamebook.newParagraphTip"), "newScene")} aria-label={t("gamebook.new.title")} onclick={openNewParagraph}><Icon name="scene" /><span>{t("gamebook.paragraphShort")}</span></button>
             <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
             <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><Icon name="shuffle" /><span>{t("gamebook.shuffle.button")}</span></button>
             <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><Icon name="sortDown" /><span>{t("gamebook.reorder.button")}</span></button>

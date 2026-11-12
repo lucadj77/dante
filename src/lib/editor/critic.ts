@@ -1,3 +1,4 @@
+import { shortcutKeys } from "./shortcuts";
 import { EditorState, Facet, Prec, RangeSetBuilder, StateField, Transaction, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, keymap, WidgetType, type DecorationSet } from "@codemirror/view";
 import { iconElement } from "$lib/ui/icons";
@@ -170,22 +171,15 @@ export const criticPreview: Extension = [
   }),
 ];
 
-/** Cmd/Ctrl+Alt+M comments the selection, as in word processors. */
+/** Cmd/Ctrl+Alt+M (or the key the user chose) comments the selection, as in word processors. */
 export function criticCommands(handler: CriticHandler | undefined): Extension {
   if (!handler) return [];
   return [
     criticHandler.of(handler),
-    Prec.high(
-      keymap.of([
-        {
-          key: "Mod-Alt-m",
-          run: (view) => {
-            const { from, to } = view.state.selection.main;
-            handler.newComment(view, from, to);
-            return true;
-          },
-        },
-      ]),
-    ),
+    shortcutKeys(["comment"], (_, view) => {
+      const { from, to } = view.state.selection.main;
+      handler.newComment(view, from, to);
+      return true;
+    }),
   ];
 }

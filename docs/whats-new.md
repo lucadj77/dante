@@ -6,6 +6,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Shortcuts you can change**: in **Settings → Shortcuts** you can change the keys of the writing commands (split into a scene and a chapter, bold, italic and the rest of the formatting, comment). Dante warns if the combination is already used, and the tooltips of the buttons show the keys chosen.
 - **Characters with spaces in tables, export and import**: tables and boards have a **Characters** field beside **Words**, and a new project's Scenes table starts with the unit the project measures in. The manuscript's title page and the summary after an export use the same unit. The import preview shows words and characters.
 - **Mac menu in the language of the interface**: the items of the menu bar (Check for Updates…, Edit, Window, Dante Help and the others) follow the language chosen in Dante.
 - **Full guide in English**: with the interface in English, Help opens the full guide in English, chapter by chapter like the Italian one.

@@ -8,7 +8,7 @@ export const LANGUAGES: Record<string, { name: string; messages: Partial<Record<
 };
 
 /** Messages write shortcuts with the Mac symbols; elsewhere they read as Ctrl+Alt+... */
-const IS_MAC = typeof navigator === "undefined" || /Mac|iPhone|iPad/.test(navigator.userAgent);
+export const IS_MAC = typeof navigator === "undefined" || /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 const KEY_NAMES: Record<string, Record<string, string>> = {
   en: { "⌘": "Ctrl", "⌃": "Ctrl", "⌥": "Alt", "⇧": "Shift", "↩": "Enter", "↵": "Enter", "⌫": "Backspace" },

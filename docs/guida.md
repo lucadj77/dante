@@ -299,7 +299,7 @@ Apri **Impostazioni**: nell'elenco a sinistra, sotto **Dante su questo computer*
 
 ### Come si fa
 
-Su Mac si usa Cmd, su Windows e Linux Ctrl; Alt è il tasto che sul Mac si chiama anche Option. Le tabelle danno le due versioni. Nell'app i suggerimenti dei pulsanti mostrano solo quella del sistema che stai usando. Passando col mouse su un pulsante, il suggerimento mostra la sua scorciatoia.
+Su Mac si usa Cmd, su Windows e Linux Ctrl; Alt è il tasto che sul Mac si chiama anche Option. Le tabelle danno le due versioni. Nell'app i suggerimenti dei pulsanti mostrano solo quella del sistema che stai usando. Passando col mouse su un pulsante, il suggerimento mostra la sua scorciatoia. Le scorciatoie di scrittura che vanno da **Dividi in scena** ad **Allinea a destra** (divisione in scena e capitolo, formattazione, commento) si possono cambiare in **Impostazioni → Scorciatoie**: premi **Cambia** accanto al comando e poi i tasti nuovi, cioè una lettera, una cifra, Invio o un tasto funzione insieme a Cmd/Ctrl o Alt. Dante rifiuta una combinazione già usata da un altro comando o dal sistema e dice da chi; **Ripristina** torna ai tasti di sempre. I suggerimenti dei pulsanti mostrano i tasti scelti. Le scelte valgono su quel computer.
 
 **Scrittura**
 
@@ -357,7 +357,7 @@ Su Mac si usa Cmd, su Windows e Linux Ctrl; Alt è il tasto che sul Mac si chiam
 
 ### Approfondimento
 
-Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. (Ctrl+Maiusc+7/8/9 e Ctrl+Maiusc+.) funzionano anche con la tastiera italiana, dove Maiusc con quei tasti scrive altri caratteri (/, (, ) e :): Dante guarda il tasto premuto, non il carattere. Sul Mac Cmd+? apre l'aiuto (capitolo 5).
+Cmd+Maiusc+7/8/9 e Cmd+Maiusc+. (Ctrl+Maiusc+7/8/9 e Ctrl+Maiusc+.) funzionano anche con la tastiera italiana, dove Maiusc con quei tasti scrive altri caratteri (/, (, ) e :): Dante guarda il tasto premuto, non il carattere. Sul Mac Cmd+? apre l'aiuto (capitolo 5). Le scorciatoie cambiate sono tra le impostazioni dell'applicazione, non nel progetto: chi apre lo stesso romanzo su un altro computer trova le proprie.
 
 ## 10. Organizzare il manoscritto
 

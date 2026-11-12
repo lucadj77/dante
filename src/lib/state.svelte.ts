@@ -1,3 +1,4 @@
+import { setShortcuts } from "./editor/shortcuts";
 import { LANGUAGES, translate, type MessageKey } from "./i18n";
 import { formatNumber } from "./core/numbers";
 
@@ -60,6 +61,8 @@ export interface AppSettings {
   sprintWords: number;
   /** The same, for projects that count characters. */
   sprintCharacters: number;
+  /** The writing shortcuts the user changed: the command and its combination, as in editor/shortcuts. */
+  shortcuts: Record<string, string>;
 }
 
 const STORAGE_KEY = "dante.app-settings";
@@ -99,6 +102,7 @@ function defaults(): AppSettings {
     sprintMinutes: 25,
     sprintWords: 0,
     sprintCharacters: 0,
+    shortcuts: {},
   };
 }
 
@@ -115,9 +119,11 @@ function load(): AppSettings {
 }
 
 export const app = $state<{ settings: AppSettings }>({ settings: load() });
+setShortcuts(app.settings.shortcuts);
 
 export function saveAppSettings(settings: AppSettings) {
   app.settings = settings;
+  setShortcuts(settings.shortcuts);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   } catch {

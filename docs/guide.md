@@ -299,7 +299,7 @@ Open **Settings**: in the list on the left, under **Dante on this computer**, ar
 
 ### How to
 
-On a Mac you use Cmd, on Windows and Linux Ctrl; Alt is the key that on the Mac is also called Option. The tables give both versions. In the app the tooltips of the buttons show only that of the system you are using. Moving the mouse over a button, the tooltip shows its shortcut.
+On a Mac you use Cmd, on Windows and Linux Ctrl; Alt is the key that on the Mac is also called Option. The tables give both versions. In the app the tooltips of the buttons show only that of the system you are using. Moving the mouse over a button, the tooltip shows its shortcut. The writing shortcuts from **Split into a scene** to **Align to the right** (splitting into a scene and a chapter, formatting, comment) can be changed in **Settings → Shortcuts**: press **Change** beside the command and then the new keys, that is a letter, a digit, Enter or a function key together with Cmd/Ctrl or Alt. Dante refuses a combination already used by another command or by the system and says by which; **Reset** goes back to the usual keys. The tooltips of the buttons show the keys chosen. The choices hold on that computer.
 
 **Writing**
 
@@ -357,7 +357,7 @@ On a Mac you use Cmd, on Windows and Linux Ctrl; Alt is the key that on the Mac 
 
 ### In depth
 
-Cmd+Shift+7/8/9 and Cmd+Shift+. (Ctrl+Shift+7/8/9 and Ctrl+Shift+.) also work with keyboards where Shift with those keys writes other characters: Dante looks at the key pressed, not at the character. On an Italian keyboard Cmd+\\ is Cmd+ù. On the Mac Cmd+? opens the help (chapter 5).
+Cmd+Shift+7/8/9 and Cmd+Shift+. (Ctrl+Shift+7/8/9 and Ctrl+Shift+.) also work with keyboards where Shift with those keys writes other characters: Dante looks at the key pressed, not at the character. On an Italian keyboard Cmd+\\ is Cmd+ù. On the Mac Cmd+? opens the help (chapter 5). The changed shortcuts are among the settings of the application, not in the project: who opens the same novel on another computer finds their own.
 
 ## 10. Organising the manuscript
 

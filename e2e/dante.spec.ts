@@ -144,6 +144,35 @@ test("sets the goals and the typography of the novel from the settings", async (
   await expect(page.getByLabel("Dialoghi")).toHaveValue("dash");
 });
 
+test("changes a writing shortcut from the settings", async ({ page }) => {
+  await openSample(page);
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-settings="shortcuts"]').click();
+  const bold = page.locator('[data-shortcut="bold"]');
+  await expect(bold.locator("kbd")).toHaveText("Ctrl+B");
+  // A combination another command has is refused, with the name of that command.
+  await bold.getByRole("button", { name: "Cambia" }).click();
+  await page.keyboard.press("Control+i");
+  await expect(page.getByRole("alert")).toContainText("Corsivo");
+  await page.keyboard.press("Control+Shift+b");
+  await expect(bold.locator("kbd")).toHaveText("Ctrl+Maiusc+B");
+  // The new keys make the text bold, the usual ones no longer do.
+  await page.locator('nav button[data-section="manuscript"]').click();
+  const editor = page.locator(".cm-content").first();
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+Home");
+  await page.keyboard.press("Shift+End");
+  await page.keyboard.press("Control+b");
+  await expect(editor.locator(".cm-line").first()).not.toContainText("**");
+  await page.keyboard.press("Control+Shift+b");
+  await expect(editor.locator(".cm-line").first()).toContainText("**");
+  await page.keyboard.press("Control+z");
+  // Back to the usual keys.
+  await page.locator('nav button[data-section="settings"]').click();
+  await page.locator('[data-shortcut="bold"]').getByRole("button", { name: "Ripristina" }).click();
+  await expect(page.locator('[data-shortcut="bold"] kbd')).toHaveText("Ctrl+B");
+});
+
 test("names the stage under each scene's dot, or the property chosen for it", async ({ page }) => {
   await openSample(page);
   await page.locator(".row .status").first().hover();
