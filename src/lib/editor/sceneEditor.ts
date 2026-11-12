@@ -1,3 +1,4 @@
+import { shortcutKeys } from "./shortcuts";
 import { completionStatus } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
@@ -140,10 +141,9 @@ export function createSceneEditor(options: SceneEditorOptions): SceneEditor {
     history(),
     EditorView.lineWrapping,
     markdown({ base: markdownLanguage }),
+    shortcutKeys(["newScene", "newChapter"], (id, view) => split(id === "newScene" ? options.onSplitScene : options.onSplitChapter)(view)),
     Prec.high(
       keymap.of([
-        { key: "Mod-Enter", run: split(options.onSplitScene) },
-        { key: "Mod-Shift-Enter", run: split(options.onSplitChapter) },
         { key: "ArrowUp", run: leave("up") },
         { key: "ArrowDown", run: leave("down") },
       ]),

@@ -7,6 +7,7 @@ describe("guide", () => {
     const source = readFileSync("src/lib/ui/help.svelte.ts", "utf8");
     const numbers = Object.fromEntries([...source.match(/GUIDE_CHAPTERS = \{([^}]*)\}/)![1].matchAll(/(\w+): (\d+)/g)].map((m) => [m[1], Number(m[2])]));
     const titles: Record<string, [string, string]> = {
+      shortcuts: ["Scorciatoie da tastiera", "Keyboard shortcuts"],
       views: ["Tabelle e bacheche", "Tables and boards"],
       export: ["Esportare in Word, PDF ed EPUB", "Exporting to Word, PDF and EPUB"],
       gamebook: ["Libri game", "Gamebooks"],

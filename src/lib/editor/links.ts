@@ -1,3 +1,4 @@
+import { shortcutKeys } from "./shortcuts";
 import { acceptCompletion, autocompletion, type Completion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { ChangeSet, EditorSelection, EditorState, Facet, Prec, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
@@ -197,7 +198,7 @@ export function askNewParagraph(view: EditorView): boolean {
 }
 
 /** In a gamebook, Ctrl+Enter (Cmd+Enter) creates a paragraph and puts the reference to it at the cursor. */
-const newParagraphKey = keymap.of([{ key: "Mod-Enter", run: askNewParagraph }]);
+const newParagraphKey = shortcutKeys(["newScene"], (_, view) => askNewParagraph(view), true);
 
 export const linkHandler = Facet.define<LinkHandler, LinkHandler | null>({
   combine: (values) => values[0] ?? null,
@@ -343,6 +344,6 @@ export function wikilinks(handler: LinkHandler | undefined): Extension {
     autocompletion({ override: [complete], icons: false, activateOnTyping: true }),
     // Tab takes the highlighted suggestion too, as Enter does.
     Prec.highest(keymap.of([{ key: "Tab", run: acceptCompletion }])),
-    ...(handler.gamebook ? [Prec.highest(hiddenKey), Prec.highest(newParagraphKey)] : []),
+    ...(handler.gamebook ? [Prec.highest(hiddenKey), newParagraphKey] : []),
   ];
 }

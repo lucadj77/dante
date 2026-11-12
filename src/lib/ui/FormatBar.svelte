@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ACTIONS, ICONS, type Action } from "$lib/editor/formatting";
   import { t } from "$lib/state.svelte";
-  import { formatLabels } from "./formatLabels";
+  import { formatLabels, withShortcut } from "./formatLabels";
   import Icon from "./Icon.svelte";
   import type { BoxType } from "$lib/core/gamebook/boxes";
 
@@ -65,7 +65,7 @@
   {/each}
   {#if onParagraph}
     <span class="cm-format-gap"></span>
-    <button class="split" title={t("gamebook.paragraphTip")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={onParagraph}
+    <button class="split" title={withShortcut(t("gamebook.paragraphTip"), "newScene")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={onParagraph}
       >＋ <span>{t("gamebook.paragraphButton")}</span></button
     >
   {/if}
@@ -109,10 +109,10 @@
   {/if}
   {#if !noSplit}
   <span class="cm-format-gap"></span>
-  <button class="split named" title={t("tip.splitScene")} aria-label={t("split.scene")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("scene")}
+  <button class="split named" title={withShortcut(t("tip.splitScene"), "newScene")} aria-label={t("split.scene")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("scene")}
     ><Icon name="scene" /><span>{t("split.scene")}</span></button
   >
-  <button class="split named" title={t("tip.splitChapter")} aria-label={t("split.chapter")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("chapter")}
+  <button class="split named" title={withShortcut(t("tip.splitChapter"), "newChapter")} aria-label={t("split.chapter")} {disabled} onmousedown={(e) => e.preventDefault()} onclick={() => onSplit("chapter")}
     ><Icon name="chapter" /><span>{t("split.chapter")}</span></button
   >
   {/if}

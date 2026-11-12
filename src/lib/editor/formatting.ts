@@ -1,3 +1,4 @@
+import { shortcutKeys } from "./shortcuts";
 import { EditorSelection, Prec, StateField, type EditorState, type Extension, type TransactionSpec } from "@codemirror/state";
 import { EditorView, keymap, showTooltip, type Tooltip } from "@codemirror/view";
 import type { IconName } from "$lib/ui/icons";
@@ -359,42 +360,15 @@ function selectionBar(labels: FormattingLabels) {
 
 const run_ = (action: Action) => (view: EditorView) => applyFormat(view, action);
 
-/**
- * Cmd+Shift with 7, 8, 9 and the full stop, read from the key's place on the keyboard: on an
- * Italian keyboard Shift+7 types "/", and Cmd+/ would comment the line out instead.
- */
-const BY_PLACE: Record<string, Action> = { Digit7: "ordered", Digit8: "bullet", Digit9: "task", Period: "quote" };
+/** The formatting commands with a shortcut the user can change. */
+const KEYED = ["bold", "italic", "strike", "highlight", "code", "link", "ordered", "bullet", "task", "quote", "alignCenter", "alignRight"] as const;
 
 /** Keyboard shortcuts, the bar over a selection, and its look. */
 export function formatting(labels: FormattingLabels): Extension {
   return [
-    Prec.highest(
-      EditorView.domEventHandlers({
-        keydown(event, view) {
-          const action = BY_PLACE[event.code];
-          if (!action || !event.shiftKey || event.altKey || !(event.metaKey || event.ctrlKey)) return false;
-          event.preventDefault();
-          return applyFormat(view, action);
-        },
-      }),
-    ),
-    Prec.high(
-      keymap.of([
-        { key: "Mod-b", run: run_("bold") },
-        { key: "Mod-i", run: run_("italic") },
-        { key: "Mod-Shift-x", run: run_("strike") },
-        { key: "Mod-Shift-h", run: run_("highlight") },
-        { key: "Mod-e", run: run_("code") },
-        { key: "Mod-k", run: run_("link") },
-        { key: "Mod-Shift-7", run: run_("ordered") },
-        { key: "Mod-Shift-8", run: run_("bullet") },
-        { key: "Mod-Shift-9", run: run_("task") },
-        { key: "Mod-Shift-.", run: run_("quote") },
-        { key: "Mod-Shift-e", run: run_("alignCenter") },
-        { key: "Mod-Shift-r", run: run_("alignRight") },
-        { key: "Alt-Enter", run: run_("blankLine") },
-      ]),
-    ),
+    // Read by the place of the key: on an Italian keyboard Shift+7 types "/", and Cmd+/ would comment the line out instead.
+    shortcutKeys(KEYED, (id, view) => applyFormat(view, id as Action), true),
+    Prec.high(keymap.of([{ key: "Alt-Enter", run: run_("blankLine") }])),
     selectionBar(labels),
     EditorView.baseTheme({
       ".cm-format-bar": {

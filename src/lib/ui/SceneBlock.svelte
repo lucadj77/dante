@@ -29,7 +29,7 @@
   import { askNewParagraph } from "$lib/editor/links";
   import { app, t } from "$lib/state.svelte";
   import { applyFormat } from "$lib/editor/formatting";
-  import { formatLabels, searchPhrases, tableLabels } from "./formatLabels";
+  import { formatLabels, searchPhrases, tableLabels, withShortcut } from "./formatLabels";
   import { pendingFind, takeFind } from "./find.svelte";
   import { navigator } from "./navigation";
   import { collaboration } from "./collaboration.svelte";
@@ -124,7 +124,7 @@
     const keys = props.project.settings.gamebook.enabled ? (["editor.emptyScene1", "editor.emptyParagraph2", "editor.emptyParagraph3"] as const) : (["editor.emptyScene1", "editor.emptyScene2", "editor.emptyScene3"] as const);
     for (const key of keys) {
       const line = document.createElement("span");
-      line.textContent = t(key);
+      line.textContent = withShortcut(t(key), "newScene", "newChapter");
       box.append(line);
     }
     return box;
