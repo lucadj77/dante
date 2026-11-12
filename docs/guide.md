@@ -62,11 +62,11 @@ For this reason the same project also opens in Obsidian or in any text editor, s
    - **Import from another format…**: creates a project from a novel already written elsewhere. You then choose from what: a Word, OpenDocument, RTF, Markdown or text document, or a Scrivener project with its synopses (chapter 3).
    - **Try the sample project**: the first chapters of *Pride and Prejudice* (of *I promessi sposi* if the interface is in Italian), to practise without risk. The changes stay in memory and vanish when you close the project.
 
-   ![The start screen, with the buttons at the top and the recent projects below](img/benvenuto.png)
+   ![The start screen, with the buttons at the top and the recent projects below](img/en/benvenuto.png)
 
    With **New project** this form appears: title, **subtitle** (if there is one), authors, language and cover. The cover is a simple drawing that Dante prepares with the title and the authors: choose a shape and some colours, leave it as it is, or press **Use a picture of yours…** and choose a photo or a drawing from the computer. Everything can be changed later in **Settings** (chapter 17).
 
-   ![The form for a new project: title, authors, language, cover and folder](img/nuovo-progetto.png)
+   ![The form for a new project: title, authors, language, cover and folder](img/en/nuovo-progetto.png)
 3. Open **Settings** (the gear in the bar on the left). On the left is the list of pages, in two groups: **This novel**, with the choices saved in the project, and **Dante on this computer**, with those that hold for every project; the box **Search the settings** at the top finds the right page from a word. In the page **You** of the second group write **your name**: it signs comments and revisions and counts the words you write each day. There is no button to save: every change saves itself after a moment.
 4. In the tab **This novel** check **title**, **author** and **language of the novel** (Italian, English, Spanish or French, from a menu): the language decides, for example, the hyphenation and the names of the folders.
 
@@ -96,7 +96,7 @@ Every project also holds a file with the title of the novel and the extension **
 
 The Word file is not changed: Dante reads a copy of it.
 
-![Preview of the import of a Word file: on the left the document with the labels Part, Chapter and New scene, on the right the result; at the top the choice for the selected line](img/importa-word.png)
+![Preview of the import of a Word file: on the left the document with the labels Part, Chapter and New scene, on the right the result; at the top the choice for the selected line](img/en/importa-word.png)
 
 **An example.** In the document above the headings with the style Heading 1 are «Parte prima: Il paese» and «Parte seconda: Il mare», those with the style Heading 2 are «Capitolo 1: Arrivo» and so on. Dante proposes **Parts** for the first level and **Chapters** for the second. Inside chapter 1 a line with `***` separates two scenes, so the chapter becomes two scenes. If the chapters of your document were written with the style Heading 1 instead, you would choose **Chapters** in the first menu.
 
@@ -131,7 +131,7 @@ The rest of the project enters Dante too. On the screen of the new project, unde
 
 The window has four areas, from left to right:
 
-![The workspace with the four areas numbered](img/area-di-lavoro.png)
+![The workspace with the four areas numbered](img/en/area-di-lavoro.png)
 
 1. **The bar of the sections**, with an icon for each: Manuscript, Story Bible, Notes, Tables and boards, Statistics, Export, Settings, as well as Search, Help, Trash and Close project. In a wide window the name is beside each icon; **Hide names**, at the bottom of the bar, narrows it to the icons alone (as in the pictures of this guide, and as it starts in a narrow window), and then the name appears when you move the mouse over an icon. **Show names** brings them back.
 2. **The panel on the left**: in the Manuscript it is the tree of parts, chapters and scenes; in the other sections it is the list of notes and files.
@@ -155,7 +155,7 @@ The **Help** icon (the question mark in the bar on the left, above the trash) op
 - **First steps**: seven steps to begin, from creating the project to the export.
 - **Full guide**: this guide, with the list of the chapters on the left. A click on a reference ("chapter 15") leads to the chapter. A small **?** in the export typography, in a view's settings and in the Gamebook section opens this tab at the chapter about it.
 
-  ![The Help window on the Full guide tab, with the chapters on the left](img/aiuto.png)
+  ![The Help window on the Full guide tab, with the chapters on the left](img/en/aiuto.png)
 
 - **What's new**: what changes in each version.
 
@@ -176,7 +176,7 @@ It can be read without a connection too, because it is inside Dante. From the st
 - **The bar at the top**: after the choice of what to see come the writing modes (Focus, Typewriter, Line, Full screen), the zoom and the **More** menu. **More** turns on and off the **formatting bar**, the **cards of the scene** beside the text (chapter 7), the **revisions** (chapter 16) and the **text as in the file**, with the Markdown symbols. When the revisions or the text as in the file are on, a label in the bar reminds you; a click turns it off. In a narrow window the labels of the buttons hide and the icons stay: the name shows when the mouse passes over them.
 - **Formatting**: select the text and use the bar that appears above the selection (bold, italic, highlight, comment…), or the shortcuts (chapter 9). The fixed **formatting bar** is shown or hidden from the **More** menu. For a **footnote** press the **x¹** button of the fixed bar and write the note between the brackets, right where its number goes: `^[text of the note]`. In the text it stays small and grey; in the exported book it becomes a number with the note at the foot of the page.
 
-  ![A selected line in the scene Perpetua, with the small formatting bar above it](img/barra-selezione.png)
+  ![A selected line in the scene Perpetua, with the small formatting bar above it](img/en/barra-selezione.png)
 
   *Try it:* open a scene, select a sentence and press **I** in the bar: the sentence becomes italic. Cmd+Z / Ctrl+Z brings it back as it was.
 - **Aligning a paragraph**: put the cursor in the paragraph and use the alignment buttons of the formatting bar (centre or right), or Cmd+Shift+E / Ctrl+Shift+E and Cmd+Shift+R / Ctrl+Shift+R. A second click on the same button brings it back to the basic alignment: left while you write, justified or left in the export according to the profile. On an empty line the button starts a paragraph already aligned. Enter at the end of an aligned paragraph starts a normal one; Backspace at the beginning removes the alignment. The alignment shows in the editor and is respected in Word, PDF, EPUB and Markdown; from a Word import the centred and right-aligned paragraphs are kept. In the file the paragraph is wrapped in `<span style="display:block;text-align:center">…</span>` (or `text-align:right`): Dante hides the tag, the Markdown view shows it, and Obsidian shows the paragraph aligned with italics and bold intact.
@@ -194,7 +194,7 @@ It can be read without a connection too, because it is inside Dante. From the st
   - **Typewriter**: the line you are writing on stays in the middle of the window.
   - **Focus**: everything is dimmed except the paragraph you are writing.
 
-    ![Focus mode: only the paragraph with the cursor stays black](img/focus.png)
+    ![Focus mode: only the paragraph with the cursor stays black](img/en/focus.png)
   - **Line**: lightly shades the line where the cursor is, so that the eye finds it at once. It turns on and off with its button, and the choice stays for the next times.
   - **Full screen**: only the text is left. Bring the mouse to the top edge to show the bars (modes and formatting), to the left edge for the tree, to the right edge for the side panel; they hide again when the mouse leaves, but stay open while you write in one of their fields. The side-by-side panels come back when you leave. Esc to leave.
 - **Lists**: the buttons of the formatting bar (or Cmd+Shift+8 / Ctrl+Shift+8, Cmd+Shift+7 / Ctrl+Shift+7 and Cmd+Shift+9 / Ctrl+Shift+9) begin a bulleted list, a numbered list or a list of checkboxes. The text of each item is indented after the bullet, the number or the box, and the lines that wrap align under the first, not under the bullet. An item that begins with a few more spaces (four are always fine) sits inside the one before and is indented one level. In Word, PDF and EPUB the lists have the same indent; in Markdown they stay Markdown lists.
@@ -202,11 +202,11 @@ It can be read without a connection too, because it is inside Dante. From the st
 
   *Example:* press **Table** and write "Character", Tab, "Who", Tab, "First scene", Tab, "Renzo", Tab, "silk weaver", and so on. While you write you see it like this, with the bar above:
 
-  ![A table while you write it: bar with Row, Column, Align and Caption, fixed-width text](img/tabella-modifica.png)
+  ![A table while you write it: bar with Row, Column, Align and Caption, fixed-width text](img/en/tabella-modifica.png)
 
   When the cursor leaves the table, you see it as it will be in the book, with the caption below:
 
-  ![The same table finished, with the caption «I personaggi del capitolo»](img/tabella.png)
+  ![The same table finished, with the caption «I personaggi del capitolo»](img/en/tabella.png)
 - **Images**: press the **Image** button of the formatting bar and choose the file, or paste an image (Cmd+V / Ctrl+V) or drag it into the text. Dante copies it into the folder **Attachments** inside **Research** and shows it where the cursor is. Move the mouse over the image to change its width (**200**, **400**, **600** pixels or **1:1**, the original size) and its alignment (left, centre, right). A click on the image shows the text that inserts it, to change it by hand.
 - **Status bar**: under the text a line shows the words of the scene with the cursor (with its goal, if it has one), those of the selected text, of the chapter or of what is on screen, and those written today against the goal of the day. If the project measures in characters (chapter 14), the bar counts characters with spaces instead of words. It hides from **More** > **Status bar**.
 - **Writing session**: press **Session** on the right of the status bar, choose how many minutes (from 10 to 90) and, if you like, how many words to reach, then **Start**. The bar shows the time left and the words written since you began; at the end Dante says how many words you wrote. **End** closes it early. The words added count, less those deleted, as in the statistics; in a project that measures in characters, the session asks for and counts characters.
@@ -238,7 +238,7 @@ Beside the text you can keep up to two more things open: another scene, a chapte
 - **Opening beside.** Hold **Alt** (Option on a Mac) while you click: on a link `[[Lucia Mondella]]` in the text, on a scene in the tree, on a card of the Story Bible, on a note, on a view or on a result of the search. You can also use the item **Open beside** of the right-click menu, the ⧉ button in the Links tab, or drag an item onto the right edge of the window.
 - **Cards of the scene.** **More** > **Cards of the scene** in the bar of the Manuscript opens a pane that shows the cards of the Story Bible named in the scene you are writing (by name or alias) or linked with `[[…]]`. Write "Agnese" and her card appears among the tabs at the top; moving to another scene the tabs change.
 
-  ![The scene L'incontro with the pane Cards of the scene open on the card of don Abbondio](img/pannelli.png)
+  ![The scene L'incontro with the pane Cards of the scene open on the card of don Abbondio](img/en/pannelli.png)
 
   *Example:* in the scene **L'incontro** the pane shows the tabs of don Abbondio, Renzo, Lucia, don Rodrigo and of the village: they are the cards named in the text or in the properties. A click on a tab shows that card, which you can also edit.
 - **The next pane.** The next thing opened beside takes the place of the pane that is not pinned. With the pin 📌 the pane stays and the new one opens beside it.
@@ -266,7 +266,7 @@ Open **Settings**: in the list on the left, under **Dante on this computer**, ar
 
 - **Theme** (page **Appearance**): you choose it from five small drawings of the window, each in its own colours. **System** (light or dark like the computer, and it changes with it), **Light (paper)**, **Sepia** (warm paper, to write for a long time by day), **Dark**, **Night** (almost black with softer text, to write in the dark).
 
-  ![The Appearance page of the Settings: the five themes and the accent colours](img/aspetto.png)
+  ![The Appearance page of the Settings: the five themes and the accent colours](img/en/aspetto.png)
 
 - **Accent colour**: the colour of active buttons, links and selections. The first circle leaves that of the theme; the others are blue, green, brick red, purple, teal and amber, in a lighter version in the dark themes.
 - **Interface size**: enlarges or shrinks the whole window of Dante, from 80% to 200%: menus, tree, panels, buttons, windows and their text. It is useful if your sight is poor or you work on a very large screen. The text in the editor grows by the same measure, besides its **Font size** (which stays separate and also changes with Cmd/Ctrl + and −).
@@ -368,7 +368,7 @@ Everything is done from the tree in the Manuscript section.
 - **Adding**: the buttons **New scene**, **New chapter** and **New part** add an item after the selected one (a new part goes at the end of the novel). A right click on an item also offers **New scene after this** and **New scene inside**.
 - **Renaming**: double click on the name, or F2.
 
-  <img src="img/menu-albero.png" width="290" alt="The right-click menu on a scene of the tree">
+  <img src="img/en/menu-albero.png" width="290" alt="The right-click menu on a scene of the tree">
 - **Moving**: drag scenes and chapters where you like, also from one chapter to another. Alt+Cmd+↑ / Ctrl+Alt+↑ and Alt+Cmd+↓ / Ctrl+Alt+↓ move the selected item by one place. After a move, a split or a merge, **Undo** appears at the bottom of the tree (or Cmd+Z / Ctrl+Z with the tree active): it puts scenes, chapters and text back as they were. It stays until you make another change to the structure; a merge can no longer be undone if you have written in the merged scene in the meantime.
 - **Moving or copying without dragging**: right click → **Move to…** or **Copy to…**. A window opens with the sections at the top (**Manuscript**, **Story Bible**, **Research**, **Laboratory**) and below it the tree of the destination, with a box to look for a chapter or a scene by name when the manuscript is long. In the Manuscript click a scene or a chapter and choose **Where**: **Before**, **After**, **Inside, at the start** or **Inside, at the end**; in the other sections choose the folder. Then press **Move** or **Copy** (or double click the destination). It also works with several scenes chosen with Cmd+click / Ctrl+click, which stay in reading order, and with whole chapters and parts.
 
@@ -378,10 +378,10 @@ Everything is done from the tree in the Manuscript section.
 - **Trash**: it opens from the bin icon at the bottom of the bar on the left, above Settings. It lists what was deleted, the most recent first, with the place it comes from. **Put back** takes it back there; if that place has been taken in the meantime, the item returns beside it with a "2" in its name. **Delete for good** and **Empty the trash** really delete it, after a confirmation. The trash also receives the scenes merged into another and the discarded conflict copies (chapter 16).
 - **Prologue, epilogue, interlude**: select the chapter and, in the Properties panel, choose the **Type** (prologue and epilogue have no number) or tick **No number (like an interlude)**. In the sample project the **Introduzione** is a prologue: this is why the first real chapter is called «Capitolo 1».
 
-  <img src="img/tipo-capitolo.png" width="280" alt="The Properties panel of the Introduzione, with Type: Prologue">
+  <img src="img/en/tipo-capitolo.png" width="280" alt="The Properties panel of the Introduzione, with Type: Prologue">
 - **Numbering and titles of the chapters**: in **Settings → Structure** choose whether to group the chapters into parts, the label ("Chapter"), the style of the number (1, 2, 3 · I, II, III · One, two, three · First, second, third · none), what to put between number and title and whether to restart the numbering in each part. The preview shows the result.
 
-  ![Settings, Structure: numbering 1, 2, 3, label «Capitolo», a colon between number and title, and the preview «Capitolo 1: La lettera»](img/struttura.png)
+  ![Settings, Structure: numbering 1, 2, 3, label «Capitolo», a colon between number and title, and the preview «Capitolo 1: La lettera»](img/en/struttura.png)
 
   *Example:* with the numbering **First, second, third** and **Between number and title** on "Line break", in the tree and in the exported book the chapter becomes "Chapter the first" with its title below.
 
@@ -439,7 +439,7 @@ The panel is divided into sections: the scene (title, file name, synopsis, goal)
 - **Synopsis**: a few lines on what happens in the scene or in the chapter. It also appears in the views (chapter 13).
 - **Word goal** (or **Character goal**): how many words, or how many characters with spaces, the scene or the chapter must have, according to the measure chosen in Statistics. Leave it empty if you do not need it; with a goal the tree and the status bar show how far you are (chapters 6 and 10).
 
-  <img src="img/proprieta.png" width="280" alt="The properties of the scene L'incontro: title, synopsis, status, pov, place and date">
+  <img src="img/en/proprieta.png" width="280" alt="The properties of the scene L'incontro: title, synopsis, status, pov, place and date">
 
   Above, the properties of the scene **L'incontro**: the **status** is a menu (idea, draft, revised, done), **pov** and **place** are links to the cards of don Abbondio and of the village (the blue name under the field opens the card), the **date** is when the scene takes place in the story.
 - **Adding a property**: press **+ New** beside the title of the **Properties** section. A box opens: write the name (Dante suggests those already used in the novel), choose the type and, for a scene, **This scene only** or **Every scene of the novel**, then press **Add property**.
@@ -448,7 +448,7 @@ The panel is divided into sections: the scene (title, file name, synopsis, goal)
 - **Renaming a property in the whole novel**: in the definition, write the new name in **Name in the whole novel** and press **Rename**. Dante changes the name in all the scenes and notes, in the tables and boards and in the settings. If a note already has a property with the new name, there the two stay separate and Dante tells you. The status and the properties that Dante reads by name (title, synopsis, goal, type, aliases) cannot be renamed.
 - **Colours of the dots**: opening the definition of the property that colours the dots of the tree (the status, or the one chosen in Settings), under **Colours of the dot in the tree** you see each value with its colour. A click on the small square of the colour changes it; **Usual colour** goes back to the one before.
 
-  <img src="img/tipo-proprieta.png" width="280" alt="The box that opens by clicking the symbol T beside «stato»: type Text, allowed values idea, bozza, rivista, finita, and the colour of the dot for each value">
+  <img src="img/en/tipo-proprieta.png" width="280" alt="The box that opens by clicking the symbol T beside «stato»: type Text, allowed values idea, bozza, rivista, finita, and the colour of the dot for each value">
 
   *Example:* you want to note in which season each scene takes place. Press **+ New**, write "season", choose **Text** and **Every scene of the novel**, then **Add property**. Click the **T** beside the name and write "spring, summer, autumn, winter" in the allowed values. From then on, in every scene, "season" is a menu with those four values, and a view can group the scenes by season. If you later prefer to call it "period", you rename it from the same definition.
 
@@ -525,17 +525,17 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
 
 - **Story Bible**: the cards of characters, places, objects, events, groups and plotlines, grouped by type. Press **New Character** (or the type you need), write the name and press Create: the card is born with the properties suggested for that type. With **Filter** you find a card among many. With a right click on a card, or with the buttons at the top of the open card, **Move to…** and **Copy to…** take it to another folder of the Story Bible, to Research, to the Laboratory or into the manuscript (chapter 10). Each card shows at the top the first image of the note: that of a property (for example `portrait: "[[Lucia.jpg]]"`) or, if there is none, the first in the text. Untick **Pictures** to see the cards without them. With **Look** beside it choose how to show them: **Across the top of the card** or **Beside the title**; **Cropped to fill the space** or **Whole**; which part to keep when it is cropped (**Top** is good for portraits, which do not lose their head that way); and the **Size**. The choices hold for all the cards and stay on this computer.
 
-  ![The Story Bible of the sample project: the types on the left, the cards of the characters in the middle](img/bibbia.png)
+  ![The Story Bible of the sample project: the types on the left, the cards of the characters in the middle](img/en/bibbia.png)
 - **Types of the Story Bible**: you can add new ones (for example "Creature") and, for each type, **Edit type** (name, icon, suggested properties) and **Edit template**, that is the text every new card starts from.
 - **Notes**: everything that is neither manuscript nor Story Bible, in two folders shown one below the other. **Research** is the archive for the notes, images, PDFs and web pages gathered for the novel; the **Laboratory** is the space for drafts, outlines and ideas. **New note** creates one in the Laboratory, **Add files…** copies files from the computer into Research; to move a note from one folder to the other drag it, or use the right click → **Move to…** or **Copy to…**, which take notes, files and folders to the Story Bible or to a precise point of the manuscript too (chapter 10). Images, PDFs and HTML open inside Dante, the other files with the default program.
 - **Links**: write `[[` in the text and Dante suggests the notes of the project, also by alias. It works the other way round too: if you select "Corrado" and close it between `[[ ]]` (or write `[[Corrado]]`) and Corrado is an alias of "Corrado Olivieri", Dante recognises the character and links his card. A link to a note that does not exist yet looks paler.
 - **Click on a link**: a small menu opens with **Open in the editor**, **Open in a pane** and **Preview**.
 
-  ![The menu that opens with a click on the link «La casa di Lucia»](img/menu-collegamento.png)
+  ![The menu that opens with a click on the link «La casa di Lucia»](img/en/menu-collegamento.png)
 
    The preview is a small window above the text that shows the note, to read it at a glance without leaving the scene; it closes with Esc or with a click elsewhere. **Edit the link** puts the cursor inside the brackets.
 
-  ![The preview of the card «La casa di Lucia», open above the text](img/anteprima.png)
+  ![The preview of the card «La casa di Lucia», open above the text](img/en/anteprima.png)
 
    The shortcuts stay: Cmd+click / Ctrl+click opens at once in the editor, Alt+click (Option on a Mac) in the pane.
 - **Link to a note that is not there**: the click asks whether to create it and where, as a card of a type of the Story Bible (character, place…), in Research or in the Laboratory. The new note opens in the pane beside, so the scene stays in front of you.
@@ -543,7 +543,7 @@ Renaming a property rewrites only its name at the top of the files, leaving valu
 - **Names of the Story Bible**: when in the text you write the name or an alias of a card of the Story Bible without making a link of it (for example "Lucia"), Dante underlines it with dots. A right click on the name opens the menu of the recognised card: **Open in the editor**, **Open in a pane**, **Preview** and **Turn into a link**. Shift + right click opens the usual menu (cut, copy, spelling). The **Names** button in the bar at the top (the icon with a person above a dotted line) turns the underlines on and off; a note at the bottom of the menu reminds you of it. The **Links** tab has one more section too: in a scene, **Named in the text** lists the cards named without a link; in a card of the Story Bible, **Named in the scenes** lists the scenes that name it.
 - **Searching**: Cmd+Shift+F / Ctrl+Shift+F (or the lens at the top left) searches the names, the aliases and the text of all the notes, with a preview of each result. The menu under the box limits the search to one section. If you type **>** at the start, the **list of commands** shows in place of the notes (going to a section, showing or hiding bars and panels, opening the help or the trash, closing the project): type part of the name, for example `> export`, and Enter runs the first.
 
-  <img src="img/cerca.png" width="420" alt="The search for «Lucia»: cards, scenes and lines that name her">
+  <img src="img/en/cerca.png" width="420" alt="The search for «Lucia»: cards, scenes and lines that name her">
 - **Find and replace in the whole project**: Alt+Cmd+F / Ctrl+Alt+F, or the **Replace** tab at the top of the search. Write the word to look for and the new one: below appear all the occurrences, note by note, with the old word struck through and the new one beside it. Untick those to leave as they are, or use **None** and tick only those you need. A click on a line opens the note with the word selected. **Replace** changes the ticked ones; right after, **Undo the replacement** puts everything back as it was. With **Whole words only** "Renzo" does not find "Renzino"; without **Match case** the new word takes the capitals of the old one ("RENZO" becomes "LORENZO"). The menu below limits the replacement to one section.
 
   *Example:* to change the name of a character, search for "Renzo" and replace with "Lorenzo" in the Manuscript. Before changing a scene Dante saves a snapshot of it called "Before replacing “Renzo”", to take up again if needed (chapter 15). To change the name of the card too, rename it: the links update by themselves.
@@ -575,15 +575,15 @@ A view shows scenes, chapters or cards of the Story Bible at a glance, as a **Ta
 
 The sample project already has four views. The **Board** puts the scenes in columns according to the status:
 
-![The board of the scenes: columns idea, bozza, rivista, finita](img/bacheca.png)
+![The board of the scenes: columns idea, bozza, rivista, finita](img/en/bacheca.png)
 
 The table **Scenes** lists chapter, status, point of view, date and length of each scene (in words or in characters with spaces, according to the measure of the project; among the fields there are both **Words** and **Characters**); here with the settings open above it:
 
-![The table of the scenes with the settings box open](img/vista-impostazioni.png)
+![The table of the scenes with the settings box open](img/en/vista-impostazioni.png)
 
 **Story time** puts the scenes on the timeline according to the property "date": you see at once that chapter 1 takes place on 7 November 1628 and chapter 2 the day after.
 
-![The timeline: four scenes on 7 November, four on the 8th](img/linea-tempo.png)
+![The timeline: four scenes on 7 November, four on the 8th](img/en/linea-tempo.png)
 
 *Example:* you want to see only the scenes told by Renzo. Open the table **Scenes**, press **⚙ Settings**, then **+ Add condition**, choose "pov" and write "Renzo". The three scenes of chapter 2 where the point of view is his are left.
 
@@ -625,7 +625,7 @@ widths: {name: 320, pov: 140, lane: 260}   # widths in pixels chosen by dragging
 
 The section **Statistics** shows:
 
-![The statistics: totals, goals and chart of the last 30 days](img/statistiche.png)
+![The statistics: totals, goals and chart of the last 30 days](img/en/statistiche.png)
 
 - **Totals**: words, pages, chapters, scenes and reading time of the novel.
 - **Measure in**: **Words** or **Characters with spaces**. It is the measure of goals, status bar, tree, panel, sessions and chart of the last 30 days, and holds for the whole project. New projects in Italian start from characters, as is usual in Italian publishing; those in other languages, and those created earlier, stay in words until you change. At the change, the goal of the novel and that of the day are converted with the ratio between characters and words of your manuscript (about 6 characters per word), rounded. If scenes or chapters have a goal of their own, Dante lists them with the value they would have and converts them all with **Convert these goals**; **Leave them as they are** keeps them written as before.
@@ -640,7 +640,7 @@ The section **Statistics** shows:
 
   *Example:* in the sample project the longest sentence is in *Lo scartafaccio* and exceeds 130 words: Manzoni imitates the style of the seventeenth century. A repetition made on purpose, such as "hush, hush" or "always and always", is not counted.
 
-![Length of the chapters and mentions of the characters in the sample project](img/statistiche-lunghezza.png)
+![Length of the chapters and mentions of the characters in the sample project](img/en/statistiche-lunghezza.png)
 
 *Example:* in the sample project the table **Mentions** says that don Abbondio is named 62 times in 8 scenes, Lucia 23 times, Agnese only once, in the scene *Lucia*. **Length** at the level Chapters shows that chapter 1 alone is more than half of the text (52%).
 
@@ -669,11 +669,11 @@ A snapshot is a copy of a scene as it was at a certain moment, to take up again 
 - To take one yourself, open the **Properties** panel, write a name (optional) under **Snapshots** and press **Take snapshot**.
 - **Compare** shows what changed between the snapshot and the current text.
 
-  <img src="img/istantanee.png" width="280" alt="A snapshot called «Prima stesura» with the buttons Compare and Restore">
+  <img src="img/en/istantanee.png" width="280" alt="A snapshot called «Prima stesura» with the buttons Compare and Restore">
 
   *Example:* in a scene take a snapshot called "First draft", then add a few words. **Compare** shows in red struck through what was only in the snapshot and in green what is only there now:
 
-  ![The comparison between the snapshot and the current text](img/confronta.png)
+  ![The comparison between the snapshot and the current text](img/en/confronta.png)
 - **Restore** puts the snapshot back in place of the text. The current text is saved as a snapshot first, so nothing is lost.
 - **The whole manuscript at once**: in **Settings** > **Upkeep**, under **Snapshot of the whole manuscript**, write a name (for example "First draft") and press **Take snapshot**. Every scene is saved as it is at that moment: you find it under that name among the snapshots of each scene, to compare it, and from the same list **Restore** takes every scene back to it. The current text of the scenes that change is saved first; scenes written later stay as they are and deleted ones do not come back (they are in the Trash).
 - To tidy up, in **Settings** > **Upkeep**, **Delete old snapshots** deletes the automatic ones taken before a date; those with a name always stay.
@@ -693,7 +693,7 @@ The snapshots are files in `.dante/snapshots/` and follow their scene when it is
 5. **Deciding**: the **Comments** tab of the right panel lists the comments and the changes of the text shown. For each you can **Reply**, **Resolve** (closes the discussion), **Accept** or **Reject**; at the top are **Accept all** and **Reject all**.
 6. **Reading again what was decided**: at the top of the **Comments** tab, **History** shows what happened to closed comments and changes: who accepted, rejected or resolved, when, who had proposed the change, the text before and after and the discussion. By default you see the open scene; **The whole novel** shows everything, and you can filter by person and by dates. A click on the name of the scene opens it.
 
-![The scene L'incontro with Anna's comment and revision, listed in the Comments tab](img/commenti.png)
+![The scene L'incontro with Anna's comment and revision, listed in the Comments tab](img/en/commenti.png)
 
 **An example.** In the scene **L'incontro** of the sample project Anna left a comment on «questo matrimonio non s'ha da fare» (the text is highlighted in yellow) and proposed writing «né» in place of «nè»: the old word is struck through in red, the new one underlined in green. In the **Comments** tab press **Accept** on the addition and on the deletion: only «né» is left in the text. You can answer the comment with **Reply**, or close it with **Resolve** when the question is settled.
 
@@ -701,7 +701,7 @@ If another person is already working on a scene, for you that scene is read-only
 
 If Dropbox or Drive create a **conflict copy** (it happens when two people change the same file at the same moment), a warning appears at the top. Opening it you see the two versions side by side and choose: **Keep the file**, **Use the copy**, or **Merge as revisions** to decide the differences one by one.
 
-![A conflict copy of the scene Il latinorum: in Anna's copy the word «molto» is missing](img/conflitto.png)
+![A conflict copy of the scene Il latinorum: in Anna's copy the word «molto» is missing](img/en/conflitto.png)
 
 ### In depth
 
@@ -750,7 +750,7 @@ The choices stay saved in the project: next time you only need to press Export.
 
 *Try it:* in the sample project choose a picture, remove the subtitle, set the text white with a black outline and look at the preview.
 
-![The Export section: the pages on the left, the choices in the middle and the preview of the sheet on the right](img/esportazione.png)
+![The Export section: the pages on the left, the choices in the middle and the preview of the sheet on the right](img/en/esportazione.png)
 
 *Example:* to send the manuscript to a publisher choose **Word (DOCX)** and **Standard manuscript**: Times New Roman 12, double line spacing, header with author, title and page number, title page. For a copy to read on a tablet choose **EPUB**.
 
@@ -786,7 +786,7 @@ Dante reads, writes, checks, shuffles and exports the book. The paragraphs stay 
 - **Where you come from and where you go**: with **Show under each paragraph in the tree where it comes from and where it leads** a line appears under each paragraph with the numbers that lead there (←) and those it refers to (→). A click on a number opens that paragraph.
 - **The Paragraph panel**: in **Properties**, above the other sections, it shows number and type, length and pages, the paragraphs you come from and those it leads to (each opens with a click) and the warnings. The number is changed by writing another: Dante also updates the alias and all the references that lead to that paragraph, and refuses a number already in use. Beside it you choose whether the number is **free** or **fixed**, and below you mark whether the paragraph is an ending. The note of the paragraph (property `note`) is written in the field **Synopsis**. Above the text, the divider shows number and title.
 
-  ![A gamebook: on the left the paragraphs with number, warnings and length, on the right the Paragraph panel](img/libro-game.png)
+  ![A gamebook: on the left the paragraphs with number, warnings and length, on the right the Paragraph panel](img/en/libro-game.png)
 
 - **In the editor** references such as `[[The courtyard|2]]` show as the number alone, and the boxes (choices, keywords, endings and the others) as coloured frames. The lines `:::` that open and close a box hide and come back when the cursor passes over them. Lists and tables inside a callout (`> [!note]`) show as in the rest of the text; in a table inside a callout Tab and Enter work as in the other tables.
 
@@ -808,7 +808,7 @@ While the module is on the tree is not reordered by dragging and scenes are not 
 
 - **Shuffling the numbers**: the **Shuffle** button at the top of the tree opens a window with the preview: for each paragraph the number before and the one after. The fixed paragraphs (with the padlock) and the opening paragraph stay where they are, the relative ones move together with their anchor; among many attempts Dante chooses the one where a paragraph and those it refers to are furthest apart. **Try again** draws again. Pressing **Shuffle** Dante saves a snapshot of every file it touches, changes the numbers and updates the references and the aliases in the whole book. Under the preview, **Numbers written as text** lists the paragraph numbers written by hand in the text ("go back to paragraph 3"): the shuffle does not touch them, so it is better to turn them into references with `[[` first.
 
-  ![The Shuffle the numbers window, with the number after and the one before for each paragraph](img/rimescola.png)
+  ![The Shuffle the numbers window, with the number after and the one before for each paragraph](img/en/rimescola.png)
 
 - **Reordering in reading order**: the **Reorder** button uses the same window, but instead of drawing it numbers the paragraphs in sequence in the order the reader meets them: the opening paragraph, then those it refers to in the order they appear in the text (the hidden references after), then theirs, and so on. The fixed ones stay where they are, the relative ones follow their anchor, the paragraphs nobody reaches go at the end. It is useful to work on the book in order before shuffling it.
 - **Going back**: in the same window, **Earlier operations** lists the shuffles made. **Numbers only** puts back the numbers of that time, with the references, and leaves the text written afterwards; **Everything** brings each file back as it was before the operation. A single paragraph can always be restored from its snapshots.
@@ -820,7 +820,7 @@ While the module is on the tree is not reordered by dragging and scenes are not 
 - **Status bar**: under the text, **Gamebook** says how many problems the checks find (in red if there are any); moving the mouse over it shows the detail, a click opens the **Checks** tab.
 - **Graph**: the **Graph** button at the top of the tree writes the note **Gamebook graph** in the folder of the project and opens it. The note holds the diagram of the paragraphs in Mermaid (a format of diagrams that is written as text and can be read in other programs too): solid arrows for the references in the text, dashed for the hidden ones, the beginning in blue, the endings in red, the unreachable paragraphs in orange. **Full screen** shows the graph on the whole window: the wheel zooms, dragging moves it, a click on a paragraph opens it, Esc closes. Pressing **Graph** again updates the diagram and the text written around it stays. Any ```` ```mermaid ```` block in a note or in a scene is drawn the same way.
 
-  ![The gamebook graph: the opening paragraph in blue, the unreachable ones dashed in orange](img/grafo.png)
+  ![The gamebook graph: the opening paragraph in blue, the unreachable ones dashed in orange](img/en/grafo.png)
 
 - **Statistics**: in a gamebook the pages are counted as in the line at the top of the tree, so they take **Each paragraph starts on a new page** into account.
 
@@ -876,7 +876,7 @@ A backup copy is a zip file with the whole project, kept on the computer outside
 
 1. At every launch Dante checks whether there is a new version, and then again every six hours if it stays open. If there is none, **Dante 1.… is up to date** appears for a few seconds at the bottom right; if the check fails (for example without a connection) it says so in the same place. When there is a new version a box appears at the bottom right: **Dante 1.… is available**.
 
-   ![The update box](img/aggiornamento.png)
+   ![The update box](img/en/aggiornamento.png)
 2. To know what changes press **What's new**: the box lists the news of every version released after the installed one, in Italian or in English according to Dante's language. The same list is in the page [What's new](whats-new.md) and in the page of the version on GitHub.
 3. Press **Update and restart**. Dante saves the open text, downloads the new version, installs it and reopens. On Windows the window of the installer appears for a few seconds.
 4. With **Remind me later** the box vanishes and comes back at the next launch. With **Skip this version** Dante no longer proposes it: it waits for the next one. If you change your mind, **Check for updates** in Settings shows it anyway.
@@ -912,7 +912,7 @@ Dante also exists as a web version, for those who cannot or do not want to insta
 2. To have Dante like an app, with a window of its own and the icon in the Dock or in the Start menu, press the **Install** icon on the right of the address bar (in Chrome: a monitor with an arrow). It is optional, but handy.
 3. Press **Open folder…** and choose the folder of the novel, or **New project** and choose where to create it. The browser asks for permission to change the folder: answer **Allow** or, if it is there, **Allow on every visit**, so that next time the project reopens from the recent ones without more questions.
 
-   ![The opening screen of Dante in the browser](img/nel-browser.png)
+   ![The opening screen of Dante in the browser](img/en/nel-browser.png)
 
 4. From here Dante works like the app: the text is saved in the files of the folder while you write.
 5. After the first opening Dante also works **without a connection**. When there is a network and a new version, the update box appears as in the app (chapter 20): **Update and restart** reloads Dante with the new version.

@@ -86,7 +86,7 @@ describe("guide", () => {
       return {
         chapters: [...md.matchAll(/^## (\d+)\. /gm)].map((m) => m[1]),
         sections: [...md.matchAll(/^### /gm)].length,
-        images: [...md.matchAll(/img\/[\w-]+\.png/g)].map((m) => m[0]),
+        images: [...md.matchAll(/img\/(?:en\/)?([\w-]+\.png)/g)].map((m) => m[1]),
         bullets: [...md.matchAll(/^ *- /gm)].length,
         rows: [...md.matchAll(/^\|/gm)].length,
       };

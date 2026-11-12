@@ -27,6 +27,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Guida in inglese**: le figure della guida in inglese ora mostrano il programma in inglese; quelle della guida in italiano sono aggiornate alla nuova esportazione.
 - **Margini della pagina e titoli senza righe vuote**: in Pagina e copertina si scelgono i quattro margini in centimetri. Nel file Word il titolo di parti e capitoli e le pagine iniziali (frontespizio, dedica, esergo, indice) non sono più preceduti da una riga vuota: per i titoli la distanza dall'alto della pagina è uno spazio del titolo, che puoi regolare o azzerare.
 - **Interlinea libera e aspetto dei titoli nell'esportazione**: l'interlinea è un numero a scelta tra 0,8 e 3; per i titoli di parti, capitoli e scene si scelgono font, corpo, allineamento, grassetto, corsivo, maiuscolo, spazio prima e dopo e interlinea, con l'anteprima a destra. Nel PDF lo spazio intorno ai titoli ora corrisponde a quello del file Word.
 - **Tipografia provata sul tuo testo**: l'anteprima della pagina Tipografia mostra il primo dialogo del romanzo, com'è scritto e come esce nel libro.

@@ -15,7 +15,7 @@
     "novita.md": () => import("../../../docs/novita.md?raw"),
     "whats-new.md": () => import("../../../docs/whats-new.md?raw"),
   };
-  const images = import.meta.glob("../../../docs/img/*", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
+  const images = import.meta.glob(["../../../docs/img/*.png", "../../../docs/img/en/*.png"], { eager: true, query: "?url", import: "default" }) as Record<string, string>;
   const imageUrl = (src: string) => images[`../../../docs/${src.replace(/^\.\//, "")}`] ?? null;
   /** Pages of the docs folder that are not in the app, read on GitHub. */
   const ONLINE = "https://github.com/lucadj77/dante/blob/main/docs/";
