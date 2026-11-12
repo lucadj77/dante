@@ -124,6 +124,9 @@ describe("heading styles", () => {
     expect(document.match(/<w:titlePg\/>/g)).toHaveLength(1);
     expect(document).not.toContain("<w:pageBreakBefore/>");
     expect(document.match(/Text\./g)).toHaveLength(1);
+    // The title sits lower on its page by its own space before, and no paragraph is empty.
+    expect(document).toMatch(/<w:pStyle w:val="Title"\/><w:spacing w:before="4320"\/>/);
+    expect(document).not.toMatch(/<w:p><w:pPr>(?:(?!<\/w:pPr>).)*<\/w:pPr><\/w:p>/);
   });
 
   it("reach the PDF source, which the application compiles", async () => {

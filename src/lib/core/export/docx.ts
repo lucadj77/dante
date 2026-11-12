@@ -170,12 +170,12 @@ export function approxWords(n: number, language: string): string {
 }
 
 /** Plain paragraphs of a paratext written as Markdown-free text. */
-function textParagraphs(text: string, style: string): Paragraph[] {
+function textParagraphs(text: string, style: string, drop = 0): Paragraph[] {
   return text
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean)
-    .map((p) => new Paragraph({ style, children: plain(p) }));
+    .map((p, i) => new Paragraph({ style, ...(i === 0 && drop ? { spacing: { before: drop } } : {}), children: plain(p) }));
 }
 
 function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSettings): IParagraphStyleOptions[] {
@@ -199,8 +199,6 @@ function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSetting
     { id: "SceneBreak", name: "Scene Break", basedOn: "Normal", next: "FirstParagraph", quickFormat: true, paragraph: { ...centered, spacing: { before: line / 2, after: line / 2 } } },
     // An empty line of fixed height pushes openings down the page: word processors drop
     // the space before a paragraph at the top of a page.
-    { id: "Opening", name: "Opening", basedOn: "Normal", paragraph: { ...centered, spacing: { line: typeset ? 2400 : 2880, lineRule: LineRuleType.EXACT } } },
-    { id: "PartOpening", name: "Part Opening", basedOn: "Opening", paragraph: { spacing: { line: typeset ? 3600 : 4320, lineRule: LineRuleType.EXACT } } },
     { id: "Title", name: "Title", basedOn: "Normal", next: "Subtitle", quickFormat: true, run: { size: typeset ? size * 3 : size, bold: typeset }, paragraph: { ...centered } },
     { id: "Subtitle", name: "Subtitle", basedOn: "Normal", next: "Normal", quickFormat: true, run: { italics: true, size: typeset ? Math.round(size * 1.4) : size }, paragraph: { ...centered, spacing: { before: 200 } } },
     { id: "Author", name: "Author", basedOn: "Normal", paragraph: { ...centered, spacing: { before: 400 } } },
@@ -301,10 +299,8 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     const h = opts.headings[kind];
     return { spacing: { before: Math.round((h.top / 2.54) * 1440 + h.before * 20) } };
   };
-  // In a manuscript the text follows the front matter: its first heading too starts a section.
-  const leads = !typeset && (opts.titlePage || !!book.paratext.dedication.trim() || !!book.paratext.epigraph.trim() || hasContents(book, opts));
   const heading = (level: number, text: string, newPage: boolean, part = false) => {
-    if (newPage && (started || body.length > 0 || leads)) splits.push(body.length);
+    if (newPage) splits.push(body.length);
     body.push(new Paragraph({ heading: HEADINGS[level], ...(newPage ? sink(part ? "part" : "chapter") : {}), children: plain(text) }));
   };
 
@@ -393,12 +389,16 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
 
   // Paratext before and after the novel, each on its own page.
   const { paratext } = book;
+  // Pages of the front matter start lower down, the title lower still: as space before their
+  // first paragraph, each page in a section of its own, where Word keeps that space.
+  const drop = typeset ? 2400 : 2880;
+  const titleDrop = typeset ? 3600 : 4320;
   const front: (Paragraph | Table | TableOfContents)[][] = [];
   if (paratext.dedication.trim()) {
-    front.push([new Paragraph({ style: "Opening", children: [] }), ...textParagraphs(paratext.dedication, "Dedication")]);
+    front.push(textParagraphs(paratext.dedication, "Dedication", drop));
   }
   if (paratext.epigraph.trim()) {
-    const page = [new Paragraph({ style: "Opening", children: [] }), ...textParagraphs(paratext.epigraph, "Epigraph")];
+    const page = textParagraphs(paratext.epigraph, "Epigraph", drop);
     if (paratext.epigraphSource.trim()) page.push(new Paragraph({ style: "EpigraphSource", children: plain(paratext.epigraphSource.trim()) }));
     front.push(page);
   }
@@ -416,15 +416,11 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   backPage(paratextLabels.acknowledgements, paratext.acknowledgements);
   if (paratext.colophon.trim()) back.push(textParagraphs(paratext.colophon, "Colophon"));
 
-  const onNewPage = <T extends Paragraph | Table | TableOfContents>(pages: T[][]): (T | Paragraph)[] =>
-    pages.flatMap((page) => [new Paragraph({ pageBreakBefore: true, children: [] }), ...page]);
-
   const titlePage: (Paragraph | Table)[] = [];
   if (opts.titlePage) {
     if (typeset) {
       titlePage.push(
-        new Paragraph({ style: "PartOpening", children: [] }),
-        new Paragraph({ style: "Title", children: plain(title) }),
+        new Paragraph({ style: "Title", spacing: { before: titleDrop }, children: plain(title) }),
       );
       if (book.subtitle) titlePage.push(new Paragraph({ style: "Subtitle", children: plain(book.subtitle) }));
       titlePage.push(
@@ -435,8 +431,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       titlePage.push(
         new Paragraph({ style: "FirstParagraph", children: plain(book.author) }),
         new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(labels.length ?? `${approxWords(book.words, book.language)} ${labels.words}`) }),
-        new Paragraph({ style: "PartOpening", children: [] }),
-        new Paragraph({ style: "Title", children: plain(title.toUpperCase()) }),
+        new Paragraph({ style: "Title", spacing: { before: titleDrop }, children: plain(title.toUpperCase()) }),
       );
       if (book.subtitle) titlePage.push(new Paragraph({ style: "Subtitle", children: plain(book.subtitle) }));
       titlePage.push(new Paragraph({ style: "Author", children: plain(book.author) }));
@@ -490,43 +485,37 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   const contents = hasContents(book, opts);
   if (contents) {
     front.push([
-      new Paragraph({ style: "Opening", children: [] }),
-      new Paragraph({ style: "Centered", keepNext: true, children: plain(paratextLabels.contents, { bold: true }) }),
+      new Paragraph({ style: "Centered", keepNext: true, spacing: { before: drop }, children: plain(paratextLabels.contents, { bold: true }) }),
       new Paragraph({ style: "Normal", children: [] }),
       new TableOfContents(paratextLabels.contents, { hyperlink: true, headingStyleRange: `1-${chapterLevel + 1}` }),
     ]);
   }
-  const frontMatter = [...titlePage, ...(titlePage.length ? onNewPage(front) : onNewPage(front).slice(1))];
   // The text before the first opening, then one piece for each part, chapter and back page that opens a page.
   const cuts = [...new Set(splits)].filter((at) => at > 0);
   const lead = splits.includes(0) ? [] : body.slice(0, cuts[0] ?? body.length);
   const starts = splits.includes(0) ? [0, ...cuts] : cuts;
-  const pieces = [...starts.map((at, i) => body.slice(at, starts[i + 1] ?? body.length)), ...back].filter((piece) => piece.length);
+  const text = [lead, ...starts.map((at, i) => body.slice(at, starts[i + 1] ?? body.length)), ...back].filter((piece) => piece.length);
+  const frontPages = [titlePage, ...front].filter((piece) => piece.length);
   if (typeset) {
     // Title page and front matter have no header and no page number; the text starts at page 1.
-    if (frontMatter.length) sections.push({ properties: { page }, children: frontMatter });
-    [lead, ...pieces]
-      .filter((piece) => piece.length)
-      .forEach((children, i) =>
-        sections.push({
-          properties: { page: i === 0 ? { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } } : page, type: SectionType.NEXT_PAGE },
-          headers: header ? { default: header } : undefined,
-          footers: footer ? { default: footer } : undefined,
-          children,
-        }),
-      );
-  } else {
-    const first = [...frontMatter, ...(frontMatter.length && lead.length ? onNewPage([lead]) : lead)];
-    if (first.length) {
+    for (const children of frontPages) sections.push({ properties: { page }, children });
+    text.forEach((children, i) =>
       sections.push({
-        properties: { titlePage: opts.titlePage, page },
-        headers: header ? { default: header, first: new Header({ children: [] }) } : undefined,
-        children: first,
-      });
-    }
-    for (const children of pieces) {
-      sections.push({ properties: { page, type: SectionType.NEXT_PAGE }, headers: header ? { default: header } : undefined, children });
-    }
+        properties: { page: i === 0 ? { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } } : page, type: SectionType.NEXT_PAGE },
+        headers: header ? { default: header } : undefined,
+        footers: footer ? { default: footer } : undefined,
+        children,
+      }),
+    );
+  } else {
+    // A manuscript counts its pages from the title page, which alone has no header.
+    [...frontPages, ...text].forEach((children, i) =>
+      sections.push({
+        properties: i === 0 ? { titlePage: opts.titlePage, page } : { page, type: SectionType.NEXT_PAGE },
+        headers: !header ? undefined : i === 0 ? { default: header, first: new Header({ children: [] }) } : { default: header },
+        children,
+      }),
+    );
   }
 
   // A book without text is still a document.
