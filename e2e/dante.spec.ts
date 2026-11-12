@@ -417,3 +417,23 @@ test("runs a command from the quick search", async ({ page }) => {
   await box.press("Enter");
   await expect(page.getByRole("heading", { level: 1, name: "Statistiche" })).toBeVisible();
 });
+
+test("brings the bars out at the top edge in full screen and hides them again", async ({ page }) => {
+  await openSample(page);
+  await page.getByRole("button", { name: "Schermo intero" }).click();
+  const bars = page.locator(".bars.edge-top");
+  await expect(bars).toBeVisible();
+  await expect(bars).not.toHaveClass(/shown/);
+  // The mouse rests on the top edge: the bars come out, and stay while it is over them.
+  await page.mouse.move(400, 300);
+  await page.mouse.move(400, 1);
+  await expect(bars).toHaveClass(/shown/);
+  await page.mouse.move(400, 20);
+  await page.waitForTimeout(500);
+  await expect(bars).toHaveClass(/shown/);
+  // Back over the text they go away.
+  await page.mouse.move(400, 500);
+  await expect(bars).not.toHaveClass(/shown/);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".bars.edge-top")).toHaveCount(0);
+});
