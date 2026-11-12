@@ -102,7 +102,9 @@ describe("heading styles", () => {
     const document = strFromU8(unzipSync(bytes)["word/document.xml"]);
     expect(document).not.toContain('w:val="Opening"');
     expect(document).not.toContain('w:val="PartOpening"');
-    expect(document).toMatch(/<w:pStyle w:val="Heading2"\/>(<w:pageBreakBefore\/>)?<w:spacing w:before="2301"\/>/);
+    expect(document).toMatch(/<w:pStyle w:val="Heading2"\/><w:spacing w:before="2301"\/>/);
+    // Pages are numbered from the first section of the text only.
+    expect(document.match(/<w:pgNumType [^>]*w:start="1"/g)).toHaveLength(1);
     // The margins of the page, in twentieths of a point: 3 cm above, 1.5 on the left, the usual 2 elsewhere (A5).
     expect(document).toMatch(/<w:pgMar w:top="1701" w:right="1134" w:bottom="1134" w:left="850"/);
     // The text takes the free line spacing: 1.3 lines of 240.
@@ -114,9 +116,14 @@ describe("heading styles", () => {
     const project = await Project.open(fs);
     const bytes = await docxBytes(bookToDocx(await buildBook(project), project.settings.export.docx, { words: "words" }));
     const document = strFromU8(unzipSync(bytes)["word/document.xml"]);
-    // 5 cm from the top, in twentieths of a point, on both chapters; no empty paragraph carries a break.
-    expect(document.match(/<w:pStyle w:val="Heading1"\/><w:pageBreakBefore\/><w:spacing w:before="2835"\/>/g)).toHaveLength(2);
-    expect(document).not.toMatch(/<w:p><w:pPr><w:pageBreakBefore\/><\/w:pPr><\/w:p>/);
+    // 5 cm from the top, in twentieths of a point, on both chapters, each once and first in a
+    // section of its own after the title page: Word drops that space after a plain page break.
+    expect(document.match(/<w:pStyle w:val="Heading1"\/><w:spacing w:before="2835"\/>/g)).toHaveLength(2);
+    expect(document.match(/<w:sectPr/g)).toHaveLength(3);
+    expect(document.match(/<w:type w:val="nextPage"\/>/g)).toHaveLength(2);
+    expect(document.match(/<w:titlePg\/>/g)).toHaveLength(1);
+    expect(document).not.toContain("<w:pageBreakBefore/>");
+    expect(document.match(/Text\./g)).toHaveLength(1);
   });
 
   it("reach the PDF source, which the application compiles", async () => {

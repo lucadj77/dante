@@ -292,21 +292,20 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
   };
 
   /**
-   * What a heading that opens a page adds to its paragraph: the break and, as space before,
-   * how far down the page it sits. Word keeps the space before of a paragraph that asks for
-   * a new page, so no empty line is needed above the heading.
+   * A heading that opens a page starts a section of its own and takes, as space before, how
+   * far down the page it sits. Word keeps the space before of the first paragraph of a
+   * section, and drops it after a plain page break: so no empty line is needed above the heading.
    */
-  const opening = (kind: "part" | "chapter", pageBreak: boolean) => {
+  const splits: number[] = [];
+  const sink = (kind: "part" | "chapter") => {
     const h = opts.headings[kind];
-    return { pageBreakBefore: pageBreak, spacing: { before: Math.round((h.top / 2.54) * 1440 + h.before * 20) } };
+    return { spacing: { before: Math.round((h.top / 2.54) * 1440 + h.before * 20) } };
   };
-  // In a manuscript the text follows the front matter in the same section: its first heading
-  // asks for the new page itself, so that no empty paragraph has to.
+  // In a manuscript the text follows the front matter: its first heading too starts a section.
   const leads = !typeset && (opts.titlePage || !!book.paratext.dedication.trim() || !!book.paratext.epigraph.trim() || hasContents(book, opts));
-  let bodyBreaks = false;
   const heading = (level: number, text: string, newPage: boolean, part = false) => {
-    if (newPage && !body.length && leads) bodyBreaks = true;
-    body.push(new Paragraph({ heading: HEADINGS[level], ...(newPage ? opening(part ? "part" : "chapter", started || bodyBreaks) : {}), children: plain(text) }));
+    if (newPage && (started || body.length > 0 || leads)) splits.push(body.length);
+    body.push(new Paragraph({ heading: HEADINGS[level], ...(newPage ? sink(part ? "part" : "chapter") : {}), children: plain(text) }));
   };
 
   const [pageWidth, pageHeight] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
@@ -411,7 +410,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       .map((p) => p.trim())
       .filter(Boolean)
       .map((p, i) => new Paragraph({ style: i === 0 ? "FirstParagraph" : "Normal", children: plain(p) }));
-    back.push([new Paragraph({ heading: HEADINGS[chapterLevel], ...opening("chapter", true), children: plain(label) }), ...paragraphs]);
+    back.push([new Paragraph({ heading: HEADINGS[chapterLevel], ...sink("chapter"), children: plain(label) }), ...paragraphs]);
   };
   backPage(paratextLabels.authorNote, paratext.authorNote);
   backPage(paratextLabels.acknowledgements, paratext.acknowledgements);
@@ -498,23 +497,40 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     ]);
   }
   const frontMatter = [...titlePage, ...(titlePage.length ? onNewPage(front) : onNewPage(front).slice(1))];
+  // The text before the first opening, then one piece for each part, chapter and back page that opens a page.
+  const cuts = [...new Set(splits)].filter((at) => at > 0);
+  const lead = splits.includes(0) ? [] : body.slice(0, cuts[0] ?? body.length);
+  const starts = splits.includes(0) ? [0, ...cuts] : cuts;
+  const pieces = [...starts.map((at, i) => body.slice(at, starts[i + 1] ?? body.length)), ...back].filter((piece) => piece.length);
   if (typeset) {
     // Title page and front matter have no header and no page number; the text starts at page 1.
     if (frontMatter.length) sections.push({ properties: { page }, children: frontMatter });
-    sections.push({
-      properties: { page: { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } }, type: SectionType.NEXT_PAGE },
-      headers: header ? { default: header } : undefined,
-      footers: footer ? { default: footer } : undefined,
-      children: [...body, ...back.flat()],
-    });
+    [lead, ...pieces]
+      .filter((piece) => piece.length)
+      .forEach((children, i) =>
+        sections.push({
+          properties: { page: i === 0 ? { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } } : page, type: SectionType.NEXT_PAGE },
+          headers: header ? { default: header } : undefined,
+          footers: footer ? { default: footer } : undefined,
+          children,
+        }),
+      );
   } else {
-    const children = [...frontMatter, ...(frontMatter.length && body.length && !bodyBreaks ? onNewPage([body]) : body), ...back.flat()];
-    sections.push({
-      properties: { titlePage: opts.titlePage, page },
-      headers: header ? { default: header, first: new Header({ children: [] }) } : undefined,
-      children,
-    });
+    const first = [...frontMatter, ...(frontMatter.length && lead.length ? onNewPage([lead]) : lead)];
+    if (first.length) {
+      sections.push({
+        properties: { titlePage: opts.titlePage, page },
+        headers: header ? { default: header, first: new Header({ children: [] }) } : undefined,
+        children: first,
+      });
+    }
+    for (const children of pieces) {
+      sections.push({ properties: { page, type: SectionType.NEXT_PAGE }, headers: header ? { default: header } : undefined, children });
+    }
   }
+
+  // A book without text is still a document.
+  if (!sections.length) sections.push({ properties: { page }, children: [] });
 
   return new Document({
     creator: book.author,
