@@ -6,6 +6,20 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+### Cambiato
+
+### Corretto
+
+## 1.2.0 · 12 novembre 2026
+
+### Nuovo
+
+- **Sposta in… e Copia in…**: con il clic destro su una scena, un capitolo, una nota o una cartella (anche sulle schede della Bibbia) puoi spostarla o copiarla in un'altra sezione o in un punto preciso del manoscritto, scegliendo da una finestra con l'albero e una casella di ricerca, senza trascinare.
+- **Skill per agenti IA aggiornata**: la skill in `skills/dante` ora spiega anche libri game, viste, proprietà per tutte le scene, cestino, righe vuote, callout e tutte le impostazioni del romanzo, e il suo script conta parole e caratteri spazi inclusi come Dante.
+- **Libri game in inglese**: in un libro game in inglese Dante legge lo stato di gioco anche da frasi come «Note the keyword…» e «If you have…», trova i numeri scritti a mano come «turn to 12», dà ai box proprietà con nomi inglesi (traits, keywords, encounters), chiama la nota del grafo «Gamebook graph» e non tocca più le parole prima dei rimandi (gli articoli si correggono solo nei libri in italiano).
+- **Callout**: i blocchi `> [!note]`, `> [!warning]` e simili si vedono con il nome in una pillola colorata; elenchi e tabelle al loro interno si vedono come nel resto del testo.
+- **Libri game**: un progetto può diventare un libro game (Impostazioni > Libro game). L'albero mostra i paragrafi in ordine di numero, con avvisi, lunghezze e da dove si arriva e dove si va; i rimandi si vedono come numeri e i box come riquadri colorati; il pannello Paragrafo riassume ogni paragrafo e permette di cambiarne numero, tipo e finale, aggiornando i rimandi; regole e altre pagine senza numero (pulsante Pagina in cima all'albero) stanno prima o dopo i paragrafi. Si scrive in fretta: `[[` cerca o crea un paragrafo (le due voci per crearlo sono in cima all'elenco) e mette il rimando con l'articolo giusto, Cmd/Ctrl+Invio apre la finestra del nuovo paragrafo (numero libero, fisso o relativo, rimando nel testo o nascosto), il pulsante Paragrafo della barra apre la stessa finestra, il pulsante Box inserisce i box del libro e ne scrive il valore nelle proprietà. L'esportazione mette i paragrafi in ordine con il numero come titolo e i box come riquadri colorati, e avvisa dei rimandi rotti. Il pulsante Riordina numera i paragrafi in sequenza nell'ordine in cui si leggono; il pulsante Paragrafo nell'albero crea un paragrafo senza rimando. Il pulsante Rimescola dà nuovi numeri a caso con un'anteprima, tenendo fermi i fissi e spostando i relativi con la loro ancora, aggiorna rimandi e articoli e si può annullare, anche solo nella numerazione; il pulsante Grafo scrive una nota con lo schema del libro, da guardare anche a tutto schermo. La sezione Libro game ha la tabella dei paragrafi, ordinabile e filtrabile, i controlli di tutto il libro (orfani, vicoli ciechi, rimandi rotti e stato di gioco: valori chiesti con il punto interrogativo che il lettore non può ancora avere) e il registro di caratteri, parole chiave e incontri con i possibili doppioni; la barra di stato dice quanti problemi ci sono. Nell'esportazione la sezione Libro game sostituisce parti, capitoli e scene: titolo del paragrafo, separazione tra paragrafi, box a colori, grigi o senza riquadro, e rimandi cliccabili nel Word, nel PDF e nell'EPUB. Il testo dei paragrafi si personalizza: giustificato o a sinistra, rientro, spazio tra i capoversi, dimensione del testo nei box, numero in grassetto o in corsivo e con un font suo.
+- **Dimensione dell'interfaccia**: in Impostazioni > Dante su questo computer > Aspetto puoi ingrandire tutta la finestra di Dante, da 80% a 200%: menu, pannelli, pulsanti e il loro testo, non solo il testo dell'editor.
 - **Libri game**: escono dalla beta. Paragrafi numerati, scelte e rimandi, con controlli, grafo, rimescolamento ed esportazione: guida, capitolo 18.
 - **Scorciatoie personalizzabili**: in **Impostazioni → Scorciatoie** puoi cambiare i tasti dei comandi di scrittura (dividi in scena e in capitolo, grassetto, corsivo e il resto della formattazione, commento). Dante avvisa se la combinazione è già usata, e i suggerimenti dei pulsanti mostrano i tasti scelti.
 - **Caratteri spazi inclusi in tabelle, esportazione e importazione**: nelle tabelle e bacheche c'è il campo **Caratteri** accanto a **Parole**, e la tabella Scene di un progetto nuovo parte con la misura del progetto. Il frontespizio del manoscritto e il riepilogo dopo l'esportazione usano la stessa misura. L'anteprima dell'importazione mostra parole e caratteri.
@@ -29,6 +43,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Diagrammi Mermaid**: i blocchi ```` ```mermaid ```` nelle note e nelle scene si vedono disegnati, con un pulsante per guardarli a tutto schermo.
 - **Copie di sicurezza**: la guida ha la figura della pagina, e la nota in cima alla pagina rimanda ad **Apri questa copia**.
 - **Obiettivi e tipografia nelle Impostazioni**: la lunghezza del romanzo, la scadenza, la quota del giorno e i giorni di scrittura si scrivono anche in **Impostazioni → Misure e obiettivi**; la nuova pagina **Tipografia** ha lo stile dei dialoghi e le correzioni, con il primo dialogo del romanzo come anteprima. Statistiche ed Esportazione restano come prima.
 - **Esportazione**: più spazio tra la nota sul font e i campi che la seguono.
@@ -57,6 +72,10 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
+- **Spostare più volte con la tastiera**: nell'albero del manoscritto Ctrl+Alt+freccia (Cmd+Opz+freccia su Mac) sposta la scena di un posto a ogni pressione, senza doverci cliccare sopra ogni volta.
+- **Callout nell'esportazione**: i blocchi che cominciano con `> [!note] Titolo` diventano in Word, PDF ed EPUB un riquadro colorato con il titolo in grassetto; prima uscivano come citazioni che cominciavano con «!note». Nel Markdown esportato restano callout.
+- **Menu del tasto destro**: sugli ultimi elementi del pannello il menu si apre più in alto e resta visibile per intero.
+- **Suggerimenti**: i suggerimenti che compaiono passando sopra un elemento si aprono sopra di esso, così il puntatore non li copre.
 - **Data dei modelli**: `{{date}}` in un modello dà il giorno di dove sei, anche subito dopo mezzanotte.
 - **Lo stesso numero dappertutto**: con revisioni in sospeso il pannello Proprietà, le tabelle e il registro di scrittura contavano anche il testo cancellato e i segni delle revisioni. Ora contano come le Statistiche: il testo aggiunto vale, quello cancellato no.
 - **Spostamenti interrotti**: se Dante si chiudeva mentre riordinava scene o capitoli, alcuni file restavano con un nome provvisorio e non comparivano più nell'albero. Ora alla riapertura Dante rimette i file dov'erano o porta a termine lo spostamento, e lo dice con un avviso.

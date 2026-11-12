@@ -6,6 +6,20 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+### Changed
+
+### Fixed
+
+## 1.2.0 · November 12, 2026
+
+### New
+
+- **Move to… and Copy to…**: right-click a scene, chapter, note or folder (Story Bible cards too) to move or copy it to another section or to a precise place in the manuscript, chosen from a window with the tree and a search box, without dragging.
+- **Updated skill for AI agents**: the skill in `skills/dante` now also covers gamebooks, views, properties for all scenes, the trash, blank lines, callouts and every setting of the novel, and its script counts words and characters with spaces as Dante does.
+- **Gamebooks in English**: in an English gamebook Dante reads the game state from sentences such as “Note the keyword…” and “If you have…”, finds numbers written by hand such as “turn to 12”, gives the boxes properties with English names (traits, keywords, encounters), calls the graph note “Gamebook graph” and leaves the words before references alone (articles are corrected only in Italian books).
+- **Callouts**: `> [!note]`, `> [!warning]` and similar blocks show their name in a coloured pill; lists and tables inside them show as in the rest of the text.
+- **Gamebooks**: a project can become a gamebook (Settings > Gamebook). The tree shows the paragraphs in order of number, with warnings, lengths and where each comes from and leads; references read as numbers and boxes as coloured frames; the Paragraph panel sums up each paragraph and changes its number, type and ending, updating the references; rules and other pages without a number (Page button at the top of the tree) sit before or after the paragraphs. Writing is quick: `[[` finds or creates a paragraph (the two entries that create one come first in the list) and writes the reference with the right Italian article, Cmd/Ctrl+Enter opens the new paragraph window (free, fixed or relative number, reference in the text or hidden), the Paragraph button on the bar opens the same window, the Box button inserts the book's boxes and writes their value in the properties. The export puts the paragraphs in order under their number and the boxes in coloured frames, and warns about broken references. The Reorder button numbers the paragraphs in sequence in reading order; the Paragraph button in the tree creates a paragraph without a reference. The Shuffle button gives new random numbers with a preview, keeping fixed paragraphs and moving relative ones with their anchor, updates references and articles and can be undone, even just for the numbers; the Graph button writes a note with the map of the book, to look at full screen as well. The Gamebook section has the table of the paragraphs, to sort and filter, the checks of the whole book (orphans, dead ends, broken references and game state: values asked for with a question mark that the reader cannot have yet) and the register of traits, keywords and encounters with likely duplicates; the status bar tells how many problems there are. In the export the Gamebook section takes the place of parts, chapters and scenes: paragraph heading, what parts paragraphs, boxes in colour, grey or plain, and clickable references in Word, PDF and EPUB. The paragraphs' text can be set: justified or left, indent, space between paragraphs, size of the text in boxes, number in bold or italics and in a font of its own.
+- **Interface size**: in Settings > Dante on this computer > Appearance you can enlarge the whole Dante window, from 80% to 200%: menus, panels, buttons and their text, not just the text in the editor.
 - **Gamebooks**: out of beta. Numbered sections, choices and references, with checks, graph, shuffle and export: guide, chapter 18.
 - **Shortcuts you can change**: in **Settings → Shortcuts** you can change the keys of the writing commands (split into a scene and a chapter, bold, italic and the rest of the formatting, comment). Dante warns if the combination is already used, and the tooltips of the buttons show the keys chosen.
 - **Characters with spaces in tables, export and import**: tables and boards have a **Characters** field beside **Words**, and a new project's Scenes table starts with the unit the project measures in. The manuscript's title page and the summary after an export use the same unit. The import preview shows words and characters.
@@ -29,6 +43,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Mermaid diagrams**: ```` ```mermaid ```` blocks in notes and scenes show as drawings, with a button to see them full screen.
 - **Backups**: the guide has a figure of the page, and the note at the top of the page points to **Open this backup**.
 - **Goals and typography in Settings**: the length of the novel, the deadline, the daily share and the writing days can also be set in **Settings → Measures and goals**; the new **Typography** page has the dialogue style and the corrections, with the first dialogue of the novel as a preview. Statistics and Export stay as they were.
 - **Export**: more space between the note on the font and the fields after it.
@@ -57,6 +72,10 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
+- **Moving several times from the keyboard**: in the manuscript tree Ctrl+Alt+arrow (Cmd+Option+arrow on a Mac) moves the scene one place at each press, without clicking on it every time.
+- **Callouts in the export**: blocks that start with `> [!note] Title` become a coloured frame with the title in bold in Word, PDF and EPUB; before, they came out as quotes starting with “!note”. In exported Markdown they stay callouts.
+- **Right-click menu**: on the last items of a panel the menu opens higher up and stays fully visible.
+- **Tooltips**: the hints that appear over an item now open above it, so the pointer does not cover them.
 - **Date in templates**: `{{date}}` in a template gives the day where you are, also right after midnight.
 - **The same number everywhere**: with revisions pending, the Properties panel, the tables and the writing log also counted the deleted text and the revision marks. They now count as the Statistics do: added text counts, deleted text does not.
 - **Interrupted moves**: if Dante closed while it was reordering scenes or chapters, some files kept a temporary name and no longer showed in the tree. Dante now puts the files back or finishes the move when the project is opened again, and says so in a notice.
