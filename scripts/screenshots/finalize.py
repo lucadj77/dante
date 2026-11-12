@@ -23,6 +23,7 @@ CROPS = {
     'aspetto-full': ('aspetto', (52, 40, 900, 320)),
     'libro-game-full': ('libro-game', (52, 0, 1448, 700)),
     'grafo-full': ('grafo', (312, 40, 916, 640)),
+    'copie-full': ('copie', (296, 40, 900, 640)),
 }
 os.makedirs(OUT, exist_ok=True)
 for f in sorted(glob.glob(os.path.join(os.path.dirname(__file__), ('shots-en' if EN else 'shots') + '/f-*.png'))):

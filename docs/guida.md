@@ -860,6 +860,9 @@ Una copia di sicurezza è un file zip con tutto il progetto, tenuto sul computer
 - Le copie sono nella cartella **Documenti/Dante backup**, in una sottocartella per ogni romanzo. Di ogni romanzo restano le 10 più recenti; le più vecchie si cancellano da sole.
 - In **Impostazioni → Copie di sicurezza** puoi scegliere un'altra cartella, quante copie tenere, se crearle alla chiusura, e vedere quando è stata fatta l'ultima. **Crea una copia ora** ne fa una subito, **Mostra le copie** apre la cartella.
 - **Per riprendere un progetto**: in **Impostazioni** > **Copie di sicurezza**, sotto **Riprendere una copia**, c'è l'elenco delle copie con data e ora. **Apri questa copia** la estrae in una cartella nuova accanto a quella del romanzo, chiamata come il romanzo con «(copia del…)», e la apre. Il romanzo di adesso non viene toccato e resta tra i progetti recenti: confronta le due cartelle con calma e tieni quella giusta. Se Dante non riesce ad aprire il romanzo, fai a mano: apri lo zip (doppio clic), sposta la cartella che contiene dove vuoi e aprila con **Apri cartella…** dalla schermata iniziale.
+
+  ![La pagina Copie di sicurezza delle Impostazioni: la cartella, quante copie tenere e l'elenco delle copie da riaprire](img/copie.png)
+
 - **Nel browser** Dante non può scrivere fuori dalla cartella del romanzo: in **Impostazioni** > **Copie di sicurezza** c'è **Scarica una copia di sicurezza (zip)**, da premere ogni tanto e conservare in un posto sicuro.
 
 ### Approfondimento

@@ -18,7 +18,18 @@ export async function start(opts = {}) {
     localStorage.setItem('dante.recent-projects', JSON.stringify(recent));
     const yaml = Object.fromEntries(recent.map((r) => [r.path, `title: ${JSON.stringify(r.title)}\nauthor: Luca\nlanguage: ${r.language}\n`]));
     window.__TAURI_INTERNALS__ = { metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } }, transformCallback: () => 0,
-      invoke: async (cmd, args) => { console.log('invoke', cmd, JSON.stringify(args)); if (cmd === 'read_text') return yaml[args.root] ?? 'title: x\n'; if (cmd === 'path_exists') return true; if (cmd==='list_dir') return []; if (cmd==='plugin:app|version') return '1.0.3'; if (cmd==='updates_supported') return !!window.__updates; if (cmd==='check_update') return { rid: 1, currentVersion: '1.0.3', version: '1.1.0', body: '', rawJson: { news: { it: [{ version: '1.1.0', notes: ['**Copertina**: immagine, testi e colori.'] }], en: [{ version: '1.1.0', notes: ['**Cover**: picture, texts and colours.'] }] } } }; return null; } };
+      invoke: async (cmd, args) => { console.log('invoke', cmd, JSON.stringify(args)); if (window.__files) { const f = window.__files, rel = args?.path ?? '';
+        if (cmd === 'plugin:path|resolve_directory') return '/Users/luca/Documents'; if (cmd === 'plugin:path|join') return args.paths.join('/'); if (cmd === 'plugin:path|dirname') return args.path.split('/').slice(0, -1).join('/');
+        if (cmd === 'list_backups') return { dir: args.dest + '/' + args.name, latest: window.__backups[0], count: window.__backups.length };
+        if (cmd === 'list_dir' && args.root.includes('Dante backup')) return window.__backups.map((name) => ({ path: name, name, isDir: false }));
+        if (cmd === 'list_dir') { const pre = rel ? rel + '/' : ''; const names = new Set(Object.keys(f).filter((k) => k.startsWith(pre)).map((k) => k.slice(pre.length).split('/')[0])); return [...names].map((name) => ({ path: pre + name, name, isDir: !(pre + name in f) })); }
+        if (cmd === 'read_text') { if (rel in f) return f[rel]; throw new Error('not found ' + rel); }
+        if (cmd === 'path_exists') return rel === '' || Object.keys(f).some((k) => k === rel || k.startsWith(rel + '/'));
+        if (cmd === 'file_signatures') return Object.fromEntries(Object.keys(f).map((k) => [k, '1']));
+        if (cmd === 'write_text') { f[rel] = args.content; return null; }
+        if (cmd === 'read_bytes') throw new Error('not found ' + rel);
+      }
+      if (cmd === 'read_text') return yaml[args.root] ?? 'title: x\n'; if (cmd === 'path_exists') return true; if (cmd==='list_dir') return []; if (cmd==='plugin:app|version') return '1.0.3'; if (cmd==='updates_supported') return !!window.__updates; if (cmd==='check_update') return { rid: 1, currentVersion: '1.0.3', version: '1.1.0', body: '', rawJson: { news: { it: [{ version: '1.1.0', notes: ['**Copertina**: immagine, testi e colori.'] }], en: [{ version: '1.1.0', notes: ['**Cover**: picture, texts and colours.'] }] } } }; return null; } };
   }, EN
     ? [{ path: '/Users/luca/Novels/The Inheritance', title: 'The Inheritance', language: 'en', opened: '2026-10-17T09:00:00Z' }, { path: '/Users/luca/Novels/The Lighthouse', title: 'The Lighthouse', language: 'en', opened: '2026-10-02T09:00:00Z' }]
     : [{ path: "/Users/luca/Romanzi/L'eredità", title: "L'eredità", language: 'it', opened: '2026-10-17T09:00:00Z' }, { path: '/Users/luca/Romanzi/Il faro', title: 'Il faro', language: 'it', opened: '2026-10-02T09:00:00Z' }]);
@@ -35,6 +46,8 @@ export async function start(opts = {}) {
     Object.defineProperty(IDBRequest.prototype, 'result', { configurable: true, get() { const r = result.get.call(this); return Array.isArray(r) ? r.map(back) : back(r); } });
     window.showDirectoryPicker = async () => (await navigator.storage.getDirectory()).getDirectoryHandle(name, { create: true });
   }, opts.picker);
+  // A small novel kept in memory stands in for a folder of the computer, with its backups.
+  if (opts.project) await page.addInitScript(([files, backups]) => { window.__files = files; window.__backups = backups; }, [opts.project.files, opts.project.backups ?? []]);
   if (opts.updates) await page.addInitScript(() => { window.__updates = true; });
   await page.goto('http://127.0.0.1:5173/');
   await page.waitForTimeout(1500);

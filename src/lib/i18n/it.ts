@@ -968,7 +968,7 @@ export const it: Partial<Record<MessageKey, string>> = {
   "trash.folder": "cartella",
   "trash.close": "Chiudi",
   "backup.title": "Copie di sicurezza",
-  "backup.hint": "Una copia di sicurezza è un file zip con tutto il progetto, tenuto su questo computer fuori dalla cartella del romanzo: resta al sicuro anche se la cartella sincronizzata si rovina. Per riprendere un progetto, estrai lo zip e apri la cartella con Apri cartella…",
+  "backup.hint": "Una copia di sicurezza è un file zip con tutto il progetto, tenuto su questo computer fuori dalla cartella del romanzo: resta al sicuro anche se la cartella sincronizzata si rovina. Per riprendere un progetto usa «Apri questa copia» qui sotto.",
   "backup.folder": "Dove tenerle",
   "backup.choose": "Scegli…",
   "backup.useDefault": "Torna a quella predefinita",

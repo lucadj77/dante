@@ -968,7 +968,7 @@ export const en = {
   "trash.folder": "folder",
   "trash.close": "Close",
   "backup.title": "Backups",
-  "backup.hint": "A backup is a zip file holding the whole project, kept on this computer outside the novel’s folder: it stays safe even if the synced folder is damaged. To get a project back, unzip the file and open the folder with Open folder…",
+  "backup.hint": "A backup is a zip file holding the whole project, kept on this computer outside the novel’s folder: it stays safe even if the synced folder is damaged. To get a project back, use “Open this backup” below.",
   "backup.folder": "Where to keep them",
   "backup.choose": "Choose…",
   "backup.useDefault": "Back to the default",

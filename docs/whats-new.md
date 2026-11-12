@@ -27,6 +27,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Backups**: the guide has a figure of the page, and the note at the top of the page points to **Open this backup**.
 - **Goals and typography in Settings**: the length of the novel, the deadline, the daily share and the writing days can also be set in **Settings → Measures and goals**; the new **Typography** page has the dialogue style and the corrections, with the first dialogue of the novel as a preview. Statistics and Export stay as they were.
 - **Export**: more space between the note on the font and the fields after it.
 - **English guide**: the figures of the English guide now show the program in English; those of the Italian guide are updated to the new export.
