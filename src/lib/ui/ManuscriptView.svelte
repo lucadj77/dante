@@ -6,14 +6,15 @@
   import { tick, type Snippet } from "svelte";
   import { enclosing, GAMEBOOK_AFTER, GAMEBOOK_POSITION, headings as computeHeadings, parentOf, scenesOf, type ManuscriptNode } from "$lib/core/manuscript";
   import { splitNote } from "$lib/core/frontmatter";
-  import type { Project } from "$lib/core/project";
-  import { app, t } from "$lib/state.svelte";
+  import { StaleUndoError, type Project, type StructureChange } from "$lib/core/project";
+  import { app, appearance, t } from "$lib/state.svelte";
   import Icon from "./Icon.svelte";
   import FormatBar from "./FormatBar.svelte";
   import ManuscriptToolbar from "./ManuscriptToolbar.svelte";
   import { rebase } from "$lib/core/path";
   import PropertiesPanel from "./PropertiesPanel.svelte";
   import SidePanel from "./SidePanel.svelte";
+  import BulkPropertyDialog from "./BulkPropertyDialog.svelte";
   import { columns, layout, width } from "./layout.svelte";
   import Resizer from "./Resizer.svelte";
   import { markOnly } from "./folding.svelte";
@@ -26,14 +27,16 @@
   import { dirname } from "$lib/core/path";
   import ShuffleDialog from "./ShuffleDialog.svelte";
   import TransferDialog from "./TransferDialog.svelte";
+  import Dialog from "./Dialog.svelte";
   import NewParagraphDialog from "./NewParagraphDialog.svelte";
   import { panes } from "./panes.svelte";
   import { navigator } from "./navigation";
   import WordImport from "./WordImport.svelte";
   import StatusBar from "./StatusBar.svelte";
   import { textStats } from "$lib/core/stats";
-  import { pickWordFile } from "./wordFile";
-  import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import { pickDocumentFile } from "./wordFile";
+  import { readDocumentFile } from "$lib/core/import/any";
+  import type { DocxContent } from "$lib/core/import/docx";
   import { sceneSize, treeMarks, type TreeMark } from "$lib/core/statistics";
   import type { NoteIndex } from "$lib/core/notes";
   import { gamebookMarks, gamebookOf } from "$lib/core/gamebook/marks";
@@ -222,8 +225,11 @@
     const root = shownRoot;
     if (!root || root.kind === "scene") return null;
     const words = shownScenes.reduce((n, path) => n + wordsOf(path, ""), 0);
+    const goal = root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0);
+    // A chapter of one scene: the same number is already there under Scene.
+    if (!goal && shownScenes.length === 1 && shownScenes[0] === active) return null;
     const label = root.kind === "manuscript" ? t("level.novel") : (headingMap.get(root.path) ?? root.title).replace(/\n/g, " · ");
-    return { label, words, goal: root.kind === "manuscript" ? project.settings.goals.words : (marks.get(root.path)?.goal ?? 0) };
+    return { label, words, goal };
   });
   const selectedWords = $derived.by(() => {
     if (selection.path !== active || !selection.text) return 0;
@@ -303,6 +309,30 @@
     } catch (e) {
       error = failure(e);
     }
+  }
+
+  /** The last move, split or merge, while Dante can still take it back. */
+  let undoable = $state<StructureChange | null>(null);
+  $effect(() => {
+    void rev;
+    void localRev;
+    undoable = project.lastChange?.kind ?? null;
+  });
+
+  function undoChange() {
+    if (!project.lastChange) return;
+    let stale = false;
+    void run(async () => {
+      try {
+        await project.undoLastChange();
+      } catch (e) {
+        if (!(e instanceof StaleUndoError)) throw e;
+        stale = true;
+      }
+    }).then(() => {
+      if (stale) error = t("undo.stale");
+      onDiskChange();
+    });
   }
 
   function register(path: string, handle: SceneHandle | null) {
@@ -389,8 +419,19 @@
   /** In a gamebook: a page without a number (rules, an introduction), next to the selected paragraph's folder. */
   function newPage() {
     const node = selected ? findNode(selected) : null;
-    const dir = node?.kind === "scene" ? dirname(node.path) : (node?.path ?? tree.path);
-    void run(() => project.createPage(dir, t("gamebook.newPageTitle")), "start");
+    newPageIn = node?.kind === "scene" ? dirname(node.path) : (node?.path ?? tree.path);
+    newPageTitle = "";
+  }
+
+  /** The folder a new page is being named for; the title is asked first, as for a paragraph. */
+  let newPageIn = $state<string | null>(null);
+  let newPageTitle = $state("");
+
+  function createPage() {
+    const dir = newPageIn;
+    const title = newPageTitle.trim() || t("gamebook.newPageTitle");
+    newPageIn = null;
+    if (dir !== null) void run(() => project.createPage(dir, title), "start");
   }
 
   /** New scene in the selected chapter, or right after the selected scene. */
@@ -421,10 +462,12 @@
 
   async function chooseWord() {
     error = "";
+    let picked = "";
     try {
-      const file = await pickWordFile();
+      const file = await pickDocumentFile(t("import.documents"));
       if (!file) return;
-      const content = await readDocx(file.bytes, { note: t("import.note") });
+      picked = file.name;
+      const content = await readDocumentFile(file.bytes, file.name, { note: t("import.note") });
       wordRoles = defaultRoles(content.blocks);
       wordBlanks = defaultBlankLines(content.blocks);
       wordMarks = {};
@@ -433,7 +476,7 @@
       wordError = "";
       word = { content, fileName: file.name };
     } catch (e) {
-      error = t("import.failed", { name: "Word", message: e instanceof Error ? e.message : String(e) });
+      error = t("import.failed", { name: picked || t("import.documents"), message: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -637,6 +680,9 @@
   /** What the Move to… or Copy to… window is sending elsewhere. */
   let transferring = $state<{ paths: string[]; mode: "move" | "copy" } | null>(null);
 
+  /** The chosen scenes whose property is being set together. */
+  let bulk = $state<string[] | null>(null);
+
   function startTransfer(path: string, mode: "move" | "copy") {
     menu = null;
     // On a chosen scene, the chosen scenes go together, in reading order.
@@ -739,6 +785,12 @@
   function onKey(event: KeyboardEvent) {
     if (event.key === "Escape" && moreOpen) {
       moreOpen = false;
+      return;
+    }
+    // Undo with the keyboard in the tree takes back the last move; in the text it stays the editor's.
+    if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "z" && undoable && treeList?.contains(document.activeElement)) {
+      event.preventDefault();
+      undoChange();
       return;
     }
     // Esc that closed something else first, such as the suggestions, stays there.
@@ -869,15 +921,15 @@
             {#if project.settings.structure.parts}
               <button title={t("tip.newPart")} aria-label={t("tree.newPart")} onclick={() => newContainer("part")}><Icon name="part" /><span>{t("level.part")}</span></button>
             {/if}
-            <button title={t("tip.importWord")} aria-label={t("import.word")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
+            <button title={t("tip.importWord")} aria-label={t("import.addDocument")} onclick={chooseWord}><Icon name="word" /><span>{t("import.wordShort")}</span></button>
           </div>
           {:else}
           <div class="add gamebook-add">
             <button title={t("gamebook.newParagraphTip")} aria-label={t("gamebook.new.title")} onclick={openNewParagraph}><Icon name="scene" /><span>{t("gamebook.paragraphShort")}</span></button>
             <button title={t("gamebook.newPageTip")} aria-label={t("gamebook.newPage")} onclick={newPage}><Icon name="scene" /><span>{t("gamebook.page")}</span></button>
-            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><span class="glyph" aria-hidden="true">🔀</span><span>{t("gamebook.shuffle.button")}</span></button>
-            <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><span class="glyph" aria-hidden="true">⇣</span><span>{t("gamebook.reorder.button")}</span></button>
-            <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><span class="glyph" aria-hidden="true">🕸</span><span>{t("gamebook.graph.button")}</span></button>
+            <button title={t("gamebook.shuffle.tip")} aria-label={t("gamebook.shuffle.title")} onclick={() => openShuffle("shuffle")}><Icon name="shuffle" /><span>{t("gamebook.shuffle.button")}</span></button>
+            <button title={t("gamebook.reorder.tip")} aria-label={t("gamebook.reorder.title")} onclick={() => openShuffle("reorder")}><Icon name="sortDown" /><span>{t("gamebook.reorder.button")}</span></button>
+            <button title={t("gamebook.graph.tip")} aria-label={t("gamebook.graph.title")} onclick={openGraph}><Icon name="graph" /><span>{t("gamebook.graph.button")}</span></button>
           </div>
           {/if}
         </div>
@@ -924,6 +976,20 @@
           />
         {/each}
       </ul>
+      {#if undoable}
+        <p class="undo" role="status">
+          <span>{t(`undo.done.${undoable}`)}</span>
+          <button title={t("undo.tip")} onclick={undoChange}>{t("undo.action")}</button>
+          <button
+            class="close"
+            aria-label={t("help.close")}
+            onclick={() => {
+              project.lastChange = null;
+              undoable = null;
+            }}>×</button
+          >
+        </p>
+      {/if}
     </aside>
   {/if}
 
@@ -971,6 +1037,13 @@
     <div class="menu" role="menu" style="left: {menu.x}px; top: {menu.y}px" use:keepInView={menu}>
       {#if chosen.length > 1 && chosen.includes(menu.path)}
         <button role="menuitem" onclick={merge}>{t("tree.mergeChosen", { n: chosen.length })}</button>
+        <button
+          role="menuitem"
+          onclick={() => {
+            menu = null;
+            bulk = scenesOf(tree).map((n) => n.path).filter((path) => chosen.includes(path));
+          }}>{t("bulk.menu", { n: chosen.length })}</button
+        >
         <hr />
       {/if}
       <button role="menuitem" title={t("tip.openBeside")} onclick={() => { const path = menu!.path; menu = null; nav?.open(path, true); }}>{t("panes.openBeside")}</button>
@@ -1035,7 +1108,7 @@
       <p class="error" role="alert"><ErrorText text={error} /></p>
     {/if}
     <div class="page" class:typewriter bind:this={page}>
-      <div class="column" style="max-width: {app.settings.lineWidth}ch">
+      <div class="column" style="max-width: {appearance().lineWidth}ch">
         {#if items.length === 0}
           <p class="empty">{t("editor.empty")}</p>
         {/if}
@@ -1119,6 +1192,7 @@
     <SidePanel {project} path={inspected} version={rev * 100000 + localRev * 1000 + edits} {diskRev} commentPaths={shownScenes}>
       {#snippet properties()}
     <PropertiesPanel
+      showToday={fullscreen}
       {project}
       path={inspected}
       {rev}
@@ -1139,6 +1213,27 @@
     </SidePanel>
 {/snippet}
 
+{#if newPageIn !== null}
+  <Dialog label={t("gamebook.newPage")} onClose={() => (newPageIn = null)} width={420}>
+    <form
+      class="page-form"
+      onsubmit={(e) => {
+        e.preventDefault();
+        createPage();
+      }}
+    >
+      <h2>{t("gamebook.newPage")}</h2>
+      <!-- svelte-ignore a11y_autofocus -->
+      <label>{t("gamebook.pageTitle")} <input bind:value={newPageTitle} placeholder={t("gamebook.newPageTitle")} autofocus /></label>
+      <p class="muted">{t("gamebook.pageTitleHint")}</p>
+      <div class="page-actions">
+        <button type="button" onclick={() => (newPageIn = null)}>{t("tree.cancel")}</button>
+        <button type="submit" class="primary">{t("gamebook.new.create")}</button>
+      </div>
+    </form>
+  </Dialog>
+{/if}
+
 {#if newParagraphIn !== null}
   {@const scope = newParagraphIn}
   {@const book = noteIndex ? gamebookOf(noteIndex, project.settings) : null}
@@ -1157,6 +1252,9 @@
 {/if}
 {#if transferring}
   <TransferDialog {project} paths={transferring.paths} mode={transferring.mode} onDone={transferred} onClose={() => (transferring = null)} />
+{/if}
+{#if bulk}
+  <BulkPropertyDialog {project} paths={bulk} onDone={() => run(async () => {})} onClose={() => (bulk = null)} />
 {/if}
 {#if shuffling !== null && noteIndex}
   <ShuffleDialog
@@ -1188,6 +1286,33 @@
     background: var(--bg-panel);
     overflow: auto;
     padding: 8px;
+  }
+  .undo {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .undo span {
+    flex: 1;
+    min-width: 0;
+  }
+  .undo button {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  .undo button.close {
+    border: none;
+    background: none;
+    padding: 2px 4px;
   }
   .gamebook-summary {
     margin: 4px 10px 2px;
@@ -1422,5 +1547,28 @@
   .error {
     color: var(--danger);
     padding: 0 12px;
+  }
+  .page-form {
+    display: grid;
+    gap: 10px;
+  }
+  .page-form h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+  .page-form label {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .page-form .muted {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .page-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>

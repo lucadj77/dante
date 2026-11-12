@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Dialog from "./Dialog.svelte";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import { diffWords, type DiffPart } from "$lib/core/diff";
@@ -113,8 +114,7 @@
 </div>
 
 {#if comparing}
-  <div class="overlay" role="presentation" onclick={() => (comparing = null)}>
-    <div class="dialog" role="dialog" aria-modal="true" aria-label={comparing.title} tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.key === "Escape" && (comparing = null)}>
+  <Dialog label={comparing.title} onClose={() => (comparing = null)} width={760}>
       <header>
         <h2>{comparing.title}</h2>
         <button onclick={() => (comparing = null)}>{t("snap.close")}</button>
@@ -125,8 +125,7 @@
           {#if part.type === "added"}<ins>{part.text}</ins>{:else if part.type === "removed"}<del>{part.text}</del>{:else}<span>{part.text}</span>{/if}
         {/each}
       </div>
-    </div>
-  </div>
+  </Dialog>
 {/if}
 
 <style>
@@ -187,31 +186,13 @@
   .error {
     color: var(--danger);
   }
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 10;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(760px, calc(100vw - 32px));
-    max-height: calc(100vh - 64px);
-    display: flex;
-    flex-direction: column;
-    padding: 16px 20px;
-  }
-  .dialog header {
+  header {
     display: flex;
     justify-content: space-between;
     align-items: start;
     gap: 16px;
   }
-  .dialog h2 {
+  h2 {
     font-size: 16px;
     margin: 0;
   }

@@ -17,13 +17,15 @@
   import { addLauncher, folderFs, OpenElsewhere, openProjectAt, openProjectIn } from "$lib/opening";
   import { allow, chooseFolder, forgetFolder, isWebPath, rememberFolder, webFolders, webFs } from "$lib/webFolders";
   import { MemoryFs } from "$lib/core/fs";
-  import { readDocx, type DocxContent } from "$lib/core/import/docx";
+  import type { DocxContent } from "$lib/core/import/docx";
+  import { readDocumentFile } from "$lib/core/import/any";
+  import Dialog from "./Dialog.svelte";
   import { ScrivenerError } from "$lib/core/import/scrivener";
   import { noteDestination, type NoteDestination } from "$lib/core/project";
   import { defaultTypes } from "$lib/core/settings";
   import { counts, defaultBlankLines, defaultRoles, type BlankLines, type HeadingRole, type ImportedBook, type Mark } from "$lib/core/import/structure";
   import WordImport from "./WordImport.svelte";
-  import { pickWordFile } from "./wordFile";
+  import { pickDocumentFile } from "./wordFile";
   import { pickScrivener } from "./scrivenerFile";
   import { openHelp } from "./help.svelte";
 
@@ -187,7 +189,7 @@
   async function importWord(bytes: Uint8Array, fileName: string) {
     error = "";
     try {
-      preview(await readDocx(bytes, { note: t("import.note") }), fileName);
+      preview(await readDocumentFile(bytes, fileName, { note: t("import.note") }), fileName);
     } catch (e) {
       error = t("import.failed", { name: fileName, message: e instanceof Error ? e.message : String(e) });
     }
@@ -196,6 +198,7 @@
   /** Reads a Scrivener project and opens its preview, as a Word file's. */
   async function chooseScrivener() {
     error = "";
+    choosingImport = false;
     try {
       const picked = await pickScrivener(t("untitled"));
       if (picked) preview(picked.content, picked.name, true);
@@ -220,10 +223,14 @@
     previewing = true;
   }
 
+  /** The choice of what to import from is open. */
+  let choosingImport = $state(false);
+
   async function chooseWord() {
     error = "";
+    choosingImport = false;
     try {
-      const file = await pickWordFile();
+      const file = await pickDocumentFile(t("import.documents"));
       if (file) await importWord(file.bytes, file.name);
     } catch (e) {
       error = failure(e);
@@ -234,7 +241,7 @@
   function previewed(book: ImportedBook) {
     imported = book;
     previewing = false;
-    if (!title.trim()) title = book.title || importedFrom.replace(/\.(docx|scriv|zip)$/i, "");
+    if (!title.trim()) title = book.title || importedFrom.replace(/\.(docx|odt|rtf|md|markdown|txt|scriv|zip)$/i, "");
     creating = true;
   }
 
@@ -336,7 +343,7 @@
       <p class="summary">
         {t("import.found", { file: importedFrom })}
         {#if importedCounts.parts}{t("import.parts", { n: importedCounts.parts })},{/if}
-        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words) })}
+        {t("import.counts", { chapters: importedCounts.chapters, scenes: importedCounts.scenes, words: num(importedCounts.words), characters: num(importedCounts.characters) })}
         {#if content?.notes?.length}{t("import.notes", { n: content.notes.length })}{/if}
         <button type="button" class="link" onclick={() => { creating = false; previewing = true; }}>{t("import.review")}</button>
       </p>
@@ -401,16 +408,24 @@
       {/if}
     </form>
   {:else}
-    <div class="actions">
+    <!-- Three ways to start, each with a line that says what it does. -->
+    <div class="choices">
       {#if folders}
-        <button class="primary" onclick={() => (creating = true)}>{t("welcome.new")}</button>
-        <button onclick={openFolder}>{t("welcome.open")}</button>
+        <button class="choice main" aria-label={t("welcome.new")} aria-describedby="welcome-new" onclick={() => (creating = true)}>
+          <strong>{t("welcome.new")}</strong><span id="welcome-new">{t("welcome.newHint")}</span>
+        </button>
+        <button class="choice" aria-label={t("welcome.open")} aria-describedby="welcome-open" onclick={openFolder}>
+          <strong>{t("welcome.open")}</strong><span id="welcome-open">{t("welcome.openHint")}</span>
+        </button>
       {/if}
-      <button onclick={chooseWord}>{t("import.word")}</button>
-      <button title={web ? t("tip.importScrivenerWeb") : t("tip.importScrivener")} onclick={chooseScrivener}>{t("import.scrivener")}</button>
-      <button onclick={openSample}>{t("welcome.sample")}</button>
+      <button class="choice" aria-label={t("import.other")} aria-describedby="welcome-import" onclick={() => (choosingImport = true)}>
+        <strong>{t("import.other")}</strong><span id="welcome-import">{t("welcome.importHint")}</span>
+      </button>
     </div>
-    <p class="help-link"><button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button></p>
+    <p class="help-link">
+      <button onclick={openSample}>{t("welcome.sample")}</button>
+      <button class="link" onclick={() => openHelp("first")}>{t("welcome.help")}</button>
+    </p>
     {#if !folders}
       <p class="note">{t("welcome.browser")}</p>
     {/if}
@@ -439,6 +454,23 @@
   {/if}
 </main>
 
+{#if choosingImport}
+  <Dialog label={t("import.otherTitle")} onClose={() => (choosingImport = false)} width={520}>
+    <h2 class="import-title">{t("import.otherTitle")}</h2>
+    <div class="formats">
+      <button onclick={chooseWord}>
+        <strong>{t("import.documents")}</strong>
+        <span>{t("import.documentsHint")}</span>
+      </button>
+      <button onclick={chooseScrivener}>
+        <strong>Scrivener</strong>
+        <span>{web ? t("import.scrivenerHintWeb") : t("import.scrivenerHint")}</span>
+      </button>
+    </div>
+    <div class="import-close"><button onclick={() => (choosingImport = false)}>{t("tree.cancel")}</button></div>
+  </Dialog>
+{/if}
+
 <style>
   main {
     max-width: 560px;
@@ -458,6 +490,34 @@
   p {
     color: var(--text-muted);
     line-height: 1.5;
+  }
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .choice {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    padding: 12px 14px;
+    text-align: left;
+    border-radius: 10px;
+  }
+  .choice strong {
+    font-size: 15px;
+  }
+  .choice span {
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--text-muted);
+  }
+  .choice.main {
+    border-color: var(--accent);
+  }
+  .choice.main strong {
+    color: var(--accent);
   }
   .actions {
     display: flex;
@@ -572,7 +632,11 @@
     font-size: 13px;
   }
   .help-link {
-    margin: 12px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin: 14px 0 0;
     font-size: 13px;
   }
   .destinations {
@@ -593,5 +657,28 @@
   }
   .error {
     color: var(--danger);
+  }
+  .import-title {
+    margin: 0;
+    font-size: 17px;
+  }
+  .formats {
+    display: grid;
+    gap: 8px;
+  }
+  .formats button {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    text-align: left;
+  }
+  .formats span {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .import-close {
+    display: flex;
+    justify-content: flex-end;
   }
 </style>

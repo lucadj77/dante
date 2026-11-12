@@ -2,7 +2,7 @@
 // write outside the project's folder: the writer downloads it. The desktop app makes the
 // same zip in src-tauri/src/backup.rs and keeps it in a folder of the computer.
 
-import { zipSync, type Zippable } from "fflate";
+import { unzipSync, zipSync, type Zippable } from "fflate";
 import type { ProjectFs } from "./fs";
 
 /** Left out, as in the app: exports, the trash, other programs' data, version control. */
@@ -38,4 +38,31 @@ export async function zipProject(fs: ProjectFs, name: string): Promise<Uint8Arra
     }
   }
   return zipSync(files, { level: 6 });
+}
+
+/**
+ * Writes the files of a backup into `fs`, an empty folder: the opposite of zipProject. The
+ * folder the zip keeps its files in is left out. Returns how many files were written.
+ */
+export async function unzipProject(fs: ProjectFs, zip: Uint8Array): Promise<number> {
+  const files = Object.entries(unzipSync(zip)).filter(([name]) => !name.endsWith("/"));
+  const tops = new Set(files.map(([name]) => name.split("/")[0]));
+  // One folder at the top holding everything: the project's own, as the backups are made.
+  const strip = tops.size === 1 && files.every(([name]) => name.includes("/")) ? [...tops][0].length + 1 : 0;
+  const made = new Set<string>();
+  let count = 0;
+  for (const [name, bytes] of files) {
+    const path = name.slice(strip);
+    const parts = path.split("/");
+    // Nothing is written outside the folder, whatever the zip says.
+    if (!path || parts.some((part) => part === "" || part === "." || part === "..") || path.includes("\\")) continue;
+    const dir = parts.slice(0, -1).join("/");
+    if (dir && !made.has(dir)) {
+      await fs.mkdir(dir);
+      made.add(dir);
+    }
+    await fs.writeBytes(path, bytes);
+    count++;
+  }
+  return count;
 }

@@ -1,7 +1,9 @@
 """Copies the shots to docs/img: crops the full-window ones, limits the width, reduces colours."""
 import glob, os
 from PIL import Image
-OUT = os.path.join(os.path.dirname(__file__), '../../docs/img')
+# GUIDE_LANG=en: the shots of the English guide, from shots-en to docs/img/en.
+EN = os.environ.get('GUIDE_LANG') == 'en'
+OUT = os.path.join(os.path.dirname(__file__), '../../docs/img/en' if EN else '../../docs/img')
 # name in shots -> (name in docs, crop in CSS pixels or None)
 CROPS = {
     'area-di-lavoro': ('area-di-lavoro', None),
@@ -15,12 +17,15 @@ CROPS = {
     'vista-impostazioni-full': ('vista-impostazioni', (240, 0, 1500, 330)),
     'statistiche-full': ('statistiche', (50, 0, 1020, 640)),
     'statistiche2-full': ('statistiche-lunghezza', (50, 0, 1020, 660)),
-    'esportazione-full': ('esportazione', (50, 30, 700, 640)),
-    'struttura-full': ('struttura', (50, 30, 860, 430)),
+    'esportazione-full': ('esportazione', (50, 30, 1270, 560)),
+    'struttura-full': ('struttura', (36, 27, 1290, 425)),
     'scheda': ('scheda', None),
+    'aspetto-full': ('aspetto', (52, 40, 900, 320)),
+    'libro-game-full': ('libro-game', (52, 0, 1448, 700)),
+    'grafo-full': ('grafo', (312, 40, 916, 640)),
 }
 os.makedirs(OUT, exist_ok=True)
-for f in sorted(glob.glob(os.path.join(os.path.dirname(__file__), 'shots/f-*.png'))):
+for f in sorted(glob.glob(os.path.join(os.path.dirname(__file__), ('shots-en' if EN else 'shots') + '/f-*.png'))):
     key = os.path.basename(f)[2:-4]
     if key in ('anteprima-full', 'menu-collegamento-full', 'conflitto-full'):
         continue

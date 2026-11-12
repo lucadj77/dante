@@ -84,7 +84,7 @@ function italianSample(days: Record<string, DayLog>, now: string): MemoryFs {
     "Bibbia/Luoghi/Lecco.md": "---\ntype: place\nregione: Lombardia\n---\nBorgo e castello con una guarnigione di soldati spagnoli.\n",
     "Bibbia/Luoghi/La casa di don Abbondio.md": "---\ntype: place\nregione: Lombardia\naliases: [canonica]\n---\nDove [[Perpetua]] apparecchia la cena e [[Renzo Tramaglino|Renzo]] viene a chiedere le nozze.\n",
     "Bibbia/Luoghi/La casa di Lucia.md": "---\ntype: place\nregione: Lombardia\n---\nIn fondo al paese, con un piccolo cortile davanti.\n",
-    "Bibbia/Plotline/Il matrimonio impedito.md": "---\ntype: plotline\nstato: aperta\n---\nI bravi di [[Don Rodrigo]] fermano il curato: le nozze non si faranno.\n",
+    "Bibbia/Trame/Il matrimonio impedito.md": "---\ntype: plotline\nstato: aperta\n---\nI bravi di [[Don Rodrigo]] fermano il curato: le nozze non si faranno.\n",
     "Modelli/Personaggio.md": "---\nruolo:\netà:\naliases: []\n---\n## Chi è {{title}}\n\n## Cosa vuole {{title}}\n",
     // Viste: le stesse note come bacheca, tabella, schede e linea del tempo.
     "Viste/Bacheca.yaml": "type: kanban\nitems: scene\ngroup_by: stato\ngroups: [idea, bozza, rivista, finita]\nfields: [pov]\n",

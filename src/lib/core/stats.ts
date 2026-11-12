@@ -2,6 +2,12 @@
 export function plainText(markdown: string): string {
   return markdown
     .replace(/\{>>[\s\S]*?<<\}/g, "") // CriticMarkup comments
+    // Pending revisions count as if accepted, everywhere a text is measured: what is
+    // added is text, what is deleted is not, and the marks are no characters.
+    .replace(/\{\+\+([\s\S]*?)\+\+\}/g, "$1")
+    .replace(/\{--[\s\S]*?--\}/g, "")
+    .replace(/\{~~[\s\S]*?~>([\s\S]*?)~~\}/g, "$1")
+    .replace(/\{==([\s\S]*?)==\}/g, "$1")
     .replace(/<!--[\s\S]*?-->/g, "")
     // A blank line's non-breaking space is no word.
     .replace(/&(?:nbsp|#160|#x0*a0);/gi, " ")

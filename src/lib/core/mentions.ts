@@ -101,3 +101,23 @@ export function scenesNaming(path: string, index: NoteIndex, settings: NovelSett
   }
   return out.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
 }
+
+const WORD = /[\p{L}\p{N}]+/gu;
+
+/**
+ * The words a spelling checker should leave alone in a novel: those of the names and aliases
+ * of its Story Bible, and the ones the writer added. Written as they are, capitals included.
+ */
+export function knownWords(names: BibleName[], extra: string[] = []): Set<string> {
+  const out = new Set<string>();
+  for (const text of [...names.map((n) => n.name), ...extra]) for (const word of text.match(WORD) ?? []) if (word.length > 1) out.add(word);
+  return out;
+}
+
+/** Where the known words are in a text. */
+export function findKnownWords(text: string, known: Set<string>): { from: number; to: number }[] {
+  const out: { from: number; to: number }[] = [];
+  if (!known.size) return out;
+  for (const m of text.matchAll(WORD)) if (known.has(m[0])) out.push({ from: m.index!, to: m.index! + m[0].length });
+  return out;
+}

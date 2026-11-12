@@ -14,6 +14,7 @@ change them from the project.
 title: The Return
 subtitle: ""
 authors: [Ada Rossi]            # one name each, in cover order
+dictionary: [Pescarenico]       # words the spelling checker leaves alone (Story Bible names already are)
 language: en                    # the book's language: dictionaries, hyphenation, quotes, labels
 folders:
   codex: Story Bible
@@ -71,6 +72,10 @@ tree:
 pages:
   unit: characters              # what makes a page: characters (with spaces) or words
   size: 1800                    # 1,800 characters is the Italian "cartella"; 250 for words
+style:                         # what the statistics on style look for
+  longSentence: 40              # a sentence is long above this many words
+  repetitionWindow: 30          # a word used again within this many words is a repetition
+  readingSpeed: 230             # words a minute, for the reading time
 export:
   format: docx                  # docx, pdf, epub, md: the one chosen last
   epubId: ""                    # keeps the ebook's identity across exports; do not change
@@ -92,6 +97,7 @@ export:
     sceneSeparator: "#"         # used when sceneBreak is characters; "\n* * *\n" = asterisks between blank lines
     lineSign: \n                # the sign that starts a new line in sceneSeparator
     titlePage: true
+    toc: false                     # table of contents of parts and chapters, in Word and PDF
     header: true                # author, title and page number (title only in a typeset book)
     scene:                      # headings of scenes in the book; none by default
       numbering: none
@@ -119,6 +125,8 @@ export:
     acknowledgements: ""
     colophon: ""
   revisions: accept             # pending CriticMarkup revisions: accept or reject in the export
+  profiles:                     # export choices saved under a name; each holds format, cover and docx as above
+    Per la stampa: { format: pdf, cover: true, docx: { profile: typeset, toc: true } }
 ```
 
 An Italian project has the same keys with Italian names and values where they are the writer's

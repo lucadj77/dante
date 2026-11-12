@@ -170,3 +170,49 @@ describe("type definitions", () => {
     expect(p.typeId("Place")).toBe("place-2");
   });
 });
+
+describe("reading again only what changed", () => {
+  /** A filesystem that can tell a changed file by a signature, and counts what is read. */
+  class SignedFs extends MemoryFs {
+    read: string[] = [];
+    stamps = new Map<string, number>();
+    async readText(path: string) {
+      this.read.push(path);
+      return super.readText(path);
+    }
+    async writeText(path: string, content: string) {
+      this.stamps.set(path, (this.stamps.get(path) ?? 0) + 1);
+      return super.writeText(path, content);
+    }
+    async signatures() {
+      return new Map([...this.files.keys()].map((path) => [path, `${this.files.get(path)!.length}:${this.stamps.get(path) ?? 0}`]));
+    }
+  }
+
+  it("takes unchanged notes from the last index, and reads the changed and the new ones", async () => {
+    const { Project } = await import("../project");
+    const fs = new SignedFs({
+      "dante.yaml": "title: T\n",
+      "Manuscript/010 Uno/010 A.md": "Vede [[Lucia]].",
+      "Manuscript/010 Uno/020 B.md": "Niente.",
+      "Story Bible/Characters/Lucia.md": "---\ntype: character\n---\nLucia.",
+    });
+    const project = await Project.open(fs);
+    await project.index();
+    fs.read = [];
+    await fs.writeText("Manuscript/010 Uno/020 B.md", "Ora c'è [[Lucia]].");
+    await fs.writeText("Manuscript/010 Uno/030 C.md", "Nuova.");
+    await project.reload();
+    const index = await project.index();
+    expect([...new Set(fs.read.filter((p) => p.endsWith(".md")))].sort()).toEqual(["Manuscript/010 Uno/020 B.md", "Manuscript/010 Uno/030 C.md"]);
+    expect(index.notes.get("Manuscript/010 Uno/020 B.md")!.body).toBe("Ora c'è [[Lucia]].");
+    expect(index.notes.get("Manuscript/010 Uno/010 A.md")!.body).toBe("Vede [[Lucia]].");
+    expect(index.backlinks("Story Bible/Characters/Lucia.md").map((b) => b.from)).toEqual(["Manuscript/010 Uno/010 A.md", "Manuscript/010 Uno/020 B.md"]);
+    // A note that takes the place of another is read, though its path was known.
+    await fs.rename("Manuscript/010 Uno/010 A.md", "Manuscript/010 Uno/tmp.md");
+    await fs.rename("Manuscript/010 Uno/030 C.md", "Manuscript/010 Uno/010 A.md");
+    fs.stamps.set("Manuscript/010 Uno/010 A.md", 9);
+    await project.reload();
+    expect((await project.index()).notes.get("Manuscript/010 Uno/010 A.md")!.body).toBe("Nuova.");
+  });
+});

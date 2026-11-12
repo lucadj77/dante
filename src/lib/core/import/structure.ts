@@ -7,6 +7,7 @@
 import { setAlignment } from "../alignment";
 import type { DocBlock } from "./docx";
 import { BLANK_LINE } from "../blankLines";
+import { textStats } from "../stats";
 
 export interface ImportedScene {
   title: string;
@@ -439,10 +440,11 @@ export function structure(
 }
 
 /** How much the import holds, for the preview. */
-export function counts(book: ImportedBook): { parts: number; chapters: number; scenes: number; words: number } {
+export function counts(book: ImportedBook): { parts: number; chapters: number; scenes: number; words: number; characters: number } {
   let chapters = 0;
   let scenes = 0;
   let words = 0;
+  let characters = 0;
   for (const p of book.parts)
     for (const c of p.chapters) {
       chapters++;
@@ -450,7 +452,8 @@ export function counts(book: ImportedBook): { parts: number; chapters: number; s
         scenes++;
         // Tags, such as the ones aligning a paragraph, are not words.
         words += s.text.replace(/<\/?[a-zA-Z][^<>\n]*>/g, " ").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+        characters += textStats(s.text).characters;
       }
     }
-  return { parts: book.hasParts ? book.parts.filter((p) => p.title).length : 0, chapters, scenes, words };
+  return { parts: book.hasParts ? book.parts.filter((p) => p.title).length : 0, chapters, scenes, words, characters };
 }

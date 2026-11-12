@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
+  import Dialog from "./Dialog.svelte";
   // In a gamebook: shuffles the paragraphs' numbers, with a preview, the numbers written in
   // the prose to look at again, and the earlier operations to undo.
   import type { Project, GamebookOperation } from "$lib/core/project";
@@ -99,16 +101,7 @@
   }
 </script>
 
-<div class="overlay" role="presentation" onclick={p.onClose}>
-  <div
-    class="dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-label={t(k("title"))}
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.key === "Escape" && p.onClose()}
-  >
+<Dialog label={t(k("title"))} onClose={p.onClose} width={640} small>
     <h2>{t(k("title"))}</h2>
     <p class="muted">{t(k("intro"), { start })}</p>
 
@@ -129,7 +122,7 @@
                 <td class="n muted">{r.paragraph.number}</td>
                 <td>
                   {r.paragraph.title}
-                  {#if r.paragraph.numberType === "fixed" || (r.paragraph.numberType === "free" && r.paragraph.number === start)}<span class="tag">🔒</span>{/if}
+                  {#if r.paragraph.numberType === "fixed" || (r.paragraph.numberType === "free" && r.paragraph.number === start)}<span class="tag"><Icon name="lock" size={12} /></span>{/if}
                   {#if r.paragraph.numberType === "relative"}<span class="tag">↳ {r.paragraph.anchor}</span>{/if}
                 </td>
               </tr>
@@ -139,7 +132,7 @@
       </div>
     {:else}
       <ul class="errors">
-        {#each result.errors as e, i (i)}<li>⚠ {describe(e)}</li>{/each}
+        {#each result.errors as e, i (i)}<li><Icon name="warning" size={14} /> {describe(e)}</li>{/each}
       </ul>
     {/if}
 
@@ -178,30 +171,9 @@
       <button type="button" onclick={p.onClose}>{t("tree.cancel")}</button>
       <button type="button" class="primary" disabled={busy || !result.ok} onclick={() => void apply()}>{t(k("apply"))}</button>
     </div>
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(640px, calc(100vw - 32px));
-    max-height: calc(100vh - 48px);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px 20px;
-    font-size: 13px;
-  }
   h2 {
     font-size: 16px;
     margin: 0;

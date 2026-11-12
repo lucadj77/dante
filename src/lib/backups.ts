@@ -61,6 +61,30 @@ export async function backupInfo(project: Project, settings: AppSettings = app.s
   return invoke<BackupInfo>("list_backups", { root: project.fs.root, dest: await backupFolder(settings), name: backupName(project) });
 }
 
+/** The backups kept for the project, as file names, the most recent first. */
+export async function backupNames(project: Project, settings: AppSettings = app.settings): Promise<string[]> {
+  const info = await backupInfo(project, settings);
+  if (!info?.dir) return [];
+  const entries = await new TauriFs(info.dir).list("");
+  return entries.filter((e) => !e.isDir && e.name.endsWith(".zip") && !e.name.startsWith(".")).map((e) => e.name).sort().reverse();
+}
+
+/**
+ * Takes a backup out of its zip into a new folder beside the project's, named
+ * `folder` (with a number after it when the name is taken), and returns that folder's path.
+ * The project and the backup stay as they are.
+ */
+export async function extractBackup(project: Project, name: string, folder: string, settings: AppSettings = app.settings): Promise<string> {
+  if (!(project.fs instanceof TauriFs)) throw new Error("Backups are opened by the desktop app");
+  const info = await backupInfo(project, settings);
+  if (!info?.dir) throw new Error("No backups for this project");
+  const { dirname, join } = await import("@tauri-apps/api/path");
+  const { invoke } = await import("@tauri-apps/api/core");
+  const clean = folder.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim() || "Dante";
+  // Rust takes the files out one at a time: read here, a novel with many images filled the memory.
+  return invoke<string>("extract_backup", { zip: await join(info.dir, name), parent: await dirname(project.fs.root), folder: clean });
+}
+
 /** In a browser: the project as a zip, downloaded. */
 export async function downloadBackup(project: Project): Promise<void> {
   const name = backupName(project);

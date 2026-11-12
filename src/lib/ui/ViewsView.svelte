@@ -21,12 +21,15 @@
     moveBefore,
     shiftEnd,
     VIEW_KINDS,
+    VIEW_TEMPLATES,
+    viewTemplate,
     starterViews,
     type Group,
     type Moment,
     type ViewKind,
     type ViewRow,
     type ViewSpec,
+    type ViewTemplate,
   } from "$lib/core/views";
   import { projectStatus } from "$lib/core/settings";
   import type { MessageKey } from "$lib/i18n";
@@ -68,6 +71,7 @@
   let error = $state("");
   let settingsOpen = $state(false);
   let creating = $state(false);
+  let template = $state<ViewTemplate>("empty");
   let newName = $state("");
   let renaming = $state(false);
   let nameDraft = $state("");
@@ -114,8 +118,16 @@
     if (spec.type !== "table") return [];
     // "kind" only tells a chapter's folder note what the folder is, shown as its type.
     const used = propertyNames(rows).filter((f) => f !== "aliases" && f !== "type" && f !== "kind");
-    return [...(spec.items === "scene" ? ["chapter"] : spec.items === "chapter" ? ["type"] : []), ...used.slice(0, 6), "words"];
+    return [...(spec.items === "scene" ? ["chapter"] : spec.items === "chapter" ? ["type"] : []), ...used.slice(0, 6), p.project.settings.goals.unit];
   });
+
+  /** The values offered for a field: those the property allows, then those the notes have. */
+  function valuesOf(field: string): string[] {
+    if (!field || field === "words" || field === "characters") return [];
+    const out = new Set<string>(propertyDef(p.project.settings.properties, field)?.values ?? []);
+    for (const row of all) for (const v of values(row, field)) out.add(v);
+    return [...out].slice(0, 200);
+  }
 
   // A property with allowed values gives its columns when the view lists none.
   const groupDef = $derived(spec.group_by ? propertyDef(p.project.settings.properties, spec.group_by) : null);
@@ -140,6 +152,7 @@
       return p.project.settings.types[row.type]?.name ?? row.type;
     }
     if (field === "words") return num(row.words);
+    if (field === "characters") return num(row.characters);
     return readableLinks(display(row, field));
   }
   /** A group's heading: links by their names. */
@@ -223,13 +236,16 @@
     if (!name) return;
     creating = false;
     newName = "";
-    if (await create(name, { ...defaultView("table"), items: "scene" })) settingsOpen = true;
+    const view = viewTemplate(template, p.project.settings, projectStatus(p.project.settings));
+    // An empty table opens its settings, where everything is still to choose.
+    if ((await create(name, view)) && template === "empty") settingsOpen = true;
+    template = "empty";
   }
 
   async function createStarters() {
     // The stage of work goes in the property the novel's language calls for, or one the project already defines.
     const status = projectStatus(p.project.settings);
-    for (const [name, view] of starterViews(status, { board: t("views.starter.board"), scenes: t("views.starter.scenes") })) await create(name, view);
+    for (const [name, view] of starterViews(status, { board: t("views.starter.board"), scenes: t("views.starter.scenes") }, p.project.settings.goals.unit)) await create(name, view);
   }
 
   async function rename() {
@@ -496,6 +512,9 @@
       >
         <!-- svelte-ignore a11y_autofocus -->
         <input bind:value={newName} placeholder={t("views.newName")} aria-label={t("views.newName")} autofocus onkeydown={(e) => e.key === "Escape" && (creating = false)} />
+        <select bind:value={template} aria-label={t("views.template")} title={t("views.template")}>
+          {#each VIEW_TEMPLATES as id (id)}<option value={id}>{t(`views.template.${id}`)}</option>{/each}
+        </select>
         <button class="primary" disabled={!newName.trim()}>{t("views.create")}</button>
       </form>
     {:else}
@@ -549,12 +568,14 @@
         </div>
         {#if !p.embedded}
           <button aria-pressed={settingsOpen} aria-expanded={settingsOpen} data-tip={t("tip.views.settings")} onclick={() => (settingsOpen = !settingsOpen)}>⚙ {t("views.settings")}</button>
-          <button class="danger" onclick={remove}>{t("views.delete")}</button>
         {/if}
       </header>
 
       {#if settingsOpen && !p.embedded}
-        <div class="settings"><ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {save} /></div>
+        <div class="settings">
+          <ViewSettings {spec} {choices} {fields} {typeIds} folders={p.project.folders} {label} {itemsLabel} {valuesOf} {save} />
+          <p class="remove"><button class="danger" onclick={remove}>{t("views.deleteThis")}</button></p>
+        </div>
       {/if}
 
       <div class="body" bind:this={body}>
@@ -571,7 +592,7 @@
             <thead>
               <tr>
                 {#each ["name", ...fields] as f (f)}
-                  <th class:number={f === "words"} style:width={tableWidth ? `${widths[f]}px` : undefined}
+                  <th class:number={f === "words" || f === "characters"} style:width={tableWidth ? `${widths[f]}px` : undefined}
                     ><button data-tip={t("tip.views.sort")} onclick={() => sortBy(f)}>{label(f)}{sortMark(f)}</button><span
                       class="edge"
                       role="separator"
@@ -594,7 +615,7 @@
                   <tr class:drop-before={dropsBefore(row, g.key)} class:writing={writes(row)} {...item(row, g.rows[i + 1])}>
                     <td><button class="link" onclick={(e) => inspect(row, e)}>{row.name}</button>{@render synopsisOf(row)}</td>
                     {#each fields as f (f)}
-                      <td class:number={f === "words"}>
+                      <td class:number={f === "words" || f === "characters"}>
                         {#if editing && editing.path === row.path && editing.field === f}
                           <input
                             class="cell-input"
@@ -843,6 +864,9 @@
     max-height: 45%;
     overflow: auto;
   }
+  .remove {
+    margin: 0 12px 12px;
+  }
   .body {
     flex: 1;
     min-height: 0;
@@ -1068,8 +1092,11 @@
     align-items: flex-start;
     padding-bottom: 8px;
   }
+  /* Few columns share the width; many keep a readable size and the board scrolls. */
   .column {
-    flex: 0 0 240px;
+    flex: 1 1 200px;
+    min-width: 190px;
+    max-width: 320px;
     display: grid;
     gap: 6px;
     padding: 8px;
@@ -1105,6 +1132,10 @@
   }
   [draggable="true"] {
     cursor: grab;
+  }
+  .column h3::first-letter,
+  .group-title::first-letter {
+    text-transform: uppercase;
   }
   .column h3 {
     margin: -8px -8px 2px;

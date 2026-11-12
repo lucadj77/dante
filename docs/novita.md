@@ -6,9 +6,56 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Caratteri spazi inclusi in tabelle, esportazione e importazione**: nelle tabelle e bacheche c'è il campo **Caratteri** accanto a **Parole**, e la tabella Scene di un progetto nuovo parte con la misura del progetto. Il frontespizio del manoscritto e il riepilogo dopo l'esportazione usano la stessa misura. L'anteprima dell'importazione mostra parole e caratteri.
+- **Menu del Mac nella lingua dell'interfaccia**: le voci della barra dei menu (Cerca aggiornamenti…, Modifica, Finestra, Aiuto di Dante e le altre) seguono la lingua scelta in Dante.
+- **Guida completa in inglese**: con l'interfaccia in inglese l'Aiuto apre la guida completa in inglese, capitolo per capitolo come quella in italiano.
+- **Note a piè di pagina**: il pulsante **x¹** della barra di formattazione inserisce una nota lì dove la scrivi (`^[testo]`). Nell'esportazione va a piè di pagina in Word e nel PDF, alla fine del capitolo nell'EPUB. Le note di un file Word importato restano note.
+- **Nomi del romanzo non più sottolineati dal correttore**: i nomi e gli alias delle schede della Bibbia non vengono più segnati come errori. Altre parole del romanzo si aggiungono in Impostazioni > Scrittura > Parole di questo romanzo, e valgono su ogni computer.
+- **Istantanea di tutto il manoscritto**: in Impostazioni > Manutenzione puoi fissare un punto con un nome, come «Prima stesura», per tutte le scene insieme, e più avanti riportare l'intero manoscritto a quel punto.
+- **Elenchi da scegliere invece che da scrivere con le virgole**: cartelle, valori del filtro e gruppi di una vista, proprietà suggerite di un tipo e valori ammessi di una proprietà si aggiungono uno alla volta, scegliendo tra quelli che Dante conosce già o scrivendone di nuovi.
+- **Soglie dello stile e velocità di lettura regolabili**: in Impostazioni > Misure e obiettivi scegli da quante parole una frase è lunga, entro quante parole una parola è ripetuta e quante parole al minuto legge il lettore.
+- **Importare da OpenDocument, RTF, Markdown e testo**: nella schermata iniziale un solo pulsante, **Importa da altro formato…**, fa scegliere tra un documento (Word, OpenDocument di LibreOffice, RTF, Markdown, testo) e un progetto Scrivener. Anche **Importa** nel manoscritto accetta questi formati.
+- **Un «?» che porta alla guida**: nella tipografia dell'esportazione, nelle impostazioni di una vista e nella sezione Libro game un piccolo «?» apre la guida al capitolo giusto.
+- **Viste nuove da un modello**: creando una vista scegli da che cosa partire (bacheca per stato, tabella dei personaggi, linea del tempo, schede dei capitoli) e la trovi già impostata.
+- **Elenco dei comandi da tastiera**: nella ricerca (⌘⇧F) scrivi `>` e parte di un nome, per esempio `> statistiche`: Invio va alla sezione, mostra o nasconde barre e pannelli, apre l'aiuto o il cestino, senza mouse.
+- **Un aspetto per ogni romanzo**: in Impostazioni > Aspetto di questo romanzo puoi dare a un romanzo il suo tema, colore d'accento, font e resa del testo. Le scelte restano su questo computer e non nel progetto: chi scrive con te tiene il suo aspetto.
+- **Annullare spostamenti, divisioni e fusioni**: dopo aver spostato, diviso o fuso scene e capitoli, in fondo all'albero compare **Annulla** (anche Cmd+Z / Ctrl+Z con l'albero attivo), che rimette tutto com'era, collegamenti compresi.
+- **Riprendere una copia di sicurezza da Dante**: in Impostazioni > Copie di sicurezza c'è l'elenco delle copie; **Apri questa copia** la estrae in una cartella nuova accanto al romanzo e la apre, senza toccare il romanzo di adesso.
+- **Una proprietà a più scene insieme**: scegli più scene nell'albero (Cmd/Ctrl+clic), poi clic destro > **Imposta una proprietà alle scene…** per dare a tutte lo stesso valore, per esempio lo stato.
+- **Indice dei capitoli in Word e PDF**: nell'Esportazione la spunta **Indice dei capitoli** aggiunge l'indice di parti e capitoli con i numeri di pagina, dopo frontespizio, dedica ed esergo.
+- **Profili di esportazione salvati**: le scelte dell'Esportazione si salvano sotto un nome («Per l'editore», «Per la stampa») e si riprendono da un elenco, senza rifarle ogni volta.
+
 ### Cambiato
 
+- **Guida in inglese**: le figure della guida in inglese ora mostrano il programma in inglese; quelle della guida in italiano sono aggiornate alla nuova esportazione.
+- **Margini della pagina e titoli senza righe vuote**: in Pagina e copertina si scelgono i quattro margini in centimetri. Nel file Word il titolo di parti e capitoli e le pagine iniziali (frontespizio, dedica, esergo, indice) non sono più preceduti da una riga vuota: per i titoli la distanza dall'alto della pagina è uno spazio del titolo, che puoi regolare o azzerare.
+- **Interlinea libera e aspetto dei titoli nell'esportazione**: l'interlinea è un numero a scelta tra 0,8 e 3; per i titoli di parti, capitoli e scene si scelgono font, corpo, allineamento, grassetto, corsivo, maiuscolo, spazio prima e dopo e interlinea, con l'anteprima a destra. Nel PDF lo spazio intorno ai titoli ora corrisponde a quello del file Word.
+- **Tipografia provata sul tuo testo**: l'anteprima della pagina Tipografia mostra il primo dialogo del romanzo, com'è scritto e come esce nel libro.
+- **Esportazione in pagine con anteprima**: le scelte dell'esportazione sono divise in pagine (Formato, Pagina e copertina, Parti capitoli e scene, Tipografia, Paratesto) elencate a sinistra, come nelle Impostazioni; a destra un'anteprima mostra il foglio, i titoli, i separatori e l'ordine delle pagine mentre cambi le scelte. Il tasto Esporta resta sempre in basso.
+- **Correttore ortografico acceso da subito sul Mac**: alla prima apertura Dante attiva il controllo dell'ortografia durante la digitazione; chi lo spegne dal menu Modifica lo ritrova spento.
+- **Schermata iniziale più chiara**: tre scelte (nuovo progetto, apri cartella, importa), ognuna con una riga che dice cosa fa; il progetto di esempio e la guida stanno sotto.
+- **Titolo delle pagine dei libri game**: il pulsante Pagina chiede subito il titolo, come per i paragrafi.
+- **Guida riordinata per compito**: i capitoli seguono ora quello che si fa (iniziare, scrivere, organizzare, rivedere, pubblicare, sicurezza e aggiornamenti) e non più l'ordine in cui le funzioni sono arrivate; i rimandi «capitolo N» sono aggiornati. I capitoli su browser, aiuto, aspetto e libri game hanno ora le immagini.
+- **Icone uguali su ogni computer**: cartelle, file, avvisi, lucchetti dei libri game e il fumetto dei commenti sono ora disegnati a tratto come il resto delle icone, al posto delle emoji che cambiavano tra Mac e Windows. Le emoji restano per i tipi della Bibbia e i box, dove le scegli tu.
+- **Rifiniture**: il campo Sinossi ha lo stesso aspetto degli altri campi, i nomi delle colonne in bacheca hanno l'iniziale maiuscola e, se nel sistema hai chiesto di ridurre le animazioni, Dante le spegne.
+- **Progetti grandi più pronti**: dopo una modifica fatta da fuori, uno spostamento o un'impostazione salvata, l'app rilegge solo i file cambiati invece di tutte le note.
+- **Impostazioni riordinate**: al posto delle due schede c'è un elenco di pagine a sinistra, diviso tra «Questo romanzo» e «Dante su questo computer», con una casella per cercare un'impostazione. I temi si scelgono da piccoli disegni della finestra, e struttura, colori dell'albero, pagina e testo dell'editor hanno un'anteprima a fianco.
+- **Guida più ordinata**: il capitolo sui libri game è diviso in gruppi (preparare, leggere, scrivere, numerare, controllare, esportare) e i dettagli per chi sviluppa Dante sono usciti dalla guida.
+- **Barre sopra il testo più compatte**: nel Manoscritto le barre dei comandi occupano meno righe. In una finestra stretta i pulsanti mostrano solo l'icona (il nome resta nel suggerimento), «Dividi in scena» e «Dividi in capitolo» diventano icone e la dimensione del testo passa nel menu **Altro**.
+- **Finestre che rispondono subito alla tastiera**: Cestino, Sposta in…, conflitti, confronto delle istantanee, importazione e le finestre dei libri game prendono la tastiera appena si aprono: Esc le chiude senza dover prima fare clic, Tab resta dentro la finestra e alla chiusura si torna dov'eri.
+- **Nomi nella barra delle sezioni**: in una finestra larga la barra a sinistra parte con i nomi accanto alle icone; **Nascondi i nomi**, in fondo, la riporta alle sole icone.
+- **Parole più chiare**: nelle Statistiche «Citazioni» diventa «Menzioni»; nei progetti nuovi in italiano il tipo «Plotline» si chiama «Trama»; «albero», «scheda», «collegamento» e «Risolto» sono usati allo stesso modo dappertutto.
+- **Meno numeri ripetuti**: con una sola scena a schermo il pannello Proprietà e la barra di stato non scrivono due volte lo stesso numero, e «Oggi» sta solo nella barra di stato quando è visibile.
+- **Bacheche**: le colonne si dividono lo spazio quando sono poche, e **Elimina questa vista** è dentro le impostazioni della vista invece che sempre in vista.
+- **Obiettivi di scene e capitoli convertiti**: cambiando misura tra parole e caratteri, Dante elenca anche gli obiettivi propri di scene e capitoli con il valore che avrebbero e li converte tutti con un clic.
+- **Il nome, chiesto subito**: chi apre un progetto senza aver ancora scritto il proprio nome se lo sente chiedere una volta, alla prima apertura, così commenti, revisioni e conteggio del giorno partono subito.
+
 ### Corretto
+
+- **Data dei modelli**: `{{date}}` in un modello dà il giorno di dove sei, anche subito dopo mezzanotte.
+- **Lo stesso numero dappertutto**: con revisioni in sospeso il pannello Proprietà, le tabelle e il registro di scrittura contavano anche il testo cancellato e i segni delle revisioni. Ora contano come le Statistiche: il testo aggiunto vale, quello cancellato no.
+- **Spostamenti interrotti**: se Dante si chiudeva mentre riordinava scene o capitoli, alcuni file restavano con un nome provvisorio e non comparivano più nell'albero. Ora alla riapertura Dante rimette i file dov'erano o porta a termine lo spostamento, e lo dice con un avviso.
+- **Guida**: corretti il capitolo sull'installazione, il nome dell'impostazione «Invio singolo per iniziare un nuovo paragrafo» e i nomi delle voci di menu del Mac.
 
 ## 1.2.0-beta.3 · 10 novembre 2026
 
@@ -200,7 +247,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ## 0.1.42 · 21 ottobre 2026
 
-- **Dante nel browser**: Dante si può usare anche da Chrome, Edge o Brave, senza installare nulla, all'indirizzo https://lucadj77.github.io/dante/. Lavora sui file della cartella del romanzo, funziona senza connessione dopo la prima apertura e non manda online i tuoi testi. Niente PDF, e qualche altro limite descritto nel capitolo 18 della guida.
+- **Dante nel browser**: Dante si può usare anche da Chrome, Edge o Brave, senza installare nulla, all'indirizzo https://lucadj77.github.io/dante/. Lavora sui file della cartella del romanzo, funziona senza connessione dopo la prima apertura e non manda online i tuoi testi. Niente PDF, e qualche altro limite descritto nel capitolo 21 della guida.
 - **Importare da Word con anteprima**: prima di importare vedi il documento accanto al risultato e puoi dire riga per riga cos'è (titolo di parte, capitolo o scena, separatore, testo, da omettere), anche per tutte le righe simili in un colpo. Le sezioni divise solo da un numero su una riga ("1", "2", "3"…) diventano capitoli invece di scene con il solo numero. Con il pulsante **Importa** nel manoscritto puoi aggiungere un file Word a un progetto già iniziato, per esempio un romanzo diviso in più file.
 - **Controllo degli aggiornamenti visibile**: all'avvio Dante dice per qualche secondo che è aggiornato, o che non è riuscito a controllare, invece di restare in silenzio. Se resta aperto controlla di nuovo ogni sei ore, e sul Mac c'è la voce **Dante > Check for Updates…**.
 - **Dialoghi in esportazione**: le battute scritte con lineette o trattini a inizio paragrafo prendono le virgolette dello stile scelto (— Vieni — disse diventa «Vieni» disse). I nuovi progetti lasciano i dialoghi come sono scritti, finché non scegli uno stile in Esportazione > Tipografia.

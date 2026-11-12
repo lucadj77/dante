@@ -38,6 +38,10 @@ writer sees it formatted in Dante and the book comes out right.
 `` `code` ``. Highlighting is dropped in the export; use bold or italic for emphasis that must
 print.
 
+**Footnotes**: `^[the note, written where its number goes]`, or `[^1]` in the text with
+`[^1]: the note` on a paragraph of its own in the same scene. They are exported as footnotes
+(Word, PDF) or as notes at the end of the chapter (EPUB).
+
 ## Alignment
 
 Markdown has no alignment, so a centred or right-aligned paragraph is wrapped in a span, on one

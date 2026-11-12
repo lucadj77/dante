@@ -1,7 +1,7 @@
 // Reads a Word document (.docx) as a list of headings and paragraphs in Markdown. Bold,
 // italic, strikethrough and highlighting are kept, from the text or from its styles;
 // comments and tracked changes become signed CriticMarkup, as Dante writes them, and
-// footnotes become comments. Headings are paragraphs whose style is one of Word's headings
+// footnotes and endnotes become footnotes (`^[text]`). Headings are paragraphs whose style is one of Word's headings
 // ("heading 1"… whatever the language of Word, since files keep the English names) or has
 // an outline level; the "Title" style gives the book's title. Of the layout only centred and
 // right-aligned paragraphs are kept, as Dante aligns them.
@@ -326,7 +326,7 @@ function render(list: Token[], ctx: Context): string {
     flush();
     change = null;
     if (token.kind === "break") out += "\n";
-    else if (token.kind === "note") out += `{>>${ctx.noteLabel}: ${token.text.replace(/<<\}/g, "<<")}<<}`;
+    else if (token.kind === "note") out += `^[${renderFormatted([{ text: token.text, format: {} }]).replace(/\\?([\[\]])/g, "\\$1")}]`;
     else if (token.kind === "commentStart") {
       if (closedHere.has(token.id)) out += "{==";
     } else {

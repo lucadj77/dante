@@ -195,6 +195,58 @@ pub fn list_backups(root: String, dest: String, name: String) -> Result<BackupIn
     })
 }
 
+/// Takes the backup `zip` out into a new folder inside `parent`, named `folder` (with a number
+/// after it when the name is taken), and returns that folder's path. The files go from the zip
+/// to the disk one at a time: a novel with many images never has to fit in memory. The folder
+/// the backup keeps everything in is left out; nothing is written outside the new folder.
+#[tauri::command]
+pub fn extract_backup(zip: String, parent: String, folder: String) -> Result<String, String> {
+    let mut archive = zip::ZipArchive::new(fs::File::open(&zip).map_err(err)?).map_err(|e| e.to_string())?;
+    let mut names = Vec::with_capacity(archive.len());
+    for i in 0..archive.len() {
+        let entry = archive.by_index(i).map_err(|e| e.to_string())?;
+        names.push(entry.enclosed_name());
+    }
+    // One folder at the top holding everything: the project's own, as the backups are made.
+    let mut tops = names.iter().flatten().filter_map(|p| p.components().next().map(|c| c.as_os_str().to_owned()));
+    let first = tops.next();
+    let single = first.is_some() && tops.all(|t| Some(&t) == first.as_ref()) && names.iter().flatten().all(|p| p.components().count() > 1 || p.is_dir() || Some(p.as_os_str()) == first.as_deref());
+    let parent = PathBuf::from(parent);
+    let mut target = parent.join(&folder);
+    let mut n = 2;
+    while target.exists() {
+        target = parent.join(format!("{folder} {n}"));
+        n += 1;
+    }
+    fs::create_dir_all(&target).map_err(err)?;
+    let written = (|| -> Result<(), String> {
+        for (i, name) in names.iter().enumerate() {
+            // A name that would leave the folder is skipped, whatever the zip says.
+            let Some(name) = name else { continue };
+            let inside: PathBuf = if single { name.components().skip(1).collect() } else { name.clone() };
+            if inside.as_os_str().is_empty() {
+                continue;
+            }
+            let path = target.join(inside);
+            let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
+            if entry.is_dir() {
+                fs::create_dir_all(&path).map_err(err)?;
+                continue;
+            }
+            if let Some(dir) = path.parent() {
+                fs::create_dir_all(dir).map_err(err)?;
+            }
+            std::io::copy(&mut entry, &mut fs::File::create(&path).map_err(err)?).map_err(err)?;
+        }
+        Ok(())
+    })();
+    if let Err(e) = written {
+        let _ = fs::remove_dir_all(&target);
+        return Err(e);
+    }
+    Ok(target.to_string_lossy().into_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,5 +320,24 @@ mod tests {
         let t = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_793_007_921);
         let d = zip_time(t).unwrap();
         assert_eq!((d.year(), d.month(), d.day()), (2026, 10, 26));
+    }
+
+    #[test]
+    fn opens_a_backup_in_a_new_folder_beside_the_project() {
+        let base = temp("extract");
+        let root = base.join("Prova");
+        project(&root);
+        let dest = base.join("Dante backup").to_string_lossy().into_owned();
+        let zip = backup_project(root.to_string_lossy().into(), dest, "Prova".into(), "2026-10-26 10-00-00".into(), 2, false).unwrap().unwrap();
+        let parent = base.to_string_lossy().into_owned();
+
+        let first = extract_backup(zip.clone(), parent.clone(), "Prova (copia)".into()).unwrap();
+        assert!(first.ends_with("Prova (copia)"));
+        assert_eq!(fs::read_to_string(Path::new(&first).join("Manoscritto/010 Uno/010 Inizio.md")).unwrap(), "C'era una volta.\n");
+        assert_eq!(fs::read_to_string(Path::new(&first).join("dante.yaml")).unwrap(), "title: Prova\n");
+        // The name is taken: the next copy gets a number, and the first is not touched.
+        let second = extract_backup(zip, parent, "Prova (copia)".into()).unwrap();
+        assert!(second.ends_with("Prova (copia) 2"));
+        let _ = fs::remove_dir_all(&base);
     }
 }

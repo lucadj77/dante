@@ -1,7 +1,9 @@
 <script lang="ts">
+  import HelpLink from "./HelpLink.svelte";
   import type { ViewSpec } from "$lib/core/views";
   import { SYNOPSIS, TITLE } from "$lib/core/manuscript";
   import { t } from "$lib/state.svelte";
+  import ChipsInput from "./ChipsInput.svelte";
 
   // The settings of a view: what it shows, from where, filtered, sorted and grouped how.
 
@@ -17,11 +19,11 @@
     folders: string[];
     label: (field: string) => string;
     itemsLabel: (items: string) => string;
+    /** The values the items have for a property, offered where values are chosen. */
+    valuesOf?: (field: string) => string[];
     save: (changes: Partial<ViewSpec>) => Promise<void>;
   }
-  let { spec, choices, fields, typeIds, folders, label, itemsLabel, save }: Props = $props();
-
-  const csv = (text: string) => text.split(",").map((s) => s.trim()).filter(Boolean);
+  let { spec, choices, fields, typeIds, folders, label, itemsLabel, valuesOf = () => [], save }: Props = $props();
 
   function setFilter(i: number, field: string, accepted: string[]) {
     const entries = Object.entries(spec.filter);
@@ -54,18 +56,16 @@
       {#if !["scene", "chapter", "note", ...typeIds].includes(spec.items)}<option value={spec.items}>{spec.items}</option>{/if}
     </select>
   </label>
-  <label>
+  <div class="row">
     <span>{t("views.source")}</span>
-    <input
-      list="view-folders"
-      value={spec.source.join(", ")}
+    <ChipsInput
+      values={spec.source}
+      suggestions={folders}
+      label={t("views.source")}
       placeholder={t("views.sourceHint")}
-      onchange={(e) => save({ source: csv(e.currentTarget.value).map((s) => s.replace(/^\/+|\/+$/g, "")) })}
+      onChange={(source) => save({ source: source.map((s) => s.replace(/^\/+|\/+$/g, "")).filter(Boolean) })}
     />
-    <datalist id="view-folders">
-      {#each folders as folder (folder)}<option value={folder}></option>{/each}
-    </datalist>
-  </label>
+  </div>
   <div class="filters">
     <span>{t("views.filter")}</span>
     {#each Object.entries(spec.filter) as [field, accepted], i (field)}
@@ -73,12 +73,7 @@
         <select value={field} aria-label={t("views.filter")} onchange={(e) => setFilter(i, e.currentTarget.value, accepted)}>
           {#each choices as c (c)}<option value={c}>{label(c)}</option>{/each}
         </select>
-        <input
-          value={accepted.join(", ")}
-          placeholder={t("views.filterValues")}
-          aria-label={t("views.filterValues")}
-          onchange={(e) => setFilter(i, field, csv(e.currentTarget.value))}
-        />
+        <ChipsInput values={accepted} suggestions={valuesOf(field)} label={t("views.filterValues")} placeholder={t("views.filterValues")} onChange={(list) => setFilter(i, field, list)} />
         <button aria-label={t("views.removeFilter")} data-tip={t("views.removeFilter")} onclick={() => removeFilter(i)}>×</button>
       </div>
     {/each}
@@ -105,10 +100,10 @@
     </select>
   </label>
   {#if spec.group_by}
-    <label>
+    <div class="row">
       <span>{t("views.groups")}</span>
-      <input value={spec.groups.join(", ")} placeholder={t("views.groupsHint")} onchange={(e) => save({ groups: csv(e.currentTarget.value) })} />
-    </label>
+      <ChipsInput values={spec.groups} suggestions={valuesOf(spec.group_by)} label={t("views.groups")} placeholder={t("views.groupsHint")} onChange={(groups) => save({ groups })} />
+    </div>
   {/if}
   {#if spec.type === "timeline"}
     <label>
@@ -133,10 +128,17 @@
       <label class="check"><input type="checkbox" checked={fields.includes(c)} onchange={(e) => toggleField(c, e.currentTarget.checked)} /> {label(c)}</label>
     {/each}
   </fieldset>
+  <span class="guide"><HelpLink chapter="views" /></span>
 </section>
 
 <style>
+  .guide {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+  }
   .settings {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 10px 20px;
@@ -148,12 +150,14 @@
     font-size: 13px;
   }
   .settings label,
+  .settings .row,
   .filters {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
   .settings label > span:first-child,
+  .settings .row > span:first-child,
   .filters > span,
   legend {
     color: var(--text-muted);
@@ -166,7 +170,7 @@
     display: flex;
     gap: 4px;
   }
-  .filter input {
+  .filter :global(.chips) {
     flex: 1;
   }
   .filters .small {

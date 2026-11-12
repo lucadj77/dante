@@ -140,6 +140,102 @@ export type PageUnit = "characters" | "words";
 export type ExportFormat = "docx" | "pdf" | "epub" | "md";
 export const EXPORT_FORMATS: ExportFormat[] = ["docx", "pdf", "epub", "md"];
 
+export type HeadingKind = "part" | "chapter" | "scene";
+export const HEADING_KINDS: HeadingKind[] = ["part", "chapter", "scene"];
+
+/** How the headings of a level look in the exported book. */
+export interface HeadingStyle {
+  /** Empty: the font of the text. */
+  font: string;
+  /** Points. */
+  size: number;
+  align: "left" | "center" | "right";
+  bold: boolean;
+  italic: boolean;
+  /** All capitals, whatever the title is written like. */
+  uppercase: boolean;
+  /** Space above and below the heading, in points. */
+  before: number;
+  after: number;
+  /** Between the lines of a heading on several lines, as the line spacing of the text. */
+  lineSpacing: number;
+  /** How far down the page the heading sits when it opens a new page, in centimetres. */
+  top: number;
+}
+
+/**
+ * The headings a layout starts with: plain and as large as the text in a manuscript,
+ * larger in a typeset book. Space is counted in lines of the text, as word processors do.
+ */
+export function defaultHeadings(docx: { profile: "manuscript" | "typeset"; fontSize: number; lineSpacing: number }, parts: boolean): Record<HeadingKind, HeadingStyle> {
+  const typeset = docx.profile === "typeset";
+  const half = (n: number) => Math.round(n * 2) / 2;
+  const line = Math.round(12 * docx.lineSpacing);
+  const base = { font: "", align: "center" as const, uppercase: false, lineSpacing: docx.lineSpacing };
+  return {
+    part: { ...base, size: typeset ? half(docx.fontSize * 1.5) : docx.fontSize, bold: true, italic: false, before: 0, after: line, top: typeset ? 6.3 : 7.6 },
+    chapter: { ...base, size: typeset ? half(docx.fontSize * (parts ? 1.3 : 1.5)) : docx.fontSize, bold: typeset || !parts, italic: false, before: 0, after: line, top: typeset ? 4.2 : 5 },
+    scene: { ...base, size: docx.fontSize, bold: false, italic: typeset, before: line, after: Math.round(line / 2), top: 0 },
+  };
+}
+
+/** Line spacing is free between these limits; outside them a page is unreadable. */
+export const LINE_SPACING = { min: 0.8, max: 3 };
+
+const within = (value: unknown, min: number, max: number, usual: number): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : usual;
+};
+
+/** Completes the headings read from a file with the usual ones of the layout, and keeps the numbers in range. */
+function parseHeadings(docx: DocxSettings, raw: unknown, parts: boolean): Record<HeadingKind, HeadingStyle> {
+  const usual = defaultHeadings(docx, parts);
+  const out = merge(usual, raw);
+  for (const kind of HEADING_KINDS) {
+    const h = out[kind];
+    if (!["left", "center", "right"].includes(h.align)) h.align = usual[kind].align;
+    h.size = within(h.size, 6, 96, usual[kind].size);
+    h.before = within(h.before, 0, 300, usual[kind].before);
+    h.after = within(h.after, 0, 300, usual[kind].after);
+    h.lineSpacing = within(h.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, usual[kind].lineSpacing);
+    h.top = within(h.top, 0, 20, usual[kind].top);
+  }
+  return out;
+}
+
+/** The white around the text, in centimetres. */
+export interface PageMargins {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+/** Width and height of the page of an export, in centimetres. */
+export function pageDimensions(docx: Pick<DocxSettings, "pageSize" | "pageWidth" | "pageHeight">): [number, number] {
+  if (docx.pageSize === "custom") return [Number(docx.pageWidth) || 21, Number(docx.pageHeight) || 29.7];
+  const [width, height] = PAGE_SIZES[docx.pageSize] ?? PAGE_SIZES.a4;
+  return [width, height];
+}
+
+/** The margins a page starts with: an inch on office paper, two centimetres on a page the size of a book. */
+export function defaultMargins(docx: Pick<DocxSettings, "pageSize" | "pageWidth" | "pageHeight">): PageMargins {
+  const [width, height] = pageDimensions(docx);
+  const margin = Math.min(width, height) < 18 ? 2 : 2.54;
+  return { top: margin, bottom: margin, left: margin, right: margin };
+}
+
+/** Completes the margins read from a file and keeps them between half a centimetre and a third of the page. */
+function parseMargins(docx: DocxSettings, raw: unknown): PageMargins {
+  const usual = defaultMargins(docx);
+  const out = merge(usual, raw);
+  const [width, height] = pageDimensions(docx);
+  for (const side of ["top", "bottom", "left", "right"] as const) {
+    out[side] = within(out[side], 0.5, (side === "top" || side === "bottom" ? height : width) / 3, usual[side]);
+  }
+  return out;
+}
+
 export interface DocxSettings {
   /** Standard manuscript for agents and publishers, or a typeset, readable book. */
   profile: "manuscript" | "typeset";
@@ -151,7 +247,7 @@ export interface DocxSettings {
   font: string;
   /** Points. */
   fontSize: number;
-  /** 1, 1.5 or 2. */
+  /** 1 is single, 2 double; any value between LINE_SPACING.min and LINE_SPACING.max. */
   lineSpacing: number;
   /** First-line indent of paragraphs, in centimetres. */
   indent: number;
@@ -160,6 +256,8 @@ export interface DocxSettings {
   /** What starts a new line in sceneSeparator; "\\n" unless the writer picked another sign. */
   lineSign: string;
   titlePage: boolean;
+  /** A table of contents of parts and chapters after the front matter, in Word and PDF. */
+  toc: boolean;
   /** Page header: author, title and page number, or the title in a typeset book. */
   header: boolean;
   partBreak: Separator;
@@ -172,6 +270,17 @@ export interface DocxSettings {
   sceneNumbersRestart: boolean;
   /** No scene heading in a chapter with a single scene. */
   omitSingleSceneHeading: boolean;
+  /** Font, size, alignment and space of the headings of parts, chapters and scenes. */
+  headings: Record<HeadingKind, HeadingStyle>;
+  /** The margins of the page, in Word and PDF. */
+  margins: PageMargins;
+}
+
+/** A set of export choices kept under a name, such as "For the publisher". */
+export interface ExportProfile {
+  format: ExportFormat;
+  cover: boolean;
+  docx: DocxSettings;
 }
 
 /** A kind of note, such as a character or a place, defined in dante.yaml. */
@@ -248,6 +357,8 @@ export interface NovelSettings {
   authors: string[];
   /** Language of the novel (not of the interface), as a BCP 47 code. */
   language: string;
+  /** Words of this novel the spelling checker leaves alone, besides the names of the Story Bible. */
+  dictionary: string[];
   folders: {
     codex: string;
     research: string;
@@ -308,6 +419,15 @@ export interface NovelSettings {
     unit: PageUnit;
     size: number;
   };
+  /** What the statistics on style look for, and how fast a reader is taken to read. */
+  style: {
+    /** A sentence is long above this many words. */
+    longSentence: number;
+    /** A word used again within this many words is a repetition. */
+    repetitionWindow: number;
+    /** Words read in a minute, for the reading time. */
+    readingSpeed: number;
+  };
   export: {
     /** The format chosen last on the export page. */
     format: ExportFormat;
@@ -324,6 +444,8 @@ export interface NovelSettings {
     paratext: ParatextSettings;
     /** Revisions in CriticMarkup are accepted or rejected in the exported text. */
     revisions: "accept" | "reject";
+    /** Export choices saved under a name, to go back to without setting them again. */
+    profiles: Record<string, ExportProfile>;
   };
 }
 
@@ -360,7 +482,7 @@ const TYPES: Record<string, TypeNames> = {
     object: ["Oggetto", "Oggetti", ["proprietario"]],
     event: ["Evento", "Eventi", ["data", "luogo"]],
     group: ["Gruppo", "Gruppi", ["membri"]],
-    plotline: ["Plotline", "Plotline", ["stato"]],
+    plotline: ["Trama", "Trame", ["stato"]],
   },
   es: {
     character: ["Personaje", "Personajes", ["papel", "edad", "aspecto", "aliases"]],
@@ -511,6 +633,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     title: "",
     subtitle: "",
     authors: [],
+    dictionary: [],
     language,
     folders: defaultFolders(language),
     types: defaultTypes(language),
@@ -533,6 +656,7 @@ export function defaultSettings(language = "en"): NovelSettings {
     tree: { dot: "", colors: {} },
     gamebook: defaultGamebook(language),
     pages: { unit: "characters", size: 1800 },
+    style: { longSentence: 40, repetitionWindow: 30, readingSpeed: 230 },
     export: {
       format: "docx",
       epubId: "",
@@ -550,6 +674,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         sceneSeparator: "#",
         lineSign: LINE_SIGN,
         titlePage: true,
+        toc: false,
         header: true,
         partBreak: "pageBreak",
         chapterBreak: "pageBreak",
@@ -557,6 +682,8 @@ export function defaultSettings(language = "en"): NovelSettings {
         scene: { numbering: "none", showLabel: false, label: labels.scene, showTitle: false, separator: ". " },
         sceneNumbersRestart: true,
         omitSingleSceneHeading: true,
+        headings: defaultHeadings({ profile: "manuscript", fontSize: 12, lineSpacing: 2 }, false),
+        margins: { top: 2.54, bottom: 2.54, left: 2.54, right: 2.54 },
       },
       typography: {
         // Dialogue leaves as it was typed until the author picks a convention.
@@ -576,6 +703,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         colophon: "",
       },
       revisions: "accept",
+      profiles: {},
     },
   };
 }
@@ -645,6 +773,20 @@ export function parseSettings(text: string): NovelSettings {
   if (!(gx.boxSize >= 0 && gx.boxSize <= 48)) gx.boxSize = 0;
   if (typeof gx.numberFont !== "string") gx.numberFont = "";
   settings.tree.colors = parseDotColors(isObject(raw) && isObject(raw.tree) ? raw.tree.colors : undefined);
+  // Saved export profiles are a free list: each is completed with the usual choices.
+  const profiles = isObject(raw) && isObject(raw.export) && isObject(raw.export.profiles) ? raw.export.profiles : {};
+  settings.export.profiles = {};
+  for (const [name, value] of Object.entries(profiles)) {
+    if (!name.trim() || !isObject(value)) continue;
+    const base = defaultSettings(language).export;
+    const profile = merge<ExportProfile>({ format: base.format, cover: base.cover, docx: base.docx }, value);
+    if (!EXPORT_FORMATS.includes(profile.format)) profile.format = "docx";
+    profile.docx.lineSpacing = within(profile.docx.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, 2);
+    profile.docx.headings = parseHeadings(profile.docx, isObject(value.docx) ? value.docx.headings : undefined, settings.structure.parts);
+    if (isObject(value.docx) && value.docx.pageSize === undefined && value.docx.profile === "typeset") profile.docx.pageSize = "a5";
+    profile.docx.margins = parseMargins(profile.docx, isObject(value.docx) ? value.docx.margins : undefined);
+    settings.export.profiles[name] = profile;
+  }
   // Files written before several authors could be named had one "author" text.
   const authors = isObject(raw) ? raw.authors : undefined;
   settings.authors = Array.isArray(authors)
@@ -652,9 +794,20 @@ export function parseSettings(text: string): NovelSettings {
     : isObject(raw) && typeof raw.author === "string"
       ? authorsOf(raw.author)
       : [];
+  // Thresholds are whole numbers above zero; anything else goes back to the usual value.
+  const usual = defaultSettings(language).style;
+  for (const key of Object.keys(usual) as (keyof NovelSettings["style"])[]) {
+    const value = Math.round(Number(settings.style[key]));
+    settings.style[key] = value > 0 ? value : usual[key];
+  }
+  const dictionary = isObject(raw) ? raw.dictionary : undefined;
+  settings.dictionary = Array.isArray(dictionary) ? [...new Set(dictionary.filter((w): w is string => typeof w === "string").map((w) => w.trim()).filter(Boolean))] : [];
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  // Files written before headings could be styled take the ones their layout had.
+  settings.export.docx.lineSpacing = within(settings.export.docx.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, 2);
+  settings.export.docx.headings = parseHeadings(settings.export.docx, docx.headings, settings.structure.parts);
   if (!EXPORT_FORMATS.includes(settings.export.format)) settings.export.format = "docx";
   if (!(COVER_TEMPLATES as readonly string[]).includes(settings.cover.template)) settings.cover.template = "";
   if (!(settings.cover.palette in COVER_PALETTES)) settings.cover.palette = "";
@@ -673,6 +826,8 @@ export function parseSettings(text: string): NovelSettings {
   if (!(settings.pages.size > 0)) settings.pages.size = settings.pages.unit === "words" ? 250 : 1800;
   // Before the page size could be chosen, a typeset book was always A5.
   if (docx.pageSize === undefined && docx.profile === "typeset") settings.export.docx.pageSize = "a5";
+  // Files written before the margins could be chosen take the ones their page had.
+  settings.export.docx.margins = parseMargins(settings.export.docx, docx.margins);
   // Files written before the heading choices existed had a template such as "{label} {number}: {title}".
   const structure = isObject(raw) && isObject(raw.structure) ? raw.structure : {};
   for (const kind of ["part", "chapter"] as const) {
@@ -710,6 +865,18 @@ export function serializeSettings(settings: NovelSettings, previous = ""): strin
       const gamebook = value as GamebookSettings;
       if (!gamebook.enabled && !doc.hasIn(["gamebook"])) return;
       doc.setIn(path, doc.createNode(gamebook));
+      return;
+    }
+    // Saved export profiles are written whole, so a deleted one leaves the file.
+    if (path.length === 2 && path[0] === "export" && path[1] === "profiles") {
+      if (Object.keys(value as object).length) doc.setIn(path, doc.createNode(value));
+      else doc.deleteIn(path);
+      return;
+    }
+    // The novel's own words leave the file with the last of them.
+    if (path.length === 1 && path[0] === "dictionary") {
+      if ((value as string[]).length) doc.setIn(path, doc.createNode(value));
+      else doc.deleteIn(path);
       return;
     }
     if (path.length === 1 && path[0] === "properties") {

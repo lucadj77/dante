@@ -1,20 +1,18 @@
 <script lang="ts">
   import { projectKey } from "$lib/platform";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { onDisk } from "$lib/platform";
   import type { Project } from "$lib/core/project";
-  import { app, t, zoom } from "$lib/state.svelte";
+  import { app, openLook, saveAppSettings, t, zoom } from "$lib/state.svelte";
+  import Dialog from "./Dialog.svelte";
   import { TauriFs } from "$lib/tauriFs";
   import { BrowserFs } from "$lib/browserFs";
   import type { MessageKey } from "$lib/i18n";
   import ManuscriptView from "./ManuscriptView.svelte";
-  import ExportView from "./ExportView.svelte";
   import { EXPORT_FOLDER } from "$lib/core/export/files";
-  import SettingsView from "./SettingsView.svelte";
   import CodexView from "./CodexView.svelte";
   import FilesView from "./FilesView.svelte";
   import ViewsView from "./ViewsView.svelte";
-  import StatsView from "./StatsView.svelte";
-  import GamebookView from "./GamebookView.svelte";
   import { flushSessions, startSessions } from "./sessions.svelte";
   import { isView } from "$lib/core/views";
   import QuickSearch from "./QuickSearch.svelte";
@@ -30,7 +28,7 @@
   import { basename, dirname, isMarkdown, isWithin } from "$lib/core/path";
   import { linkTarget, resolveAlias, resolveLink } from "$lib/core/wikilinks";
   import LinkMenu, { type LinkMenuRequest } from "./LinkMenu.svelte";
-  import { bibleNames, NameMatcher } from "$lib/core/mentions";
+  import { bibleNames, knownWords, NameMatcher } from "$lib/core/mentions";
   import { NAMES_EVENT } from "$lib/editor/mentions";
   import { imageMime, nameFromUrl, resolveImagePath, sniffImage } from "$lib/core/images";
   import type { LinkSuggestion } from "$lib/editor/links";
@@ -58,7 +56,19 @@
     type Pane,
   } from "./panes.svelte";
 
-  let { project, onClose }: { project: Project; onClose: () => void } = $props();
+  let { project, onClose, onOpenProject }: { project: Project; onClose: () => void; onOpenProject?: (path: string) => Promise<void> } = $props();
+
+  // The name signs comments and revisions and counts the day's writing: whoever opens a
+  // shared folder without one is asked once, at once, instead of finding out days later.
+  // svelte-ignore state_referenced_locally
+  let askName = $state(onDisk(project.fs) && !app.settings.userName.trim() && !app.settings.nameAsked);
+  let nameTyped = $state("");
+  function answerName(name: string) {
+    askName = false;
+    saveAppSettings({ ...app.settings, userName: name.trim() || app.settings.userName, nameAsked: true });
+  }
+  /** A reordering cut short was settled when the project opened: said once, until dismissed. */
+  let recovered = $state(untrack(() => project.recovered));
 
   /** "files" shows any other folder, such as Templates, when a link leads there. */
   type Section = "manuscript" | "gamebook" | "codex" | "notes" | "views" | "stats" | "export" | "settings" | "files";
@@ -100,6 +110,26 @@
     section = next;
     byLink = false;
   }
+
+  /** What the quick search lists after ">": the sections and what shows or hides around the text. */
+  const commands = $derived.by(() => {
+    const list: { label: string; run: () => void }[] = sections.map((s) => ({ label: t("command.go", { name: t(`section.${s.id}` as MessageKey) }), run: () => go(s.id) }));
+    list.push({ label: t("command.go", { name: t("section.settings") }), run: () => go("settings") });
+    list.push({ label: t("help.title"), run: () => openHelp() });
+    list.push({ label: t("trash.title"), run: () => (showTrash = true) });
+    const flag = (on: boolean, name: string, run: () => void) => list.push({ label: t(on ? "command.hide" : "command.show", { name }), run });
+    const setting = (key: "formatBar" | "statusBar" | "lineHighlight" | "namedNotes", name: string) =>
+      flag(app.settings[key], name, () => saveAppSettings({ ...app.settings, [key]: !app.settings[key] }));
+    setting("formatBar", t("more.formatBar"));
+    setting("statusBar", t("more.statusBar"));
+    setting("lineHighlight", t("tip.lineHighlight").split("\n")[0]);
+    setting("namedNotes", t("tip.namedNotes").split("\n")[0]);
+    list.push({ label: t(layout.left ? "nav.hideLeft" : "nav.showLeft"), run: () => toggle("left") });
+    list.push({ label: t(layout.right ? "nav.hideRight" : "nav.showRight"), run: () => toggle("right") });
+    list.push({ label: t(layout.wideNav ? "nav.hideNames" : "nav.showNames"), run: () => toggle("wideNav") });
+    list.push({ label: t("app.close"), run: () => void close() });
+    return list;
+  });
 
   function back() {
     const place = previous.at(-1);
@@ -148,11 +178,15 @@
   let index = $state.raw<NoteIndex | null>(null);
   /** The names of the Story Bible the editors underline; rebuilt with the index. */
   let names: NameMatcher | null = null;
+  /** The words the spelling checker leaves alone: those names and the novel's own words. */
+  let known: Set<string> | null = null;
   $effect(() => {
     void rev;
     void project.index().then((i) => {
       index = i;
-      names = new NameMatcher(bibleNames(i, project.settings));
+      const found = bibleNames(i, project.settings);
+      names = new NameMatcher(found);
+      known = knownWords(found, project.settings.dictionary);
       window.dispatchEvent(new Event(NAMES_EVENT));
     });
   });
@@ -241,6 +275,7 @@
         linkMenu = { target, from, path: linked(target, from), x: at.x, y: at.y, edit };
       },
       names: () => (app.settings.namedNotes && names ? { matcher: names, own: from } : null),
+      knownWords: () => known,
       named(found, at, link) {
         const target = linkTarget(found.path, from, project.files);
         linkMenu = { target, from, path: found.path, x: at.x, y: at.y, edit: () => {}, named: { name: found.name, link: () => link(target) } };
@@ -506,6 +541,11 @@
   }
 
   onMount(() => startPresence(project));
+  // The look this computer keeps for this novel, if it has one of its own.
+  onMount(() => {
+    openLook(onDisk(project.fs) ? project.id : "sample");
+    return () => openLook("");
+  });
 
   // The panes of this project, as they were left; they follow renamed items and close with
   // deleted ones, and what is typed in them is written before files move.
@@ -603,6 +643,27 @@
   ondrop={() => (dragActive = dropOver = false)}
 />
 
+{#if askName}
+  <Dialog label={t("name.title")} onClose={() => answerName("")} width={440}>
+    <form
+      class="ask-name"
+      onsubmit={(e) => {
+        e.preventDefault();
+        answerName(nameTyped);
+      }}
+    >
+      <h2>{t("name.title")}</h2>
+      <p>{t("name.why")}</p>
+      <!-- svelte-ignore a11y_autofocus -->
+      <input bind:value={nameTyped} aria-label={t("settings.userName")} placeholder={t("settings.userName")} autofocus />
+      <div class="ask-actions">
+        <button type="button" onclick={() => answerName("")}>{t("name.later")}</button>
+        <button type="submit" class="primary" disabled={!nameTyped.trim()}>{t("name.save")}</button>
+      </div>
+    </form>
+  </Dialog>
+{/if}
+
 {#if showTrash}
   <TrashDialog
     {project}
@@ -669,7 +730,7 @@
         <ReplacePanel {project} version={rev} onOpened={() => (searching = false)} />
       {:else}
         {#key searchingBeside}
-          <QuickSearch {project} version={rev} {diskRev} beside={searchingBeside} onOpened={() => (searching = false)} />
+          <QuickSearch {project} version={rev} {diskRev} {commands} beside={searchingBeside} onOpened={() => (searching = false)} />
         {/key}
       {/if}
     </div>
@@ -693,7 +754,12 @@
         <h1 class="section-name">{section === "files" ? filesRoot || project.settings.title : t(`section.${section}`)}</h1>
         {#if conflicts.length}
           <button class="conflicts" title={t("tip.conflicts")} onclick={() => (showConflicts = true)}
-            >⚠ {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
+            ><Icon name="warning" size={14} /> {conflicts.length === 1 ? t("conflicts.one") : t("conflicts.many", { count: conflicts.length })}</button
+          >
+        {/if}
+        {#if recovered}
+          <button class="conflicts" title={t(recovered === "undone" ? "moves.undoneTip" : "moves.completedTip")} onclick={() => (recovered = null)}
+            >{t(recovered === "undone" ? "moves.undone" : "moves.completed")} ✕</button
           >
         {/if}
         {#if novelTitle}<span class="project-name">{novelTitle}</span>{/if}
@@ -771,13 +837,13 @@
         />
       {/key}
     {:else if section === "export"}
-      <ExportView {project} onSaved={reload} />
+      {#await import("./ExportView.svelte") then { default: ExportView }}<ExportView {project} onSaved={reload} />{/await}
     {:else if section === "settings"}
-      <SettingsView {project} onSaved={reload} />
+      {#await import("./SettingsView.svelte") then { default: SettingsView }}<SettingsView {project} onSaved={reload} onGo={go} {onOpenProject} />{/await}
     {:else if section === "gamebook"}
-      <GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />
+      {#await import("./GamebookView.svelte") then { default: GamebookView }}<GamebookView {project} {rev} {diskRev} bind:tab={gamebookTab} />{/await}
     {:else if section === "stats"}
-      <StatsView {project} {rev} {diskRev} onSaved={reload} />
+      {#await import("./StatsView.svelte") then { default: StatsView }}<StatsView {project} {rev} {diskRev} onSaved={reload} />{/await}
     {:else if section === "views"}
       <div class="with-panes" class:on={showPanes}>
         <ViewsView {project} {rev} {diskRev} open={opened.views ?? null} onShow={(path) => (opened.views = path)} onReload={reload} />
@@ -1029,5 +1095,23 @@
   }
   .panel-toggle.alone {
     margin-left: auto;
+  }
+  .ask-name {
+    display: grid;
+    gap: 10px;
+  }
+  .ask-name h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+  .ask-name p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .ask-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>

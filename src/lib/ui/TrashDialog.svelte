@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
+  import Dialog from "./Dialog.svelte";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
   import { noteTitle } from "$lib/core/notes";
@@ -72,16 +74,7 @@
   }
 </script>
 
-<div class="overlay" role="presentation" onclick={p.onClose}>
-  <div
-    class="dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-label={t("trash.title")}
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.key === "Escape" && p.onClose()}
-  >
+<Dialog label={t("trash.title")} onClose={p.onClose} width={640}>
     <header>
       <h2>{t("trash.title")}</h2>
       <button onclick={p.onClose}>{t("trash.close")}</button>
@@ -96,7 +89,7 @@
         {#each items as item (item.path)}
           <li>
             <div class="what">
-              <span class="name">{item.isDir ? "📁 " : ""}{shown(item)}</span>
+              <span class="name">{#if item.isDir}<Icon name="folder" size={14} /> {/if}{shown(item)}</span>
               <span class="from">
                 {#if item.from}{t("trash.from", { path: place(item.from) || "/" })}{:else}{t("trash.unknown")}{/if}{#if item.date}
                   · {dateFormat.format(new Date(item.date))}{/if}
@@ -111,29 +104,9 @@
         <button class="danger" disabled={busy} onclick={() => items && remove(items, t("trash.confirmEmpty", { count: items.length }))}>{t("trash.emptyAll")}</button>
       </div>
     {/if}
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(640px, calc(100vw - 32px));
-    max-height: calc(100vh - 64px);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 16px 20px;
-  }
   header {
     display: flex;
     justify-content: space-between;

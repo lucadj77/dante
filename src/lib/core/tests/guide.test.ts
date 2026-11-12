@@ -3,6 +3,21 @@ import { describe, expect, it } from "vitest";
 import { guideToHtml, slug } from "../guide";
 
 describe("guide", () => {
+  it("keeps the chapters the panels link to where the links expect them", () => {
+    const source = readFileSync("src/lib/ui/help.svelte.ts", "utf8");
+    const numbers = Object.fromEntries([...source.match(/GUIDE_CHAPTERS = \{([^}]*)\}/)![1].matchAll(/(\w+): (\d+)/g)].map((m) => [m[1], Number(m[2])]));
+    const titles: Record<string, [string, string]> = {
+      views: ["Tabelle e bacheche", "Tables and boards"],
+      export: ["Esportare in Word, PDF ed EPUB", "Exporting to Word, PDF and EPUB"],
+      gamebook: ["Libri game", "Gamebooks"],
+    };
+    expect(Object.keys(numbers).sort()).toEqual(Object.keys(titles).sort());
+    for (const [key, [italian, english]] of Object.entries(titles)) {
+      expect(readFileSync("docs/guida.md", "utf8")).toContain(`\n## ${numbers[key]}. ${italian}\n`);
+      expect(readFileSync("docs/guide.md", "utf8")).toContain(`\n## ${numbers[key]}. ${english}\n`);
+    }
+  });
+
   it("makes anchors as GitHub does", () => {
     expect(slug("1. Cos'è Dante")).toBe("1-cosè-dante");
     expect(slug("13. Esportare in Word, PDF ed EPUB")).toBe("13-esportare-in-word-pdf-ed-epub");
@@ -55,11 +70,27 @@ describe("guide", () => {
     expect(page.html).not.toContain("javascript:");
   });
 
-  it("reads the whole guide, with every chapter of the index", () => {
-    const md = readFileSync(new URL("../../../../docs/guida.md", import.meta.url), "utf8");
+  const read = (file: string) => readFileSync(new URL(`../../../../docs/${file}`, import.meta.url), "utf8");
+
+  it.each(["guida.md", "guide.md"])("reads the whole of %s, with every chapter of the index", (file) => {
+    const md = read(file);
     const page = guideToHtml(md, { image: (src) => src });
     const ids = new Set(page.headings.map((h) => h.id));
     for (const [, anchor] of md.matchAll(/\]\(#([^)]+)\)/g)) expect(ids.has(decodeURIComponent(anchor))).toBe(true);
     expect(page.html.replace(/<code>[^<]*<\/code>/g, "")).not.toMatch(/\*\*|\]\(/);
+  });
+
+  it("keeps the English guide in step with the Italian one", () => {
+    const shape = (file: string) => {
+      const md = read(file);
+      return {
+        chapters: [...md.matchAll(/^## (\d+)\. /gm)].map((m) => m[1]),
+        sections: [...md.matchAll(/^### /gm)].length,
+        images: [...md.matchAll(/img\/(?:en\/)?([\w-]+\.png)/g)].map((m) => m[1]),
+        bullets: [...md.matchAll(/^ *- /gm)].length,
+        rows: [...md.matchAll(/^\|/gm)].length,
+      };
+    };
+    expect(shape("guide.md")).toEqual(shape("guida.md"));
   });
 });

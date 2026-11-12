@@ -181,3 +181,30 @@ export function applyTypography(markdown: string, rules: TypographySettings): st
     })
     .join("");
 }
+
+/** A paragraph with a line of dialogue: quotes of any country around some words, or a dash that opens the line. */
+const SPOKEN = /^\s*[—–-]\s*\S|["“”«»„‹›][^\n]{2,}["“”«»‹›]/;
+
+/**
+ * The first passage of dialogue in a scene, to show what the typography choices do on the
+ * writer's own words: the first spoken paragraph and the one after it, shortened when long.
+ * Null when nobody speaks.
+ */
+export function dialogueSample(markdown: string, length = 160): string | null {
+  const paragraphs = markdown
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    // Headings, lists, tables, quotes and blank-line marks are not running text.
+    .filter((p) => p && !/^(#{1,6}\s|>|\||```|[*+]\s|\d+[.)]\s|&nbsp;|---+$|\*\*\*+$)/.test(p))
+    // Several lines that all open with a hyphen are a list; one alone is a line of dialogue.
+    .filter((p) => !(p.includes("\n") && p.split("\n").every((line) => /^\s*-\s/.test(line))));
+  const first = paragraphs.findIndex((p) => SPOKEN.test(p));
+  if (first < 0) return null;
+  const short = (p: string) => {
+    const line = p.replace(/[ \t]*\n[ \t]*/g, " ");
+    if (line.length <= length) return line;
+    const cut = line.slice(0, length);
+    return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), length - 40))}…`;
+  };
+  return paragraphs.slice(first, first + 2).map(short).join("\n");
+}

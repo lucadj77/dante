@@ -434,8 +434,8 @@ An item in `.trash/` with no entry is restored to the Laboratory. Never empty th
   ```
 
   Default types: `character`, `place`, `object`, `event`, `group`, `plotline`, with names and
-  folders in the book's language (Personaggi, Luoghi, Oggetti, Eventi, Gruppi, Plotline in
-  Italian). A new note goes in its type's folder, starts from `<Templates>/<type name>.md`
+  folders in the book's language (Personaggi, Luoghi, Oggetti, Eventi, Gruppi, Trame in
+  Italian; Plotline in projects made before 1.2). A new note goes in its type's folder, starts from `<Templates>/<type name>.md`
   when it exists (`{{title}}`, `{{date}}` filled in) or else from the type's suggested
   properties (empty), and gets `type: <id>` in its frontmatter.
 - **Card images**: the board of the Story Bible shows a note's first image: a property holding

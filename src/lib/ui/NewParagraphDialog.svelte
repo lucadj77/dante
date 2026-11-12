@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Dialog from "./Dialog.svelte";
   // In a gamebook: a new paragraph with all the plugin's choices in one window: the first
   // free number, a fixed number or one relative to another paragraph, and a reference in
   // the text or among the hidden ones.
@@ -56,16 +57,7 @@
   }
 </script>
 
-<div class="overlay" role="presentation" onclick={p.onClose}>
-  <div
-    class="dialog"
-    role="dialog"
-    aria-modal="true"
-    aria-label={t("gamebook.new.title")}
-    tabindex="-1"
-    onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.key === "Escape" && p.onClose()}
-  >
+<Dialog label={t("gamebook.new.title")} onClose={p.onClose} width={520}>
   <form
     onsubmit={(e) => {
       e.preventDefault();
@@ -112,32 +104,13 @@
       <button type="submit" class="primary" disabled={busy || !title.trim() || (kind === "relative" && !anchor)}>{t("gamebook.new.create")}</button>
     </div>
   </form>
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
   form {
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(520px, calc(100vw - 32px));
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px 20px;
   }
   h2 {
     font-size: 16px;

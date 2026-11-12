@@ -7,6 +7,7 @@ import {
   Footer,
   Header,
   HeadingLevel,
+  FootnoteReferenceRun,
   ImageRun,
   InternalHyperlink,
   LineRuleType,
@@ -20,14 +21,16 @@ import {
   TabStopType,
   Table,
   TableCell,
+  TableOfContents,
   TableRow,
   TextRun,
   WidthType,
   type IParagraphStyleOptions,
+  type IStylesOptions,
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
-import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type GamebookExportSettings, type Separator } from "../settings";
+import { HEADING_KINDS, PAGE_SIZES, separatorParts, surnames, type DocxSettings, type GamebookExportSettings, type HeadingStyle, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import type { CellAlign } from "../tables";
 
@@ -107,12 +110,27 @@ const HEADINGS = [
 ];
 
 /** Headings of the paratext, in the language of the novel. */
-export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgements: string }> = {
-  en: { authorNote: "Author’s note", acknowledgements: "Acknowledgements" },
-  it: { authorNote: "Nota dell’autore", acknowledgements: "Ringraziamenti" },
-  es: { authorNote: "Nota del autor", acknowledgements: "Agradecimientos" },
-  fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements" },
+export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgements: string; contents: string }> = {
+  en: { authorNote: "Author’s note", acknowledgements: "Acknowledgements", contents: "Contents" },
+  it: { authorNote: "Nota dell’autore", acknowledgements: "Ringraziamenti", contents: "Indice" },
+  es: { authorNote: "Nota del autor", acknowledgements: "Agradecimientos", contents: "Índice" },
+  fr: { authorNote: "Note de l’auteur", acknowledgements: "Remerciements", contents: "Table des matières" },
 };
+
+/** Whether the book gets a table of contents: asked for, and with headings to list. */
+export function hasContents(book: Book, opts: DocxSettings): boolean {
+  return opts.toc && !book.gamebook && book.entries.some((e) => e.heading);
+}
+
+/** The footnotes of the document being written, by the number Word knows them by. */
+let footnotes: Record<string, { children: Paragraph[] }> = {};
+
+/** The call of a footnote, its text put with the document's notes. */
+function footnote(items: Run[]): TextRun {
+  const id = Object.keys(footnotes).length + 1;
+  footnotes[id] = { children: [new Paragraph({ children: paragraphRuns(items) })] };
+  return new FootnoteReferenceRun(id) as unknown as TextRun;
+}
 
 /**
  * The runs of a paragraph; its images fit `maxWidth` pixels and sit in lines of `fontSize`
@@ -120,7 +138,9 @@ export const PARATEXT_LABELS: Record<string, { authorNote: string; acknowledgeme
  */
 function paragraphRuns(items: Run[], maxWidth = 600, fontSize = 12): (TextRun | ImageRun | InternalHyperlink)[] {
   const one = (r: Run) =>
-    r.image
+    r.footnote
+      ? footnote(r.footnote)
+      : r.image
       ? imageRun(r.image, maxWidth, fontSize)
       : r.lineBreak
       ? new TextRun({ break: 1 })
@@ -150,12 +170,12 @@ export function approxWords(n: number, language: string): string {
 }
 
 /** Plain paragraphs of a paratext written as Markdown-free text. */
-function textParagraphs(text: string, style: string): Paragraph[] {
+function textParagraphs(text: string, style: string, drop = 0): Paragraph[] {
   return text
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean)
-    .map((p) => new Paragraph({ style, children: plain(p) }));
+    .map((p, i) => new Paragraph({ style, ...(i === 0 && drop ? { spacing: { before: drop } } : {}), children: plain(p) }));
 }
 
 function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSettings): IParagraphStyleOptions[] {
@@ -179,8 +199,6 @@ function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSetting
     { id: "SceneBreak", name: "Scene Break", basedOn: "Normal", next: "FirstParagraph", quickFormat: true, paragraph: { ...centered, spacing: { before: line / 2, after: line / 2 } } },
     // An empty line of fixed height pushes openings down the page: word processors drop
     // the space before a paragraph at the top of a page.
-    { id: "Opening", name: "Opening", basedOn: "Normal", paragraph: { ...centered, spacing: { line: typeset ? 2400 : 2880, lineRule: LineRuleType.EXACT } } },
-    { id: "PartOpening", name: "Part Opening", basedOn: "Opening", paragraph: { spacing: { line: typeset ? 3600 : 4320, lineRule: LineRuleType.EXACT } } },
     { id: "Title", name: "Title", basedOn: "Normal", next: "Subtitle", quickFormat: true, run: { size: typeset ? size * 3 : size, bold: typeset }, paragraph: { ...centered } },
     { id: "Subtitle", name: "Subtitle", basedOn: "Normal", next: "Normal", quickFormat: true, run: { italics: true, size: typeset ? Math.round(size * 1.4) : size }, paragraph: { ...centered, spacing: { before: 200 } } },
     { id: "Author", name: "Author", basedOn: "Normal", paragraph: { ...centered, spacing: { before: 400 } } },
@@ -200,25 +218,45 @@ function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSetting
   ];
 }
 
-function headingStyles(opts: DocxSettings, typeset: boolean) {
+/** Which of Word's heading styles the parts, chapters and scenes of this book take. */
+type HeadingLevels = { part?: number; chapter: number; scene?: number };
+
+function headingStyles(opts: DocxSettings, typeset: boolean, levels: HeadingLevels) {
   const size = opts.fontSize * 2;
   const line = Math.round(240 * opts.lineSpacing);
   const base = { font: opts.font, color: "000000" };
   const centered = { alignment: AlignmentType.CENTER, indent: { firstLine: 0 } };
+  const ALIGN = { left: AlignmentType.LEFT, center: AlignmentType.CENTER, right: AlignmentType.RIGHT };
+  /** The writer's choices for a level, in half points and twentieths of a point. */
+  const chosen = (h: HeadingStyle) => ({
+    run: { ...base, font: h.font || opts.font, size: Math.round(h.size * 2), bold: h.bold, italics: h.italic, allCaps: h.uppercase },
+    paragraph: {
+      alignment: ALIGN[h.align],
+      indent: { firstLine: 0 },
+      spacing: { before: Math.round(h.before * 20), after: Math.round(h.after * 20), line: Math.round(240 * h.lineSpacing) },
+    },
+    next: "FirstParagraph",
+  });
   // Word's own heading styles, so the navigation pane and the table of contents work.
-  return {
-    heading1: { run: { ...base, size: typeset ? Math.round(size * 1.5) : size, bold: true }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
-    heading2: { run: { ...base, size: typeset ? Math.round(size * 1.3) : size, bold: typeset }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
-    heading3: { run: { ...base, size, bold: false, italics: typeset }, paragraph: { ...centered, spacing: { before: line, after: line / 2 } }, next: "FirstParagraph" },
-    heading4: { run: { ...base, size, italics: true }, paragraph: { ...centered, spacing: { before: line / 2, after: line / 2 } }, next: "FirstParagraph" },
-    heading5: { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
-    heading6: { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
-  };
+  const all: NonNullable<NonNullable<IStylesOptions["default"]>["heading1"]>[] = [
+    { run: { ...base, size: typeset ? Math.round(size * 1.5) : size, bold: true }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
+    { run: { ...base, size: typeset ? Math.round(size * 1.3) : size, bold: typeset }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
+    { run: { ...base, size, bold: false, italics: typeset }, paragraph: { ...centered, spacing: { before: line, after: line / 2 } }, next: "FirstParagraph" },
+    { run: { ...base, size, italics: true }, paragraph: { ...centered, spacing: { before: line / 2, after: line / 2 } }, next: "FirstParagraph" },
+    { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
+    { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
+  ];
+  for (const kind of HEADING_KINDS) {
+    const level = levels[kind];
+    if (level !== undefined) all[level] = chosen(opts.headings[kind]);
+  }
+  return { heading1: all[0], heading2: all[1], heading3: all[2], heading4: all[3], heading5: all[4], heading6: all[5] };
 }
 
 /** Renders the book as a standard manuscript or as a typeset book. */
 /** Renders the book as a Word document; `coverPng`, a 2:3 image, fills the first page. */
-export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string }, coverPng?: Uint8Array): Document {
+export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: string; length?: string }, coverPng?: Uint8Array): Document {
+  footnotes = {};
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -251,16 +289,24 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     return separator === "pageBreak";
   };
 
+  /**
+   * A heading that opens a page starts a section of its own and takes, as space before, how
+   * far down the page it sits. Word keeps the space before of the first paragraph of a
+   * section, and drops it after a plain page break: so no empty line is needed above the heading.
+   */
+  const splits: number[] = [];
+  const sink = (kind: "part" | "chapter") => {
+    const h = opts.headings[kind];
+    return { spacing: { before: Math.round((h.top / 2.54) * 1440 + h.before * 20) } };
+  };
   const heading = (level: number, text: string, newPage: boolean, part = false) => {
-    const children = plain(text);
-    // Openings on a new page start lower down.
-    if (newPage) body.push(new Paragraph({ style: part ? "PartOpening" : "Opening", pageBreakBefore: started, children: [] }));
-    body.push(new Paragraph({ heading: HEADINGS[level], children }));
+    if (newPage) splits.push(body.length);
+    body.push(new Paragraph({ heading: HEADINGS[level], ...(newPage ? sink(part ? "part" : "chapter") : {}), children: plain(text) }));
   };
 
   const [pageWidth, pageHeight] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
   // The width between the margins, in pixels: no image is wider.
-  const textWidth = Math.floor(((pageWidth - 2 * (Math.min(pageWidth, pageHeight) < 18 ? 2 : 2.54)) / 2.54) * 96);
+  const textWidth = Math.floor(((pageWidth - opts.margins.left - opts.margins.right) / 2.54) * 96);
 
   const runs = (items: Run[]) => paragraphRuns(items, textWidth, opts.fontSize);
 
@@ -343,12 +389,16 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
 
   // Paratext before and after the novel, each on its own page.
   const { paratext } = book;
-  const front: Paragraph[][] = [];
+  // Pages of the front matter start lower down, the title lower still: as space before their
+  // first paragraph, each page in a section of its own, where Word keeps that space.
+  const drop = typeset ? 2400 : 2880;
+  const titleDrop = typeset ? 3600 : 4320;
+  const front: (Paragraph | Table | TableOfContents)[][] = [];
   if (paratext.dedication.trim()) {
-    front.push([new Paragraph({ style: "Opening", children: [] }), ...textParagraphs(paratext.dedication, "Dedication")]);
+    front.push(textParagraphs(paratext.dedication, "Dedication", drop));
   }
   if (paratext.epigraph.trim()) {
-    const page = [new Paragraph({ style: "Opening", children: [] }), ...textParagraphs(paratext.epigraph, "Epigraph")];
+    const page = textParagraphs(paratext.epigraph, "Epigraph", drop);
     if (paratext.epigraphSource.trim()) page.push(new Paragraph({ style: "EpigraphSource", children: plain(paratext.epigraphSource.trim()) }));
     front.push(page);
   }
@@ -360,21 +410,17 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       .map((p) => p.trim())
       .filter(Boolean)
       .map((p, i) => new Paragraph({ style: i === 0 ? "FirstParagraph" : "Normal", children: plain(p) }));
-    back.push([new Paragraph({ style: "Opening", children: [] }), new Paragraph({ heading: HEADINGS[chapterLevel], children: plain(label) }), ...paragraphs]);
+    back.push([new Paragraph({ heading: HEADINGS[chapterLevel], ...sink("chapter"), children: plain(label) }), ...paragraphs]);
   };
   backPage(paratextLabels.authorNote, paratext.authorNote);
   backPage(paratextLabels.acknowledgements, paratext.acknowledgements);
   if (paratext.colophon.trim()) back.push(textParagraphs(paratext.colophon, "Colophon"));
 
-  const onNewPage = (pages: (Paragraph | Table)[][]): (Paragraph | Table)[] =>
-    pages.flatMap((page) => [new Paragraph({ pageBreakBefore: true, children: [] }), ...page]);
-
   const titlePage: (Paragraph | Table)[] = [];
   if (opts.titlePage) {
     if (typeset) {
       titlePage.push(
-        new Paragraph({ style: "PartOpening", children: [] }),
-        new Paragraph({ style: "Title", children: plain(title) }),
+        new Paragraph({ style: "Title", spacing: { before: titleDrop }, children: plain(title) }),
       );
       if (book.subtitle) titlePage.push(new Paragraph({ style: "Subtitle", children: plain(book.subtitle) }));
       titlePage.push(
@@ -384,9 +430,8 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     } else {
       titlePage.push(
         new Paragraph({ style: "FirstParagraph", children: plain(book.author) }),
-        new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(`${approxWords(book.words, book.language)} ${labels.words}`) }),
-        new Paragraph({ style: "PartOpening", children: [] }),
-        new Paragraph({ style: "Title", children: plain(title.toUpperCase()) }),
+        new Paragraph({ style: "FirstParagraph", alignment: AlignmentType.RIGHT, children: plain(labels.length ?? `${approxWords(book.words, book.language)} ${labels.words}`) }),
+        new Paragraph({ style: "Title", spacing: { before: titleDrop }, children: plain(title.toUpperCase()) }),
       );
       if (book.subtitle) titlePage.push(new Paragraph({ style: "Subtitle", children: plain(book.subtitle) }));
       titlePage.push(new Paragraph({ style: "Author", children: plain(book.author) }));
@@ -395,12 +440,11 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
 
   const [width, height] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4;
   const twips = (cm: number) => Math.round((cm / 2.54) * 1440);
-  // Book-sized pages have narrower margins than office paper, where the manuscript keeps an inch.
-  const small = Math.min(width, height) < 18;
-  const margin = twips(small ? 2 : 2.54);
+  // Header and footer sit halfway into their margin, never further than on office paper.
+  const m = opts.margins;
   const page = {
     size: { width: twips(width), height: twips(height) },
-    margin: { top: margin, bottom: margin, left: margin, right: margin, header: twips(small ? 1 : 1.25), footer: twips(small ? 1 : 1.25) },
+    margin: { top: twips(m.top), bottom: twips(m.bottom), left: twips(m.left), right: twips(m.right), header: twips(Math.min(1.25, m.top / 2)), footer: twips(Math.min(1.25, m.bottom / 2)) },
   };
 
   const surname = surnames(book.authors);
@@ -437,32 +481,56 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
       ],
     });
   }
-  const frontMatter = [...titlePage, ...(titlePage.length ? onNewPage(front) : onNewPage(front).slice(1))];
+  // The table of contents: Word fills it in, with the page numbers, when the file is opened.
+  const contents = hasContents(book, opts);
+  if (contents) {
+    front.push([
+      new Paragraph({ style: "Centered", keepNext: true, spacing: { before: drop }, children: plain(paratextLabels.contents, { bold: true }) }),
+      new Paragraph({ style: "Normal", children: [] }),
+      new TableOfContents(paratextLabels.contents, { hyperlink: true, headingStyleRange: `1-${chapterLevel + 1}` }),
+    ]);
+  }
+  // The text before the first opening, then one piece for each part, chapter and back page that opens a page.
+  const cuts = [...new Set(splits)].filter((at) => at > 0);
+  const lead = splits.includes(0) ? [] : body.slice(0, cuts[0] ?? body.length);
+  const starts = splits.includes(0) ? [0, ...cuts] : cuts;
+  const text = [lead, ...starts.map((at, i) => body.slice(at, starts[i + 1] ?? body.length)), ...back].filter((piece) => piece.length);
+  const frontPages = [titlePage, ...front].filter((piece) => piece.length);
   if (typeset) {
     // Title page and front matter have no header and no page number; the text starts at page 1.
-    if (frontMatter.length) sections.push({ properties: { page }, children: frontMatter });
-    sections.push({
-      properties: { page: { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } }, type: SectionType.NEXT_PAGE },
-      headers: header ? { default: header } : undefined,
-      footers: footer ? { default: footer } : undefined,
-      children: [...body, ...onNewPage(back)],
-    });
+    for (const children of frontPages) sections.push({ properties: { page }, children });
+    text.forEach((children, i) =>
+      sections.push({
+        properties: { page: i === 0 ? { ...page, pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } } : page, type: SectionType.NEXT_PAGE },
+        headers: header ? { default: header } : undefined,
+        footers: footer ? { default: footer } : undefined,
+        children,
+      }),
+    );
   } else {
-    const children = [...frontMatter, ...(frontMatter.length && body.length ? onNewPage([body]) : body), ...onNewPage(back)];
-    sections.push({
-      properties: { titlePage: opts.titlePage, page },
-      headers: header ? { default: header, first: new Header({ children: [] }) } : undefined,
-      children,
-    });
+    // A manuscript counts its pages from the title page, which alone has no header.
+    [...frontPages, ...text].forEach((children, i) =>
+      sections.push({
+        properties: i === 0 ? { titlePage: opts.titlePage, page } : { page, type: SectionType.NEXT_PAGE },
+        headers: !header ? undefined : i === 0 ? { default: header, first: new Header({ children: [] }) } : { default: header },
+        children,
+      }),
+    );
   }
+
+  // A book without text is still a document.
+  if (!sections.length) sections.push({ properties: { page }, children: [] });
 
   return new Document({
     creator: book.author,
     title,
+    // Word asks to update the table of contents on opening: that is when it gets its page numbers.
+    features: contents ? { updateFields: true } : undefined,
+    footnotes,
     styles: {
       default: {
         document: { run: { font: opts.font, size: opts.fontSize * 2 } },
-        ...headingStyles(opts, typeset),
+        ...headingStyles(opts, typeset, { part: hasParts ? partLevel : undefined, chapter: chapterLevel, scene: book.gamebook ? undefined : sceneLevel }),
       },
       paragraphStyles: styles(opts, typeset, book.gamebook),
     },

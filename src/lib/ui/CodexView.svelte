@@ -22,6 +22,7 @@
   import Resizer from "./Resizer.svelte";
   import TransferDialog from "./TransferDialog.svelte";
   import { keepInView } from "./keepInView";
+  import ChipsInput from "./ChipsInput.svelte";
 
   interface Props {
     project: Project;
@@ -41,6 +42,12 @@
   let selectedType = $state<string | null>(null);
   let filter = $state("");
   let notes = $state<NoteInfo[]>([]);
+  /** The properties the project defines or its cards use, offered for a type. */
+  const knownProperties = $derived.by(() => {
+    const out = new Set<string>(Object.keys(p.project.settings.properties));
+    for (const note of notes) for (const key of Object.keys(note.properties)) if (key !== "type" && key !== "aliases") out.add(key);
+    return [...out].sort((a, b) => a.localeCompare(b));
+  });
   let saves = $state(0);
   let error = $state("");
   let editing = $state<{ id: string; draft: NoteType } | null>(null);
@@ -490,13 +497,10 @@
         >
           <label>{t("codex.typeName")} <input bind:value={editing.draft.name} /></label>
           <label>{t("codex.typeIcon")} <input bind:value={editing.draft.icon} size="4" /></label>
-          <label>
-            {t("codex.typeProperties")}
-            <input
-              value={editing.draft.properties.join(", ")}
-              onchange={(e) => (editing!.draft.properties = (e.currentTarget as HTMLInputElement).value.split(",").map((s) => s.trim()).filter(Boolean))}
-            />
-          </label>
+          <div class="chosen">
+            <span>{t("codex.typeProperties")}</span>
+            <ChipsInput values={editing.draft.properties} suggestions={knownProperties} label={t("codex.typeProperties")} onChange={(list) => (editing!.draft.properties = list)} />
+          </div>
           <p class="hint">{t("codex.typeFolder", { folder: `${p.project.settings.folders.codex}/${editing.draft.folder}` })}</p>
           <div class="form-actions">
             <button type="submit" class="primary">{t("settings.save")}</button>
@@ -614,7 +618,9 @@
     background: var(--bg-active);
   }
   .type .icon {
-    width: 20px;
+    flex: none;
+    white-space: nowrap;
+    min-width: 20px;
     text-align: center;
   }
   .type .name {
@@ -685,7 +691,8 @@
     border-radius: 8px;
     background: var(--bg-panel);
   }
-  .type-form label {
+  .type-form label,
+  .type-form .chosen {
     display: grid;
     gap: 4px;
     font-size: 12px;

@@ -11,10 +11,11 @@
     "primi-passi.md": () => import("../../../docs/primi-passi.md?raw"),
     "first-steps.md": () => import("../../../docs/first-steps.md?raw"),
     "guida.md": () => import("../../../docs/guida.md?raw"),
+    "guide.md": () => import("../../../docs/guide.md?raw"),
     "novita.md": () => import("../../../docs/novita.md?raw"),
     "whats-new.md": () => import("../../../docs/whats-new.md?raw"),
   };
-  const images = import.meta.glob("../../../docs/img/*", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
+  const images = import.meta.glob(["../../../docs/img/*.png", "../../../docs/img/en/*.png"], { eager: true, query: "?url", import: "default" }) as Record<string, string>;
   const imageUrl = (src: string) => images[`../../../docs/${src.replace(/^\.\//, "")}`] ?? null;
   /** Pages of the docs folder that are not in the app, read on GitHub. */
   const ONLINE = "https://github.com/lucadj77/dante/blob/main/docs/";
@@ -22,10 +23,10 @@
   const english = $derived(!app.settings.language.startsWith("it"));
   const files = $derived<Record<HelpPage, string>>({
     first: english ? "first-steps.md" : "primi-passi.md",
-    guide: "guida.md",
+    guide: english ? "guide.md" : "guida.md",
     news: english ? "whats-new.md" : "novita.md",
   });
-  const pageOf = (file: string): HelpPage | null => (Object.entries(files).find(([, f]) => f === file)?.[0] as HelpPage) ?? (file === "guida.md" ? "guide" : null);
+  const pageOf = (file: string): HelpPage | null => (Object.entries(files).find(([, f]) => f === file)?.[0] as HelpPage) ?? (file === "guida.md" || file === "guide.md" ? "guide" : null);
 
   let page = $state.raw<GuidePage | null>(null);
   let content = $state<HTMLElement>();
@@ -40,6 +41,8 @@
       if (files[help.page] !== file) return;
       page = guideToHtml(m.default, { image: imageUrl });
       await tick();
+      if (help.chapter) pending = page.headings.find((h) => h.level === 2 && h.text.startsWith(`${help.chapter}. `))?.id ?? "";
+      help.chapter = 0;
       if (pending) go(pending);
       else content?.scrollTo({ top: 0 });
       pending = "";
@@ -112,7 +115,6 @@
     <button class="close" aria-label={t("help.close")} title={t("help.close")} onclick={() => (help.open = false)}><Icon name="cross" /></button>
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <article bind:this={content} onclick={click}>
-      {#if help.page === "guide" && english}<p class="note">{t("help.italianOnly")}</p>{/if}
       {#if page}
         <!-- Made by guideToHtml from Dante's own pages, with everything else escaped. -->
         {@html page.html}

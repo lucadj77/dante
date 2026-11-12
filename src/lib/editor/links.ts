@@ -42,6 +42,8 @@ export interface LinkHandler {
    * shown (whose own name is not underlined); null when they are turned off.
    */
   names?(): { matcher: NameMatcher; own: string } | null;
+  /** The words the spelling checker leaves alone: the novel's names and its own words. */
+  knownWords?(): Set<string> | null;
   /** A right click on a name found: the menu of its note; `link` writes the name as a link to `target`. */
   named?(found: NameFound, at: { x: number; y: number }, link: (target: string) => void): void;
   /** In a gamebook paragraph: references to other paragraphs instead of links to notes. */

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Dialog from "./Dialog.svelte";
   import ErrorText from "./ErrorText.svelte";
   import type { Snippet } from "svelte";
   import type { DocxContent } from "$lib/core/import/docx";
@@ -16,6 +17,7 @@
     type Mark,
   } from "$lib/core/import/structure";
   import { num, t } from "$lib/state.svelte";
+  import { textStats } from "$lib/core/stats";
   import type { MessageKey } from "$lib/i18n/en";
 
   interface Props {
@@ -62,6 +64,9 @@
     return text.length > 220 ? text.slice(0, 220) + "…" : text;
   }
 
+  /** Characters, spaces included, as the project will count them. */
+  const characters = (text: string): number => textStats(text).characters;
+
   function words(text: string): number {
     return text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
   }
@@ -96,13 +101,12 @@
   };
 </script>
 
-<div class="overlay" role="presentation">
-  <div class="dialog" role="dialog" aria-modal="true" aria-label={t("import.preview.title", { file: fileName })} tabindex="-1" onkeydown={(e) => e.key === "Escape" && onCancel()}>
+<Dialog label={t("import.preview.title", { file: fileName })} onClose={onCancel} width={1100} fill outside={false}>
     <header>
       <h2>{t("import.preview.title", { file: fileName })}</h2>
       <p class="summary">
         {#if total.parts}{t("import.parts", { n: total.parts })},{/if}
-        {t("import.counts", { chapters: total.chapters, scenes: total.scenes, words: num(total.words) })}
+        {t("import.counts", { chapters: total.chapters, scenes: total.scenes, words: num(total.words), characters: num(total.characters) })}
       </p>
       <p class="note">{t("import.preview.how")}</p>
     </header>
@@ -187,14 +191,14 @@
               <li class="chapter">
                 <button onclick={() => show(chapter.at ?? chapter.scenes[0]?.at)}>
                   <span class="name">{chapter.title}</span>
-                  <span class="muted">{t("import.chapterInfo", { scenes: chapter.scenes.length, words: num(chapter.scenes.reduce((n, s) => n + words(s.text), 0)) })}</span>
+                  <span class="muted">{t("import.chapterInfo", { scenes: chapter.scenes.length, words: num(chapter.scenes.reduce((n, s) => n + words(s.text), 0)), characters: num(chapter.scenes.reduce((n, s) => n + characters(s.text), 0)) })}</span>
                 </button>
                 <ol>
                   {#each chapter.scenes as scene, s (s)}
                     <li class="scene">
                       <button onclick={() => show(scene.at)}>
                         <span class="name">{scene.title}</span>
-                        <span class="muted">{plainText(scene.text.split("\n")[0] ?? "").slice(0, 60) || "—"} · {t("import.words", { n: num(words(scene.text)) })}</span>
+                        <span class="muted">{plainText(scene.text.split("\n")[0] ?? "").slice(0, 60) || "—"} · {t("import.words", { n: num(words(scene.text)), c: num(characters(scene.text)) })}</span>
                       </button>
                     </li>
                   {/each}
@@ -215,30 +219,9 @@
         <button disabled={busy} onclick={onCancel}>{t("welcome.cancel")}</button>
       </div>
     </footer>
-  </div>
-</div>
+</Dialog>
 
 <style>
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.35);
-    display: grid;
-    place-items: center;
-    z-index: 40;
-  }
-  .dialog {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    width: min(1100px, calc(100vw - 32px));
-    height: calc(100vh - 48px);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px 20px;
-    text-align: left;
-  }
   h2 {
     font-size: 16px;
     margin: 0 0 4px;

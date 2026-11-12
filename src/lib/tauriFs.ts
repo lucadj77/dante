@@ -32,6 +32,10 @@ export class TauriFs implements ProjectFs {
   writeBytes(path: string, content: Uint8Array) {
     return invoke<void>("write_bytes", { root: this.root, path, content: Array.from(content) });
   }
+  /** Size and modification time of every file, by path, in one call. */
+  async signatures(skip: string[]) {
+    return new Map(Object.entries(await invoke<Record<string, string>>("file_signatures", { root: this.root, skip })));
+  }
   /** Opens the file with the application the system uses for its kind. */
   openWithSystem(path: string) {
     return invoke<void>("open_with_system", { root: this.root, path });

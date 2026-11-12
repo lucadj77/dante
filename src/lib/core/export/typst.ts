@@ -1,6 +1,6 @@
 import { pale } from "./docx";
-import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
-import { PARATEXT_LABELS, approxWords } from "./docx";
+import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type HeadingKind, type HeadingStyle, type Separator } from "../settings";
+import { PARATEXT_LABELS, approxWords, hasContents } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
 
 // The book as a Typst document, compiled to PDF by the desktop app. Every piece of text
@@ -35,6 +35,7 @@ function inlineImage(r: Run, maxWidth: number): string {
 
 /** A run of text; images are no wider than `maxWidth` inches. */
 function run(r: Run, maxWidth = 6.5): string {
+  if (r.footnote) return `#footnote[${r.footnote.map((n) => run(n, maxWidth)).join("")}]`;
   if (r.image) return inlineImage(r, maxWidth);
   if (r.lineBreak) return "#linebreak()";
   if (r.code) return `#raw(${str(r.text)})`;
@@ -64,7 +65,7 @@ const cm = (n: number) => `${+n.toFixed(2)}cm`;
  * `coverSvg` opens it on a page of its own; with `coverImage`, a picture of the project,
  * the picture fills that page and `coverSvg` (the texts) lies over it.
  */
-export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string }, coverSvg = "", coverImage = ""): string {
+export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: string; length?: string }, coverSvg = "", coverImage = ""): string {
   const typeset = opts.profile === "typeset";
   const title = book.title || "Untitled";
   const hasParts = book.entries.some((e) => e.kind === "part");
@@ -73,10 +74,8 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   const paratextLabels = PARATEXT_LABELS[book.language.slice(0, 2)] ?? PARATEXT_LABELS.en;
 
   const [width, height] = opts.pageSize === "custom" ? [opts.pageWidth, opts.pageHeight] : (PAGE_SIZES[opts.pageSize] ?? PAGE_SIZES.a4);
-  // Book-sized pages have narrower margins than office paper, where the manuscript keeps an inch.
-  const small = Math.min(width, height) < 18;
-  const margin = small ? 2 : 2.54;
-  const textWidth = width - 2 * margin;
+  const m = opts.margins;
+  const textWidth = width - m.left - m.right;
   // Lines measured from ascender to descender are about one font size apart; the leading adds the rest.
   const leading = Math.max(0, (opts.lineSpacing - 1) * 1.2);
   const size = opts.fontSize;
@@ -89,7 +88,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
 
   emit(`// Made by Dante from the manuscript of ${str(title)}. Edit the novel, not this file.`);
   emit(`#set document(title: ${str(title)}, author: (${book.authors.map((a) => `${str(a)},`).join(" ")}))`);
-  emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: ${cm(margin)}, header: none, footer: none)`);
+  emit(`#set page(width: ${cm(width)}, height: ${cm(height)}, margin: (top: ${cm(m.top)}, bottom: ${cm(m.bottom)}, left: ${cm(m.left)}, right: ${cm(m.right)}), header: none, footer: none)`);
   emit(`#set text(font: ${fonts(opts.font)}, size: ${size}pt, lang: ${str(book.language.slice(0, 2) || "en")}, hyphenate: ${typeset}, top-edge: "ascender", bottom-edge: "descender")`);
   // A gamebook's paragraphs have their own alignment, indent and space after.
   const gx = book.gamebook;
@@ -98,12 +97,25 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   // The text keeps the quotes the author or the typography settings chose.
   emit(`#set smartquote(enabled: false)`);
   const headingSizes = typeset ? [1.5, 1.3, 1, 1, 1, 1] : [1, 1, 1, 1, 1, 1];
+  // Parts, chapters and scenes look as the writer chose; a gamebook's numbers have their own look.
+  const chosen: [number, HeadingKind][] = [...(hasParts ? [[1, "part"] as [number, HeadingKind]] : []), [chapterLevel, "chapter"], ...(gx ? [] : [[sceneLevel, "scene"] as [number, HeadingKind]])];
+  // Space in points, plus the gap the text itself leaves between two lines.
+  const gap = leading * size;
+  const look = (h: HeadingStyle) =>
+    [
+      `set align(${h.align})`,
+      `set par(leading: ${+Math.max(0, (h.lineSpacing - 1) * 1.2).toFixed(2)}em)`,
+      `set text(${h.font ? `font: ${fonts(h.font)}, ` : ""}size: ${+h.size.toFixed(2)}pt, weight: ${h.bold ? '"bold"' : '"regular"'}, style: ${h.italic ? '"italic"' : '"normal"'})`,
+      `block(above: ${+(h.before + gap).toFixed(2)}pt, below: ${+(h.after + gap).toFixed(2)}pt, ${h.uppercase ? "upper(it.body)" : "it.body"})`,
+    ].join("; ");
   emit(`#show heading: it => {`);
-  emit(`  set align(center)`);
   emit(`  set par(first-line-indent: 0pt, justify: false)`);
-  emit(`  let sizes = (${headingSizes.map((s) => `${s}em`).join(", ")})`);
-  emit(`  set text(size: sizes.at(calc.min(it.level, 6) - 1), weight: if it.level <= ${chapterLevel} or ${typeset} and it.level == 2 { "bold" } else { "regular" }, style: if it.level > ${chapterLevel} and ${typeset} { "italic" } else { "normal" })`);
-  emit(`  block(above: ${+(leading + 1).toFixed(2)}em, below: ${+(leading + 1).toFixed(2)}em, it.body)`);
+  emit(`  ${chosen.map(([level, kind]) => `if it.level == ${level} { ${look(opts.headings[kind])} } else `).join("")}{`);
+  emit(`    set align(center)`);
+  emit(`    let sizes = (${headingSizes.map((s) => `${s}em`).join(", ")})`);
+  emit(`    set text(size: sizes.at(calc.min(it.level, 6) - 1), weight: if it.level <= ${chapterLevel} or ${typeset} and it.level == 2 { "bold" } else { "regular" }, style: if it.level > ${chapterLevel} and ${typeset} { "italic" } else { "normal" })`);
+  emit(`    block(above: ${+(leading + 1).toFixed(2)}em, below: ${+(leading + 1).toFixed(2)}em, it.body)`);
+  emit(`  }`);
   emit(`}`);
   emit(`#let separator(body) = align(center, block(above: ${+(leading + 0.6).toFixed(2)}em, below: ${+(leading + 0.6).toFixed(2)}em, body))`);
   emit("");
@@ -126,7 +138,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
         if (book.subtitle) emit(`#align(center)[#v(0.5em)#text(size: 1.4em, style: "italic", ${str(book.subtitle)})]`);
         emit(`#align(center)[#v(2em)#"❧"#v(1em)#${str(book.author)}]`);
       } else {
-        emit(`#grid(columns: (1fr, 1fr), ${str(book.author)}, align(right, ${str(`${approxWords(book.words, book.language)} ${labels.words}`)}))`);
+        emit(`#grid(columns: (1fr, 1fr), ${str(book.author)}, align(right, ${str(labels.length ?? `${approxWords(book.words, book.language)} ${labels.words}`)}))`);
         emit(`#v(${cm(partOpening)})`);
         emit(`#align(center)[#${str(title.toUpperCase())}]`);
         if (book.subtitle) emit(`#align(center)[#emph(${str(book.subtitle)})]`);
@@ -147,6 +159,14 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
       emit(`#v(${cm(opening)})`);
       for (const p of paragraphs(paratext.epigraph)) emit(`#align(right, block(width: 70%, align(right, emph[${lines(p)}])))\n`);
       if (paratext.epigraphSource.trim()) emit(`#align(right)[#${str(paratext.epigraphSource.trim())}]`);
+    });
+  }
+
+  // The table of contents, of parts and chapters, on a page of its own.
+  if (hasContents(book, opts)) {
+    page(() => {
+      emit(`#v(${cm(opening)})`);
+      emit(`#outline(title: [${lines(paratextLabels.contents)}], depth: ${chapterLevel})`);
     });
   }
 
@@ -184,7 +204,9 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
     return separator === "pageBreak";
   };
   const heading = (level: number, text: string, newPage: boolean, part = false) => {
-    if (newPage) emit(`#v(${cm(part ? partOpening : opening)})`);
+    // A heading that opens a page sits as far down as the writer chose.
+    const top = opts.headings[part ? "part" : "chapter"].top;
+    if (newPage && top > 0) emit(`#v(${cm(top)})`);
     emit(`#heading(level: ${level})[${lines(text)}]`);
   };
   const runs = (items: Run[]) => runsOf(items, textWidth / 2.54);
@@ -267,7 +289,7 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   const backPage = (label: string, text: string) => {
     if (!text.trim()) return;
     emit("#pagebreak()");
-    emit(`#v(${cm(opening)})`);
+    if (opts.headings.chapter.top > 0) emit(`#v(${cm(opts.headings.chapter.top)})`);
     emit(`#heading(level: ${chapterLevel}, outlined: false)[#${str(label)}]`);
     for (const p of paragraphs(text)) emit(`${lines(p)}\n`);
   };

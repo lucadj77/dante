@@ -9,7 +9,7 @@
   import { isWritingDay } from "$lib/core/sessions";
   import { writtenToday } from "./sessions.svelte";
   import type { MessageKey } from "$lib/i18n";
-  import { num, t, tu } from "$lib/state.svelte";
+  import { app, num, t, tu } from "$lib/state.svelte";
   import SnapshotsPanel from "./SnapshotsPanel.svelte";
   import PanelSection from "./PanelSection.svelte";
   import PropertyAdd from "./PropertyAdd.svelte";
@@ -31,6 +31,8 @@
     beforeRead: (path: string) => Promise<void>;
     onRestored: () => void;
     onRename: (path: string, title: string, file?: boolean) => void;
+    /** Says what was written today even when the status bar, which says it too, is shown. */
+    showToday?: boolean;
   }
   let p: Props = $props();
 
@@ -140,6 +142,8 @@
   }
   const sceneStats = $derived(p.activeText !== null ? textStats(p.activeText) : null);
   const viewStats = $derived(sum(p.sceneTexts));
+  /** The whole view is this one scene: its numbers would be written twice. */
+  const alone = $derived(!!sceneStats && sceneStats.words === viewStats.words && sceneStats.characters === viewStats.characters);
   const format = (n: number) => num(n);
 </script>
 
@@ -263,31 +267,32 @@
   <PanelSection id="statistics" title={t("panel.statistics")}>
     <table>
       <thead>
-        <tr><th></th><th>{t("kind.scene")}</th><th>{t("panel.view")}</th></tr>
+        <tr><th></th><th>{t("kind.scene")}</th>{#if !alone}<th>{t("panel.view")}</th>{/if}</tr>
       </thead>
       <tbody>
         <tr>
           <th>{t("stats.words")}</th>
           <td>{sceneStats ? format(sceneStats.words) : "–"}</td>
-          <td>{format(viewStats.words)}</td>
+          {#if !alone}<td>{format(viewStats.words)}</td>{/if}
         </tr>
         <tr>
           <th>{t("stats.characters")}</th>
           <td>{sceneStats ? format(sceneStats.characters) : "–"}</td>
-          <td>{format(viewStats.characters)}</td>
+          {#if !alone}<td>{format(viewStats.characters)}</td>{/if}
         </tr>
         <tr>
           <th>{t("stats.charactersNoSpaces")}</th>
           <td>{sceneStats ? format(sceneStats.charactersNoSpaces) : "–"}</td>
-          <td>{format(viewStats.charactersNoSpaces)}</td>
+          {#if !alone}<td>{format(viewStats.charactersNoSpaces)}</td>{/if}
         </tr>
         <tr>
           <th>{t("stats.readingTime")}</th>
-          <td>{sceneStats ? t("stats.minutes", { n: readingMinutes(sceneStats.words) }) : "–"}</td>
-          <td>{t("stats.minutes", { n: readingMinutes(viewStats.words) })}</td>
+          <td>{sceneStats ? t("stats.minutes", { n: readingMinutes(sceneStats.words, p.project.settings.style.readingSpeed) }) : "–"}</td>
+          {#if !alone}<td>{t("stats.minutes", { n: readingMinutes(viewStats.words, p.project.settings.style.readingSpeed) })}</td>{/if}
         </tr>
       </tbody>
     </table>
+    {#if p.showToday || !app.settings.statusBar}
     <p class="today">
       {!isWritingDay(new Date(), p.project.settings.goals.days)
         ? today
@@ -297,6 +302,7 @@
           ? tu("panel.todayGoal", unit, { words: format(today), goal: format(p.project.settings.goals.daily) })
           : tu("panel.today", unit, { words: format(today) })}
     </p>
+    {/if}
   </PanelSection>
 </div>
 

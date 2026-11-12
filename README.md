@@ -4,7 +4,7 @@ A light writing app for novelists. A project is just a folder of Markdown files,
 same novel opens in Obsidian, in Claude Code or in any text editor, and can be shared
 through Google Drive or Dropbox.
 
-How to use it is explained in the [user guide](docs/guida.md) (Italian), with a shorter
+How to use it is explained in the [user guide](docs/guide.md) ([guida](docs/guida.md)), with a shorter
 [first steps](docs/first-steps.md) page ([primi passi](docs/primi-passi.md)) and the list of
 changes in each version ([what's new](docs/whats-new.md), [novità](docs/novita.md)). The same
 pages are in the app's Help. Beta testers start from [Provare Dante](docs/beta.md): download,

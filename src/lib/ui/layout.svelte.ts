@@ -22,7 +22,10 @@ export const MAX_PANEL = 560;
 export const MIN_MIDDLE = 320;
 
 function load(): Layout {
-  const fallback: Layout = { wideNav: false, left: true, right: true, widths: {} };
+  // The names of the sections show from the start where there is room for them; a narrow
+  // window keeps the icons alone, so the bars above the text stay on one line.
+  const roomy = typeof window === "undefined" || window.innerWidth >= 1400;
+  const fallback: Layout = { wideNav: roomy, left: true, right: true, widths: {} };
   try {
     const stored = JSON.parse(localStorage.getItem(KEY) ?? "{}");
     if (!stored || typeof stored !== "object") return fallback;

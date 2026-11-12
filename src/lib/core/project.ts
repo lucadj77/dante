@@ -3,6 +3,7 @@ import { readProperties, renameProperty, replaceBody, splitNote, writeProperties
 import {
   enclosing,
   findNode,
+  flatten,
   folderNotePath,
   GOAL,
   loadManuscript,
@@ -63,7 +64,7 @@ import type { ImportedNote } from "./import/scrivener";
 import { coverFor, type CoverSettings } from "./cover";
 import { EXPORT_FOLDER } from "./export/files";
 import { attachmentsFolderName, safeFileName } from "./images";
-import { deleteFromTrash, noteTrashed, restoreFromTrash, TRASH, type TrashItem } from "./trash";
+import { deleteFromTrash, listTrash, noteTrashed, restoreFromTrash, TRASH, type TrashItem } from "./trash";
 import { bodyOf, findIn, occurrences, replaceIn, type FindOptions, type Occurrence, type Range } from "./replace";
 
 const NO_TEXT: TextSize = { words: 0, characters: 0 };
@@ -97,6 +98,21 @@ export function canRenameProperty(settings: NovelSettings, name: string): boolea
 
 const SKIPPED = new Set([".dante", ".obsidian", ".git", ".trash", "node_modules", EXPORT_FOLDER]);
 
+/** The reordering under way, kept on disk until it is finished. */
+const MOVE_JOURNAL = ".dante/moves.json";
+/** The project's id, under which this computer keeps what belongs to it, such as its own look. */
+const ID_FILE = ".dante/id";
+interface MoveJournal {
+  /** Every file of the project before the moves, for the links. */
+  before: string[];
+  moves: Move[];
+  /** The snapshots' folders that follow their scenes, once known. */
+  snapshots?: Move[];
+  /** The steps completed: "files", "snapshots", "history". */
+  done: string[];
+}
+const tempName = (m: Move, i: number) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`);
+
 /** Scenes cannot be merged while one of them has a conflict copy to settle. */
 export class MergeConflictError extends Error {
   constructor(public path: string) {
@@ -107,6 +123,26 @@ export class MergeConflictError extends Error {
 interface Move {
   from: string;
   to: string;
+}
+
+/** A change to the order of the book that can be taken back. */
+export type StructureChange = "move" | "split" | "merge";
+
+/** What a change did, in order: files renamed, or an item created. */
+type UndoStep = { moves: Move[]; texts: Rewrite[] } | { created: string };
+
+/** A note whose links were rewritten after a move: where it is, its text before and after. */
+interface Rewrite {
+  path: string;
+  old: string;
+  now: string;
+}
+
+/** The last change cannot be taken back any more: something else changed since. */
+export class StaleUndoError extends Error {
+  constructor() {
+    super("The last change can no longer be undone");
+  }
 }
 
 /** Where a group of imported notes goes: a type of the Story Bible, Research, the Laboratory, or nowhere. */
@@ -141,6 +177,10 @@ export class Project {
   /** Scenes already copied to a snapshot in this session. */
   private snapshotted = new Set<string>();
   private indexing: Promise<NoteIndex> | null = null;
+  /** Set when opening found a reordering cut short: it was undone, or brought to its end. */
+  recovered: "undone" | "completed" | null = null;
+  /** The id this computer keeps the project's own things under; "" until one is needed. */
+  id = "";
 
   /**
    * @param language Language of a project that has no settings file yet, usually the
@@ -196,7 +236,7 @@ export class Project {
       const image = await project.addAttachment(details.coverImage.name, details.coverImage.data);
       await project.saveSettings({ ...project.settings, cover: { ...project.settings.cover, image } });
     }
-    if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views)) await project.createView(name, view);
+    if (views) for (const [name, view] of starterViews(statusProperty(settings.language), views, settings.goals.unit)) await project.createView(name, view);
     if (!names) return { project, scene: "" };
     const chapter = await project.createContainer(project.manuscript.path, 0, names.chapter);
     const scene = await project.createScene(chapter, 0, names.scene);
@@ -205,8 +245,31 @@ export class Project {
 
   static async open(fs: ProjectFs, language = "en"): Promise<Project> {
     const project = new Project(fs, language);
+    try {
+      project.recovered = await project.recoverMoves();
+    } catch {
+      // A folder that cannot be written now opens all the same: the journal waits for next time.
+    }
     await project.reload();
+    try {
+      if (await fs.exists(ID_FILE)) project.id = (await fs.readText(ID_FILE)).trim();
+    } catch {
+      // No id: the project follows the look of the computer.
+    }
     return project;
+  }
+
+  /**
+   * A name for this project that stays when its folder is moved or renamed, written in the
+   * project the first time something on this computer is kept under it.
+   */
+  async ensureId(): Promise<string> {
+    if (!this.id) {
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
+      await this.fs.writeText(ID_FILE, id + "\n");
+      this.id = id;
+    }
+    return this.id;
   }
 
   async reload(): Promise<void> {
@@ -225,7 +288,17 @@ export class Project {
         }
       }
     }
-    this.manuscript = await loadManuscript(this.fs, this.settings);
+    // The scenes that have not changed since the last index are not read again for the tree.
+    const known = await this.unchanged();
+    const reader: ProjectFs = known
+      ? Object.assign(Object.create(this.fs) as ProjectFs, {
+          readText: (path: string) => {
+            const text = known(path);
+            return text === undefined ? this.fs.readText(path) : Promise.resolve(text);
+          },
+        })
+      : this.fs;
+    this.manuscript = await loadManuscript(reader, this.settings);
     const folders: string[] = [];
     this.files = await this.scan("", folders);
     this.folders = folders;
@@ -250,8 +323,41 @@ export class Project {
 
   /** What every note says and links to; read on first use after each reload. */
   index(): Promise<NoteIndex> {
-    this.indexing ??= NoteIndex.build(this.fs, this.files, this.settings.folders.manuscript);
+    this.indexing ??= this.buildIndex();
     return this.indexing;
+  }
+
+  /** The last index built, with the signature each file had then: what need not be read again. */
+  private indexed: { index: NoteIndex; signatures: Map<string, string> } | null = null;
+
+  /**
+   * Gives the text of a note as the last index read it, when the disk says it is the same
+   * file as then; null where the disk cannot tell or nothing was read yet. `seen` receives
+   * the signatures of now.
+   */
+  private async unchanged(seen?: (signatures: Map<string, string>) => void): Promise<((path: string) => string | undefined) | null> {
+    let signatures: Map<string, string> | null = null;
+    try {
+      signatures = (await this.fs.signatures?.([...SKIPPED])) ?? null;
+    } catch {
+      signatures = null;
+    }
+    if (!signatures) return null;
+    seen?.(signatures);
+    const previous = this.indexed;
+    if (!previous) return null;
+    return (path: string) => {
+      const now = signatures!.get(path);
+      return now !== undefined && now === previous.signatures.get(path) ? previous.index.notes.get(path)?.text : undefined;
+    };
+  }
+
+  private async buildIndex(): Promise<NoteIndex> {
+    let signatures: Map<string, string> | null = null;
+    const known = await this.unchanged((s) => (signatures = s));
+    const index = await NoteIndex.build(this.fs, this.files, this.settings.folders.manuscript, known ?? undefined);
+    this.indexed = signatures ? { index, signatures } : null;
+    return index;
   }
 
   async saveSettings(settings: NovelSettings): Promise<void> {
@@ -286,6 +392,88 @@ export class Project {
 
   /** Called before files are moved or renamed, to write what the editors still hold. */
   beforeMove: (() => Promise<void>) | null = null;
+
+  /** The last move, split or merge in the manuscript, while it can still be taken back. */
+  lastChange: { kind: StructureChange; undo: () => Promise<void> } | null = null;
+  /** The steps of the change under way; null when none is being followed. */
+  private steps: UndoStep[] | null = null;
+  private undoing = false;
+  /** Where the notes rewritten by the moves under way are noted down. */
+  private rewrites: Rewrite[] | null = null;
+
+  /**
+   * Runs a change to the order of the book and remembers how to take it back: its renames
+   * in reverse, and what it created to the trash. `around` adds what only the change knows:
+   * `first` runs before the files go back, `last` after.
+   */
+  private async tracked<T>(
+    kind: StructureChange,
+    run: () => Promise<T>,
+    around?: (result: T) => { first?: () => Promise<void>; last?: () => Promise<void> },
+  ): Promise<T> {
+    // Part of a larger change, which is the one to take back.
+    if (this.steps || this.undoing) return run();
+    const steps: UndoStep[] = (this.steps = []);
+    this.lastChange = null;
+    try {
+      const result = await run();
+      const extra = around?.(result);
+      this.lastChange =
+        steps.length || extra
+          ? {
+              kind,
+              undo: async () => {
+                await extra?.first?.();
+                await this.rewind(steps);
+                await extra?.last?.();
+                await this.reload();
+              },
+            }
+          : null;
+      return result;
+    } finally {
+      this.steps = null;
+    }
+  }
+
+  private async rewind(steps: UndoStep[]): Promise<void> {
+    this.undoing = true;
+    try {
+      for (const step of [...steps].reverse()) {
+        if ("moves" in step) {
+          for (const move of step.moves) if (!(await this.fs.exists(move.to))) throw new StaleUndoError();
+          // Links are written the shortest way, which may differ from how they were: notes
+          // not touched since get their text back exactly.
+          const untouched: Rewrite[] = [];
+          for (const text of step.texts) {
+            if ((await this.fs.exists(text.path)) && (await this.fs.readText(text.path)) === text.now) untouched.push(text);
+          }
+          const moved = await this.apply(step.moves.map((m) => ({ from: m.to, to: m.from })));
+          for (const text of untouched) await this.fs.writeText(moved(text.path), text.old);
+        } else if (await this.fs.exists(step.created)) {
+          await this.toTrash(step.created);
+          await this.reload();
+        }
+      }
+    } finally {
+      this.undoing = false;
+    }
+  }
+
+  /** Takes back the last move, split or merge, if nothing else changed the book since. */
+  async undoLastChange(): Promise<void> {
+    const change = this.lastChange;
+    if (!change) return;
+    this.lastChange = null;
+    await this.beforeMove?.();
+    await change.undo();
+  }
+
+  /** Another change to the files: the one remembered can no longer be taken back safely. */
+  private forgetChange(): void {
+    if (!this.steps && !this.undoing) this.lastChange = null;
+  }
+
 
   /** Called after files were moved or renamed, with where any old path went. */
   onMoved: ((moved: (path: string) => string) => void) | null = null;
@@ -502,6 +690,14 @@ export class Project {
    * Returns where each item ended up.
    */
   async transfer(paths: string[], target: { dir: string; index?: number }, copy: boolean): Promise<string[]> {
+    if (copy) {
+      this.forgetChange();
+      return this.transferNow(paths, target, copy);
+    }
+    return this.tracked("move", () => this.transferNow(paths, target, copy));
+  }
+
+  private async transferNow(paths: string[], target: { dir: string; index?: number }, copy: boolean): Promise<string[]> {
     const sources = paths.filter((path, i) => paths.indexOf(path) === i && !paths.some((other) => other !== path && isWithin(path, other)));
     for (const path of sources) if (isWithin(target.dir, path)) throw new Error("Cannot move an item into itself");
     await this.beforeMove?.();
@@ -638,6 +834,33 @@ export class Project {
     const text = (await this.fs.exists(file)) ? await this.fs.readText(file) : "";
     await this.fs.writeText(file, writeProperties(text, changes));
     await this.reload();
+  }
+
+  /** The same change to the properties of several scenes, chapters or parts at once. */
+  async setPropertiesOf(paths: string[], changes: Properties): Promise<void> {
+    await this.setPropertiesEach(paths.map((path) => ({ path, changes })));
+  }
+
+  /** Changes to the properties of several scenes, chapters or parts, each its own, in one step. */
+  async setPropertiesEach(items: { path: string; changes: Properties }[]): Promise<void> {
+    for (const { path, changes } of items) {
+      const file = this.propertiesFile(path);
+      const text = (await this.fs.exists(file)) ? await this.fs.readText(file) : "";
+      const updated = writeProperties(text, changes);
+      if (updated !== text) await this.fs.writeText(file, updated);
+    }
+    await this.reload();
+  }
+
+  /** The scenes, chapters and parts that have a goal of their own, in reading order. */
+  async ownGoals(): Promise<{ path: string; title: string; goal: number }[]> {
+    const out: { path: string; title: string; goal: number }[] = [];
+    for (const node of flatten(this.manuscript)) {
+      if (node.kind === "manuscript") continue;
+      const goal = Number((await this.properties(node.path))[GOAL]);
+      if (Number.isFinite(goal) && goal > 0) out.push({ path: node.path, title: node.title, goal });
+    }
+    return out;
   }
 
   /**
@@ -944,6 +1167,10 @@ export class Project {
 
   /** Puts `path` at `index` among the children of `parentPath`. */
   async move(path: string, parentPath: string, index: number): Promise<string> {
+    return this.tracked("move", () => this.moveNow(path, parentPath, index));
+  }
+
+  private async moveNow(path: string, parentPath: string, index: number): Promise<string> {
     const node = this.node(path);
     const parent = this.node(parentPath);
     if (parentPath === path || parentPath.startsWith(path + "/")) throw new Error("Cannot move an item into itself");
@@ -1010,6 +1237,7 @@ export class Project {
    * where Obsidian keeps deleted notes too, so it can be recovered. Returns where it went.
    */
   async trash(path: string): Promise<string> {
+    this.forgetChange();
     // Its conflict copies go with it, or they would show as files of their own.
     for (const copy of this.conflictCopies(path)) await this.toTrash(copy);
     const target = await this.toTrash(path);
@@ -1028,6 +1256,7 @@ export class Project {
 
   /** Puts an item of the trash back where it was (or in the Laboratory); returns its path. */
   async restore(item: TrashItem): Promise<string> {
+    this.forgetChange();
     const path = await restoreFromTrash(this.fs, item, this.settings.folders.laboratory);
     await this.reload();
     return path;
@@ -1250,18 +1479,43 @@ export class Project {
     await this.autoSnapshot(first);
     const bodies: string[] = [];
     for (const path of chosen) bodies.push((await this.readBody(path)).trim());
+    // What each file held, to take the merge back: the first scene and the notes whose links change.
+    const rewritten: { path: string; old: string; now: string }[] = [];
+    const firstText = await this.fs.readText(first);
     // Written directly, so the writing log does not count moved words as new ones.
-    await this.fs.writeText(first, replaceBody(await this.fs.readText(first), bodies.filter(Boolean).join("\n\n") + "\n"));
+    const merged = replaceBody(firstText, bodies.filter(Boolean).join("\n\n") + "\n");
+    await this.fs.writeText(first, merged);
     const before = [...this.files];
     const after = before.filter((f) => !rest.includes(f));
     const renames = new Map(rest.map((p) => [p, first]));
     for (const file of after) {
       if (!isMarkdown(file)) continue;
-      const updated = rewriteLinks(await this.fs.readText(file), file, renames, before, after);
-      if (updated !== null) await this.fs.writeText(file, updated);
+      const old = file === first ? merged : await this.fs.readText(file);
+      const updated = rewriteLinks(old, file, renames, before, after);
+      if (updated !== null) {
+        await this.fs.writeText(file, updated);
+        if (file !== first) rewritten.push({ path: file, old, now: updated });
+      }
     }
-    for (const path of rest) await this.toTrash(path);
+    const mergedNow = await this.fs.readText(first);
+    const trashed: string[] = [];
+    for (const path of rest) trashed.push(await this.toTrash(path));
     await this.reload();
+    this.lastChange = {
+      kind: "merge",
+      undo: async () => {
+        // A merged scene written in since would get its old text back and lose the new one.
+        if (!(await this.fs.exists(first)) || (await this.fs.readText(first)) !== mergedNow) throw new StaleUndoError();
+        const items = (await listTrash(this.fs)).filter((item) => trashed.includes(item.path));
+        if (items.length !== trashed.length) throw new StaleUndoError();
+        for (const item of items) await restoreFromTrash(this.fs, item, this.settings.folders.laboratory);
+        await this.fs.writeText(first, firstText);
+        for (const note of rewritten) {
+          if ((await this.fs.exists(note.path)) && (await this.fs.readText(note.path)) === note.now) await this.fs.writeText(note.path, note.old);
+        }
+        await this.reload();
+      },
+    };
     return first;
   }
 
@@ -1288,10 +1542,38 @@ export class Project {
    * gets `after`. Returns the new scene's path.
    */
   async splitScene(path: string, before: string, after: string, title: string): Promise<string> {
-    const parent = parentOf(this.manuscript, path)!;
-    const index = parent.children.findIndex((c) => c.path === path);
-    await this.writeKeptHalf(path, before, after);
-    return this.createScene(parent.path, index + 1, title, after);
+    return this.tracked(
+      "split",
+      async () => {
+        const parent = parentOf(this.manuscript, path)!;
+        const index = parent.children.findIndex((c) => c.path === path);
+        await this.writeKeptHalf(path, before, after);
+        return this.createScene(parent.path, index + 1, title, after);
+      },
+      (created) => this.rejoin(path, created, before, after),
+    );
+  }
+
+  /**
+   * Taking back a split: the text that went to the new scene returns to the end of the
+   * first. Untouched halves give back the text exactly as it was; edited ones are joined
+   * as two paragraphs.
+   */
+  private rejoin(path: string, created: string, before: string, after: string): { first: () => Promise<void>; last: () => Promise<void> } {
+    let tail = "";
+    return {
+      first: async () => {
+        if (!(await this.fs.exists(created)) || !(await this.fs.exists(path))) throw new StaleUndoError();
+        tail = await this.readBody(created);
+      },
+      last: async () => {
+        const head = await this.readBody(path);
+        const same = head.trim() === before.trim() && tail.trim() === after.trim();
+        const body = same ? before + after : [head.trim(), tail.trim()].filter(Boolean).join("\n\n") + "\n";
+        // Written directly, so the writing log does not count the returning words as new ones.
+        await this.fs.writeText(path, replaceBody(await this.fs.readText(path), body));
+      },
+    };
   }
 
   /**
@@ -1317,6 +1599,9 @@ export class Project {
    * scene of a new chapter, followed by the scenes that came after this one.
    */
   async splitChapter(path: string, before: string, after: string, chapterTitle: string, sceneTitle: string): Promise<string> {
+    return this.tracked(
+      "split",
+      async () => {
     const chapter = enclosing(this.manuscript, path, ["chapter", "prologue", "epilogue"]);
     // Without an enclosing chapter, the new chapter goes right after the scene itself.
     const holder = parentOf(this.manuscript, chapter ? chapter.path : path)!;
@@ -1342,6 +1627,9 @@ export class Project {
       await this.move(scene.path, target, k + 1);
     }
     return count === 0 ? first : this.node(target).children[0].path;
+      },
+      (created) => this.rejoin(path, created, before, after),
+    );
   }
 
   private async insertNew(
@@ -1374,6 +1662,8 @@ export class Project {
     const moved = await this.apply(moves);
     const path = join(parent.path, formatName(orders[clamped], title));
     await create(path, moved);
+    if (this.steps) this.steps.push({ created: path + ext });
+    else this.forgetChange();
     await this.reload();
     return { path: path + ext, moved };
   }
@@ -1410,6 +1700,144 @@ export class Project {
     return this.conflicts.filter((c) => c.original === path).map((c) => c.path);
   }
 
+  private async writeJournal(journal: MoveJournal): Promise<void> {
+    await this.fs.writeText(MOVE_JOURNAL, JSON.stringify(journal));
+  }
+
+  /** Two passes through temporary names, so that swapping two names never collides. */
+  private async twoPass(moves: Move[]): Promise<void> {
+    const temps = moves.map(tempName);
+    for (let i = 0; i < moves.length; i++) await this.fs.rename(moves[i].from, temps[i]);
+    for (let i = 0; i < moves.length; i++) await this.fs.rename(temps[i], moves[i].to);
+  }
+
+  /**
+   * Settles renames that stopped between the two passes. With the first temporary name still
+   * there the second pass had not begun, and everything goes back where it was; without it the
+   * second pass was under way, and it is completed. Returns whether the renames are all made.
+   */
+  private async settle(moves: Move[]): Promise<boolean> {
+    const temps = moves.map(tempName);
+    const waiting: boolean[] = [];
+    for (const temp of temps) waiting.push(await this.fs.exists(temp));
+    if (!waiting.some(Boolean)) {
+      // No temporary name left: either nothing had started, or everything was renamed a moment
+      // before the journal could say so. A name that is gone, with the new ones all there, tells.
+      let arrived = true;
+      let left = false;
+      for (const m of moves) {
+        if (!(await this.fs.exists(m.to))) arrived = false;
+        if (!(await this.fs.exists(m.from))) left = true;
+      }
+      return moves.length > 0 && arrived && left;
+    }
+    const forward = !waiting[0];
+    for (let i = 0; i < moves.length; i++) {
+      if (!waiting[i]) continue;
+      const target = forward ? moves[i].to : moves[i].from;
+      // Never over a file that is there: the temporary name stays, to be looked at by hand.
+      if (!(await this.fs.exists(target))) await this.fs.rename(temps[i], target);
+    }
+    return forward;
+  }
+
+  /**
+   * Finishes or undoes a reordering that was interrupted, when the project opens.
+   * Returns what was done, for the notice shown to the writer.
+   */
+  private async recoverMoves(): Promise<"undone" | "completed" | null> {
+    if (!(await this.fs.exists(MOVE_JOURNAL))) return null;
+    let journal: MoveJournal | null = null;
+    try {
+      const read = JSON.parse(await this.fs.readText(MOVE_JOURNAL)) as MoveJournal;
+      if (Array.isArray(read.moves) && Array.isArray(read.before) && Array.isArray(read.done)) journal = read;
+    } catch {
+      // An unreadable journal says nothing: it is dropped below.
+    }
+    let result: "undone" | "completed" | null = null;
+    if (journal) {
+      if (!journal.done.includes("files")) {
+        // Nothing to settle means the renames had not started, or had all been made a moment
+        // before the journal said so: the files are where they should be either way.
+        if (await this.settle(journal.moves)) journal.done.push("files");
+        else result = "undone";
+      }
+      if (journal.done.includes("files")) {
+        if (journal.snapshots && !journal.done.includes("snapshots")) {
+          // Snapshots put back are moved again from the start by finishMoves.
+          if (await this.settle(journal.snapshots)) journal.done.push("snapshots");
+          else delete journal.snapshots;
+        }
+        this.files = journal.before;
+        await this.finishMoves(journal);
+        result = "completed";
+      }
+    }
+    await this.fs.remove(MOVE_JOURNAL);
+    return result;
+  }
+
+  /**
+   * What follows the renames: folder notes take their folders' names, snapshots and the record
+   * of comments follow their scenes, wikilinks are rewritten. Each step is noted in the journal,
+   * so that an interrupted run takes up where it stopped.
+   */
+  private async finishMoves(journal: MoveJournal): Promise<Map<string, string>> {
+    const { before, moves } = journal;
+    const renames = new Map<string, string>();
+    for (const file of before) {
+      let to = file;
+      for (const m of moves) to = rebase(to, m.from, m.to);
+      if (to !== file) renames.set(file, to);
+    }
+    for (const m of moves) {
+      if (isMarkdown(m.from)) continue;
+      const oldNote = join(m.to, basename(m.from) + ".md");
+      const newNote = folderNotePath(m.to);
+      if (oldNote !== newNote) {
+        if (await this.fs.exists(oldNote)) await this.fs.rename(oldNote, newNote);
+        if (before.includes(folderNotePath(m.from))) renames.set(folderNotePath(m.from), newNote);
+      }
+    }
+
+    // Snapshots follow their scene, again through temporary names.
+    if (!journal.done.includes("snapshots")) {
+      const snapshotMoves: Move[] = [];
+      for (const [from, to] of renames) {
+        if (isMarkdown(from) && (await this.fs.exists(snapshotDir(from)))) {
+          snapshotMoves.push({ from: snapshotDir(from), to: snapshotDir(to) });
+        }
+      }
+      journal.snapshots = snapshotMoves;
+      await this.writeJournal(journal);
+      await this.twoPass(snapshotMoves);
+      journal.done.push("snapshots");
+      await this.writeJournal(journal);
+    }
+
+    // The record of comments and revisions follows its scenes too.
+    if (!journal.done.includes("history")) {
+      await moveHistory(this.fs, renames);
+      journal.done.push("history");
+      await this.writeJournal(journal);
+    }
+
+    const after = before.map((f) => renames.get(f) ?? f);
+    for (const file of before) {
+      if (!isMarkdown(file)) continue;
+      const newPath = renames.get(file) ?? file;
+      if (!(await this.fs.exists(newPath))) continue;
+      const text = await this.fs.readText(newPath);
+      const updated = rewriteLinks(text, file, renames, before, after, newPath);
+      if (updated !== null) {
+        await this.fs.writeText(newPath, updated);
+        this.rewrites?.push({ path: newPath, old: text, now: updated });
+      }
+    }
+    await this.fs.remove(MOVE_JOURNAL);
+    return renames;
+  }
+
   private movedPath(moves: Move[], path: string): string {
     return moves.find((m) => m.from === path)?.to ?? path;
   }
@@ -1427,53 +1855,29 @@ export class Project {
       moves.flatMap((m) => {
         const from = stripExt(basename(m.from));
         const to = stripExt(basename(m.to));
-        return this.conflictCopies(m.from).map((copy) => ({ from: copy, to: join(dirname(m.to), to + basename(copy).slice(from.length)) }));
+        return this.conflictCopies(m.from)
+          .filter((copy) => !moves.some((other) => other.from === copy))
+          .map((copy) => ({ from: copy, to: join(dirname(m.to), to + basename(copy).slice(from.length)) }));
       }),
     );
+    const texts: Rewrite[] = [];
+    if (!this.steps) this.forgetChange();
 
-    // Two passes through temporary names, so that swapping two names never collides.
-    const temps = moves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
-    for (let i = 0; i < moves.length; i++) await this.fs.rename(moves[i].from, temps[i]);
-    for (let i = 0; i < moves.length; i++) await this.fs.rename(temps[i], moves[i].to);
-
-    const renames = new Map<string, string>();
-    for (const file of before) {
-      let to = file;
-      for (const m of moves) to = rebase(to, m.from, m.to);
-      if (to !== file) renames.set(file, to);
+    // What is about to happen is written down first: if Dante closes halfway, the next opening
+    // puts the files back or finishes the job, and no scene stays under a hidden name.
+    const journal: MoveJournal = { before, moves, done: [] };
+    await this.writeJournal(journal);
+    await this.twoPass(moves);
+    journal.done.push("files");
+    await this.writeJournal(journal);
+    this.rewrites = texts;
+    let renames: Map<string, string>;
+    try {
+      renames = await this.finishMoves(journal);
+    } finally {
+      this.rewrites = null;
     }
-    for (const m of moves) {
-      if (isMarkdown(m.from)) continue;
-      const oldNote = join(m.to, basename(m.from) + ".md");
-      const newNote = folderNotePath(m.to);
-      if (oldNote !== newNote && (await this.fs.exists(oldNote))) {
-        await this.fs.rename(oldNote, newNote);
-        renames.set(folderNotePath(m.from), newNote);
-      }
-    }
-
-    // Snapshots follow their scene, again through temporary names.
-    const snapshotMoves: Move[] = [];
-    for (const [from, to] of renames) {
-      if (isMarkdown(from) && (await this.fs.exists(snapshotDir(from)))) {
-        snapshotMoves.push({ from: snapshotDir(from), to: snapshotDir(to) });
-      }
-    }
-    const snapshotTemps = snapshotMoves.map((m, i) => join(dirname(m.from), `.dante-move-${i}-${basename(m.from)}`));
-    for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotMoves[i].from, snapshotTemps[i]);
-    for (let i = 0; i < snapshotMoves.length; i++) await this.fs.rename(snapshotTemps[i], snapshotMoves[i].to);
-
-    // The record of comments and revisions follows its scenes too.
-    await moveHistory(this.fs, renames);
-
-    const after = before.map((f) => renames.get(f) ?? f);
-    for (const file of before) {
-      if (!isMarkdown(file)) continue;
-      const newPath = renames.get(file) ?? file;
-      const text = await this.fs.readText(newPath);
-      const updated = rewriteLinks(text, file, renames, before, after, newPath);
-      if (updated !== null) await this.fs.writeText(newPath, updated);
-    }
+    this.steps?.push({ moves, texts });
     await this.reload();
     const moved = (path: string) => renames.get(path) ?? moves.reduce((p, m) => rebase(p, m.from, m.to), path);
     this.onMoved?.(moved);
@@ -1484,6 +1888,7 @@ export class Project {
 /** A template's text for a new note: {{title}} and {{date}} filled in. */
 function fillTemplate(template: string, title: string): string {
   const clean = sanitizeTitle(title) || "Untitled";
-  const date = new Date().toISOString().slice(0, 10);
+  // The day where the writer is: after midnight the UTC date would still be yesterday.
+  const date = today();
   return template.replace(/\{\{\s*title\s*\}\}/g, () => clean).replace(/\{\{\s*date\s*\}\}/g, () => date);
 }

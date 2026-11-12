@@ -1,8 +1,8 @@
 <script lang="ts">
   import "../app.css";
-  import { app } from "$lib/state.svelte";
+  import { app, appearance, t } from "$lib/state.svelte";
   import { applyAppearance } from "$lib/themes";
-  import { applyUiZoom } from "$lib/uiZoom.svelte";
+  import { applyMenuLabels, applyUiZoom } from "$lib/uiZoom.svelte";
   import Tooltip from "$lib/ui/Tooltip.svelte";
 
   let { children } = $props();
@@ -20,10 +20,15 @@
   $effect(() => {
     const root = document.documentElement;
     root.lang = app.settings.language;
-    applyAppearance(root, app.settings, systemDark);
+    applyAppearance(root, appearance(), systemDark);
   });
   $effect(() => {
     applyUiZoom(app.settings.uiZoom);
+  });
+  $effect(() => {
+    void app.settings.language;
+    const keys = ["about", "checkUpdates", "services", "hide", "hideOthers", "showAll", "quit", "edit", "undo", "redo", "cut", "copy", "paste", "selectAll", "view", "fullscreen", "window", "minimize", "zoom", "close", "help", "openHelp"] as const;
+    applyMenuLabels(Object.fromEntries(keys.map((key) => [key, t(`macMenu.${key}`)])));
   });
 </script>
 

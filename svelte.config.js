@@ -20,6 +20,27 @@ const config = {
     // child process that reads this file again, and a second Date.now() would name another
     // global than the one the scripts look for, leaving Dante blank (0.1.43).
     version: { name: (process.env.DANTE_VERSION ||= `0.0.${Date.now()}`) },
+    // What the page may load and run, in the app and in the web version: its own scripts and
+    // nothing written into the page, so that a note, a web page shown inside Dante or an
+    // image's address cannot run code. Styles may be inline (the editor and the settings set
+    // them), images and downloads may come from the web, as notes can point to them.
+    csp: {
+      mode: "hash",
+      directives: {
+        "default-src": ["self"],
+        "script-src": ["self"],
+        "style-src": ["self", "unsafe-inline"],
+        "img-src": ["self", "blob:", "data:", "https:", "http:"],
+        "font-src": ["self", "data:"],
+        "media-src": ["self", "blob:", "data:"],
+        "connect-src": ["self", "https:", "ipc:", "http://ipc.localhost"],
+        "frame-src": ["self", "blob:", "data:"],
+        "worker-src": ["self", "blob:"],
+        "object-src": ["none"],
+        "base-uri": ["self"],
+        "form-action": ["self"],
+      },
+    },
     // Only the web version registers its service worker (src/lib/web.ts); the app has none.
     serviceWorker: { register: false },
   },

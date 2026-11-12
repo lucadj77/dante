@@ -144,7 +144,7 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
   p.on('console', (m) => process.env.TRACE && console.log('console:', m.text()));
   await p.addInitScript(({ lang, settings, desktop, folder }) => {
     if (sessionStorage.getItem('init')) return;
-    localStorage.clear();
+    localStorage.clear(); localStorage.setItem('dante.layout', JSON.stringify({ wideNav: false }));
     localStorage.setItem('dante.app-settings', JSON.stringify({ language: lang, userName: 'Luca', theme: 'light', checkUpdates: false, ...settings }));
     sessionStorage.setItem('desktop', desktop ? '1' : '0');
     sessionStorage.setItem('folder', folder);

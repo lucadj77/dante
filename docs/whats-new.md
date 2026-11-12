@@ -6,9 +6,56 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### New
 
+- **Characters with spaces in tables, export and import**: tables and boards have a **Characters** field beside **Words**, and a new project's Scenes table starts with the unit the project measures in. The manuscript's title page and the summary after an export use the same unit. The import preview shows words and characters.
+- **Mac menu in the language of the interface**: the items of the menu bar (Check for Updates…, Edit, Window, Dante Help and the others) follow the language chosen in Dante.
+- **Full guide in English**: with the interface in English, Help opens the full guide in English, chapter by chapter like the Italian one.
+- **Footnotes**: the **x¹** button of the formatting bar inserts a note right where you write it (`^[text]`). In the export it goes at the foot of the page in Word and in the PDF, at the end of the chapter in the EPUB. The notes of an imported Word file stay notes.
+- **The novel's names no longer underlined by the spelling checker**: the names and aliases of the Story Bible's cards are no longer marked as mistakes. Other words of the novel are added in Settings > Writing > Words of this novel, and hold on every computer.
+- **Snapshot of the whole manuscript**: in Settings > Upkeep you can set a milestone with a name, such as "First draft", for all the scenes together, and later take the whole manuscript back to it.
+- **Lists to pick from instead of writing with commas**: folders, filter values and groups of a view, suggested properties of a type and allowed values of a property are added one at a time, choosing among those Dante already knows or writing new ones.
+- **Adjustable style thresholds and reading speed**: in Settings > Measures and goals you choose above how many words a sentence is long, within how many words a word is repeated and how many words a minute the reader reads.
+- **Import from OpenDocument, RTF, Markdown and text**: on the start screen a single button, **Import from another format…**, lets you choose between a document (Word, LibreOffice's OpenDocument, RTF, Markdown, text) and a Scrivener project. **Import** in the manuscript accepts these formats too.
+- **A "?" that leads to the guide**: in the export typography, in a view's settings and in the Gamebook section a small "?" opens the guide at the right chapter.
+- **New views from a template**: when you create a view you choose what to start from (board by status, table of the characters, timeline, cards of the chapters) and find it already set up.
+- **List of commands from the keyboard**: in the search (⌘⇧F) type `>` and part of a name, for example `> statistics`: Enter goes to the section, shows or hides bars and panels, opens the help or the trash, with no mouse.
+- **A look for each novel**: in Settings > Look of this novel you can give a novel its own theme, accent colour, font and text layout. The choices stay on this computer and not in the project: those who write with you keep their own look.
+- **Undo for moves, splits and merges**: after moving, splitting or merging scenes and chapters, **Undo** appears at the bottom of the tree (also Cmd+Z / Ctrl+Z with the tree active) and puts everything back as it was, links included.
+- **Going back to a backup from Dante**: Settings > Backups lists the backups; **Open this backup** takes it out into a new folder beside the novel and opens it, without touching the novel as it is now.
+- **One property for several scenes**: choose several scenes in the tree (Cmd/Ctrl+click), then right click > **Set a property on the scenes…** to give all of them the same value, for example the status.
+- **Table of contents in Word and PDF**: in Export the box **Table of contents** adds the contents of parts and chapters with the page numbers, after title page, dedication and epigraph.
+- **Saved export profiles**: the choices of Export are saved under a name ("For the publisher", "For print") and taken up again from a list, without setting them every time.
+
 ### Changed
 
+- **English guide**: the figures of the English guide now show the program in English; those of the Italian guide are updated to the new export.
+- **Margins of the page and headings without empty lines**: in Page and cover you choose the four margins in centimetres. In the Word file the heading of parts and chapters and the front pages (title page, dedication, epigraph, contents) are no longer preceded by an empty line: for headings the distance from the top of the page is a space of the heading, which you can adjust or set to zero.
+- **Free line spacing and look of the headings in the export**: line spacing is any number between 0.8 and 3; for the headings of parts, chapters and scenes you choose font, size, alignment, bold, italic, capitals, space before and after and line spacing, with the preview on the right. In the PDF the space around headings now matches that of the Word file.
+- **Typography tried on your own text**: the preview of the Typography page shows the first dialogue of the novel, as it is written and as it comes out in the book.
+- **Export in pages with a preview**: the export choices are divided into pages (Format, Page and cover, Parts chapters and scenes, Typography, Front and back matter) listed on the left, as in Settings; on the right a preview shows the sheet, the headings, the separators and the order of the pages as you change the choices. The Export button always stays at the bottom.
+- **Spelling checker on from the start on the Mac**: at the first opening Dante turns on the check of spelling while typing; whoever turns it off from the Edit menu finds it off.
+- **Clearer start screen**: three choices (new project, open folder, import), each with a line that says what it does; the sample project and the guide are below.
+- **Title of gamebook pages**: the Page button asks for the title at once, as for paragraphs.
+- **Guide reordered by task**: the chapters now follow what you do (starting, writing, organising, revising, publishing, safety and updates) and no longer the order in which features arrived; the "chapter N" references are updated. The chapters on the browser, help, look and gamebooks now have pictures.
+- **The same icons on every computer**: folders, files, warnings, gamebook padlocks and the comment bubble are now line drawings like the other icons, in place of emoji that changed between Mac and Windows. Emoji stay for Bible types and boxes, where you choose them.
+- **Finishing touches**: the Synopsis field looks like the other fields, board column names start with a capital and, if you asked the system to reduce motion, Dante turns its animations off.
+- **Large projects respond sooner**: after a change made from outside, a move or a saved setting, the app reads again only the files that changed instead of every note.
+- **Settings rearranged**: instead of the two tabs there is a list of pages on the left, divided between "This novel" and "Dante on this computer", with a box to search for a setting. Themes are chosen from small drawings of the window, and structure, tree colours, page and editor text have a preview beside them.
+- **Tidier guide**: the chapter on gamebooks is divided into groups (setting up, reading, writing, numbering, checking, exporting) and the details for those who develop Dante have left the guide.
+- **More compact bars above the text**: in the Manuscript the command bars take fewer rows. In a narrow window the buttons show only their icon (the name stays in the tooltip), "Split into scene" and "Split into chapter" become icons and the text size moves into the **More** menu.
+- **Windows that answer the keyboard at once**: Trash, Move to…, conflicts, snapshot comparison, import and the gamebook windows take the keyboard as soon as they open: Esc closes them without a click first, Tab stays inside the window and closing takes you back where you were.
+- **Names in the bar of the sections**: in a wide window the bar on the left starts with the names beside the icons; **Hide names**, at the bottom, takes it back to the icons alone.
+- **Clearer words**: "tree", "card", "link" and "Resolved" are used the same way everywhere; in Italian, "Citazioni" in Statistics becomes "Menzioni" and the type "Plotline" of new projects is called "Trama".
+- **Fewer repeated numbers**: with a single scene on screen the Properties panel and the status bar do not write the same number twice, and "Today" stays only in the status bar when it is visible.
+- **Boards**: the columns share the space when they are few, and **Delete this view** is inside the settings of the view instead of always in sight.
+- **Scene and chapter goals converted**: when you switch between words and characters, Dante also lists the goals of single scenes and chapters with the value they would have and converts them all with one click.
+- **The name, asked at once**: those who open a project without having written their name yet are asked for it once, at the first opening, so that comments, revisions and the day's count start at once.
+
 ### Fixed
+
+- **Date in templates**: `{{date}}` in a template gives the day where you are, also right after midnight.
+- **The same number everywhere**: with revisions pending, the Properties panel, the tables and the writing log also counted the deleted text and the revision marks. They now count as the Statistics do: added text counts, deleted text does not.
+- **Interrupted moves**: if Dante closed while it was reordering scenes or chapters, some files kept a temporary name and no longer showed in the tree. Dante now puts the files back or finishes the move when the project is opened again, and says so in a notice.
+- **Guide**: the chapter on installing, the name of the setting "A single Enter starts a new paragraph" and the names of the Mac menu items are corrected.
 
 ## 1.2.0-beta.3 · November 10, 2026
 
@@ -200,7 +247,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ## 0.1.42 · October 21, 2026
 
-- **Dante in the browser**: Dante can also be used from Chrome, Edge or Brave, with nothing to install, at https://lucadj77.github.io/dante/. It works on the files of the novel's folder, works offline after the first visit and never sends your writing online. No PDF yet, and a few other limits described in chapter 18 of the guide.
+- **Dante in the browser**: Dante can also be used from Chrome, Edge or Brave, with nothing to install, at https://lucadj77.github.io/dante/. It works on the files of the novel's folder, works offline after the first visit and never sends your writing online. No PDF yet, and a few other limits described in chapter 21 of the guide.
 - **Importing from Word with a preview**: before importing you see the document next to the result and can say line by line what it is (part, chapter or scene title, scene break, text, leave out), for all similar lines at once too. Sections divided only by a number on its own line ("1", "2", "3"…) become chapters instead of scenes holding just the number. With the **Import** button in the manuscript you can add a Word file to a project already under way, such as a novel split into several files.
 - **Visible update check**: at start Dante says for a few seconds that it is up to date, or that it could not check, instead of staying silent. If it stays open it checks again every six hours, and on the Mac there is **Dante > Check for Updates…**.
 - **Dialogue in exports**: lines of dialogue typed with dashes or hyphens at the start of the paragraph take the marks of the chosen style (— Come in — she said becomes “Come in” she said). New projects leave dialogue as typed until you pick a style in Export > Typography.

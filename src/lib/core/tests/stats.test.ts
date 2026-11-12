@@ -11,4 +11,10 @@ describe("stats", () => {
   it("handles empty text", () => {
     expect(textStats("  \n")).toEqual({ words: 0, characters: 0, charactersNoSpaces: 0 });
   });
+
+  it("counts pending revisions as accepted, without their marks", () => {
+    const clean = textStats("Il gatto nero dorme.");
+    expect(textStats("Il gatto {--bianco--}{++nero++} dorme.{>>@ada 2026-11-11: ok?<<}")).toEqual(clean);
+    expect(textStats("Il gatto {~~bianco~>nero~~} {==dorme==}.")).toEqual(clean);
+  });
 });

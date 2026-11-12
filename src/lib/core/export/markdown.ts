@@ -25,6 +25,8 @@ function imageEmbed(image: BookImage): string {
 }
 
 function inline(r: Run): string {
+  // A note is written where it is called, as Pandoc reads it.
+  if (r.footnote) return `^[${r.footnote.map(inline).join("")}]`;
   if (r.image) return imageEmbed(r.image);
   if (r.lineBreak) return "  \n";
   if (r.code) return `\`${r.text.replace(/`/g, "")}\``;

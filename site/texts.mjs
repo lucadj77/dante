@@ -321,8 +321,8 @@ export const texts = {
       download: 'Download the app',
       open: 'Open the web version',
       beta: 'beta version',
-      more: 'What is different from the app (Italian guide)',
-      moreHref: 'https://github.com/lucadj77/dante/blob/main/docs/guida.md#18-dante-nel-browser'
+      more: 'What is different from the app',
+      moreHref: 'https://github.com/lucadj77/dante/blob/main/docs/guide.md#18-dante-in-the-browser'
     },
     tutorial: {
       title: 'Tutorials',
@@ -346,11 +346,11 @@ export const texts = {
       title: 'Guide and news',
       guideTitle: 'User guide',
       guideText:
-        'Every feature, chapter by chapter, with screenshots, and a short first steps page. The full guide is in Italian; the same pages are in Dante’s Help.',
+        'Every feature, chapter by chapter, with screenshots, and a short first steps page. The same pages are in Dante’s Help.',
       guideLink: 'First steps (English)',
       guideHref: 'https://github.com/lucadj77/dante/blob/main/docs/first-steps.md',
-      guideLinkOther: 'Guida completa (italiano)',
-      guideHrefOther: 'https://github.com/lucadj77/dante/blob/main/docs/guida.md',
+      guideLinkOther: 'Full guide',
+      guideHrefOther: 'https://github.com/lucadj77/dante/blob/main/docs/guide.md',
       newsTitle: 'What’s new',
       newsText: 'What changes in each version.',
       newsLink: 'Read what’s new',
