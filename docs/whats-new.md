@@ -10,7 +10,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Fixed
 
-## 1.2.0 · November 12, 2026
+## 1.2.1 · November 12, 2026
 
 ### New
 

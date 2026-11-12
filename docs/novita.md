@@ -10,7 +10,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Corretto
 
-## 1.2.0 · 12 novembre 2026
+## 1.2.1 · 12 novembre 2026
 
 ### Nuovo
 
