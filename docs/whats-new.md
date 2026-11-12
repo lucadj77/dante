@@ -27,6 +27,7 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Export**: more space between the note on the font and the fields after it.
 - **English guide**: the figures of the English guide now show the program in English; those of the Italian guide are updated to the new export.
 - **Margins of the page and headings without empty lines**: in Page and cover you choose the four margins in centimetres. In the Word file the heading of parts and chapters and the front pages (title page, dedication, epigraph, contents) are no longer preceded by an empty line: for headings the distance from the top of the page is a space of the heading, which you can adjust or set to zero.
 - **Free line spacing and look of the headings in the export**: line spacing is any number between 0.8 and 3; for the headings of parts, chapters and scenes you choose font, size, alignment, bold, italic, capitals, space before and after and line spacing, with the preview on the right. In the PDF the space around headings now matches that of the Word file.
