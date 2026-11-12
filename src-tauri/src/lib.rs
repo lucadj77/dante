@@ -264,6 +264,7 @@ pub fn run() {
             pdf::compile_pdf,
             backup::backup_project,
             backup::list_backups,
+            backup::extract_backup,
             web::download_url,
             updates::check_update,
             webkit::webkit_info,

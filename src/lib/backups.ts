@@ -1,7 +1,7 @@
 // Backups of the open project: zip files the desktop app keeps in a folder of the computer
 // (src-tauri/src/backup.rs), or that a browser downloads.
 
-import { backupStamp, unzipProject, zipProject } from "./core/backup";
+import { backupStamp, zipProject } from "./core/backup";
 import type { Project } from "./core/project";
 import { folderName } from "./platform";
 import { app, type AppSettings } from "./state.svelte";
@@ -79,15 +79,9 @@ export async function extractBackup(project: Project, name: string, folder: stri
   const info = await backupInfo(project, settings);
   if (!info?.dir) throw new Error("No backups for this project");
   const { dirname, join } = await import("@tauri-apps/api/path");
-  const parent = new TauriFs(await dirname(project.fs.root));
   const clean = folder.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim() || "Dante";
-  let target = clean;
-  for (let n = 2; await parent.exists(target); n++) target = `${clean} ${n}`;
-  const zip = await new TauriFs(info.dir).readBytes(name);
-  await parent.mkdir(target);
-  const path = await join(parent.root, target);
-  await unzipProject(new TauriFs(path), zip);
-  return path;
+  // Rust takes the files out one at a time: read here, a novel with many images filled the memory.
+  return invoke<string>("extract_backup", { zip: await join(info.dir, name), parent: await dirname(project.fs.root), folder: clean });
 }
 
 /** In a browser: the project as a zip, downloaded. */
