@@ -1,0 +1,2 @@
+# Text files keep Unix line ends on every system: tests compare them with files on disk.
+* text=auto eol=lf
