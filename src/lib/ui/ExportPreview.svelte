@@ -8,6 +8,7 @@
     type DocxSettings,
     type ExportFormat,
     type GamebookExportSettings,
+    type HeadingKind,
     type NovelSettings,
     type ParatextSettings,
     type Separator,
@@ -27,6 +28,8 @@
     settings: NovelSettings;
     cover: boolean;
     coverUrl: string;
+    /** The first dialogue of the novel and the scene it comes from; null while none was found. */
+    dialogue: { text: string; scene: string } | null;
   }
   let p: Props = $props();
 
@@ -61,7 +64,40 @@
   const RAW = $derived(
     italian ? `"E' tardi" disse Anna...  Nessuno rispose .\n"Non c'e' piu' tempo", aggiunse piano.` : `"It's late" said Anna...  Nobody answered .\n"There's no time left", she added quietly.`,
   );
-  const typed = $derived(applyTypography(RAW, p.typography));
+  const written = $derived(p.dialogue?.text ?? RAW);
+  const typed = $derived(applyTypography(written, p.typography));
+
+  // Titles in the outline: 11 pixels stand for the size of the text, so sizes and spaces keep their proportions.
+  const perTextPt = $derived(11 / (Number(p.options.fontSize) || 12));
+  const look = (kind: HeadingKind) => {
+    const h = p.options.headings[kind];
+    return [
+      `font-family: ${JSON.stringify(h.font || p.options.font)}, Georgia, serif`,
+      `font-size: ${Math.min(30, h.size * perTextPt).toFixed(1)}px`,
+      `text-align: ${h.align}`,
+      `font-weight: ${h.bold ? 700 : 400}`,
+      `font-style: ${h.italic ? "italic" : "normal"}`,
+      `text-transform: ${h.uppercase ? "uppercase" : "none"}`,
+      `letter-spacing: 0`,
+      `line-height: ${(h.lineSpacing * 1.15).toFixed(2)}`,
+      `margin: ${Math.min(40, h.before * perTextPt * 0.5).toFixed(1)}px 0 ${Math.min(40, h.after * perTextPt * 0.5).toFixed(1)}px`,
+    ].join("; ");
+  };
+
+  // The chapter heading on the sheet, at the scale of the sheet.
+  const sheetHeading = $derived.by(() => {
+    const h = p.options.headings.chapter;
+    return [
+      `font-family: ${JSON.stringify(h.font || p.options.font)}`,
+      `font-size: ${(h.size * perPt).toFixed(2)}px`,
+      `text-align: ${h.align}`,
+      `font-weight: ${h.bold ? 700 : 400}`,
+      `font-style: ${h.italic ? "italic" : "normal"}`,
+      `text-transform: ${h.uppercase ? "uppercase" : "none"}`,
+      `line-height: ${(h.lineSpacing * 1.15).toFixed(2)}`,
+      `margin: ${(h.before * perPt).toFixed(1)}px 0 ${(h.after * perPt).toFixed(1)}px`,
+    ].join("; ");
+  });
 
   /** What a break between two pieces looks like: a new page, empty lines or the writer's signs. */
   function gap(kind: Separator): { page: boolean; empty: number; signs: string[] } {
@@ -121,7 +157,7 @@
         style:line-height={typeset ? Math.max(1.2, p.options.lineSpacing * 1.15) : p.options.lineSpacing * 1.15}
       >
         {#if p.options.header}<div class="running" style:top="{1.2 * perCm}px" style:right="{2.5 * perCm}px" style:left="{2.5 * perCm}px">{typeset ? p.settings.title : `${author} / ${p.settings.title.toUpperCase()} / 1`}</div>{/if}
-        <div class="heading">{#each lines(chapter) as line, i (i)}<div>{line}</div>{/each}</div>
+        <div class="heading" style={sheetHeading}>{#each lines(chapter) as line, i (i)}<div>{line}</div>{/each}</div>
         {#each [...SAMPLE, ...SAMPLE, ...SAMPLE] as text, i (i)}
           <p class:justify={typeset} style:text-indent="{i === 0 && typeset ? 0 : p.options.indent * perCm}px">{text}</p>
         {/each}
@@ -131,17 +167,17 @@
   {:else if p.page === "structure"}
     <div class="outline">
       {#if part}
-        <div class="part">{#each lines(part) as line, i (i)}<div>{line}</div>{/each}</div>
+        <div class="part" style={look("part")}>{#each lines(part) as line, i (i)}<div>{line}</div>{/each}</div>
         {@render separator(p.options.partBreak)}
       {/if}
-      <div class="chapter">{#each lines(chapter) as line, i (i)}<div>{line}</div>{/each}</div>
-      {#if scene(1, t("sample.sceneTitle"))}<div class="scene">{scene(1, t("sample.sceneTitle"))}</div>{/if}
+      <div class="chapter" style={look("chapter")}>{#each lines(chapter) as line, i (i)}<div>{line}</div>{/each}</div>
+      {#if scene(1, t("sample.sceneTitle"))}<div class="scene" style={look("scene")}>{#each lines(scene(1, t("sample.sceneTitle"))) as line, i (i)}<div>{line}</div>{/each}</div>{/if}
       <i></i><i></i><i class="short"></i>
       {@render separator(p.options.sceneBreak)}
-      {#if scene(2, t("sample.sceneTitle2"))}<div class="scene">{scene(2, t("sample.sceneTitle2"))}</div>{/if}
+      {#if scene(2, t("sample.sceneTitle2"))}<div class="scene" style={look("scene")}>{#each lines(scene(2, t("sample.sceneTitle2"))) as line, i (i)}<div>{line}</div>{/each}</div>{/if}
       <i></i><i class="short"></i>
       {@render separator(p.options.chapterBreak)}
-      <div class="chapter">{#each lines(chapter2) as line, i (i)}<div>{line}</div>{/each}</div>
+      <div class="chapter" style={look("chapter")}>{#each lines(chapter2) as line, i (i)}<div>{line}</div>{/each}</div>
       <i></i><i class="short"></i>
     </div>
   {:else if p.page === "gamebook"}
@@ -163,10 +199,11 @@
   {:else if p.page === "typography"}
     <div class="compare">
       <span class="label">{t("export.previewWritten")}</span>
-      <p class="raw">{RAW}</p>
+      <p class="raw">{written}</p>
       <span class="label">{t("export.previewBook")}</span>
       <p class="made">{typed}</p>
     </div>
+    <span class="note">{p.dialogue ? t("export.previewDialogue", { scene: p.dialogue.scene }) : t("export.previewNoDialogue")}</span>
   {:else}
     <ol class="pieces">
       {#each pieces as piece (piece.name)}

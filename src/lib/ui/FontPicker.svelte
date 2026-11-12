@@ -96,7 +96,7 @@
     <input aria-label={t("font.other")} bind:value placeholder="Garamond" />
   {/if}
   <p class="sample" style="font-family: '{value}', serif">{t("font.sample")}</p>
-  <p class="hint">{hint ?? t("font.hint")}</p>
+  {#if hint !== ""}<p class="hint">{hint ?? t("font.hint")}</p>{/if}
 </div>
 
 <style>

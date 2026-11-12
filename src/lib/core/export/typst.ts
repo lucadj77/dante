@@ -1,5 +1,5 @@
 import { pale } from "./docx";
-import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type Separator } from "../settings";
+import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type HeadingKind, type HeadingStyle, type Separator } from "../settings";
 import { PARATEXT_LABELS, approxWords, hasContents } from "./docx";
 import type { Block, Book, BookEntry, Run } from "./book";
 
@@ -99,12 +99,25 @@ export function bookToTypst(book: Book, opts: DocxSettings, labels: { words: str
   // The text keeps the quotes the author or the typography settings chose.
   emit(`#set smartquote(enabled: false)`);
   const headingSizes = typeset ? [1.5, 1.3, 1, 1, 1, 1] : [1, 1, 1, 1, 1, 1];
+  // Parts, chapters and scenes look as the writer chose; a gamebook's numbers have their own look.
+  const chosen: [number, HeadingKind][] = [...(hasParts ? [[1, "part"] as [number, HeadingKind]] : []), [chapterLevel, "chapter"], ...(gx ? [] : [[sceneLevel, "scene"] as [number, HeadingKind]])];
+  // Space in points, plus the gap the text itself leaves between two lines.
+  const gap = leading * size;
+  const look = (h: HeadingStyle) =>
+    [
+      `set align(${h.align})`,
+      `set par(leading: ${+Math.max(0, (h.lineSpacing - 1) * 1.2).toFixed(2)}em)`,
+      `set text(${h.font ? `font: ${fonts(h.font)}, ` : ""}size: ${+h.size.toFixed(2)}pt, weight: ${h.bold ? '"bold"' : '"regular"'}, style: ${h.italic ? '"italic"' : '"normal"'})`,
+      `block(above: ${+(h.before + gap).toFixed(2)}pt, below: ${+(h.after + gap).toFixed(2)}pt, ${h.uppercase ? "upper(it.body)" : "it.body"})`,
+    ].join("; ");
   emit(`#show heading: it => {`);
-  emit(`  set align(center)`);
   emit(`  set par(first-line-indent: 0pt, justify: false)`);
-  emit(`  let sizes = (${headingSizes.map((s) => `${s}em`).join(", ")})`);
-  emit(`  set text(size: sizes.at(calc.min(it.level, 6) - 1), weight: if it.level <= ${chapterLevel} or ${typeset} and it.level == 2 { "bold" } else { "regular" }, style: if it.level > ${chapterLevel} and ${typeset} { "italic" } else { "normal" })`);
-  emit(`  block(above: ${+(leading + 1).toFixed(2)}em, below: ${+(leading + 1).toFixed(2)}em, it.body)`);
+  emit(`  ${chosen.map(([level, kind]) => `if it.level == ${level} { ${look(opts.headings[kind])} } else `).join("")}{`);
+  emit(`    set align(center)`);
+  emit(`    let sizes = (${headingSizes.map((s) => `${s}em`).join(", ")})`);
+  emit(`    set text(size: sizes.at(calc.min(it.level, 6) - 1), weight: if it.level <= ${chapterLevel} or ${typeset} and it.level == 2 { "bold" } else { "regular" }, style: if it.level > ${chapterLevel} and ${typeset} { "italic" } else { "normal" })`);
+  emit(`    block(above: ${+(leading + 1).toFixed(2)}em, below: ${+(leading + 1).toFixed(2)}em, it.body)`);
+  emit(`  }`);
   emit(`}`);
   emit(`#let separator(body) = align(center, block(above: ${+(leading + 0.6).toFixed(2)}em, below: ${+(leading + 0.6).toFixed(2)}em, body))`);
   emit("");

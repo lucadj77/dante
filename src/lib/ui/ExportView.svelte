@@ -18,7 +18,27 @@
   import { coverSvg, svgUrl } from "$lib/core/cover";
   import { coverPicture, coverPng, imageToPng } from "./coverImage";
   import type { Project } from "$lib/core/project";
-  import { defaultQuotes, EXPORT_FORMATS, PAGE_SIZES, QUOTE_STYLES, type DocxSettings, type ExportFormat, type ExportProfile, type ParatextSettings, type TypographySettings } from "$lib/core/settings";
+  import {
+    defaultHeadings,
+    defaultQuotes,
+    EXPORT_FORMATS,
+    HEADING_KINDS,
+    LINE_SPACING,
+    PAGE_SIZES,
+    QUOTE_STYLES,
+    type DocxSettings,
+    type ExportFormat,
+    type ExportProfile,
+    type HeadingStyle,
+    type ParatextSettings,
+    type TypographySettings,
+  } from "$lib/core/settings";
+  import { untrack } from "svelte";
+  import { cleanSource } from "$lib/core/export/book";
+  import { scenesOf } from "$lib/core/manuscript";
+  import { splitNote } from "$lib/core/frontmatter";
+  import { dialogueSample } from "$lib/core/typography";
+  import HeadingFormat from "./HeadingFormat.svelte";
   import type { MessageKey } from "$lib/i18n";
   import { app, num, rememberExportPreferences, t } from "$lib/state.svelte";
   import { inTauri, TauriFs } from "$lib/tauriFs";
@@ -85,6 +105,25 @@
   function setProfile(profile: DocxSettings["profile"]) {
     options = { ...options, ...PRESETS[profile], profile };
   }
+
+  // Headings left as the layout gives them follow the layout, the size and the line spacing
+  // of the text; the ones the writer changed stay as chosen.
+  const parts = $derived(project.settings.structure.parts);
+  const usual = $derived(defaultHeadings({ profile: options.profile, fontSize: Number(options.fontSize) || 12, lineSpacing: Number(options.lineSpacing) || 1 }, parts));
+  // svelte-ignore state_referenced_locally
+  let followed = usual;
+  $effect(() => {
+    const next = usual;
+    untrack(() => {
+      for (const kind of HEADING_KINDS) {
+        const now = options.headings[kind];
+        for (const key of Object.keys(next[kind]) as (keyof HeadingStyle)[]) {
+          if (now[key] === followed[kind][key] && now[key] !== next[kind][key]) (now as unknown as Record<string, unknown>)[key] = next[kind][key];
+        }
+      }
+      followed = next;
+    });
+  });
   // svelte-ignore state_referenced_locally
   let revisions = $state<"accept" | "reject">(project.settings.export.revisions);
   // svelte-ignore state_referenced_locally
@@ -118,6 +157,8 @@
   function applyProfile(name: string) {
     const saved = profiles[name];
     if (!saved) return;
+    // A saved profile comes with its own headings: nothing to follow.
+    followed = defaultHeadings(saved.docx, parts);
     options = structuredClone($state.snapshot(saved.docx));
     format = saved.format === "pdf" && !inTauri() && project.fs instanceof BrowserFs ? "docx" : saved.format;
     useCover = saved.cover;
@@ -152,6 +193,27 @@
   const pages = $derived<PageId[]>(["format", "page", ...(!gamebook ? ["structure" as const] : format === "docx" || format === "pdf" ? ["gamebook" as const] : []), "typography", "paratext"]);
   let chosenPage = $state<PageId>(lastPage.id);
   const shown = $derived(pages.includes(chosenPage) ? chosenPage : "format");
+
+  // The typography page shows its choices on the first dialogue of the novel itself.
+  let spoken = $state<{ text: string; scene: string } | null>(null);
+  let searched = false;
+  $effect(() => {
+    if (shown !== "typography" || searched) return;
+    searched = true;
+    void (async () => {
+      for (const node of scenesOf(project.manuscript).slice(0, 300)) {
+        try {
+          const text = dialogueSample(cleanSource(splitNote(await project.fs.readText(node.path)).body, revisions));
+          if (text) {
+            spoken = { text, scene: node.title };
+            return;
+          }
+        } catch {
+          // A scene that cannot be read is skipped: the sample is only a preview.
+        }
+      }
+    })();
+  });
   $effect(() => {
     lastPage.id = chosenPage;
   });
@@ -531,15 +593,11 @@
       <label>{t("export.fontSize")} <input type="number" min="8" max="20" bind:value={options.fontSize} /></label>
       <label
         >{t("export.lineSpacing")}
-        <select bind:value={options.lineSpacing}>
-          <option value={1}>1</option>
-          <option value={1.15}>1,15</option>
-          <option value={1.5}>1,5</option>
-          <option value={2}>2</option>
-        </select>
+        <input type="number" min={LINE_SPACING.min} max={LINE_SPACING.max} step="0.05" bind:value={options.lineSpacing} />
       </label>
       {#if !gamebook}<label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>{/if}
     </div>
+    <p class="hint">{t("export.lineSpacingHint")}</p>
     <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
     {/if}
     <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
@@ -671,11 +729,13 @@
       <fieldset>
         <legend>{t("kind.part")}</legend>
         <HeadingLevel bind:level={structure.part} language={project.settings.language} sample={t("sample.partTitle")} feminine />
+        <HeadingFormat bind:style={options.headings.part} usual={usual.part} textFont={options.font} />
       </fieldset>
     {/if}
     <fieldset>
       <legend>{t("kind.chapter")}</legend>
       <HeadingLevel bind:level={structure.chapter} language={project.settings.language} sample={t("sample.chapterTitle")} />
+      <HeadingFormat bind:style={options.headings.chapter} usual={usual.chapter} textFont={options.font} />
     </fieldset>
     <fieldset>
       <legend>{t("kind.scene")}</legend>
@@ -686,7 +746,11 @@
       {#if options.scene.numbering !== "none" || options.scene.showTitle}
         <label class="check"><input type="checkbox" bind:checked={options.omitSingleSceneHeading} /> {t("export.sceneOmitSingle")}</label>
       {/if}
+      {#if options.scene.numbering !== "none" || options.scene.showTitle}
+        <HeadingFormat bind:style={options.headings.scene} usual={usual.scene} textFont={options.font} />
+      {/if}
     </fieldset>
+    {#if format !== "md"}<p class="hint">{t("export.headingsHint")}</p>{/if}
     <p class="hint">{t("export.publishedTitleHint")}</p>
     {:else if shown === "typography"}
     <p class="hint">{t("export.typographyHint")}</p>
@@ -727,7 +791,7 @@
     <label>{t("export.colophon")} <textarea rows="3" bind:value={paratext.colophon}></textarea></label>
     {/if}
     </div>
-    <ExportPreview page={shown} {format} {options} {typography} {paratext} {structure} gamebook={gbx} settings={project.settings} cover={useCover} {coverUrl} />
+    <ExportPreview page={shown} {format} {options} {typography} {paratext} {structure} gamebook={gbx} settings={project.settings} cover={useCover} {coverUrl} dialogue={spoken} />
     </div>
     <footer>
     <div class="actions">

@@ -184,6 +184,14 @@ Mi ritrovai per una selva oscura.
         assert!(pdf.starts_with(b"%PDF"));
     }
 
+    /// The headings of parts, chapters and scenes as the export writes them when the writer
+    /// chose font, size, alignment, capitals and space (src/lib/core/tests/headings.test.ts).
+    #[test]
+    fn compiles_headings_with_their_own_look() {
+        let pdf = compile(include_str!("fixtures/headings.typ"), &root()).expect("compiles");
+        assert!(pdf.starts_with(b"%PDF"));
+    }
+
     #[test]
     fn syntax_error_is_reported() {
         let err = compile("Testo\n#let x = (1, 2\n", &root()).unwrap_err();

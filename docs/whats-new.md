@@ -27,6 +27,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Free line spacing and look of the headings in the export**: line spacing is any number between 0.8 and 3; for the headings of parts, chapters and scenes you choose font, size, alignment, bold, italic, capitals, space before and after and line spacing, with the preview on the right. In the PDF the space around headings now matches that of the Word file.
+- **Typography tried on your own text**: the preview of the Typography page shows the first dialogue of the novel, as it is written and as it comes out in the book.
 - **Export in pages with a preview**: the export choices are divided into pages (Format, Page and cover, Parts chapters and scenes, Typography, Front and back matter) listed on the left, as in Settings; on the right a preview shows the sheet, the headings, the separators and the order of the pages as you change the choices. The Export button always stays at the bottom.
 - **Spelling checker on from the start on the Mac**: at the first opening Dante turns on the check of spelling while typing; whoever turns it off from the Edit menu finds it off.
 - **Clearer start screen**: three choices (new project, open folder, import), each with a line that says what it does; the sample project and the guide are below.

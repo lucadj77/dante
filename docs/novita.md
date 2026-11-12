@@ -27,6 +27,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Interlinea libera e aspetto dei titoli nell'esportazione**: l'interlinea è un numero a scelta tra 0,8 e 3; per i titoli di parti, capitoli e scene si scelgono font, corpo, allineamento, grassetto, corsivo, maiuscolo, spazio prima e dopo e interlinea, con l'anteprima a destra. Nel PDF lo spazio intorno ai titoli ora corrisponde a quello del file Word.
+- **Tipografia provata sul tuo testo**: l'anteprima della pagina Tipografia mostra il primo dialogo del romanzo, com'è scritto e come esce nel libro.
 - **Esportazione in pagine con anteprima**: le scelte dell'esportazione sono divise in pagine (Formato, Pagina e copertina, Parti capitoli e scene, Tipografia, Paratesto) elencate a sinistra, come nelle Impostazioni; a destra un'anteprima mostra il foglio, i titoli, i separatori e l'ordine delle pagine mentre cambi le scelte. Il tasto Esporta resta sempre in basso.
 - **Correttore ortografico acceso da subito sul Mac**: alla prima apertura Dante attiva il controllo dell'ortografia durante la digitazione; chi lo spegne dal menu Modifica lo ritrova spento.
 - **Schermata iniziale più chiara**: tre scelte (nuovo progetto, apri cartella, importa), ognuna con una riga che dice cosa fa; il progetto di esempio e la guida stanno sotto.

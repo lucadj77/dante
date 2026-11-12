@@ -26,10 +26,11 @@ import {
   TextRun,
   WidthType,
   type IParagraphStyleOptions,
+  type IStylesOptions,
   type IRunOptions,
   type ISectionOptions,
 } from "docx";
-import { PAGE_SIZES, separatorParts, surnames, type DocxSettings, type GamebookExportSettings, type Separator } from "../settings";
+import { HEADING_KINDS, PAGE_SIZES, separatorParts, surnames, type DocxSettings, type GamebookExportSettings, type HeadingStyle, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import type { CellAlign } from "../tables";
 
@@ -219,20 +220,39 @@ function styles(opts: DocxSettings, typeset: boolean, gx?: GamebookExportSetting
   ];
 }
 
-function headingStyles(opts: DocxSettings, typeset: boolean) {
+/** Which of Word's heading styles the parts, chapters and scenes of this book take. */
+type HeadingLevels = { part?: number; chapter: number; scene?: number };
+
+function headingStyles(opts: DocxSettings, typeset: boolean, levels: HeadingLevels) {
   const size = opts.fontSize * 2;
   const line = Math.round(240 * opts.lineSpacing);
   const base = { font: opts.font, color: "000000" };
   const centered = { alignment: AlignmentType.CENTER, indent: { firstLine: 0 } };
+  const ALIGN = { left: AlignmentType.LEFT, center: AlignmentType.CENTER, right: AlignmentType.RIGHT };
+  /** The writer's choices for a level, in half points and twentieths of a point. */
+  const chosen = (h: HeadingStyle) => ({
+    run: { ...base, font: h.font || opts.font, size: Math.round(h.size * 2), bold: h.bold, italics: h.italic, allCaps: h.uppercase },
+    paragraph: {
+      alignment: ALIGN[h.align],
+      indent: { firstLine: 0 },
+      spacing: { before: Math.round(h.before * 20), after: Math.round(h.after * 20), line: Math.round(240 * h.lineSpacing) },
+    },
+    next: "FirstParagraph",
+  });
   // Word's own heading styles, so the navigation pane and the table of contents work.
-  return {
-    heading1: { run: { ...base, size: typeset ? Math.round(size * 1.5) : size, bold: true }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
-    heading2: { run: { ...base, size: typeset ? Math.round(size * 1.3) : size, bold: typeset }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
-    heading3: { run: { ...base, size, bold: false, italics: typeset }, paragraph: { ...centered, spacing: { before: line, after: line / 2 } }, next: "FirstParagraph" },
-    heading4: { run: { ...base, size, italics: true }, paragraph: { ...centered, spacing: { before: line / 2, after: line / 2 } }, next: "FirstParagraph" },
-    heading5: { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
-    heading6: { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
-  };
+  const all: NonNullable<NonNullable<IStylesOptions["default"]>["heading1"]>[] = [
+    { run: { ...base, size: typeset ? Math.round(size * 1.5) : size, bold: true }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
+    { run: { ...base, size: typeset ? Math.round(size * 1.3) : size, bold: typeset }, paragraph: { ...centered, spacing: { after: line } }, next: "FirstParagraph" },
+    { run: { ...base, size, bold: false, italics: typeset }, paragraph: { ...centered, spacing: { before: line, after: line / 2 } }, next: "FirstParagraph" },
+    { run: { ...base, size, italics: true }, paragraph: { ...centered, spacing: { before: line / 2, after: line / 2 } }, next: "FirstParagraph" },
+    { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
+    { run: { ...base, size, italics: true }, paragraph: { ...centered }, next: "FirstParagraph" },
+  ];
+  for (const kind of HEADING_KINDS) {
+    const level = levels[kind];
+    if (level !== undefined) all[level] = chosen(opts.headings[kind]);
+  }
+  return { heading1: all[0], heading2: all[1], heading3: all[2], heading4: all[3], heading5: all[4], heading6: all[5] };
 }
 
 /** Renders the book as a standard manuscript or as a typeset book. */
@@ -495,7 +515,7 @@ export function bookToDocx(book: Book, opts: DocxSettings, labels: { words: stri
     styles: {
       default: {
         document: { run: { font: opts.font, size: opts.fontSize * 2 } },
-        ...headingStyles(opts, typeset),
+        ...headingStyles(opts, typeset, { part: hasParts ? partLevel : undefined, chapter: chapterLevel, scene: book.gamebook ? undefined : sceneLevel }),
       },
       paragraphStyles: styles(opts, typeset, book.gamebook),
     },

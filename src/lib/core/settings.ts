@@ -140,6 +140,66 @@ export type PageUnit = "characters" | "words";
 export type ExportFormat = "docx" | "pdf" | "epub" | "md";
 export const EXPORT_FORMATS: ExportFormat[] = ["docx", "pdf", "epub", "md"];
 
+export type HeadingKind = "part" | "chapter" | "scene";
+export const HEADING_KINDS: HeadingKind[] = ["part", "chapter", "scene"];
+
+/** How the headings of a level look in the exported book. */
+export interface HeadingStyle {
+  /** Empty: the font of the text. */
+  font: string;
+  /** Points. */
+  size: number;
+  align: "left" | "center" | "right";
+  bold: boolean;
+  italic: boolean;
+  /** All capitals, whatever the title is written like. */
+  uppercase: boolean;
+  /** Space above and below the heading, in points. */
+  before: number;
+  after: number;
+  /** Between the lines of a heading on several lines, as the line spacing of the text. */
+  lineSpacing: number;
+}
+
+/**
+ * The headings a layout starts with: plain and as large as the text in a manuscript,
+ * larger in a typeset book. Space is counted in lines of the text, as word processors do.
+ */
+export function defaultHeadings(docx: { profile: "manuscript" | "typeset"; fontSize: number; lineSpacing: number }, parts: boolean): Record<HeadingKind, HeadingStyle> {
+  const typeset = docx.profile === "typeset";
+  const half = (n: number) => Math.round(n * 2) / 2;
+  const line = Math.round(12 * docx.lineSpacing);
+  const base = { font: "", align: "center" as const, uppercase: false, lineSpacing: docx.lineSpacing };
+  return {
+    part: { ...base, size: typeset ? half(docx.fontSize * 1.5) : docx.fontSize, bold: true, italic: false, before: 0, after: line },
+    chapter: { ...base, size: typeset ? half(docx.fontSize * (parts ? 1.3 : 1.5)) : docx.fontSize, bold: typeset || !parts, italic: false, before: 0, after: line },
+    scene: { ...base, size: docx.fontSize, bold: false, italic: typeset, before: line, after: Math.round(line / 2) },
+  };
+}
+
+/** Line spacing is free between these limits; outside them a page is unreadable. */
+export const LINE_SPACING = { min: 0.8, max: 3 };
+
+const within = (value: unknown, min: number, max: number, usual: number): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : usual;
+};
+
+/** Completes the headings read from a file with the usual ones of the layout, and keeps the numbers in range. */
+function parseHeadings(docx: DocxSettings, raw: unknown, parts: boolean): Record<HeadingKind, HeadingStyle> {
+  const usual = defaultHeadings(docx, parts);
+  const out = merge(usual, raw);
+  for (const kind of HEADING_KINDS) {
+    const h = out[kind];
+    if (!["left", "center", "right"].includes(h.align)) h.align = usual[kind].align;
+    h.size = within(h.size, 6, 96, usual[kind].size);
+    h.before = within(h.before, 0, 300, usual[kind].before);
+    h.after = within(h.after, 0, 300, usual[kind].after);
+    h.lineSpacing = within(h.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, usual[kind].lineSpacing);
+  }
+  return out;
+}
+
 export interface DocxSettings {
   /** Standard manuscript for agents and publishers, or a typeset, readable book. */
   profile: "manuscript" | "typeset";
@@ -151,7 +211,7 @@ export interface DocxSettings {
   font: string;
   /** Points. */
   fontSize: number;
-  /** 1, 1.5 or 2. */
+  /** 1 is single, 2 double; any value between LINE_SPACING.min and LINE_SPACING.max. */
   lineSpacing: number;
   /** First-line indent of paragraphs, in centimetres. */
   indent: number;
@@ -174,6 +234,8 @@ export interface DocxSettings {
   sceneNumbersRestart: boolean;
   /** No scene heading in a chapter with a single scene. */
   omitSingleSceneHeading: boolean;
+  /** Font, size, alignment and space of the headings of parts, chapters and scenes. */
+  headings: Record<HeadingKind, HeadingStyle>;
 }
 
 /** A set of export choices kept under a name, such as "For the publisher". */
@@ -582,6 +644,7 @@ export function defaultSettings(language = "en"): NovelSettings {
         scene: { numbering: "none", showLabel: false, label: labels.scene, showTitle: false, separator: ". " },
         sceneNumbersRestart: true,
         omitSingleSceneHeading: true,
+        headings: defaultHeadings({ profile: "manuscript", fontSize: 12, lineSpacing: 2 }, false),
       },
       typography: {
         // Dialogue leaves as it was typed until the author picks a convention.
@@ -679,6 +742,8 @@ export function parseSettings(text: string): NovelSettings {
     const base = defaultSettings(language).export;
     const profile = merge<ExportProfile>({ format: base.format, cover: base.cover, docx: base.docx }, value);
     if (!EXPORT_FORMATS.includes(profile.format)) profile.format = "docx";
+    profile.docx.lineSpacing = within(profile.docx.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, 2);
+    profile.docx.headings = parseHeadings(profile.docx, isObject(value.docx) ? value.docx.headings : undefined, settings.structure.parts);
     settings.export.profiles[name] = profile;
   }
   // Files written before several authors could be named had one "author" text.
@@ -699,6 +764,9 @@ export function parseSettings(text: string): NovelSettings {
   // Files written before chapterBreak existed said only whether chapters start a new page.
   const docx = isObject(raw) && isObject(raw.export) && isObject(raw.export.docx) ? raw.export.docx : {};
   if (docx.chapterBreak === undefined && docx.chapterNewPage === false) settings.export.docx.chapterBreak = "blankLine";
+  // Files written before headings could be styled take the ones their layout had.
+  settings.export.docx.lineSpacing = within(settings.export.docx.lineSpacing, LINE_SPACING.min, LINE_SPACING.max, 2);
+  settings.export.docx.headings = parseHeadings(settings.export.docx, docx.headings, settings.structure.parts);
   if (!EXPORT_FORMATS.includes(settings.export.format)) settings.export.format = "docx";
   if (!(COVER_TEMPLATES as readonly string[]).includes(settings.cover.template)) settings.cover.template = "";
   if (!(settings.cover.palette in COVER_PALETTES)) settings.cover.palette = "";

@@ -1,5 +1,5 @@
 import { pale } from "./docx";
-import { separatorParts, type DocxSettings, type Separator } from "../settings";
+import { defaultHeadings, separatorParts, type DocxSettings, type HeadingKind, type Separator } from "../settings";
 import type { Block, Book, BookEntry, BookImage, Run } from "./book";
 import { PARATEXT_LABELS } from "./docx";
 import { zip } from "./zip";
@@ -24,6 +24,34 @@ function gamebookCss(book: Book): string {
 p { text-align: ${gx.justify ? "justify" : "left"}; text-indent: ${gx.indent}cm; margin-bottom: ${gx.spacing}pt; }
 h1.number, h2.number, h3.number, h4.number { font-weight: ${gx.numberBold ? "bold" : "normal"}; font-style: ${gx.numberItalic ? "italic" : "normal"};${font} }
 `;
+}
+
+/**
+ * The headings the writer changed from the usual ones of the layout, after the stylesheet so
+ * that they win. What was left alone stays as the stylesheet says: an ebook has its own sizes.
+ */
+function headingCss(book: Book, opts: DocxSettings, hasParts: boolean): string {
+  const usual = defaultHeadings(opts, hasParts);
+  const tags: [string, HeadingKind][] = hasParts ? [[".part h1", "part"], ["h2", "chapter"], ["h3", "scene"]] : [["h1", "chapter"], ["h2", "scene"]];
+  const em = (points: number, size: number) => `${+(points / size).toFixed(2)}em`;
+  const rules: string[] = [];
+  for (const [tag, kind] of tags) {
+    if (kind === "scene" && book.gamebook) continue;
+    const h = opts.headings[kind];
+    const u = usual[kind];
+    const css: string[] = [];
+    if (h.font !== u.font && h.font) css.push(`font-family: "${h.font.replace(/["\\]/g, "")}", serif`);
+    if (h.size !== u.size) css.push(`font-size: ${em(h.size, opts.fontSize)}`);
+    if (h.align !== u.align) css.push(`text-align: ${h.align}`);
+    if (h.bold !== u.bold) css.push(`font-weight: ${h.bold ? "bold" : "normal"}`);
+    if (h.italic !== u.italic) css.push(`font-style: ${h.italic ? "italic" : "normal"}`);
+    if (h.uppercase !== u.uppercase) css.push(`text-transform: ${h.uppercase ? "uppercase" : "none"}`);
+    if (h.before !== u.before) css.push(`margin-top: ${em(h.before, h.size)}`);
+    if (h.after !== u.after) css.push(`margin-bottom: ${em(h.after, h.size)}`);
+    if (h.lineSpacing !== u.lineSpacing) css.push(`line-height: ${+(h.lineSpacing * 1.2).toFixed(2)}`);
+    if (css.length) rules.push(`${tag} { ${css.join("; ")}; }`);
+  }
+  return rules.length ? `\n/* Titoli */\n${rules.join("\n")}\n` : "";
 }
 
 /** Stands for the file of a gamebook's paragraph until the chapters are laid out. */
@@ -376,7 +404,7 @@ ${chapters.map((_, i) => `<itemref idref="c${i + 1}"/>`).join("\n")}
       { name: "META-INF/container.xml", data: container },
       { name: "OEBPS/content.opf", data: opf },
       { name: "OEBPS/nav.xhtml", data: nav },
-      { name: "OEBPS/style.css", data: (css.trim() ? css : EPUB_CSS) + gamebookCss(book) },
+      { name: "OEBPS/style.css", data: (css.trim() ? css : EPUB_CSS) + headingCss(book, opts, hasParts) + gamebookCss(book) },
       ...(cover ? [{ name: `OEBPS/${coverFile}`, data: cover.data }] : []),
       ...chapters.map((c) => ({ name: `OEBPS/${c.file}`, data: c.html })),
       ...[...images.values()].map((img) => ({ name: `OEBPS/${img.file}`, data: img.data })),
