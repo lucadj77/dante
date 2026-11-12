@@ -15,7 +15,7 @@ CROPS = {
     'vista-impostazioni-full': ('vista-impostazioni', (240, 0, 1500, 330)),
     'statistiche-full': ('statistiche', (50, 0, 1020, 640)),
     'statistiche2-full': ('statistiche-lunghezza', (50, 0, 1020, 660)),
-    'esportazione-full': ('esportazione', (50, 30, 700, 640)),
+    'esportazione-full': ('esportazione', (50, 30, 1270, 560)),
     'struttura-full': ('struttura', (36, 27, 1290, 425)),
     'scheda': ('scheda', None),
     'aspetto-full': ('aspetto', (52, 40, 900, 320)),

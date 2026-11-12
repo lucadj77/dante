@@ -174,6 +174,7 @@ test("opens the exported book with a cover made from a picture of the writer's",
   await expect(page.locator(".cover-picker")).toContainText("copertina.png");
   await page.locator('nav button[data-section="export"]').click();
   await page.getByRole("radio", { name: /Word/ }).check();
+  await page.locator('[data-export="page"]').click();
   await page.getByRole("checkbox", { name: "Apri il libro con la copertina" }).check();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Esporta DOCX" }).click();

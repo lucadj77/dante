@@ -27,6 +27,8 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Cambiato
 
+- **Esportazione in pagine con anteprima**: le scelte dell'esportazione sono divise in pagine (Formato, Pagina e copertina, Parti capitoli e scene, Tipografia, Paratesto) elencate a sinistra, come nelle Impostazioni; a destra un'anteprima mostra il foglio, i titoli, i separatori e l'ordine delle pagine mentre cambi le scelte. Il tasto Esporta resta sempre in basso.
+- **Correttore ortografico acceso da subito sul Mac**: alla prima apertura Dante attiva il controllo dell'ortografia durante la digitazione; chi lo spegne dal menu Modifica lo ritrova spento.
 - **Schermata iniziale più chiara**: tre scelte (nuovo progetto, apri cartella, importa), ognuna con una riga che dice cosa fa; il progetto di esempio e la guida stanno sotto.
 - **Titolo delle pagine dei libri game**: il pulsante Pagina chiede subito il titolo, come per i paragrafi.
 - **Guida riordinata per compito**: i capitoli seguono ora quello che si fa (iniziare, scrivere, organizzare, rivedere, pubblicare, sicurezza e aggiornamenti) e non più l'ordine in cui le funzioni sono arrivate; i rimandi «capitolo N» sono aggiornati. I capitoli su browser, aiuto, aspetto e libri game hanno ora le immagini.

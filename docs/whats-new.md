@@ -27,6 +27,8 @@ What changes in each version of Dante, newest first. The same notes appear on th
 
 ### Changed
 
+- **Export in pages with a preview**: the export choices are divided into pages (Format, Page and cover, Parts chapters and scenes, Typography, Front and back matter) listed on the left, as in Settings; on the right a preview shows the sheet, the headings, the separators and the order of the pages as you change the choices. The Export button always stays at the bottom.
+- **Spelling checker on from the start on the Mac**: at the first opening Dante turns on the check of spelling while typing; whoever turns it off from the Edit menu finds it off.
 - **Clearer start screen**: three choices (new project, open folder, import), each with a line that says what it does; the sample project and the guide are below.
 - **Title of gamebook pages**: the Page button asks for the title at once, as for paragraphs.
 - **Guide reordered by task**: the chapters now follow what you do (starting, writing, organising, revising, publishing, safety and updates) and no longer the order in which features arrived; the "chapter N" references are updated. The chapters on the browser, help, look and gamebooks now have pictures.

@@ -73,6 +73,7 @@ if (run('stat')) { const { b, page } = await start();
 
 if (run('export')) { const { b, page } = await start();
   await nav(page, 'Esportazione');
+  await page.locator('[data-export="page"]').click(); await page.waitForTimeout(400);
   await page.screenshot({ path: S+'esportazione-full.png' });
   await nav(page, 'Impostazioni');
   await page.locator('[data-settings="structure"]').click(); await page.waitForTimeout(500);

@@ -1,4 +1,10 @@
+<script lang="ts" module>
+  /** The page shown, kept while the app is open. */
+  const lastPage = { id: "format" as "format" | "page" | "structure" | "gamebook" | "typography" | "paratext" };
+</script>
+
 <script lang="ts">
+  import ExportPreview from "./ExportPreview.svelte";
   import HelpLink from "./HelpLink.svelte";
   import ErrorText from "./ErrorText.svelte";
   import { failure } from "$lib/ui/errors";
@@ -133,6 +139,23 @@
     epub: { ext: "epub", name: "EPUB", mime: "application/epub+zip" },
     md: { ext: "md", name: "Markdown", mime: "text/markdown" },
   };
+  /** The pages of the section: short ones, chosen from the list on the left, as in the Settings. */
+  type PageId = "format" | "page" | "structure" | "gamebook" | "typography" | "paratext";
+  const PAGE_TITLES: Record<PageId, MessageKey> = {
+    format: "export.pageFormat",
+    page: "export.pageLayout",
+    structure: "export.structure",
+    gamebook: "export.gamebook",
+    typography: "export.typography",
+    paratext: "export.paratext",
+  };
+  const pages = $derived<PageId[]>(["format", "page", ...(!gamebook ? ["structure" as const] : format === "docx" || format === "pdf" ? ["gamebook" as const] : []), "typography", "paratext"]);
+  let chosenPage = $state<PageId>(lastPage.id);
+  const shown = $derived(pages.includes(chosenPage) ? chosenPage : "format");
+  $effect(() => {
+    lastPage.id = chosenPage;
+  });
+
   const desktop = inTauri();
   /** A project folder opened in a browser: exports go to its export folder too. */
   // svelte-ignore state_referenced_locally
@@ -417,18 +440,54 @@
 </script>
 
 <div class="export">
+  <nav class="sections" aria-label={t("export.title")}>
+    {#each pages as id (id)}
+      <button type="button" class="item" data-export={id} aria-current={shown === id ? "page" : undefined} onclick={() => (chosenPage = id)}>{t(PAGE_TITLES[id])}</button>
+    {/each}
+  </nav>
   <form
     onsubmit={(e) => {
       e.preventDefault();
       void run();
     }}
   >
-    <div class="top">
-      <h2>{t("export.title")}</h2>
-      {#if desktop}<button type="button" onclick={openExports}>{t("export.openExports")}</button>{/if}
+    <div class="page">
+    <div class="fields">
+    <header>
+      <h2>{t(PAGE_TITLES[shown])}{#if shown === "typography"} <HelpLink chapter="export" />{/if}</h2>
+      <span class="scope">{t("export.title")} · {t(`export.format.${format}`)}</span>
+    </header>
+    {#if shown === "format"}
+    <div class="formats" role="radiogroup" aria-label={t("export.format")}>
+      {#each EXPORT_FORMATS.filter((f) => !(web && f === "pdf")) as f (f)}
+        <label class="format" class:chosen={format === f}>
+          <input type="radio" name="format" value={f} bind:group={format} />
+          <strong>{t(`export.format.${f}`)}</strong>
+          <span>{t(`export.format.${f}Hint`)}</span>
+        </label>
+      {/each}
     </div>
-    {#if folder}<p class="hint">{t("export.folderHint")}</p>{/if}
-    {#if web}<p class="hint">{t("export.folderWeb", { path: whereIs(project.fs, EXPORT_FOLDER) })} {t("export.noPdfWeb")}</p>{/if}
+    {#if format === "epub"}
+      <p class="hint">{t("export.epubHint")}</p>
+    {:else if format === "md"}
+      <p class="hint">{t("export.mdHint")}</p>
+    {:else}
+    <label
+      >{t("export.profile")}
+      <select value={options.profile} onchange={(e) => setProfile((e.currentTarget as HTMLSelectElement).value as DocxSettings["profile"])}>
+        <option value="manuscript">{t("export.profileManuscript")}</option>
+        <option value="typeset">{t("export.profileTypeset")}</option>
+      </select>
+    </label>
+    {/if}
+    <label
+      >{t("export.revisions")}
+      <select bind:value={revisions}>
+        <option value="accept">{t("export.accept")}</option>
+        <option value="reject">{t("export.reject")}</option>
+      </select>
+    </label>
+    <h4>{t("export.savedTitle")}</h4>
     <div class="profiles">
       <label
         >{t("export.saved")}
@@ -445,17 +504,59 @@
       {#if currentProfile}<button type="button" onclick={() => deleteProfile(currentProfile)}>{t("export.savedDelete")}</button>{/if}
     </div>
     <p class="hint">{t("export.savedHint")}</p>
-    <div class="formats" role="radiogroup" aria-label={t("export.format")}>
-      {#each EXPORT_FORMATS.filter((f) => !(web && f === "pdf")) as f (f)}
-        <label class="format" class:chosen={format === f}>
-          <input type="radio" name="format" value={f} bind:group={format} />
-          <strong>{t(`export.format.${f}`)}</strong>
-          <span>{t(`export.format.${f}Hint`)}</span>
-        </label>
-      {/each}
+    {#if folder}<p class="hint">{t("export.folderHint")}</p>{/if}
+    {#if web}<p class="hint">{t("export.folderWeb", { path: whereIs(project.fs, EXPORT_FOLDER) })} {t("export.noPdfWeb")}</p>{/if}
+    {:else if shown === "page"}
+    {#if format === "docx" || format === "pdf"}
+    <div class="row">
+      <label
+        >{t("export.pageSize")}
+        <select bind:value={options.pageSize}>
+          {#each Object.keys(PAGE_SIZES) as size (size)}
+            <option value={size}>{pageLabel(size as keyof typeof PAGE_SIZES)}</option>
+          {/each}
+          <option value="custom">{t("export.pageCustom")}</option>
+        </select>
+      </label>
+      {#if options.pageSize === "custom"}
+        <label>{t("export.pageWidth")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageWidth} /></label>
+        <label>{t("export.pageHeight")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageHeight} /></label>
+      {/if}
     </div>
+    <div class="field">
+      <span class="label">{t("export.font")}</span>
+      <FontPicker bind:value={options.font} />
+    </div>
+    <div class="row">
+      <label>{t("export.fontSize")} <input type="number" min="8" max="20" bind:value={options.fontSize} /></label>
+      <label
+        >{t("export.lineSpacing")}
+        <select bind:value={options.lineSpacing}>
+          <option value={1}>1</option>
+          <option value={1.15}>1,15</option>
+          <option value={1.5}>1,5</option>
+          <option value={2}>2</option>
+        </select>
+      </label>
+      {#if !gamebook}<label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>{/if}
+    </div>
+    <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
+    {/if}
+    <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
+    {#if (format === "docx" || format === "pdf") && !gamebook}
+      <label class="check"><input type="checkbox" bind:checked={options.toc} /> {t("export.toc")}</label>
+      {#if options.toc && format === "docx"}<p class="hint">{t("export.tocWordHint")}</p>{/if}
+    {/if}
+    {#if format !== "md"}
+      <div class="cover">
+        <img src={coverUrl} alt={t("cover.preview")} />
+        <div>
+          <label class="check"><input type="checkbox" bind:checked={useCover} /> {t("export.cover")}</label>
+          <p class="hint">{t("export.coverHint")}</p>
+        </div>
+      </div>
+    {/if}
     {#if format === "epub"}
-      <p class="hint">{t("export.epubHint")}</p>
       <label
         >{t("export.epubCss")}
         <textarea class="code" rows="14" spellcheck="false" bind:value={epubCss}></textarea>
@@ -464,19 +565,9 @@
         {t("export.epubCssHint")}
         {#if epubCss.trim() !== EPUB_CSS.trim()}<button type="button" class="link" onclick={() => (epubCss = EPUB_CSS)}>{t("export.epubCssReset")}</button>{/if}
       </p>
-    {:else if format === "md"}
-      <p class="hint">{t("export.mdHint")}</p>
-    {:else}
-    <label
-      >{t("export.profile")}
-      <select value={options.profile} onchange={(e) => setProfile((e.currentTarget as HTMLSelectElement).value as DocxSettings["profile"])}>
-        <option value="manuscript">{t("export.profileManuscript")}</option>
-        <option value="typeset">{t("export.profileTypeset")}</option>
-      </select>
-    </label>
-
-    {#if gamebook}
-      <h4>{t("export.gamebook")}</h4>
+    {/if}
+    {#if format === "md"}<p class="hint">{t("export.mdPageHint")}</p>{/if}
+    {:else if shown === "gamebook"}
       <p class="hint">{t("export.gamebookHint")}</p>
       <div class="row">
         <label
@@ -552,60 +643,7 @@
           </ul>
         </div>
       {/if}
-    {/if}
-
-    <h4>{t("export.page")}</h4>
-    <div class="row">
-      <label
-        >{t("export.pageSize")}
-        <select bind:value={options.pageSize}>
-          {#each Object.keys(PAGE_SIZES) as size (size)}
-            <option value={size}>{pageLabel(size as keyof typeof PAGE_SIZES)}</option>
-          {/each}
-          <option value="custom">{t("export.pageCustom")}</option>
-        </select>
-      </label>
-      {#if options.pageSize === "custom"}
-        <label>{t("export.pageWidth")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageWidth} /></label>
-        <label>{t("export.pageHeight")} <input type="number" min="5" max="60" step="0.1" bind:value={options.pageHeight} /></label>
-      {/if}
-    </div>
-    <div class="field">
-      <span class="label">{t("export.font")}</span>
-      <FontPicker bind:value={options.font} />
-    </div>
-    <div class="row">
-      <label>{t("export.fontSize")} <input type="number" min="8" max="20" bind:value={options.fontSize} /></label>
-      <label
-        >{t("export.lineSpacing")}
-        <select bind:value={options.lineSpacing}>
-          <option value={1}>1</option>
-          <option value={1.15}>1,15</option>
-          <option value={1.5}>1,5</option>
-          <option value={2}>2</option>
-        </select>
-      </label>
-      {#if !gamebook}<label>{t("export.indent")} <input type="number" min="0" max="3" step="0.01" bind:value={options.indent} /></label>{/if}
-    </div>
-    <label class="check"><input type="checkbox" bind:checked={options.header} /> {t("export.header")}</label>
-    {/if}
-    <label class="check"><input type="checkbox" bind:checked={options.titlePage} /> {t("export.titlePage")}</label>
-    {#if (format === "docx" || format === "pdf") && !gamebook}
-      <label class="check"><input type="checkbox" bind:checked={options.toc} /> {t("export.toc")}</label>
-      {#if options.toc && format === "docx"}<p class="hint">{t("export.tocWordHint")}</p>{/if}
-    {/if}
-    {#if format !== "md"}
-      <div class="cover">
-        <img src={coverUrl} alt={t("cover.preview")} />
-        <div>
-          <label class="check"><input type="checkbox" bind:checked={useCover} /> {t("export.cover")}</label>
-          <p class="hint">{t("export.coverHint")}</p>
-        </div>
-      </div>
-    {/if}
-
-    {#if !gamebook}
-    <h4>{t("export.structure")}</h4>
+    {:else if shown === "structure"}
     <div class="row">
       {#each breaks as item (item.key)}
         <label
@@ -650,9 +688,7 @@
       {/if}
     </fieldset>
     <p class="hint">{t("export.publishedTitleHint")}</p>
-    {/if}
-
-    <h4>{t("export.typography")} <HelpLink chapter="export" /></h4>
+    {:else if shown === "typography"}
     <p class="hint">{t("export.typographyHint")}</p>
     <label
       >{t("export.quotes")}
@@ -681,8 +717,7 @@
     <label class="check"><input type="checkbox" bind:checked={typography.ellipsis} /> {t("export.ellipsis")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.spaces} /> {t("export.spaces")}</label>
     <label class="check"><input type="checkbox" bind:checked={typography.whileTyping} /> {t("export.whileTyping")}</label>
-
-    <h4>{t("export.paratext")}</h4>
+    {:else if shown === "paratext"}
     <p class="hint">{t("export.paratextHint")}</p>
     <label>{t("export.dedication")} <textarea rows="2" bind:value={paratext.dedication}></textarea></label>
     <label>{t("export.epigraph")} <textarea rows="3" bind:value={paratext.epigraph}></textarea></label>
@@ -690,18 +725,17 @@
     <label>{t("export.authorNote")} <textarea rows="4" bind:value={paratext.authorNote}></textarea></label>
     <label>{t("export.acknowledgements")} <textarea rows="4" bind:value={paratext.acknowledgements}></textarea></label>
     <label>{t("export.colophon")} <textarea rows="3" bind:value={paratext.colophon}></textarea></label>
-
-    <label
-      >{t("export.revisions")}
-      <select bind:value={revisions}>
-        <option value="accept">{t("export.accept")}</option>
-        <option value="reject">{t("export.reject")}</option>
-      </select>
-    </label>
+    {/if}
+    </div>
+    <ExportPreview page={shown} {format} {options} {typography} {paratext} {structure} gamebook={gbx} settings={project.settings} cover={useCover} {coverUrl} />
+    </div>
+    <footer>
     <div class="actions">
       <button class="primary" type="submit" disabled={busy}>{busy ? t("export.running") : t("export.run", { format: FORMATS[format].name === "Word" ? "DOCX" : FORMATS[format].name })}</button>
       {#if folder}<button type="button" class="link" disabled={busy} onclick={() => run(true)}>{t("export.saveElsewhere")}</button>{/if}
       {#if error}<span class="error" role="alert"><ErrorText text={error} /></span>{/if}
+      <span class="grow"></span>
+      {#if desktop}<button type="button" onclick={openExports}>{t("export.openExports")}</button>{/if}
     </div>
     {#if message}
       <div class="success" role="status">
@@ -716,6 +750,7 @@
         {/if}
       </div>
     {/if}
+    </footer>
   </form>
 </div>
 
@@ -749,16 +784,6 @@
     color: var(--text-muted);
     font-size: 13px;
   }
-  .top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .top h2 {
-    margin: 0;
-  }
   .cover {
     display: flex;
     gap: 12px;
@@ -782,12 +807,106 @@
     cursor: pointer;
   }
   .export {
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
     height: 100%;
+    min-height: 0;
+  }
+  .sections {
+    display: grid;
+    align-content: start;
+    gap: 1px;
     overflow: auto;
-    padding: 24px 32px 64px;
+    padding: 16px 12px 24px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .item {
+    border: none;
+    border-radius: 6px;
+    background: none;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .item:hover {
+    background: var(--bg-hover);
+  }
+  .item[aria-current="page"] {
+    background: var(--bg-active);
+    font-weight: 500;
   }
   form {
-    max-width: 560px;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 0;
+  }
+  .page {
+    overflow: auto;
+    padding: 20px 32px 32px;
+  }
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 620px) minmax(240px, 1fr);
+    gap: 8px 40px;
+    align-items: start;
+  }
+  .page > :global(.preview) {
+    position: sticky;
+    top: 0;
+  }
+  @media (max-width: 1150px) {
+    .page {
+      grid-template-columns: minmax(0, 620px);
+    }
+    .page > :global(.preview) {
+      position: static;
+    }
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 16px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h2 {
+    margin: 0;
+  }
+  .scope {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer {
+    padding: 12px 32px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  footer .actions {
+    margin-top: 0;
+  }
+  .grow {
+    flex: 1;
+  }
+  footer .success {
+    max-width: 620px;
+    margin-top: 12px;
+  }
+  @media (max-width: 760px) {
+    .export {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .sections {
+      display: flex;
+      flex-wrap: wrap;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px;
+    }
   }
   h2 {
     font-size: 20px;

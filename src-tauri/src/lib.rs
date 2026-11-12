@@ -1,6 +1,7 @@
 mod backup;
 mod files;
 mod pdf;
+mod spelling;
 mod updates;
 mod web;
 pub mod webkit;
@@ -188,6 +189,8 @@ fn set_menu_labels(app: AppHandle, labels: MenuLabels) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Before the window: the web view reads this choice once, when it starts.
+    spelling::check_while_typing("app.dante.writer");
     let app = tauri::Builder::default()
         // A second copy started by a double-click hands its file to the running one and
         // quits, so a project opens in the window already there.

@@ -71,6 +71,7 @@ test("closes the Trash with Esc", async ({ page }) => {
 test("opens the guide at the chapter on exporting from the typography panel", async ({ page }) => {
   await openSample(page);
   await page.locator('nav button[data-section="export"]').click();
+  await page.locator('[data-export="typography"]').click();
   await page.getByRole("button", { name: "Open the guide on this subject" }).click();
   const heading = page.getByRole("dialog").getByRole("heading", { name: /Exporting to Word, PDF and EPUB/ });
   await expect(heading).toBeInViewport();

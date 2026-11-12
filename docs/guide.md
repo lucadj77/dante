@@ -726,7 +726,7 @@ It reads like this: `{== ==}` wraps the commented text, `{>> <<}` holds the comm
 
 ### How to
 
-1. Open the section **Export**.
+1. Open the section **Export**. The choices are divided into pages, listed on the left: **Format**, **Page and cover**, **Parts, chapters and scenes**, **Typography** and **Front and back matter**. To the right of each page the **Preview** shows the effect of the choices as you change them: the sheet with margins, font and line spacing, the headings and the separators, the text before and after the typographic corrections, the order of the pages of the book. The **Export** button always stays at the bottom.
 2. Choose the **Format**: **Word (DOCX)** to send to agents and publishers or to go on working on it; **PDF** ready to read or print; **EPUB** for ebook readers and online shops; **Markdown** to have the whole novel in one text file, to open with any editor.
 3. Choose **What to export**: the whole novel or a part of it.
 4. Choose the **Layout**: **Standard manuscript** (the format sent to publishers and agents) or **Typeset book** (for reading and printing).
@@ -748,7 +748,7 @@ The choices stay saved in the project: next time you only need to press Export.
 
 *Try it:* in the sample project choose a picture, remove the subtitle, set the text white with a black outline and look at the preview.
 
-![The Export section with the four formats and the first settings of the page](img/esportazione.png)
+![The Export section: the pages on the left, the choices in the middle and the preview of the sheet on the right](img/esportazione.png)
 
 *Example:* to send the manuscript to a publisher choose **Word (DOCX)** and **Standard manuscript**: Times New Roman 12, double line spacing, header with author, title and page number, title page. For a copy to read on a tablet choose **EPUB**.
 

@@ -726,7 +726,7 @@ Si legge così: `{== ==}` racchiude il testo commentato, `{>> <<}` contiene il c
 
 ### Come si fa
 
-1. Apri la sezione **Esportazione**.
+1. Apri la sezione **Esportazione**. Le scelte sono divise in pagine, elencate a sinistra: **Formato**, **Pagina e copertina**, **Parti, capitoli e scene**, **Tipografia** e **Paratesto**. A destra di ogni pagina l'**Anteprima** mostra l'effetto delle scelte mentre le cambi: il foglio con margini, font e interlinea, i titoli e i separatori, il testo prima e dopo le correzioni tipografiche, l'ordine delle pagine del libro. Il tasto **Esporta** resta sempre in basso.
 2. Scegli il **Formato**: **Word (DOCX)** da mandare ad agenti ed editori o per continuare a lavorarci; **PDF** pronto da leggere o stampare; **EPUB** per i lettori di ebook e i negozi online; **Markdown** per avere tutto il romanzo in un unico file di testo, da aprire con qualsiasi editor.
 3. Scegli **Cosa esportare**: tutto il romanzo o una sua parte.
 4. Scegli l'**Impaginazione**: **Manoscritto standard** (il formato che si invia a editori e agenti) oppure **Libro impaginato** (da leggere e stampare).
@@ -748,7 +748,7 @@ Le scelte restano salvate nel progetto: la volta dopo basta premere Esporta.
 
 *Prova:* nel progetto di esempio scegli un'immagine, togli il sottotitolo, metti il testo bianco con il contorno nero e guarda l'anteprima.
 
-![La sezione Esportazione con i quattro formati e le prime impostazioni della pagina](img/esportazione.png)
+![La sezione Esportazione: le pagine a sinistra, le scelte al centro e l'anteprima del foglio a destra](img/esportazione.png)
 
 *Esempio:* per mandare il manoscritto a un editore scegli **Word (DOCX)** e **Manoscritto standard**: Times New Roman 12, interlinea doppia, intestazione con autore, titolo e numero di pagina, frontespizio. Per una copia da leggere sul tablet scegli **EPUB**.
 
