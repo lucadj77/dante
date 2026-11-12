@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { edgeReveal } from "./edgeReveal.svelte";
   import { withShortcut } from "./formatLabels";
   import { keepInView } from "./keepInView";
   import ErrorText from "./ErrorText.svelte";
@@ -754,8 +755,7 @@
 
   async function toggleFullscreen() {
     fullscreen = !fullscreen;
-    edge = null;
-    hovering = false;
+    edges.reset();
     try {
       if (inTauri()) {
         const { getCurrentWindow } = await import("@tauri-apps/api/window");
@@ -776,7 +776,7 @@
     const onChange = () => {
       if (!document.fullscreenElement) {
         fullscreen = false;
-        edge = null;
+        edges.reset();
       }
     };
     document.addEventListener("fullscreenchange", onChange);
@@ -808,7 +808,7 @@
       const unlisten = await win.onResized(async () => {
         if (!(await win.isFullscreen())) {
           fullscreen = false;
-          edge = null;
+          edges.reset();
         }
       });
       if (stopped) unlisten();
@@ -820,67 +820,13 @@
     };
   });
 
-  /**
-   * In full screen only the text shows; the bars and the panels come out when the mouse
-   * rests on the edge they belong to, and go back when it leaves them.
-   */
-  type Edge = "top" | "left" | "right";
-  let edge = $state<Edge | null>(null);
-  /** The mouse is over the bars or panel that came out. */
-  let hovering = false;
-  let edgeTimer: ReturnType<typeof setTimeout> | undefined;
-  let hideTimer: ReturnType<typeof setTimeout> | undefined;
-  let waiting: Edge | null = null;
-  /** How close to the edge the mouse has to be, and how long it rests there. */
-  const EDGE_ZONE = 4;
-  const EDGE_DWELL = 120;
-
-  function onMouseMove(event: MouseEvent) {
-    if (!fullscreen) return;
-    // Out without the mouse ever going over it, as when it moves away at once.
-    if (edge) {
-      if (!hovering) hideSoon();
-      return;
-    }
-    // A button held down is a drag or the scrollbar, not a wish to see the panels.
-    if (event.buttons) return;
-    const near: Edge | null =
-      event.clientY <= EDGE_ZONE ? "top" : event.clientX <= EDGE_ZONE ? "left" : event.clientX >= window.innerWidth - 1 - EDGE_ZONE ? "right" : null;
-    if (near === waiting) return;
-    clearTimeout(edgeTimer);
-    waiting = near;
-    if (near) edgeTimer = setTimeout(() => ((edge = near), (waiting = null)), EDGE_DWELL);
-  }
-
-  /** Something in the bars or panel that came out is being typed into, so they stay. */
-  function typing(): boolean {
-    const focused = document.activeElement as HTMLElement | null;
-    const out = document.querySelector(".manuscript .edge-top.shown, .manuscript .edge-panel.shown");
-    if (!focused || !out?.contains(focused)) return false;
-    return focused.matches("input, textarea, select, [contenteditable=true], .cm-content");
-  }
-
-  function enterEdge() {
-    hovering = true;
-    clearTimeout(hideTimer);
-    hideTimer = undefined;
-  }
-
-  function hideSoon() {
-    if (hideTimer) return;
-    hideTimer = setTimeout(() => {
-      hideTimer = undefined;
-      if (hovering || menu || moreOpen || typing()) return;
-      edge = null;
-    }, 350);
-  }
-
-  function leaveEdge(event: Event) {
-    if (event.type === "mouseleave") hovering = false;
-    clearTimeout(hideTimer);
-    hideTimer = undefined;
-    hideSoon();
-  }
+  // In full screen the bars and the panels come out when the mouse rests on their edge.
+  const edges = edgeReveal(
+    () => fullscreen,
+    () => !!menu || moreOpen,
+  );
+  const edge = $derived(edges.edge);
+  const { onMouseMove, enterEdge, leaveEdge } = edges;
 </script>
 
 <svelte:window onkeydown={onKey} onmousemove={onMouseMove} />
