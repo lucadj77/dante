@@ -34,7 +34,9 @@ const ICONS = [
   // together: two people
   icon('<circle cx="8" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.5"/><path d="M3 19c.8-3 2.6-4.5 5-4.5s4.2 1.5 5 4.5"/><path d="M14 15.2c.7-.5 1.6-.7 2.5-.7 2 0 3.4 1.3 4 4.5"/>'),
   // from Word to the book: an arrow into an open book
-  icon('<path d="M12 7c-2-1.5-4.5-2-8-2v13c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2V5c-3.5 0-6 .5-8 2z"/><path d="M12 7v13"/>')
+  icon('<path d="M12 7c-2-1.5-4.5-2-8-2v13c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2V5c-3.5 0-6 .5-8 2z"/><path d="M12 7v13"/>'),
+  // gamebooks: a section that branches into two
+  icon('<circle cx="5" cy="12" r="2.2"/><circle cx="19" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 12h4c2 0 2.5-6 5.6-6M11.2 12c2 0 2.5 6 5.600 6"/>')
 ]
 // icons of the section on local files: computer with a lock, document, folder with an arrow
 const LOCAL_ICONS = [

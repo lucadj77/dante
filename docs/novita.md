@@ -6,6 +6,7 @@ Cosa cambia in ogni versione di Dante, dalla più recente. Le stesse note compai
 
 ### Nuovo
 
+- **Libri game**: escono dalla beta. Paragrafi numerati, scelte e rimandi, con controlli, grafo, rimescolamento ed esportazione: guida, capitolo 18.
 - **Scorciatoie personalizzabili**: in **Impostazioni → Scorciatoie** puoi cambiare i tasti dei comandi di scrittura (dividi in scena e in capitolo, grassetto, corsivo e il resto della formattazione, commento). Dante avvisa se la combinazione è già usata, e i suggerimenti dei pulsanti mostrano i tasti scelti.
 - **Caratteri spazi inclusi in tabelle, esportazione e importazione**: nelle tabelle e bacheche c'è il campo **Caratteri** accanto a **Parole**, e la tabella Scene di un progetto nuovo parte con la misura del progetto. Il frontespizio del manoscritto e il riepilogo dopo l'esportazione usano la stessa misura. L'anteprima dell'importazione mostra parole e caratteri.
 - **Menu del Mac nella lingua dell'interfaccia**: le voci della barra dei menu (Cerca aggiornamenti…, Modifica, Finestra, Aiuto di Dante e le altre) seguono la lingua scelta in Dante.

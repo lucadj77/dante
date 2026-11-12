@@ -256,6 +256,10 @@ export const texts = {
         [
           'From Word, to Word, PDF and EPUB',
           'Import a novel from Word or Scrivener. Export it as a standard manuscript for agents and publishers, as a PDF to read or print, or as an ebook.'
+        ],
+        [
+          'Gamebooks too',
+          'Numbered sections, choices and references that Dante keeps in order: it points out broken references and dead ends, draws the graph of the story, shuffles the numbers and exports the book ready to play.'
         ]
       ]
     },
@@ -338,8 +342,7 @@ export const texts = {
         bible: ['Story Bible and boards', 'Characters, places, links, tables and boards.'],
         together: ['Together and elsewhere', 'Writing with co-authors, and Dante in the browser.'],
         export: ['Goals and exporting', 'Goals, statistics and exporting.'],
-        // the note on the beta goes once gamebooks are in the stable version
-        gamebook: ['Gamebooks', 'Numbered sections, choices and references. For now only in the beta version of Dante.']
+        gamebook: ['Gamebooks', 'Numbered sections, choices and references.']
       }
     },
     guide: {
@@ -418,6 +421,10 @@ export const texts = {
         [
           'Da Word, a Word, PDF ed EPUB',
           'Importa un romanzo da Word o da Scrivener. Esportalo come manoscritto standard per agenti ed editori, in PDF da leggere o stampare, o come ebook.'
+        ],
+        [
+          'Anche libri game',
+          'Paragrafi numerati, scelte e rimandi che Dante tiene in ordine: segnala i rimandi rotti e i vicoli ciechi, disegna il grafo della storia, rimescola i numeri ed esporta il libro pronto da giocare.'
         ]
       ]
     },
@@ -499,7 +506,7 @@ export const texts = {
         bible: ['Bibbia e bacheche', 'Personaggi, luoghi, collegamenti, tabelle e bacheche.'],
         together: ['Insieme e altrove', 'Scrivere con i coautori, e Dante nel browser.'],
         export: ['Obiettivi ed esportazione', 'Obiettivi, statistiche ed esportazione.'],
-        gamebook: ['Libri game', 'Paragrafi numerati, scelte e rimandi. Per ora solo nella versione beta di Dante.']
+        gamebook: ['Libri game', 'Paragrafi numerati, scelte e rimandi.']
       }
     },
     guide: {
