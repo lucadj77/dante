@@ -79,6 +79,7 @@ export async function extractBackup(project: Project, name: string, folder: stri
   const info = await backupInfo(project, settings);
   if (!info?.dir) throw new Error("No backups for this project");
   const { dirname, join } = await import("@tauri-apps/api/path");
+  const { invoke } = await import("@tauri-apps/api/core");
   const clean = folder.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim() || "Dante";
   // Rust takes the files out one at a time: read here, a novel with many images filled the memory.
   return invoke<string>("extract_backup", { zip: await join(info.dir, name), parent: await dirname(project.fs.root), folder: clean });
