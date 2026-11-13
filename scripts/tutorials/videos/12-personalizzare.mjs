@@ -1,5 +1,7 @@
 // 12. Personalizzare l'aspetto: how the text looks in the editor (only on screen, not in the book),
 // the theme, the accent colour and the spelling checker.
+export const setup = () => ({ desktop: true });
+
 export const meta = {
   n: 12,
   group: 'write',
@@ -14,7 +16,17 @@ const D = {
     before: 'Il testo come appare di solito',
     s1: 'Dove si trova',
     s1b: 'Impostazioni, Dante su questo computer',
-    tab: 'L’aspetto è nella scheda Dante su questo computer: vale per tutti i romanzi aperti su questo computer',
+    tab: 'Aspetto, Il testo nell’editor e Scrittura stanno sotto Dante su questo computer: valgono per tutti i romanzi aperti su questo computer',
+    uiZoom: 'Dimensione dell’interfaccia ingrandisce tutta la finestra, da 80% a 200%: menu, pannelli, pulsanti e il loro testo',
+    s5l: 'Un aspetto per un romanzo',
+    s5lb: 'Impostazioni, Aspetto di questo romanzo',
+    look: 'Con questa spunta un romanzo ha il suo tema, colore, font e resa del testo, diversi dagli altri',
+    lookNote: 'Queste scelte restano su questo computer, non nel progetto: chi scrive con te tiene il suo aspetto',
+    dictionary: 'Le Parole di questo romanzo non vengono sottolineate: nomi inventati, dialetto. I nomi della Bibbia sono già esclusi',
+    s6s: 'Le scorciatoie',
+    s6sb: 'I tasti che preferisci',
+    shortcuts: 'In Scorciatoie cambi i tasti dei comandi di scrittura: dividi in scena, grassetto, corsivo, commento e gli altri',
+    change: 'Cambia, poi premi i tasti nuovi. Se la combinazione è già usata, Dante lo dice',
     own: 'Se scrivi con qualcuno, ognuno ha il suo aspetto: le tue scelte non cambiano lo schermo dell’altro',
     s2: 'Solo quello che vedi',
     s2b: 'Non il libro',
@@ -55,7 +67,17 @@ const D = {
     before: 'The text as it usually looks',
     s1: 'Where it is',
     s1b: 'Settings, Dante on this computer',
-    tab: 'The look is in the Dante on this computer tab: it holds for every novel opened on this computer',
+    tab: 'Appearance, The text in the editor and Writing are under Dante on this computer: they hold for every novel opened on this computer',
+    uiZoom: 'Interface size enlarges the whole window, from 80% to 200%: menus, panels, buttons and their text',
+    s5l: 'A look for one novel',
+    s5lb: 'Settings, Look of this novel',
+    look: 'With this box ticked a novel has its own theme, colour, font and text layout, different from the others',
+    lookNote: 'These choices stay on this computer, not in the project: whoever writes with you keeps their own look',
+    dictionary: 'The Words of this novel are not underlined: invented names, dialect. Story Bible names are already left out',
+    s6s: 'Shortcuts',
+    s6sb: 'The keys you prefer',
+    shortcuts: 'In Shortcuts you change the keys of the writing commands: split into scene, bold, italics, comment and the others',
+    change: 'Change, then press the new keys. If the combination is already taken, Dante says so',
     own: 'If you write with someone, each of you has your own look: your choices do not change their screen',
     s2: 'Only what you see',
     s2b: 'Not the book',
@@ -99,7 +121,7 @@ export default async function (t) {
   const text = () => main.locator('.cm-content').first();
   const select = (key) => p.locator('label', { hasText: L(key) }).locator('select').first();
   const input = (key) => p.locator('label', { hasText: L(key) }).locator('input').first();
-  const sample = p.locator('.sample').first();
+  const sample = p.locator('.settings aside.preview').first();
   const choose = async (sel, value) => {
     await t.click(sel, { after: 0.3 });
     await sel.selectOption(value);
@@ -111,37 +133,28 @@ export default async function (t) {
     await t.type(value, 120);
     await t.press('Tab', 0.8);
   };
-  const appearance = async () => {
-    await t.nav('section.settings');
-    await t.wait(0.8);
-    await t.click(t.text(L('settings.tabApp')), { after: 0.6 });
-    await p.getByRole('heading', { name: L('appearance.title'), exact: true }).first().scrollIntoViewIfNeeded();
-    await t.wait(0.6);
-  };
-
+  const page = (id) => t.settings(id, 1);
   await t.say(d.intro);
   await t.click(t.text(L('welcome.sample')), { after: 1.2 });
   await t.click(t.text(d.scene), { after: 1 });
   await t.click(main.getByRole('button', { name: L('level.scene'), exact: true }).first(), { after: 1 });
   await t.focus(text(), d.before, { side: 'below', pointer: false });
 
-  await t.title(d.s1, d.s1b, appearance);
-  const tab = t.text(L('settings.tabApp'));
-  await t.focus(tab, d.tab, { side: 'below' });
+  await t.title(d.s1, d.s1b, () => page('appearance'));
+  await t.focus(p.locator('.settings nav.sections .group').nth(1), d.tab, { side: 'right' });
   await t.say(d.own);
 
-  await t.title(d.s2, d.s2b);
-  await t.focus(p.getByRole('heading', { name: L('appearance.page'), exact: true }).first(), d.only, { side: 'right', hold: 4 });
+  await t.title(d.s2, d.s2b, () => page('text'));
+  await t.focus(p.locator('.settings .page header').first(), d.only, { side: 'below', hold: 4 });
 
   await t.title(d.s3, d.s3b);
   const font = select('settings.font');
-  await font.scrollIntoViewIfNeeded();
   await t.click(font, { after: 0.3 });
   await font.selectOption({ label: d.fontValue });
   await t.wait(0.8);
-  await t.focus([font, sample], d.font, { side: 'right' });
+  await t.focus([font, sample], d.font, { side: 'below' });
   await retype(input('settings.fontSize'), '20');
-  await t.focus([input('settings.fontSize'), input('settings.lineWidth')], d.size, { side: 'right' });
+  await t.focus([input('settings.fontSize'), input('settings.lineWidth')], d.size, { side: 'below' });
   await choose(select('appearance.lineHeight'), '2');
   await choose(select('appearance.gap'), '0.5');
   await choose(select('appearance.indent'), '1.5');
@@ -149,30 +162,37 @@ export default async function (t) {
     t.focus([select('appearance.lineHeight'), select('appearance.indent')], d.lines, { side: 'below' }), 1.4);
   const justify = p.locator('label', { hasText: L('appearance.justify') }).first();
   await t.click(justify.locator('input'), { after: 0.8 });
-  await t.focus(justify, d.justify, { side: 'right' });
-  await sample.scrollIntoViewIfNeeded();
-  await t.focus(sample, d.sample, { side: 'right', pointer: false });
+  await t.focus(justify, d.justify, { side: 'below' });
+  await t.focus(sample, d.sample, { side: 'below', pointer: false });
   await t.nav('section.manuscript');
   await t.wait(1.2);
   await t.focus(text(), d.after, { side: 'below', pointer: false });
 
-  await t.title(d.s4, d.s4b, appearance);
-  const theme = select('settings.theme');
-  await t.focus(theme, d.theme, { side: 'right' });
-  await choose(theme, 'sepia');
-  await t.focus(theme, d.sepia, { side: 'right' });
-  await choose(theme, 'night');
-  await t.focus(theme, d.night, { side: 'right' });
+  await t.title(d.s4, d.s4b, () => page('appearance'));
+  const themes = p.locator('.themes').first();
+  const theme = (id) => themes.locator(`[data-theme-choice="${id}"]`);
+  await t.focus(themes, d.theme, { side: 'right' });
+  await t.click(theme('sepia'), { after: 1 });
+  await t.focus(themes, d.sepia, { side: 'right', pointer: false });
+  await t.click(theme('night'), { after: 1 });
+  await t.focus(themes, d.night, { side: 'right', pointer: false });
 
   await t.title(d.s5, d.s5b);
   const swatches = p.getByRole('radiogroup', { name: L('appearance.accent') }).first();
   await t.click(swatches.getByRole('radio', { name: L('appearance.accent.teal') }), { after: 1 });
   await t.zoom(swatches, () => t.focus(swatches, d.accent, { side: 'right' }), 1.6);
+  const ui = select('appearance.uiZoom');
+  await t.zoom(ui, () => t.focus(ui, d.uiZoom, { side: 'right' }), 1.5);
 
-  await t.title(d.s5p, d.s5pb, async () => {
-    await p.locator('label', { hasText: L('appearance.paragraphs') }).first().scrollIntoViewIfNeeded();
-    await t.wait(0.6);
-  });
+  await t.title(d.s5l, d.s5lb, () => page('look'));
+  const own = p.locator('label', { hasText: L('look.own') }).first();
+  await t.click(own.locator('input'), { after: 1 });
+  await t.focus(own, d.look, { side: 'below' });
+  await t.click(p.locator('.themes [data-theme-choice="sepia"]').first(), { after: 1.2 });
+  await t.say(d.lookNote);
+  await t.click(own.locator('input'), { after: 1 });
+
+  await t.title(d.s5p, d.s5pb, () => page('writing'));
   const paragraphs = p.locator('label', { hasText: L('appearance.paragraphs') }).first();
   await t.zoom(paragraphs, () => t.focus(paragraphs, d.para, { side: 'below' }), 1.5);
   await t.click(paragraphs.locator('input'), { after: 1 });
@@ -181,16 +201,22 @@ export default async function (t) {
   await t.zoom(ask, () => t.focus(ask, d.ask, { side: 'below' }), 1.5);
   await t.click(paragraphs.locator('input'), { after: 1 });
 
-  await t.title(d.s6, d.s6b, async () => {
-    await p.locator('label', { hasText: L('appearance.spellcheck') }).first().scrollIntoViewIfNeeded();
-    await t.wait(0.6);
-  });
+  await t.title(d.s6, d.s6b);
   await t.focus(p.locator('label', { hasText: L('appearance.spellcheck') }).first(), d.spell, { side: 'below' });
+  const words = p.getByRole('heading', { name: L('dictionary.title'), exact: true }).first();
+  await t.focus([words, p.locator('.settings .page input[type=text], .settings .page input:not([type])').last()], d.dictionary, { side: 'right' });
 
-  await t.title(d.s7, d.s7b, () => t.nav('section.export'));
+  await t.title(d.s6s, d.s6sb, () => page('shortcuts'));
+  await t.focus(p.locator('ul.shortcuts').first(), d.shortcuts, { side: 'right' });
+  const italic = p.locator('ul.shortcuts [data-shortcut="italic"]').first();
+  await t.zoom(italic, () => t.focus(italic.getByRole('button').first(), d.change, { side: 'below' }), 1.5);
+
+  await t.title(d.s7, d.s7b, async () => {
+    await t.nav('section.export');
+    await t.wait(0.8);
+    await t.click(t.exportItem('page'), { after: 1 });
+  });
   const bookFont = p.locator('label', { hasText: L('export.lineSpacing') }).first();
-  await bookFont.scrollIntoViewIfNeeded();
-  await t.wait(0.6);
   await t.focus(bookFont, d.export, { side: 'right' });
   await t.nav('section.manuscript');
   await t.wait(1.2);

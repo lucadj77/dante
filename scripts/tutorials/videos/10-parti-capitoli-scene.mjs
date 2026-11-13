@@ -18,7 +18,8 @@ export const setup = (lang) => ({ folder: lang === 'it' ? 'Romanzi' : 'Novels' }
 export async function prepare(t) {
   const { page: p, L } = t;
   const button = (key) => p.getByRole('button', { name: L(key), exact: true }).first();
-  const [fc] = await Promise.all([p.waitForEvent('filechooser'), button('import.word').click()]);
+  await button('import.other').click();
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[role=dialog] .formats button').first().click()]);
   await fc.setFiles(path.join(ASSETS, t.lang, t.lang === 'it' ? 'Il faro.docx' : 'The Lighthouse.docx'));
   await p.waitForTimeout(1500);
   // the numbers that open the scenes of part one separate scenes
@@ -46,7 +47,7 @@ const D = {
     inside: 'Dentro una scena, per staccare due momenti senza farne due scene: una riga vuota con Invio due volte o ¶, o il separatore *** dalla barra',
     s2: 'Le parti',
     s2b: 'Si accendono nelle impostazioni',
-    parts: 'In Impostazioni, Questo romanzo, Struttura: con questa casella i capitoli si raggruppano in parti. Spenta, il romanzo ha solo capitoli',
+    parts: 'In Impostazioni, pagina Struttura: con questa casella i capitoli si raggruppano in parti. Spenta, il romanzo ha solo capitoli',
     restart: 'La numerazione dei capitoli può ricominciare in ogni parte',
     partButton: 'Con le parti, nell’albero compare anche il pulsante Parte',
     s3: 'Il titolo di ogni elemento',
@@ -66,6 +67,7 @@ const D = {
     sepPreview: 'Con «a capo» il titolo va sotto il numero',
     s5: 'In esportazione',
     s5b: 'Cosa finisce nel libro',
+    where: 'In Esportazione, la pagina Parti, capitoli e scene. A destra l’anteprima segue ogni scelta',
     breaks: 'Prima di una parte o di un capitolo, di solito una pagina nuova. Tra le scene: una riga vuota, un separatore o niente',
     sepField: 'Il separatore tra le scene si scrive qui',
     sepText: '* * *',
@@ -90,7 +92,7 @@ const D = {
     inside: 'Inside a scene, to set two moments apart without making two scenes: a blank line with Enter twice or ¶, or the *** separator from the bar',
     s2: 'Parts',
     s2b: 'Turned on in Settings',
-    parts: 'In Settings, This novel, Structure: with this box chapters are grouped into parts. Off, the novel has only chapters',
+    parts: 'In Settings, the Structure page: with this box chapters are grouped into parts. Off, the novel has only chapters',
     restart: 'Chapter numbers can start again in each part',
     partButton: 'With parts, the tree also has a Part button',
     s3: 'Every item’s title',
@@ -110,6 +112,7 @@ const D = {
     sepPreview: 'With a new line, the title goes below the number',
     s5: 'When exporting',
     s5b: 'What goes into the book',
+    where: 'In Export, the Parts, chapters and scenes page. On the right the preview follows every choice',
     breaks: 'Before a part or a chapter, usually a new page. Between scenes: a blank line, a separator or nothing',
     sepField: 'The separator between scenes is typed here',
     sepText: '* * *',
@@ -156,9 +159,7 @@ export default async function (t) {
   await t.zoom([separator, blank], () => t.focus([separator, blank], d.inside, { side: 'below' }), 1.6);
 
   await t.title(d.s2, d.s2b, async () => {
-    await t.nav('section.settings');
-    await t.wait(0.8);
-    await t.click(t.text(L('settings.tabNovel')), { after: 0.6 });
+    await t.settings('structure');
   });
   const parts = p.locator('label', { hasText: L('settings.parts') }).first();
   await t.zoom(parts, () => t.focus(parts, d.parts, { side: 'right' }), 1.4);
@@ -175,10 +176,7 @@ export default async function (t) {
   await t.press('Enter', 0.8);
   await t.focus([titleField, row(new RegExp(`^${d.sceneTitle}$`))], d.title, { side: 'below' });
 
-  await t.title(d.s4, d.s4b, async () => {
-    await t.nav('section.settings');
-    await t.wait(0.8);
-  });
+  await t.title(d.s4, d.s4b, () => t.settings('structure'));
   const part = field(L('kind.part'));
   const chapter = field(L('kind.chapter'));
   await t.focus(part, d.settings, { side: 'right' });
@@ -199,10 +197,10 @@ export default async function (t) {
   await t.title(d.s5, d.s5b, async () => {
     await t.nav('section.export');
     await t.wait(0.8);
+    await t.click(t.exportItem('structure'), { after: 1 });
   });
-  const structure = p.getByText(L('export.structure'), { exact: true }).first();
-  const row1 = structure.locator('xpath=following-sibling::*[1]');
-  await t.focus([structure, row1], d.breaks, { side: 'right' });
+  await t.focus(t.exportItem('structure'), d.where, { side: 'right' });
+  await t.focus(p.locator('.export form .row').first(), d.breaks, { side: 'below' });
   const sep = p.locator('label', { hasText: L('export.separator') }).locator('input').first();
   await retype(sep, d.sepText);
   await t.zoom(sep, () => t.focus(sep, d.sepField, { side: 'right' }), 1.4);

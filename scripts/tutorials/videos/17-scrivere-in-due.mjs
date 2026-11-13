@@ -120,9 +120,7 @@ export default async function (t) {
 
   await t.title(d.s1, d.s1b);
   await t.say(d.share);
-  await t.nav('section.settings');
-  await t.wait(0.8);
-  await t.click(t.text(L('settings.tabApp')), { after: 1 });
+  await t.settings('you', 1);
   const name = p.locator('label', { hasText: L('settings.userName') }).first();
   await t.zoom(name, () => t.focus(name, d.name, { side: 'right' }), 1.5);
 
@@ -155,7 +153,7 @@ export default async function (t) {
   await p.mouse.click(r.x + r.width * 0.3, r.y + r.height * 0.2, { clickCount: 3 });
   await t.wait(0.8);
   await t.say(d.newComment);
-  await t.press('ControlOrMeta+Alt+m', 0.8);
+  await t.press('Meta+Alt+m', 0.8);
   await t.type(d.comment, 70);
   await t.click(side.getByRole('button', { name: L('comments.add') }), { after: 1.2 });
 

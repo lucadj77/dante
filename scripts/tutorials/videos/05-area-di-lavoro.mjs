@@ -36,7 +36,13 @@ const D = {
     reset: 'Un doppio clic sul bordo lo riporta alla larghezza normale',
     s5: 'Ingrandire il testo',
     s5b: '⌘+ e ⌘− (Ctrl+ e Ctrl−)',
-    bigger: '⌘+ ingrandisce tutto, ⌘− rimpicciolisce, ⌘0 torna alla misura normale',
+    bigger: '⌘+ ingrandisce il testo dell’editor, ⌘− lo rimpicciolisce, ⌘0 lo riporta alla misura normale',
+    ui: 'Per ingrandire anche menu, pannelli e pulsanti: Impostazioni, Aspetto, Dimensione dell’interfaccia',
+    s7: 'Comandi da tastiera',
+    s7b: 'Senza mouse, dalla ricerca',
+    cmd: 'Nella ricerca (⌘⇧F) scrivi > e parte di un comando: Invio lo esegue',
+    cmdWord: '> statistiche',
+    cmdDone: 'Ecco le Statistiche. Così si aprono sezioni, barre, pannelli, l’aiuto e il cestino',
     s6: 'L’aiuto',
     s6b: 'Dentro Dante, anche senza connessione',
     help: 'Aiuto apre i primi passi, la guida completa e le novità',
@@ -71,11 +77,17 @@ const D = {
     reset: 'A double click on the edge puts it back to its usual width',
     s5: 'Bigger text',
     s5b: '⌘+ and ⌘− (Ctrl+ and Ctrl−)',
-    bigger: '⌘+ makes everything bigger, ⌘− smaller, ⌘0 goes back to the usual size',
+    bigger: '⌘+ enlarges the text in the editor, ⌘− makes it smaller, ⌘0 brings it back to normal',
+    ui: 'To enlarge menus, panels and buttons too: Settings, Appearance, Interface size',
+    s7: 'Commands from the keyboard',
+    s7b: 'No mouse, from the search',
+    cmd: 'In the search (⌘⇧F) type > and part of a command: Enter runs it',
+    cmdWord: '> statistics',
+    cmdDone: 'Here are the Statistics. This way you open sections, bars, panels, help and the trash',
     s6: 'Help',
     s6b: 'Inside Dante, even offline',
     help: 'Help opens the first steps, the full guide and what’s new',
-    guide: 'The full guide, in chapters (for now in Italian only): click a title to go to it',
+    guide: 'The full guide, in chapters: click a title to go to it',
     end: 'Every button has a tip: just hold the mouse over it',
   },
 };
@@ -145,12 +157,33 @@ export default async function (t) {
   await t.press('ControlOrMeta+=', 1);
   await t.focus(p.locator('main.center').first(), d.bigger, { side: 'below', pointer: false });
   await t.press('ControlOrMeta+0', 1);
+  await t.say(d.ui);
+
+  await t.title(d.s7, d.s7b);
+  await t.press('ControlOrMeta+Shift+F', 1);
+  await t.type(d.cmdWord, 110);
+  await t.wait(1);
+  const drawer = p.locator('.search-drawer').first();
+  await t.focus(drawer, d.cmd, { side: 'right', pointer: false });
+  await t.press('Enter', 1.5);
+  await t.say(d.cmdDone);
+  await t.nav('section.manuscript');
 
   await t.title(d.s6, d.s6b);
   await t.focus(navButton('help'), d.help, { side: 'right' });
+  // the guide names another program here and there: the videos never do
+  await p.evaluate((word) => {
+    const fix = (root) => {
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.nodeValue.includes('Obsidian')) n.nodeValue = n.nodeValue.replaceAll('Obsidian', word);
+    };
+    new MutationObserver(() => fix(document.body)).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }, t.lang === 'it' ? 'un editor Markdown' : 'a Markdown editor');
   await t.click(navButton('help'), { after: 1.2 });
   const dialog = p.locator('.help[role=dialog]').first();
   await t.click(dialog.getByRole('tab', { name: L('help.guide') }), { after: 1.5 });
+  // the guide's last chapter is about another program: not shown in the videos
+  await p.evaluate(() => { for (const li of document.querySelectorAll('.help .chapters li')) if (/Obsidian|Markdown editor|editor Markdown/.test(li.textContent)) li.style.display = 'none'; });
   await t.focus(dialog.locator('.chapters').first(), d.guide, { side: 'right' });
   await t.click(dialog.locator('.chapters li').nth(3), { after: 1.5 });
   await t.click(dialog.getByRole('button', { name: L('help.close') }), { after: 0.8 });

@@ -31,7 +31,7 @@ function fakeTauri({ recent, answers }) {
     metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } },
     transformCallback: () => 0,
     invoke: async (cmd, args) =>
-      cmd in answers ? answers[cmd] : cmd === 'read_text' ? (yaml[args.root] ?? 'title: x\n') : cmd === 'path_exists' ? true : cmd === 'list_dir' ? [] : cmd === 'plugin:app|version' ? '1.0.0' : null,
+      cmd in answers ? answers[cmd] : cmd === 'read_text' ? (yaml[args.root] ?? 'title: x\n') : cmd === 'path_exists' ? true : cmd === 'list_dir' ? [] : cmd === 'plugin:app|version' ? '1.2.1' : null,
   };
 }
 
@@ -242,6 +242,14 @@ export async function start({ lang, desktop = false, recent = [], answers = {}, 
     text: (s) => p.getByText(s, { exact: true }).first(),
     line: (s) => p.locator('.cm-line', { hasText: s }).first(),
     nav: (key) => t.click(p.locator('nav[aria-label]').first().getByRole('button', { name: L(key), exact: true })),
+    /** A page of the Settings, by its id (book, cover, structure, scenes, measures, typography, look, gamebook, upkeep, you, appearance, text, writing, shortcuts, backup, updates). */
+    settingsItem: (id) => p.locator(`.settings nav.sections [data-settings="${id}"]`).first(),
+    async settings(id, after = 0.8) {
+      if (!(await p.locator('.settings nav.sections').count())) { await t.nav('section.settings'); await t.wait(0.6); }
+      await t.click(t.settingsItem(id), { after });
+    },
+    /** A page of the Export, by its id (format, page, structure, gamebook, typography, paratext). */
+    exportItem: (id) => p.locator(`.export nav.sections [data-export="${id}"]`).first(),
     async click(loc, { dx, dy, after = 0.7 } = {}) { await point(loc, dx, dy); await p.mouse.down(); await wait(0.07); await p.mouse.up(); await wait(after); },
     async type(s, delay = 70) { await p.keyboard.type(s, { delay: FAST ? 0 : delay }); },
     async press(keys, after = 0.5) { await p.keyboard.press(keys); await wait(after); },

@@ -37,7 +37,7 @@ const D = {
     open: 'Apriamo «La torre del mago», un piccolo libro game di esempio: quindici paragrafi e una pagina di regole',
     s1: 'Accendere il modulo',
     s1b: 'Un progetto alla volta',
-    settings: 'In Impostazioni, Questo romanzo, la sezione Libro game',
+    settings: 'In Impostazioni, la pagina Libro game',
     enable: 'Basta una spunta. Vale solo per questo progetto: gli altri romanzi restano come sono',
     folder: 'La cartella che contiene i paragrafi. Ogni paragrafo è un file Markdown: il titolo è il nome del file, il numero sta nelle sue proprietà',
     s2: 'L’albero dei paragrafi',
@@ -100,7 +100,7 @@ const D = {
     rules: 'Regole',
     rulesSay: 'Una pagina senza numero, con 📄: regole, introduzione, ringraziamenti. Di base va prima dei paragrafi',
     callout: 'Nelle pagine come nei paragrafi, un blocco che comincia con > [!note] diventa un riquadro con il nome in una pillola colorata',
-    page: 'Il pulsante Pagina ne crea una nuova; con il clic destro si rinomina o si mette dopo i paragrafi',
+    page: 'Il pulsante Pagina ne crea una nuova e chiede il titolo; con il clic destro si mette dopo i paragrafi',
     after: 'Ora la pagina va dopo i paragrafi, ed è così che l’esportazione la metterà',
     s7: 'Controllare il libro',
     s7b: 'Avvisi e stato di gioco',
@@ -128,7 +128,7 @@ const D = {
     undo: 'Tornare indietro: Operazioni precedenti. Solo la numerazione rimette i numeri e lascia il testo scritto dopo; Tutto riporta i file com’erano',
     s10: 'Esportare',
     s10b: 'Il libro pronto da stampare',
-    export: 'In Esportazione, la sezione Libro game prende il posto di parti, capitoli e scene',
+    export: 'In Esportazione, la pagina Libro game prende il posto di Parti, capitoli e scene',
     heading: 'Il titolo del paragrafo: solo il numero, oppure numero e titolo per una copia di lavoro. Un segno prima del numero, allineamento e dimensione',
     separator: 'Tra un paragrafo e l’altro: una pagina nuova, una riga vuota o un simbolo',
     boxes: 'I box a colori, in grigio per la stampa in bianco e nero, o come testo normale',
@@ -143,7 +143,7 @@ const D = {
     open: 'Let’s open “The Wizard’s Tower”, a small sample gamebook: fifteen sections and a page of rules',
     s1: 'Turning the module on',
     s1b: 'One project at a time',
-    settings: 'In Settings, This novel, the Gamebook section',
+    settings: 'In Settings, the Gamebook page',
     enable: 'One tick is enough. It applies only to this project: your other novels stay as they are',
     folder: 'The folder that holds the sections. Each one is a Markdown file: its title is the file name, its number is in its properties',
     s2: 'The tree of sections',
@@ -206,7 +206,7 @@ const D = {
     rules: 'Rules',
     rulesSay: 'A page with no number, marked 📄: rules, introduction, acknowledgements. By default it goes before the sections',
     callout: 'In pages as in sections, a block that starts with > [!note] becomes a frame with its name in a coloured pill',
-    page: 'The Page button makes a new one; right-click to rename it or put it after the sections',
+    page: 'The Page button makes a new one and asks for its title; right-click to put it after the sections',
     after: 'Now the page goes after the sections, and that is where the export will put it',
     s7: 'Checking the book',
     s7b: 'Warnings and game state',
@@ -234,7 +234,7 @@ const D = {
     undo: 'To go back: Earlier operations. Numbers only puts the numbers back and keeps the text written since; Everything brings the files back as they were',
     s10: 'Exporting',
     s10b: 'The book, ready to print',
-    export: 'In Export, the Gamebook section takes the place of parts, chapters and scenes',
+    export: 'In Export, the Gamebook page takes the place of Parts, chapters and scenes',
     heading: 'The section heading: the number only, or number and title for a working copy. A sign before the number, alignment and size',
     separator: 'Between one section and the next: a new page, a blank line or a symbol',
     boxes: 'Boxes in colour, in grey for black and white printing, or as plain text',
@@ -263,8 +263,7 @@ export default async function (t) {
     await t.press('ControlOrMeta+End', 0.2);
   };
   const openSettings = async () => {
-    await t.nav('section.settings');
-    await t.click(p.getByRole('tab', { name: L('settings.tabNovel') }), { after: 0.6 });
+    await t.settings('gamebook', 0.6);
   };
 
   await t.say(d.intro);
@@ -273,7 +272,7 @@ export default async function (t) {
 
   // 1. turning it on
   await t.title(d.s1, d.s1b, openSettings);
-  const heading = p.locator('h3', { hasText: new RegExp(`^${L('gamebook.title')}$`) }).first();
+  const heading = t.settingsItem('gamebook');
   await t.focus(heading, d.settings, { side: 'right' });
   const enable = settingsRow('gamebook.enable');
   await t.click(enable.locator('input'), { after: 1.2 });
@@ -349,7 +348,7 @@ export default async function (t) {
   await t.press('Enter', 0.3);
   const plus = main.locator('.format-row, .format-bar').first().getByRole('button', { name: new RegExp(L('gamebook.paragraphButton')) }).first();
   await t.focus(plus, d.shortcut, { side: 'below' });
-  await t.press('ControlOrMeta+Enter', 1);
+  await t.press('Meta+Enter', 1);
   const dialog = p.locator('.dialog').first();
   await t.type(d.dialogTitle, 80);
   await t.click(dialog.locator('input.num').first(), { after: 0.2 });
@@ -379,7 +378,7 @@ export default async function (t) {
   await t.say(d.boxEnding);
   await openSettings();
   const types = p.locator('fieldset.box-type').first();
-  await t.focus([p.locator('h4', { hasText: L('gamebook.boxes') }), types], d.boxTypes, { side: 'right' });
+  await t.focus([p.locator('.settings h3', { hasText: L('gamebook.boxes') }).first(), types], d.boxTypes, { side: 'right' });
   await t.nav('section.manuscript');
 
   // 6. pages without a number
@@ -387,8 +386,13 @@ export default async function (t) {
   await t.focus(row(d.rules).locator('xpath=..'), d.rulesSay, { side: 'right' });
   const pageButton = treePane.getByRole('button', { name: L('gamebook.newPage') });
   await t.focus(pageButton, d.page, { side: 'right' });
-  await t.click(pageButton, { after: 1.2 });
-  const newPage = row(L('gamebook.newPageTitle'));
+  await t.click(pageButton, { after: 1 });
+  const pageTitle = t.lang === 'it' ? 'Ringraziamenti' : 'Acknowledgements';
+  const pageDialog = p.locator('.dialog').first();
+  await t.click(pageDialog.locator('input').first(), { after: 0.2 });
+  await t.type(pageTitle, 80);
+  await t.click(pageDialog.locator('button.primary').first(), { after: 1.2 });
+  const newPage = row(pageTitle);
   await newPage.click({ button: 'right' });
   await t.wait(0.6);
   await t.click(p.getByRole('menuitem', { name: L('gamebook.moveAfter') }).first(), { after: 1 });
@@ -452,14 +456,17 @@ export default async function (t) {
 
   // 10. export
   await t.title(d.s10, d.s10b, () => t.nav('section.export'));
-  const gb = p.locator('h4', { hasText: L('export.gamebook') }).first();
+  const gb = t.exportItem('gamebook');
+  await t.click(gb, { after: 1 });
   await t.focus(gb, d.export, { side: 'right' });
-  const after = (loc) => gb.locator('xpath=following-sibling::*').filter({ has: loc }).first();
-  await t.focus(gb.locator('xpath=following-sibling::*[3]'), d.heading, { side: 'right' });
-  await t.focus(gb.locator('xpath=following-sibling::*[4]'), d.separator, { side: 'right' });
+  const rows = p.locator('.export .row');
+  await t.focus(rows.nth(0), d.heading, { side: 'below' });
+  await t.focus(rows.nth(1), d.separator, { side: 'below' });
   await t.say(d.boxes);
   await t.say(d.clickable);
-  await t.say(d.problems);
+  const problems = p.locator('.export .problems');
+  if (await problems.count()) await t.focus(problems.first(), d.problems, { side: 'above' });
+  else await t.say(d.problems);
   const frame = await showEpub(t, b.title);
   await t.focus(frame.locator('.box').first(), d.epub, { side: 'below' });
   await t.click(frame.locator('.box a').first(), { after: 1.5 });
@@ -470,10 +477,11 @@ export default async function (t) {
 /** Exports the book as EPUB in the project's export folder and returns its bytes. */
 async function exportEpub(t, folder) {
   const p = t.page;
+  await t.click(t.exportItem('format'), { after: 0.6 });
   await t.click(p.locator('label.format').filter({ has: p.locator('input[value="epub"]') }), { after: 0.6 });
-  const run = p.locator('button.primary[type="submit"]').first();
+  const run = p.locator('.export footer .actions .primary').first();
   await t.click(run, { after: 0.2 });
-  await p.waitForFunction(() => !document.querySelector('button.primary[type="submit"][disabled]'), null, { timeout: 60000 });
+  await p.locator('.export .success').first().waitFor({ timeout: 60000 });
   const b64 = await p.evaluate(async (folder) => {
     const root = await navigator.storage.getDirectory();
     const dir = await (await root.getDirectoryHandle(folder)).getDirectoryHandle('export');
@@ -500,22 +508,42 @@ async function showEpub(t, folder) {
   }
   const GAP = 128;
   const page = `html,body{height:100%;margin:0;overflow:hidden;background:#fffdf8}#book{position:absolute;top:56px;bottom:56px;left:64px;width:1052px;overflow:hidden;columns:2;column-gap:${GAP}px;column-fill:auto;font-size:18px}h2.number{margin-top:0}.pagebreak{break-before:column}`;
-  const js = `<script>addEventListener('click',(e)=>{const a=e.target.closest('a[href^="#"]');if(!a)return;e.preventDefault();const b=document.getElementById('book');const x=document.getElementById(a.getAttribute('href').slice(1));if(!x)return;const step=(b.clientWidth+${GAP})/2;const left=x.getBoundingClientRect().left-b.getBoundingClientRect().left+b.scrollLeft;b.scrollTo({left:Math.floor((left+10)/step)*step});});for(const ev of ['mousemove','mousedown'])addEventListener(ev,(e)=>{const r=frameElement.getBoundingClientRect();parent.dispatchEvent(new MouseEvent(ev,{clientX:e.clientX+r.left,clientY:e.clientY+r.top}));},true);<\/script>`;
   html = html.replace(/<\?xml[^>]*>\s*/, '')
     .replace(/<link[^>]*style\.css"\/>/, `<style>${css}${page}</style>`)
     .replace('<body>', '<body><div id="book">')
-    .replace('</body>', `</div>${js}</body>`);
-  await p.evaluate((html) => {
+    .replace('</body>', '</div></body>');
+  // The app's content security policy blocks scripts inside the frame, so the page wires it from outside.
+  await p.evaluate(({ html, GAP }) => {
     const shade = document.createElement('div');
     shade.id = 'tu-reader';
     shade.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:#3a3a3c;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s';
     const frame = document.createElement('iframe');
     frame.style.cssText = 'width:1180px;height:720px;border:0;background:#fffdf8;box-shadow:0 10px 40px rgba(0,0,0,.5);border-radius:6px';
+    frame.onload = () => {
+      const w = frame.contentWindow;
+      const doc = frame.contentDocument;
+      doc.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href*="#"]');
+        if (!a) return;
+        e.preventDefault();
+        const b = doc.getElementById('book');
+        const x = doc.getElementById(a.getAttribute('href').split('#')[1]);
+        if (!x) return;
+        const step = (b.clientWidth + GAP) / 2;
+        const left = x.getBoundingClientRect().left - b.getBoundingClientRect().left + b.scrollLeft;
+        b.scrollTo({ left: Math.floor((left + 10) / step) * step });
+      });
+      for (const ev of ['mousemove', 'mousedown'])
+        w.addEventListener(ev, (e) => {
+          const r = frame.getBoundingClientRect();
+          window.dispatchEvent(new MouseEvent(ev, { clientX: e.clientX + r.left, clientY: e.clientY + r.top }));
+        }, true);
+    };
     frame.srcdoc = html;
     shade.append(frame);
     document.body.append(shade);
     requestAnimationFrame(() => requestAnimationFrame(() => (shade.style.opacity = '1')));
-  }, html);
+  }, { html, GAP });
   await t.wait(1.2);
   return p.frameLocator('#tu-reader iframe');
 }

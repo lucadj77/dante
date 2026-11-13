@@ -73,9 +73,8 @@ export default async function (t) {
   const d = D[t.lang];
   const main = p.locator('main.center').first();
   const modes = p.getByRole('group', { name: L('toolbar.modes') }).first();
-  // the buttons show only their icons: focus, typewriter, line, full screen
-  const ORDER = ['mode.focus', 'mode.typewriter', 'mode.lineHighlight', 'mode.fullscreen'];
-  const mode = (key) => modes.locator('button').nth(ORDER.indexOf(key));
+  // the buttons show only their icons, but each keeps its name in a hidden label
+  const mode = (key) => modes.locator('button').filter({ has: p.locator('.label', { hasText: new RegExp(`^${L(key)}$`) }) }).first();
 
   // the end of the scene: CodeMirror draws only the lines on screen
   const toEnd = async () => {

@@ -29,13 +29,18 @@ const D = {
     s4b: 'Capitoli e scene a confronto',
     length: 'Ogni capitolo o scena con la sua lunghezza e la sua parte del romanzo: si vede subito cosa è troppo lungo o troppo corto',
     level: 'Scene',
-    s5: 'Le citazioni',
+    s5: 'Le menzioni',
     s5b: 'Chi compare, e dove',
     mentions: 'Quante volte ogni scheda della Bibbia è nominata, in quante scene, dalla prima all’ultima',
     s6: 'Lo stile',
     s6b: 'Passi da rileggere',
     style: 'Stime sulle parole: lunghezza delle frasi, avverbi, dialogo, ripetizioni vicine. Indicano cosa rileggere, non sono regole',
     jump: 'Un clic su una ripetizione apre la scena in quel punto, con il passo selezionato',
+    s7: 'Le misure del romanzo',
+    s7b: 'Impostazioni, Misure e obiettivi',
+    pages: 'Quanto vale una pagina: 1.800 caratteri, la cartella editoriale, o un numero di parole',
+    thresholds: 'Le soglie dello stile: da quante parole una frase è lunga, entro quante una parola è ripetuta, e quanto legge il lettore al minuto',
+    goalsHere: 'E gli stessi obiettivi delle Statistiche: lunghezza, scadenza, quota del giorno e giorni di scrittura',
   },
   en: {
     intro: 'Statistics tell you how long the novel is, how much you write and where you repeat words',
@@ -65,6 +70,11 @@ const D = {
     s6b: 'Passages to reread',
     style: 'Estimates on the words: sentence length, adverbs, dialogue, close repetitions. They point at what to reread, they are not rules',
     jump: 'A click on a repetition opens the scene at that point, with the passage selected',
+    s7: 'The novel’s measures',
+    s7b: 'Settings, Measures and goals',
+    pages: 'What a page is worth: a number of characters, or of words',
+    thresholds: 'The style thresholds: how many words make a long sentence, within how many a word counts as repeated, and how fast the reader reads',
+    goalsHere: 'And the same goals as in Statistics: length, deadline, daily quota and writing days',
   },
 };
 
@@ -123,4 +133,12 @@ export default async function (t) {
   await show(example);
   await t.focus(example, d.jump, { side: 'right' });
   await t.click(example, { after: 2 });
+
+  await t.title(d.s7, d.s7b, () => t.settings('measures', 1));
+  const head = (key) => p.getByRole('heading', { name: L(key), exact: true }).first();
+  await t.focus(head('settings.pages'), d.pages, { side: 'right' });
+  await show(head('settings.style'));
+  await t.focus(head('settings.style'), d.thresholds, { side: 'right' });
+  await show(head('statsView.goals'));
+  await t.focus(head('statsView.goals'), d.goalsHere, { side: 'right' });
 }

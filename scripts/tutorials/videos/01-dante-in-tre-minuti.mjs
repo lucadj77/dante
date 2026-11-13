@@ -25,7 +25,7 @@ const D = {
     welcome: 'Dante è un’app di scrittura per romanzieri. Si apre con i tuoi romanzi.',
     recent: 'I progetti recenti, ciascuno con la sua copertina',
     new: 'Comincia un romanzo nuovo…',
-    word: '…oppure importa quello che hai già scritto in Word o in Scrivener',
+    word: '…apri una cartella che hai già, oppure importa quello che hai scritto in Word, LibreOffice o Scrivener',
     sample: 'Proviamo il progetto di esempio: i primi capitoli dei Promessi sposi',
     s1: 'Il manoscritto',
     s1b: 'Scene, capitoli e parti, dentro un unico libro',
@@ -52,13 +52,14 @@ const D = {
     s4: 'Quando il libro è pronto',
     s4b: 'Word, PDF ed EPUB, con la copertina',
     formats: 'Esporta in Word per un editore, in PDF da stampare, in EPUB per gli ebook',
+    preview: 'Le scelte sono divise in pagine, e a destra un’anteprima mostra il libro mentre lo imposti',
     end: 'Ogni romanzo è una cartella di file Markdown, un formato libero che si apre con qualsiasi editor di testo',
   },
   en: {
     welcome: 'Dante is a writing app for novelists. It opens with your novels.',
     recent: 'Your recent projects, each with its own cover',
     new: 'Start a new novel…',
-    word: '…or import what you have already written in Word or Scrivener',
+    word: '…open a folder you already have, or import what you wrote in Word, LibreOffice or Scrivener',
     sample: 'Let’s try the sample project: the first chapters of Pride and Prejudice',
     s1: 'The manuscript',
     s1b: 'Scenes, chapters and parts, in one book',
@@ -85,6 +86,7 @@ const D = {
     s4: 'When the book is ready',
     s4b: 'Word, PDF and EPUB, with the cover',
     formats: 'Export to Word for a publisher, to PDF to print, to EPUB for e-readers',
+    preview: 'The choices are split into pages, and on the right a preview shows the book as you set it up',
     end: 'Every novel is a folder of Markdown files, a free format any text editor can open',
   },
 };
@@ -94,11 +96,11 @@ export default async function (t) {
   const d = D[t.lang];
 
   await t.say(d.welcome);
-  await t.zoom([p.locator('main h1').first(), p.locator('.recent')], async () => {
-    await t.focus(p.locator('.recent'), d.recent, { side: 'below' });
-    await t.focus(t.button(L('welcome.new')), d.new, { side: 'right' });
-    await t.focus(t.button(L('import.word')), d.word, { side: 'right' });
-  }, 1.5);
+  await t.focus(p.locator('.recent'), d.recent, { side: 'above' });
+  await t.zoom(p.locator('.choices'), async () => {
+    await t.focus(t.button(L('welcome.new')), d.new, { side: 'below' });
+    await t.focus([t.button(L('welcome.open')), t.button(L('import.other'))], d.word, { side: 'below' });
+  }, 1.4);
   await t.browserApp();
   await t.focus(t.text(L('welcome.sample')), d.sample);
   await t.click(t.text(L('welcome.sample')), { after: 1.2 });
@@ -143,6 +145,7 @@ export default async function (t) {
 
   await t.title(d.s4, d.s4b, () => t.nav('section.export'));
   await t.focus(p.locator('.formats').first(), d.formats, { side: 'below' });
+  await t.focus(p.locator('aside.preview'), d.preview, { side: 'left', pointer: false });
 
   await t.title('Dante', d.end);
 }

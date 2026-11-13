@@ -11,7 +11,7 @@ export const videos = [
     en: 'Dante in three minutes',
     it: 'Dante in tre minuti',
     about: { en: 'A quick tour to get started', it: 'Un giro veloce per chi comincia' },
-    url: { en: 'https://www.youtube.com/watch?v=h3N3oA0RLCg', it: 'https://www.youtube.com/watch?v=eOCdJwwSa-g' }
+    url: { en: 'https://www.youtube.com/watch?v=1CC7cS1G6Wc', it: 'https://www.youtube.com/watch?v=5qJaZLuRfxw' }
   },
   {
     n: 2,
@@ -20,7 +20,7 @@ export const videos = [
     en: 'Installing and updating Dante',
     it: 'Installare e aggiornare Dante',
     about: { en: 'From the website to the first start, then always up to date', it: 'Dal sito al primo avvio, e poi sempre aggiornato' },
-    url: { en: 'https://www.youtube.com/watch?v=ydDif7jfp2g', it: 'https://www.youtube.com/watch?v=yjg_FdAX5R0' }
+    url: { en: 'https://www.youtube.com/watch?v=ZR0YCJtX0xI', it: 'https://www.youtube.com/watch?v=OeHJEF3ixss' }
   },
   {
     n: 3,
@@ -29,16 +29,16 @@ export const videos = [
     en: 'Your first project',
     it: 'Il primo progetto',
     about: { en: 'Create a novel and write the first scene', it: 'Creare un romanzo e scrivere la prima scena' },
-    url: { en: 'https://www.youtube.com/watch?v=ppbrHVCeyJ0', it: 'https://www.youtube.com/watch?v=h_0F7-rtoIw' }
+    url: { en: 'https://www.youtube.com/watch?v=kHPg2kDiMUY', it: 'https://www.youtube.com/watch?v=EJurTtv2fNc' }
   },
   {
     n: 4,
     group: 'start',
-    minutes: 3,
+    minutes: 4,
     en: 'Importing from Word or Scrivener',
     it: 'Importare da Word o Scrivener',
     about: { en: 'Bring a novel you have already written into Dante', it: 'Portare in Dante un romanzo già scritto' },
-    url: { en: 'https://www.youtube.com/watch?v=kmsKu0EvRFM', it: 'https://www.youtube.com/watch?v=ulrxPqqIUOo' }
+    url: { en: 'https://www.youtube.com/watch?v=sZyQOuGlHRk', it: 'https://www.youtube.com/watch?v=_m8kCGEBpl4' }
   },
   {
     n: 5,
@@ -47,7 +47,7 @@ export const videos = [
     en: 'The workspace',
     it: 'L’area di lavoro',
     about: { en: 'Where everything is in Dante', it: 'Dove si trova ogni cosa in Dante' },
-    url: { en: 'https://www.youtube.com/watch?v=70uznyOy_LU', it: 'https://www.youtube.com/watch?v=pKUeh7F5aWg' }
+    url: { en: 'https://www.youtube.com/watch?v=Fna4Z4J6eHk', it: 'https://www.youtube.com/watch?v=mo0GrL84lO4' }
   },
   {
     n: 6,
@@ -56,7 +56,7 @@ export const videos = [
     en: 'What is Markdown',
     it: 'Cos’è il Markdown',
     about: { en: 'The format Dante saves your novel in', it: 'Il formato in cui Dante salva il tuo romanzo' },
-    url: { en: 'https://www.youtube.com/watch?v=BdSQa-ZWwNk', it: 'https://www.youtube.com/watch?v=tCLCbqccbdI' }
+    url: { en: 'https://www.youtube.com/watch?v=uwRFuwanfhg', it: 'https://www.youtube.com/watch?v=V31SEp1IB48' }
   },
   {
     n: 7,
@@ -65,7 +65,7 @@ export const videos = [
     en: 'Writing a scene',
     it: 'Scrivere una scena',
     about: { en: 'Formatting, finding and counting as you write', it: 'Formattare, cercare e contare mentre scrivi' },
-    url: { en: 'https://www.youtube.com/watch?v=sHJ5ZtbMQTY', it: 'https://www.youtube.com/watch?v=nIrnvtPYjCU' }
+    url: { en: 'https://www.youtube.com/watch?v=jRpr0X-_LWw', it: 'https://www.youtube.com/watch?v=LH_d1bC_XfI' }
   },
   {
     n: 8,
@@ -74,16 +74,16 @@ export const videos = [
     en: 'Focus on the page',
     it: 'Concentrarsi sulla pagina',
     about: { en: 'Fewer distractions, a timed session', it: 'Meno distrazioni, una sessione a tempo' },
-    url: { en: 'https://www.youtube.com/watch?v=omgY17sHepc', it: 'https://www.youtube.com/watch?v=xi5oKwZ4A4E' }
+    url: { en: 'https://www.youtube.com/watch?v=5JfHr1-x00o', it: 'https://www.youtube.com/watch?v=n-EIOwKvB8M' }
   },
   {
     n: 9,
     group: 'write',
-    minutes: 3,
+    minutes: 4,
     en: 'Organizing the manuscript',
     it: 'Organizzare il manoscritto',
     about: { en: 'Scenes and chapters: add, split, move, merge', it: 'Scene e capitoli: aggiungere, dividere, spostare, fondere' },
-    url: { en: 'https://www.youtube.com/watch?v=54llGTfTfhQ', it: 'https://www.youtube.com/watch?v=kJ4zmLHzUww' }
+    url: { en: 'https://www.youtube.com/watch?v=AKzHteztQ60', it: 'https://www.youtube.com/watch?v=7DsAAUaYP_0' }
   },
   {
     n: 10,
@@ -92,7 +92,7 @@ export const videos = [
     en: 'Parts, chapters and scenes',
     it: 'Parti, capitoli e scene',
     about: { en: 'How to divide the novel and how headings look in the book', it: 'Come dividere il romanzo e come appaiono i titoli nel libro' },
-    url: { en: 'https://www.youtube.com/watch?v=X7UYwlXjKhw', it: 'https://www.youtube.com/watch?v=LICzbvS-a1Y' }
+    url: { en: 'https://www.youtube.com/watch?v=xS-85sqCIpE', it: 'https://www.youtube.com/watch?v=McP-J5CQwrY' }
   },
   {
     n: 11,
@@ -101,16 +101,16 @@ export const videos = [
     en: 'Scene properties',
     it: 'Le proprietà delle scene',
     about: { en: 'What they are for, where to change them', it: 'A cosa servono, dove si cambiano' },
-    url: { en: 'https://www.youtube.com/watch?v=HK_77HcoSzs', it: 'https://www.youtube.com/watch?v=bsIjg9lNgfg' }
+    url: { en: 'https://www.youtube.com/watch?v=vojs3rtLdVQ', it: 'https://www.youtube.com/watch?v=Rj2ITRsEoIU' }
   },
   {
     n: 12,
     group: 'write',
-    minutes: 4,
+    minutes: 6,
     en: 'Customizing the look',
     it: 'Personalizzare l’aspetto',
     about: { en: 'The text in the editor, the theme, the accent color', it: 'Il testo nell’editor, il tema, il colore d’accento' },
-    url: { en: 'https://www.youtube.com/watch?v=vVPvNVSbOA8', it: 'https://www.youtube.com/watch?v=WhPxNidQ5DI' }
+    url: { en: 'https://www.youtube.com/watch?v=FTCbu0ellcc', it: 'https://www.youtube.com/watch?v=UkxpQ1n4AfU' }
   },
   {
     n: 13,
@@ -119,16 +119,16 @@ export const videos = [
     en: 'Snapshots and backups',
     it: 'Istantanee e copie di sicurezza',
     about: { en: 'Going back without fear', it: 'Tornare indietro senza paura' },
-    url: { en: 'https://www.youtube.com/watch?v=4Gfh6nxQNI8', it: 'https://www.youtube.com/watch?v=VaQW-t7h6KA' }
+    url: { en: 'https://www.youtube.com/watch?v=cCPfwhKczrQ', it: 'https://www.youtube.com/watch?v=Wh1hhVf9n0o' }
   },
   {
     n: 14,
     group: 'write',
-    minutes: 3,
+    minutes: 4,
     en: 'Tables, images and lists',
     it: 'Tabelle, immagini ed elenchi nel testo',
     about: { en: 'When a novel needs more than plain text', it: 'Quando il romanzo ha bisogno di più del semplice testo' },
-    url: { en: 'https://www.youtube.com/watch?v=tbJ67h-Nej4', it: 'https://www.youtube.com/watch?v=LQGOdyp3A3w' }
+    url: { en: 'https://www.youtube.com/watch?v=16Vh6I9R2Ds', it: 'https://www.youtube.com/watch?v=Vh85eX8vkZ0' }
   },
   {
     n: 15,
@@ -137,7 +137,7 @@ export const videos = [
     en: 'The Story Bible and links',
     it: 'La Bibbia e i collegamenti',
     about: { en: 'Characters, places and plotlines, tied to the text', it: 'Personaggi, luoghi e trame, legati al testo' },
-    url: { en: 'https://www.youtube.com/watch?v=3qi26aNkk3Q', it: 'https://www.youtube.com/watch?v=emIA-azTERM' }
+    url: { en: 'https://www.youtube.com/watch?v=Ybib8i_9ytI', it: 'https://www.youtube.com/watch?v=vz9gwnR7LzU' }
   },
   {
     n: 16,
@@ -146,7 +146,7 @@ export const videos = [
     en: 'Tables and boards',
     it: 'Tabelle e bacheche',
     about: { en: 'The novel from above', it: 'Il romanzo visto dall’alto' },
-    url: { en: 'https://www.youtube.com/watch?v=4Co82c5I9tM', it: 'https://www.youtube.com/watch?v=gfiob5-Zn9c' }
+    url: { en: 'https://www.youtube.com/watch?v=kdV2D3xe35Y', it: 'https://www.youtube.com/watch?v=zapoSfShPBw' }
   },
   {
     n: 17,
@@ -155,7 +155,7 @@ export const videos = [
     en: 'Writing together',
     it: 'Scrivere in due',
     about: { en: 'Comments, revisions and a shared folder', it: 'Commenti, revisioni e una cartella condivisa' },
-    url: { en: 'https://www.youtube.com/watch?v=lukq2RZI9rM', it: 'https://www.youtube.com/watch?v=DvdlOdDFpdU' }
+    url: { en: 'https://www.youtube.com/watch?v=jJ-Zr2FrL3Y', it: 'https://www.youtube.com/watch?v=rYzRBHRnKlQ' }
   },
   {
     n: 18,
@@ -164,7 +164,7 @@ export const videos = [
     en: 'Dante in the browser',
     it: 'Dante nel browser',
     about: { en: 'The same Dante, with nothing to install', it: 'Lo stesso Dante, senza installare niente' },
-    url: { en: 'https://www.youtube.com/watch?v=5lnbXMcpP6E', it: 'https://www.youtube.com/watch?v=QGsSttJZ_Q8' }
+    url: { en: 'https://www.youtube.com/watch?v=9Iwl7qfGxlg', it: 'https://www.youtube.com/watch?v=oEAcZKLMKXc' }
   },
   {
     n: 19,
@@ -173,16 +173,16 @@ export const videos = [
     en: 'Statistics and goals',
     it: 'Statistiche e obiettivi',
     about: { en: 'How much you have written, how much is left', it: 'Quanto hai scritto, quanto manca' },
-    url: { en: 'https://www.youtube.com/watch?v=KN7yVqAXFKY', it: 'https://www.youtube.com/watch?v=NfpFPSdRAuI' }
+    url: { en: 'https://www.youtube.com/watch?v=4eIFk7Zta1I', it: 'https://www.youtube.com/watch?v=_CeWZXt8_Rw' }
   },
   {
     n: 20,
     group: 'export',
-    minutes: 4,
+    minutes: 5,
     en: 'Exporting the book',
     it: 'Esportare il libro',
     about: { en: 'Word, PDF and EPUB from the same novel', it: 'Word, PDF ed EPUB dallo stesso romanzo' },
-    url: { en: 'https://www.youtube.com/watch?v=h1_QN6y3l2o', it: 'https://www.youtube.com/watch?v=s4etYHjdDa4' }
+    url: { en: 'https://www.youtube.com/watch?v=YBSedQaUFD4', it: 'https://www.youtube.com/watch?v=Jg0i2prFNjw' }
   },
   {
     n: 21,
@@ -191,7 +191,7 @@ export const videos = [
     en: 'Writing a gamebook',
     it: 'Scrivere un libro game',
     about: { en: 'Sections, choices and references, from first to last', it: 'Paragrafi, scelte e rimandi, dal primo all’ultimo' },
-    url: { en: 'https://www.youtube.com/watch?v=Qamnhi3P_Gw', it: 'https://www.youtube.com/watch?v=fnHVx7WO6U8' }
+    url: { en: 'https://www.youtube.com/watch?v=khzsXDEEcBo', it: 'https://www.youtube.com/watch?v=j1OwuGeph0I' }
   }
 ]
 

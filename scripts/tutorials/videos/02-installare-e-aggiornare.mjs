@@ -30,7 +30,7 @@ export const setup = () => ({
   desktop: true,
   answers: {
     updates_supported: true,
-    check_update: { rid: 1, currentVersion: '1.0.0', version: '1.1.0', date: '', body: '', rawJson: { version: '1.1.0', news: { it: [{ version: '1.1.0', notes: NEWS.it }], en: [{ version: '1.1.0', notes: NEWS.en }] } } },
+    check_update: { rid: 1, currentVersion: '1.2.1', version: '1.3.0', date: '', body: '', rawJson: { version: '1.3.0', news: { it: [{ version: '1.3.0', notes: NEWS.it }], en: [{ version: '1.3.0', notes: NEWS.en }] } } },
   },
 });
 
@@ -117,7 +117,7 @@ const D = {
     linux: 'L’AppImage si rende eseguibile e si avvia; i pacchetti .deb e .rpm si installano come gli altri. Nessun avviso',
     s6: 'Gli aggiornamenti',
     s6b: 'Due canali',
-    where: 'Nell’app: Impostazioni, Dante su questo computer, Aggiornamenti',
+    where: 'Nell’app: Impostazioni, pagina Aggiornamenti e assistenza',
     channel: 'Stabile riceve solo le versioni ufficiali; Beta le novità prima degli altri, in versioni ancora in prova',
     check: 'Dante cerca da solo all’avvio. Cerca aggiornamenti lo fa subito',
     banner: 'Quando c’è una versione nuova, l’avviso compare qui in basso a destra',
@@ -158,7 +158,7 @@ const D = {
     linux: 'Make the AppImage executable and start it; the .deb and .rpm packages install like any other. No warning',
     s6: 'Updates',
     s6b: 'Two channels',
-    where: 'In the app: Settings, Dante on this computer, Updates',
+    where: 'In the app: Settings, the Updates and support page',
     channel: 'Stable gets only the official versions; Beta gets what’s new earlier, in versions still being tried',
     check: 'Dante looks by itself at start. Check for updates looks right away',
     banner: 'When there is a new version, the notice shows here at the bottom right',
@@ -279,9 +279,7 @@ export default async function (t) {
   await p.waitForTimeout(1500);
   await t.title(d.s6, d.s6b, async () => {
     await t.click(t.text(L('welcome.sample')), { after: 1.2 });
-    await t.nav('section.settings');
-    await t.wait(0.8);
-    await t.click(t.text(L('settings.tabApp')), { after: 1 });
+    await t.settings('updates', 1);
   });
   const title = p.locator('h3', { hasText: L('update.title') }).first();
   await title.scrollIntoViewIfNeeded();

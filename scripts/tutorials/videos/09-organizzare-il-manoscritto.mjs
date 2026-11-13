@@ -27,6 +27,11 @@ const D = {
     s3: 'Spostare',
     s3b: 'Trascinando nell’albero',
     moved: 'Trascinata sul capitolo, la scena ci entra. I file si rinumerano da soli',
+    undo: 'Ogni spostamento si può annullare: Annulla qui sotto, oppure ⌘Z (Ctrl+Z) con l’albero attivo',
+    other: 'La notte',
+    menuMove: 'Senza trascinare: tasto destro, Sposta in…',
+    find: 'bravi',
+    dialog: 'Cerca il punto, scegli se prima, dopo, dentro all’inizio o alla fine, poi Sposta. Copia in… fa lo stesso con una copia',
     s4: 'Fondere due scene',
     s4b: '⌘clic (Ctrl+clic) per sceglierle',
     first: 'Il nome', second: 'Lucia',
@@ -69,6 +74,11 @@ const D = {
     s3: 'Moving',
     s3b: 'By dragging in the tree',
     moved: 'Dropped on the chapter, the scene goes into it. The files renumber themselves',
+    undo: 'Every move can be undone: Undo down here, or ⌘Z (Ctrl+Z) with the tree active',
+    other: 'The invitation',
+    menuMove: 'Without dragging: right click, Move to…',
+    find: 'Netherfield',
+    dialog: 'Find the place, choose before, after, inside at the start or at the end, then Move. Copy to… does the same with a copy',
     s4: 'Merging two scenes',
     s4b: '⌘-click (Ctrl+click) to choose them',
     first: 'The ball', second: 'After the ball',
@@ -128,13 +138,28 @@ export default async function (t) {
   await t.click(at, { dx: 0.02, after: 0.2 });
   await t.press('Home', 0.3);
   await t.focus(at, d.cursor, { side: 'below', hold: 2.5 });
-  await t.press('ControlOrMeta+Enter', 1.5);
+  await t.press('Meta+Enter', 1.5);
   await t.focus(tree, d.split, { side: 'right' });
 
   await t.title(d.s3, d.s3b);
   const moving = tree.locator('[aria-selected="true"], [aria-current="true"], .selected').first();
   await t.drag(moving, chapterRow());
   await t.focus(chapterRow(), d.moved, { side: 'right' });
+  await t.focus(p.locator('.undo').first(), d.undo, { side: 'right' });
+  await t.point(row(d.other));
+  await p.mouse.down({ button: 'right' }); await p.mouse.up({ button: 'right' });
+  await t.wait(0.8);
+  const moveTo = p.getByRole('menuitem', { name: L('transfer.moveTo') }).first();
+  await t.focus(moveTo, d.menuMove, { side: 'right' });
+  await t.click(moveTo, { after: 1 });
+  const dialog = p.locator('[role=dialog]').last();
+  await t.click(dialog.locator('input.filter'), { after: 0.3 });
+  await t.type(d.find, 100);
+  await t.wait(0.8);
+  await t.click(dialog.locator('ul.rows li').nth(1), { after: 0.6 });
+  await t.click(dialog.locator('input[value=end]').first(), { after: 0.6 });
+  await t.focus(dialog, d.dialog, { side: 'right', pointer: false });
+  await t.click(dialog.locator('.actions .primary'), { after: 1.5 });
 
   await t.title(d.s4, d.s4b);
   await t.click(row(d.first), { after: 0.6 });
@@ -169,8 +194,7 @@ export default async function (t) {
   await t.focus(kind, d.kind, { side: 'left' });
 
   await t.title(d.s7, d.s7b, async () => {
-    await t.nav('section.settings');
-    await t.wait(0.8);
+    await t.settings('structure');
     await p.locator('fieldset', { has: p.locator('legend', { hasText: L('kind.chapter') }) }).first().scrollIntoViewIfNeeded();
   });
   const box = p.locator('fieldset', { has: p.locator('legend', { hasText: L('kind.chapter') }) }).first();
