@@ -4,7 +4,7 @@
 Each video goes up with its thumbnail (the opening cover) into the "Dante ITA" or "Dante EN"
 playlist, in the order of its number. The description lists the video's sections, taken from
 the script. Uploaded ids are kept in youtube.json: a video already there is only put in its playlist,
---replace uploads it again and deletes the old one. Needs YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN.
+--replace uploads it again and then deletes the old one. Needs YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN.
 """
 import json, os, re, sys, time
 import requests
@@ -157,10 +157,10 @@ def main():
             json.dump(store, open(STORE, 'w'), indent=1, ensure_ascii=False)
             print(f'ALREADY {key} https://youtu.be/{old["id"]}')
             continue
-        if old:
-            # the same number again: a new upload replaces the old one in the playlist
-            check(requests.delete(f'{API}/videos?id={old["id"]}', headers=h))
         vid = upload(h, os.path.join(d, 'video.mp4'), snippet, status)
+        if old:
+            # the same number again: the new upload replaces the old one, deleted only once the new one is up
+            check(requests.delete(f'{API}/videos?id={old["id"]}', headers=h))
         with open(os.path.join(d, 'thumbnail.jpg'), 'rb') as f:
             check(requests.post(f'https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={vid}',
                                 headers={**h, 'Content-Type': 'image/jpeg'}, data=f))
