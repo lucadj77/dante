@@ -1,5 +1,11 @@
 // 13. Istantanee e copie di sicurezza: a named snapshot, comparing it with the text, restoring it, and
 // where the backups of the whole project go.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+
 export const meta = {
   n: 13,
   group: 'write',
@@ -27,12 +33,17 @@ const D = {
     s3b: 'Tornare alla versione di prima',
     restore: 'Ripristina rimette l’istantanea al posto del testo',
     restored: 'Il testo di prima è tornato. Quello appena sostituito non si perde: diventa a sua volta un’istantanea',
+    sw: 'Tutto il manoscritto',
+    swb: 'Un punto fermo per tutte le scene',
+    wholeWhere: 'In Impostazioni, Manutenzione: un’istantanea di tutte le scene insieme',
+    wholeName: 'Seconda stesura',
+    wholeTaken: 'Ogni scena la ritrova tra le sue istantanee. Da qui si riporta tutto il manoscritto a quel punto',
     s4: 'Le copie di sicurezza',
     s4b: 'Tutto il progetto, fuori dalla sua cartella',
     backup: 'Le istantanee proteggono una scena. Le copie di sicurezza proteggono tutto il romanzo',
     where: 'Nell’app, quando chiudi un progetto modificato, Dante salva uno zip in Documenti, cartella Dante backup',
-    settings: 'In Impostazioni, Dante su questo computer, si sceglie dove tenerle e quante',
-    reopen: 'Per riprendere un progetto da una copia: estrai lo zip e apri la cartella con Apri cartella',
+    settings: 'In Impostazioni, Copie di sicurezza, si sceglie dove tenerle e quante, e se ne crea una quando vuoi',
+    reopen: 'Sotto, l’elenco delle copie: Apri questa copia la estrae in una cartella nuova accanto al romanzo e la apre. Il romanzo di adesso resta com’è',
   },
   en: {
     intro: 'Before rewriting a scene, it pays to take a picture of it: a snapshot',
@@ -53,12 +64,17 @@ const D = {
     s3b: 'Back to the earlier version',
     restore: 'Restore puts the snapshot back in place of the text',
     restored: 'The earlier text is back. The text it replaced is not lost: it becomes a snapshot in turn',
+    sw: 'The whole manuscript',
+    swb: 'A fixed point for every scene',
+    wholeWhere: 'In Settings, Upkeep: a snapshot of all the scenes together',
+    wholeName: 'Second draft',
+    wholeTaken: 'Every scene finds it among its snapshots. From here the whole manuscript goes back to that point',
     s4: 'Backups',
     s4b: 'The whole project, outside its folder',
     backup: 'Snapshots protect a scene. Backups protect the whole novel',
     where: 'In the app, when you close a project that changed, Dante saves a zip in Documents, in the Dante backup folder',
-    settings: 'In Settings, Dante on this computer, you choose where to keep them and how many',
-    reopen: 'To pick a project up from a backup: extract the zip and open the folder with Open folder',
+    settings: 'In Settings, Backups, you choose where to keep them and how many, and make one whenever you like',
+    reopen: 'Below, the list of backups: Open this backup extracts it into a new folder next to the novel and opens it. The novel as it is now stays untouched',
   },
 };
 
@@ -111,15 +127,36 @@ export default async function (t) {
   await t.click(restore, { after: 1.5 });
   await t.focus([line, snaps.locator('ul').first()], d.restored, { side: 'below' });
 
+  await t.title(d.sw, d.swb, () => t.settings('upkeep', 1));
+  const whole = p.locator('.settings .page section, .settings .page .fields').first();
+  const wholeName = p.getByPlaceholder(L('whole.name')).first();
+  await t.focus(p.getByRole('heading', { name: L('whole.title') }).first(), d.wholeWhere, { side: 'right' });
+  await t.click(wholeName, { after: 0.2 });
+  await t.type(d.wholeName, 90);
+  await t.click(p.getByRole('button', { name: L('whole.take'), exact: true }).first(), { after: 1.5 });
+  await t.focus(p.locator('.settings .page form').first(), d.wholeTaken, { side: 'right', pointer: false });
+
   await t.title(d.s4, d.s4b);
   await t.say(d.backup);
   await t.say(d.where);
-  await t.nav('section.settings');
-  await t.wait(0.8);
-  await t.click(t.text(L('settings.tabApp')), { after: 1 });
-  await t.say(d.settings);
-  const nav = p.locator('nav[aria-label="Sections"]').first();
-  await t.click(nav.locator('[data-section="close"]'), { after: 1.5 });
-  const open = p.getByRole('button', { name: L('welcome.open') }).first();
-  await t.focus(open, d.reopen, { side: 'right' });
+  // the Backups page is only in the desktop app: its picture from the guide
+  await p.evaluate((src) => {
+    const f = document.createElement('div');
+    f.id = 'tu-figure';
+    f.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:#faf9f6;display:flex;align-items:center;justify-content:center';
+    f.innerHTML = `<img src="${src}" style="height:760px;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.18)">`;
+    document.documentElement.append(f);
+  }, 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, `docs/img/${t.lang === 'en' ? 'en/' : ''}copie.png`)).toString('base64'));
+  await t.wait(1);
+  const img = p.locator('#tu-figure img');
+  const part = async (y0, y1, text) => {
+    const r = await img.boundingBox();
+    await p.evaluate(([r, text]) => window.__tu.box(r, text, 'right'), [{ x: r.x, y: r.y + r.height * y0, width: r.width, height: r.height * (y1 - y0) }, text]);
+    await t.wait(4 + text.length * 0.05);
+    await p.evaluate(() => window.__tu.box(null));
+    await t.wait(0.5);
+  };
+  await part(0.22, 0.6, d.settings);
+  await part(0.63, 0.97, d.reopen);
+  await p.evaluate(() => document.getElementById('tu-figure').remove());
 }

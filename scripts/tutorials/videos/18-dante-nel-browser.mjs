@@ -21,7 +21,7 @@ const D = {
     files: 'I file sono gli stessi: un romanzo iniziato nel browser si apre con l’app, e viceversa',
     s3: 'Cosa cambia',
     s3b: 'Copie di sicurezza e PDF',
-    backup: 'Le copie di sicurezza non si fanno da sole: in Impostazioni, Dante su questo computer, si scarica uno zip da conservare',
+    backup: 'Le copie di sicurezza non si fanno da sole: con un romanzo aperto da una cartella, in Impostazioni, Copie di sicurezza, si scarica uno zip da conservare',
     pdf: 'Il PDF si crea solo nell’app. Word ed EPUB anche nel browser',
     web: 'La versione nel browser si aggiorna da sola, alla prima apertura dopo una nuova versione',
   },
@@ -38,7 +38,7 @@ const D = {
     files: 'The files are the same: a novel started in the browser opens in the app, and the other way round',
     s3: 'What changes',
     s3b: 'Backups and PDF',
-    backup: 'Backups are not made by themselves: in Settings, Dante on this computer, you download a zip to keep',
+    backup: 'Backups are not made by themselves: with a novel opened from a folder, in Settings, Backups, you download a zip to keep',
     pdf: 'PDF is made only in the app. Word and EPUB in the browser too',
     web: 'The browser version updates itself, the first time you open it after a new version',
   },
@@ -61,9 +61,7 @@ export default async function (t) {
   await t.focus(p.locator('aside.tree').first(), d.files, { side: 'right' });
 
   await t.title(d.s3, d.s3b, async () => {
-    await t.nav('section.settings');
-    await t.wait(0.8);
-    await t.click(t.text(L('settings.tabApp')), { after: 1 });
+    await t.settings('you', 1);
   });
   // the sample lives in memory: the download button shows only for a novel opened from a folder
   await t.say(d.backup);

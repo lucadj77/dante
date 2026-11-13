@@ -52,7 +52,7 @@ const D = {
     s5: 'Le impostazioni',
     s5b: 'Una per una',
     items: 'Mostra: le scene, i capitoli, tutte le note o le schede di un tipo della Bibbia',
-    source: 'Dalle cartelle: solo una parte del progetto, per esempio un capitolo. Vuoto, tutto',
+    source: 'Dalle cartelle: solo una parte del progetto, per esempio un capitolo, scelta dall’elenco. Vuoto, tutto',
     field: 'pov',
     who: 'Renzo',
     filter: 'Solo se: una condizione. Qui solo le scene con il punto di vista di Renzo',
@@ -66,7 +66,7 @@ const D = {
     s6: 'Una nuova vista',
     s6b: 'I luoghi come schede',
     newName: 'Luoghi',
-    create: 'Nuova vista: un nome, poi si sceglie cosa mostrare e come',
+    create: 'Nuova vista: un nome e da che cosa partire. Una tabella da impostare, oppure un modello già pronto: bacheca per stato, personaggi, linea del tempo, capitoli',
     itemsValue: 'place',
     kind: 'Schede',
     region: 'regione',
@@ -130,7 +130,7 @@ const D = {
     s6: 'A new view',
     s6b: 'Places as cards',
     newName: 'Places',
-    create: 'New view: a name, then you choose what to show and how',
+    create: 'New view: a name and what to start from. A table to set up, or a ready-made model: board by status, characters, timeline, chapters',
     itemsValue: 'place',
     kind: 'Cards',
     region: 'region',
@@ -146,7 +146,7 @@ export default async function (t) {
   const body = views.locator('.body').first();
   const toggleSettings = () => t.click(views.getByRole('button', { name: new RegExp(L('views.settings')) }).first(), { after: 0.8 });
   const settings = views.locator('section.settings').first();
-  const setting = (key) => settings.locator('label', { hasText: L(key) }).first();
+  const setting = (key) => settings.locator('label, .row', { hasText: L(key) }).first();
   const choose = async (sel, value) => {
     await t.click(sel, { after: 0.3 });
     await sel.selectOption(value);
@@ -209,7 +209,7 @@ export default async function (t) {
   const values = settings.getByPlaceholder(L('views.filterValues')).first();
   await t.click(values, { after: 0.2 });
   await t.type(d.who, 100);
-  await t.press('Tab', 1);
+  await t.press('Enter', 1);
   await t.focus(settings.locator('.filters').first(), d.filter, { side: 'right' });
   await choose(setting('views.sort').locator('select'), d.sortField);
   await t.focus(setting('views.sort'), d.sortSay, { side: 'right' });
@@ -228,7 +228,7 @@ export default async function (t) {
   await t.click(add, { after: 0.4 });
   const name = views.getByPlaceholder(L('views.newName'));
   await t.type(d.newName, 90);
-  await t.focus([name], d.create, { side: 'right' });
+  await t.focus([name, views.getByRole('combobox', { name: L('views.template') })], d.create, { side: 'right' });
   await t.click(views.getByRole('button', { name: L('views.create'), exact: true }), { after: 1.2 });
   const items = setting('views.items').locator('select');
   await choose(items, d.itemsValue);

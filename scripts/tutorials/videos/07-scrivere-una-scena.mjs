@@ -28,10 +28,12 @@ const D = {
     bar: 'Dal menu Altro, Barra di formattazione la tiene fissa sopra il testo',
     row: 'Grassetto, corsivo, titoli, elenchi, citazioni, allineamento e altro',
     center: 'Allinea al centro, per esempio per una lettera o un biglietto. Un altro clic la riporta a sinistra',
+    note: 'x¹ inserisce una nota a piè di pagina lì dove scrivi: nel libro esportato va in fondo alla pagina',
     blank: 'Una riga vuota vera tra due paragrafi, senza aprire una nuova scena: Invio due volte, o ¶ nella barra',
     s4: 'I segni del dialogo',
-    s4b: 'Si scelgono in Esportazione',
-    where: 'In Esportazione, sezione Tipografia',
+    s4b: 'Si scelgono in Impostazioni, Tipografia',
+    where: 'In Impostazioni, pagina Tipografia. La stessa scelta c’è anche nell’Esportazione',
+    sample: 'A destra il primo dialogo del romanzo: com’è scritto e come uscirà nel libro',
     quotes: 'Dialoghi: all’inizio è Come scritti nel testo, e Dante lascia le virgolette come le scrivi',
     style: 'guillemets',
     change: 'Scelto un segno, per esempio i caporali, il libro esportato usa quello in tutte le battute, qualunque segno tu abbia usato nel testo. Si può cambiare anche all’ultimo',
@@ -45,7 +47,7 @@ const D = {
     s6: 'Tenere le virgolette dritte',
     s6b: 'Una volta sola, o sempre',
     once: 'Per una volta sola: ⌘Z (Ctrl+Z su Windows e Linux) subito dopo la correzione rimette la virgoletta dritta',
-    typing: 'Sempre: in Esportazione, togli questa spunta e Dante non corregge niente mentre scrivi',
+    typing: 'Sempre: in Impostazioni, Tipografia, togli questa spunta e Dante non corregge niente mentre scrivi',
     straight: '"Vieni qui"',
     kept: 'Le virgolette restano dritte nel testo. Nel libro esportato diventano comunque i segni scelti per i dialoghi',
     s7: 'Cercare nella scena',
@@ -56,7 +58,7 @@ const D = {
     s8: 'La barra di stato',
     s8b: 'Quanto hai scritto',
     status: 'Sotto il testo: quanto è lunga la scena e quanto hai scritto oggi. Con il capitolo intero, anche la lunghezza del capitolo',
-    chars: 'Qui si conta in caratteri spazi inclusi; per contare le parole si sceglie in Statistiche',
+    chars: 'Qui si conta in caratteri spazi inclusi; per contare le parole si sceglie in Impostazioni, Misure e obiettivi',
   },
   en: {
     intro: 'A scene from the sample project, to see the writing tools',
@@ -73,12 +75,14 @@ const D = {
     s3: 'The formatting bar',
     s3b: 'Always at hand',
     bar: 'From the More menu, Formatting bar keeps it above the text',
+    note: 'x¹ adds a footnote right where you write: in the exported book it goes to the foot of the page',
     row: 'Bold, italics, headings, lists, quotations, alignment and more',
     center: 'Center, for a letter or a note for instance. Another click puts it back on the left',
     blank: 'A real blank line between two paragraphs, without starting a new scene: Enter twice, or ¶ in the bar',
     s4: 'Dialogue marks',
-    s4b: 'Chosen in Export',
-    where: 'In Export, Typography section',
+    s4b: 'Chosen in Settings, Typography',
+    where: 'In Settings, the Typography page. The same choice is in Export too',
+    sample: 'On the right, the first dialogue of the novel: as written and as it will come out in the book',
     quotes: 'Dialogue: at first it is As typed in the text, and Dante leaves quotes as you type them',
     style: 'curly',
     change: 'Once you choose a mark, curly quotes for instance, the exported book uses it for every line of dialogue, whatever mark you used in the text. You can change it even at the last minute',
@@ -92,7 +96,7 @@ const D = {
     s6: 'Keeping straight quotes',
     s6b: 'Just once, or always',
     once: 'Just once: ⌘Z (Ctrl+Z on Windows and Linux) straight after the correction puts the straight quote back',
-    typing: 'Always: in Export, untick this box and Dante corrects nothing as you type',
+    typing: 'Always: in Settings, Typography, untick this box and Dante corrects nothing as you type',
     straight: '"Come here"',
     kept: 'The quotes stay straight in the text. In the exported book they still become the marks chosen for dialogue',
     s7: 'Finding in the scene',
@@ -103,7 +107,7 @@ const D = {
     s8: 'The status bar',
     s8b: 'How much you have written',
     status: 'Below the text: how long the scene is and how much you wrote today. With the whole chapter shown, the chapter’s length too',
-    chars: 'You can count words or characters including spaces: choose it in Statistics',
+    chars: 'You can count words or characters including spaces: choose it in Settings, Measures and goals',
   },
 };
 
@@ -159,6 +163,8 @@ export default async function (t) {
   await t.press('Escape', 0.3);
   if (await p.locator('.more-menu').count()) await t.click(p.locator('.more > button').first(), { after: 0.4 });
   await t.focus(p.locator('.format-row').first(), d.row, { side: 'below' });
+  const footnote = p.locator('.format-row').getByRole('button', { name: L('format.footnote') }).first();
+  await t.zoom(footnote, () => t.focus(footnote, d.note, { side: 'below' }), 1.6);
   const center = p.locator('.format-row').getByRole('button', { name: L('format.alignCenter') }).first();
   await t.click(line, { dx: 0.5, after: 0.3 });
   await t.click(center, { after: 1 });
@@ -170,11 +176,12 @@ export default async function (t) {
   await t.press('Enter', 1);
   await t.focus([line, p.locator('main.center .md-blank-line').last()], d.blank, { side: 'below', hold: 3 });
 
-  await t.title(d.s4, d.s4b, () => t.nav('section.export'));
+  await t.title(d.s4, d.s4b, () => t.settings('typography', 1));
   const quotes = p.locator('label', { hasText: L('export.quotes') }).locator('select').first();
   await quotes.scrollIntoViewIfNeeded();
   await t.wait(0.6);
-  await t.say(d.where);
+  await t.focus(t.settingsItem('typography'), d.where, { side: 'right' });
+  await t.focus(p.locator('.settings .compare').first(), d.sample, { side: 'left', pointer: false });
   await t.zoom(quotes, () => t.focus(quotes, d.quotes, { side: 'below' }), 1.5);
   await t.click(quotes, { after: 0.3 });
   await quotes.selectOption(d.style);
@@ -214,8 +221,7 @@ export default async function (t) {
   await t.press('Backspace', 0.2);
   await t.press('Backspace', 0.2);
   await t.press('Backspace', 0.4);
-  await t.nav('section.export');
-  await t.wait(1);
+  await t.settings('typography', 1);
   const typing = p.locator('label', { hasText: L('export.whileTyping') }).first();
   await typing.scrollIntoViewIfNeeded();
   await t.wait(0.4);

@@ -35,15 +35,18 @@ const D = {
     addDo: 'Aggiungi proprietà',
     kindSay: 'Il simbolo prima del nome dice che tipo è. Un clic lo apre per modificare la proprietà',
     values: 'primavera, estate, autunno, inverno',
-    valuesSay: 'Con i valori ammessi, separati da virgole, la proprietà diventa un menu',
+    valuesSay: 'Con i valori ammessi, aggiunti uno alla volta, la proprietà diventa un menu',
     renameSay: 'Qui la rinomini in tutto il romanzo: scene, note, viste e impostazioni',
     value: 'autunno',
     allSay: 'Tipo e valori valgono per tutte le scene; il valore scelto, solo per questa',
     other: 'Perpetua',
     offeredSay: 'Nelle altre scene la proprietà compare già, pronta da compilare',
     removeSay: 'La × toglie la proprietà da questa scena',
+    bulkSay: 'Più scene insieme: sceglile con ⌘clic (Ctrl+clic), poi tasto destro, Imposta una proprietà',
+    bulkValue: 'inverno',
+    bulkDone: 'Il valore scelto va in tutte le scene scelte, al posto di quello che avevano',
     s4: 'Per tutto il romanzo',
-    s4b: 'Impostazioni, Questo romanzo',
+    s4b: 'Impostazioni, Scene e proprietà',
     defined: 'In Proprietà delle note, tutte le proprietà con il loro tipo e i valori ammessi',
     free: 'Qui si cambiano i valori per tutte le scene. Con Testo libero la proprietà torna senza tipo',
     dot: 'Il pallino dell’albero può mostrare un’altra proprietà, per esempio il punto di vista',
@@ -78,15 +81,18 @@ const D = {
     addDo: 'Add property',
     kindSay: 'The symbol before the name tells its type. A click opens it to edit the property',
     values: 'spring, summer, autumn, winter',
-    valuesSay: 'With allowed values, separated by commas, the property becomes a menu',
+    valuesSay: 'With allowed values, added one at a time, the property becomes a menu',
     renameSay: 'Here you rename it across the whole novel: scenes, notes, views and settings',
     value: 'autumn',
     allSay: 'Type and values hold for every scene; the chosen value, only for this one',
     other: 'After the ball',
     offeredSay: 'In the other scenes the property is already there, ready to fill in',
     removeSay: 'The × removes the property from this scene',
+    bulkSay: 'Several scenes at once: pick them with ⌘click (Ctrl+click), then right click, Set a property',
+    bulkValue: 'winter',
+    bulkDone: 'The chosen value goes into all the chosen scenes, replacing what they had',
     s4: 'For the whole novel',
-    s4b: 'Settings, This novel',
+    s4b: 'Settings, Scenes and properties',
     defined: 'In Note properties, every property with its type and allowed values',
     free: 'Here the values change for every scene. Free text takes the type away',
     dot: 'The tree’s dot can show another property, the point of view for instance',
@@ -168,11 +174,24 @@ export default async function (t) {
   const offered = prop(d.name);
   await offered.scrollIntoViewIfNeeded();
   await t.zoom(offered, () => t.focus(offered, d.offeredSay, { side: 'left' }), 1.5);
+  await t.click(tree.getByText(d.scene, { exact: true }).first(), { after: 0.6 });
+  await p.keyboard.down('ControlOrMeta');
+  await t.click(tree.getByText(d.other, { exact: true }).first(), { after: 0.4 });
+  await p.keyboard.up('ControlOrMeta');
+  await t.point(tree.getByText(d.other, { exact: true }).first());
+  await p.mouse.down({ button: 'right' }); await p.mouse.up({ button: 'right' });
+  await t.wait(0.8);
+  const bulk = p.getByRole('menuitem', { name: new RegExp(L('bulk.menu', { n: 2 }).replace(/[…?]/g, '.')) }).first();
+  await t.focus(bulk, d.bulkSay, { side: 'right' });
+  await t.click(bulk, { after: 1 });
+  const dialog = p.locator('[role=dialog]').last();
+  await choose(dialog.locator('select').first(), d.name);
+  await choose(dialog.locator('.field select').nth(1), d.bulkValue);
+  await t.focus(dialog, d.bulkDone, { side: 'right', pointer: false });
+  await t.click(dialog.locator('.actions .primary'), { after: 1.2 });
 
   await t.title(d.s4, d.s4b, async () => {
-    await t.nav('section.settings');
-    await t.wait(0.8);
-    await t.click(t.text(L('settings.tabNovel')), { after: 0.6 });
+    await t.settings('scenes');
   });
   const heading = p.getByRole('heading', { name: L('property.defined'), exact: true }).first();
   await heading.scrollIntoViewIfNeeded();

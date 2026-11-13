@@ -16,9 +16,10 @@ export const setup = (lang) => ({ folder: lang === 'it' ? 'Romanzi' : 'Novels' }
 
 const D = {
   it: {
-    word: 'Hai già scritto in Word? Comincia da qui',
+    word: 'Hai già scritto il romanzo altrove? Comincia da qui',
+    kinds: 'Due strade: un documento (Word, OpenDocument di LibreOffice, RTF, Markdown o testo) oppure un progetto Scrivener',
     file: 'Il faro.docx', more: 'Il faro, terza parte.docx', scriv: 'La casa del sale.zip',
-    pick: 'Scegli il file .docx: Dante ne legge una copia, il file Word non viene toccato',
+    pick: 'Scegli il file, qui un .docx: Dante ne legge una copia, il file originale non viene toccato',
     counts: 'In alto, quello che Dante ha trovato: parti, capitoli, scene e parole',
     doc: 'A sinistra il documento come lo legge Dante, con un’etichetta sulle righe che diventano parti, capitoli e scene',
     result: 'A destra il romanzo che ne esce',
@@ -33,7 +34,7 @@ const D = {
     tree: 'Il romanzo è in Dante: parti, capitoli e scene, ognuna nel suo file',
     s2: 'Un romanzo in più file Word',
     s2b: 'Aggiungili uno alla volta',
-    addNote: 'Nel manoscritto, Importa da Word aggiunge un altro file al progetto',
+    addNote: 'Nel manoscritto, Importa aggiunge un altro documento al progetto',
     added: 'La terza parte si aggiunge in fondo al romanzo',
     s3: 'Da Scrivener',
     s3b: 'Cartelle, testi e sinossi',
@@ -43,9 +44,10 @@ const D = {
     scene: 'La salina',
   },
   en: {
-    word: 'Already writing in Word? Start here',
+    word: 'Already wrote your novel somewhere else? Start here',
+    kinds: 'Two ways in: a document (Word, LibreOffice’s OpenDocument, RTF, Markdown or text) or a Scrivener project',
     file: 'The Lighthouse.docx', more: 'The Lighthouse, part three.docx', scriv: 'The Salt House.zip',
-    pick: 'Choose the .docx file: Dante reads a copy, the Word file is not touched',
+    pick: 'Choose the file, here a .docx: Dante reads a copy, the original file is not touched',
     counts: 'At the top, what Dante found: parts, chapters, scenes and words',
     doc: 'On the left, the document as Dante reads it, with a label on the lines that become parts, chapters and scenes',
     result: 'On the right, the novel that comes out of it',
@@ -60,7 +62,7 @@ const D = {
     tree: 'The novel is in Dante: parts, chapters and scenes, each in its own file',
     s2: 'A novel in several Word files',
     s2b: 'Add them one at a time',
-    addNote: 'In the manuscript, Import from Word adds another file to the project',
+    addNote: 'In the manuscript, Import adds another document to the project',
     added: 'Part three goes at the end of the novel',
     s3: 'From Scrivener',
     s3b: 'Folders, texts and synopses',
@@ -81,11 +83,13 @@ export default async function (t) {
     await t.wait(1.5);
   };
 
-  await t.zoom([p.locator('main h1').first(), p.locator('main .actions').first()], async () => {
-    await t.focus(t.button(L('import.word')), d.word, { side: 'below' });
-  }, 1.6);
+  const other = t.button(L('import.other'));
+  await t.zoom(p.locator('.choices'), () => t.focus(other, d.word, { side: 'below' }), 1.4);
+  await t.click(other, { after: 1 });
+  const kinds = p.locator('[role=dialog] .formats').first();
+  await t.focus(kinds, d.kinds, { side: 'right' });
   await t.say(d.pick);
-  await choose(t.button(L('import.word')), d.file);
+  await choose(kinds.locator('button').first(), d.file);
 
   await t.focus(p.getByText(/\d+ parti|\d+ parts/).first(), d.counts, { side: 'below' });
   await t.focus(p.getByText(L('import.preview.document'), { exact: true }).first().locator('xpath=..'), d.doc, { side: 'right' });
@@ -109,7 +113,7 @@ export default async function (t) {
   await t.focus(p.locator('aside.tree'), d.tree);
 
   await t.title(d.s2, d.s2b);
-  const add = p.locator('aside.tree').getByRole('button', { name: L('import.word') }).first();
+  const add = p.locator('aside.tree').getByRole('button', { name: L('import.addDocument') }).first();
   await t.focus(add, d.addNote, { side: 'right' });
   await choose(add, d.more);
   await t.wait(1.5);
@@ -117,10 +121,10 @@ export default async function (t) {
   await t.focus(p.locator('aside.tree'), d.added);
 
   await t.title(d.s3, d.s3b, () => t.click(p.locator('nav[aria-label]').first().getByRole('button', { name: L('app.close'), exact: true }), { after: 1 }));
-  await t.zoom([p.locator('main h1').first(), p.locator('main .actions').first()], async () => {
-    await t.focus(t.button(L('import.scrivener')), d.scrivNote, { side: 'below' });
-  }, 1.6);
-  await choose(t.button(L('import.scrivener')), d.scriv);
+  await t.click(other, { after: 1 });
+  const scrivener = kinds.locator('button').nth(1);
+  await t.focus(scrivener, d.scrivNote, { side: 'right' });
+  await choose(scrivener, d.scriv);
   await t.focus(p.getByText(L('import.preview.result'), { exact: true }).first().locator('xpath=..'), d.scrivPreview, { side: 'left' });
   await t.click(t.button(L('import.continue')), { after: 1 });
   await t.click(t.button(L('welcome.choose')), { after: 1 });

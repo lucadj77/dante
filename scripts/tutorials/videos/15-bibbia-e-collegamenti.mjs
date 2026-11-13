@@ -221,10 +221,10 @@ export default async function (t) {
   const icon = form.locator('label', { hasText: L('codex.typeIcon') }).locator('input');
   await t.click(icon, { after: 0.2 });
   await t.type(d.icon, 120);
-  const fields = form.locator('label', { hasText: L('codex.typeProperties') }).locator('input, textarea').first();
+  const fields = form.locator('.chosen input').first();
   await t.click(fields, { after: 0.2 });
   await t.type(d.fields, 70);
-  await t.wait(0.6);
+  await t.press('Enter', 0.6);
   await t.click(form.getByRole('button', { name: L('settings.save') }), { after: 1 });
   const create = codex.getByRole('button', { name: L('codex.new', { type: d.type }) });
   await t.focus(create, d.create, { side: 'below' });

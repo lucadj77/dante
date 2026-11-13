@@ -30,14 +30,17 @@ const D = {
     s1b: 'Vuoto, ma con qualche scelta già fatta',
     tree: 'Un capitolo e una scena, ancora senza testo',
     views: 'Due viste pronte: la bacheca delle scene per stato e la tabella delle scene',
-    propsWhere: 'Le proprietà delle scene si impostano in Impostazioni, scheda Questo romanzo',
-    props: 'Lo stato ha già le sue voci: idea, bozza, rivista, finita. Qui le cambi, separate da virgole, o le togli',
+    propsWhere: 'Le proprietà delle scene si impostano in Impostazioni, alla pagina Scene e proprietà',
+    props: 'Lo stato ha già le sue voci: idea, bozza, rivista, finita. Qui ne aggiungi o ne togli una alla volta',
     pov: 'Il punto di vista (pov) è un collegamento a una scheda della Bibbia di tipo Personaggio',
     s2: 'Le impostazioni',
     s2b: 'Quelle di Dante e quelle del romanzo',
-    app: 'Questa scheda vale per tutti i progetti su questo computer',
+    pages: 'Le impostazioni sono divise in pagine: quelle di Questo romanzo vanno con il progetto, quelle di Dante su questo computer valgono per tutti i romanzi',
+    search: 'Non sai dove sta un’impostazione? Scrivila qui e restano solo le pagine che ne parlano',
+    app: 'Nella pagina Tu c’è il tuo nome',
     name: 'Il tuo nome firma commenti e revisioni e conta le parole scritte ogni giorno',
     novel: 'Titolo, sottotitolo, autori e lingua del romanzo si cambiano qui, quando vuoi',
+    searchWord: 'copertina',
     s3: 'La prima scena',
     s3b: 'Un titolo e le prime righe',
     sceneTitle: 'Il guardiano',
@@ -70,14 +73,17 @@ const D = {
     s1b: 'Empty, with a few choices already made',
     tree: 'One chapter and one scene, with no text yet',
     views: 'Two views ready: a board of scenes by status and a table of scenes',
-    propsWhere: 'Scene properties are set in Settings, on the This novel tab',
-    props: 'Status already has its values: idea, draft, revised, done. Change them here, separated by commas, or clear them',
+    propsWhere: 'Scene properties are set in Settings, on the Scenes and properties page',
+    props: 'Status already has its values: idea, draft, revised, done. Add or remove them here, one at a time',
     pov: 'The point of view (pov) is a link to a Story Bible sheet of the Character type',
     s2: 'Settings',
     s2b: 'Dante’s and the novel’s',
-    app: 'This tab holds for every project on this computer',
+    pages: 'Settings are split into pages: those of This novel travel with the project, those of Dante on this computer hold for every novel',
+    search: 'Not sure where a setting is? Type it here and only the pages that mention it stay',
+    app: 'The You page holds your name',
     name: 'Your name signs comments and revisions, and counts the words you write each day',
     novel: 'Title, subtitle, authors and the novel’s language can be changed here, whenever you like',
+    searchWord: 'cover',
     s3: 'The first scene',
     s3b: 'A title and the first lines',
     sceneTitle: 'The keeper',
@@ -133,24 +139,29 @@ export default async function (t) {
   await t.nav('section.views');
   await t.wait(0.8);
   await t.focus(p.locator('aside:visible', { has: p.getByRole('button', { name: L('views.new'), exact: false }) }).first(), d.views);
-  await t.nav('section.settings');
-  await t.wait(0.8);
-  await t.click(t.text(L('settings.tabNovel')), { after: 0.6 });
-  await t.focus(t.text(L('settings.tabNovel')), d.propsWhere, { side: 'below' });
+  await t.settings('scenes');
+  await t.focus(t.settingsItem('scenes'), d.propsWhere, { side: 'right' });
   const field = (name) => p.locator('fieldset', { has: p.locator('legend', { hasText: new RegExp(`^${name}$`) }) }).first();
   const status = field(t.lang === 'it' ? 'stato' : 'status');
-  const values = status.locator('input').first();
-  await t.click(values, { dx: 0.9, after: 0.3 });
+  const values = status.locator('.chips').first();
   await t.zoom(status, () => t.focus(values, d.props, { side: 'below' }), 1.4);
   await t.focus(field('pov'), d.pov, { side: 'right' });
 
   await t.title(d.s2, d.s2b, () => p.evaluate(() => { for (const e of document.querySelectorAll('*')) if (e.scrollTop) e.scrollTop = 0; scrollTo(0, 0); }));
-  await t.click(t.text(L('settings.tabApp')), { after: 0.8 });
-  await t.focus(t.text(L('settings.tabApp')), d.app, { hold: 3 });
+  await t.focus(p.locator('.settings nav.sections'), d.pages, { side: 'right' });
+  const search = p.locator('.settings nav.sections input[type=search]');
+  await t.click(search, { after: 0.3 });
+  await t.type(d.searchWord, 90);
+  await t.wait(0.8);
+  await t.focus(p.locator('.settings nav.sections'), d.search, { side: 'right', pointer: false });
+  await t.press('ControlOrMeta+a', 0.2);
+  await t.press('Backspace', 0.6);
+  await t.settings('you');
+  await t.focus(t.settingsItem('you'), d.app, { side: 'right' });
   await t.zoom(p.locator('label', { hasText: L('settings.userName') }).first(), () =>
     t.focus(p.locator('label', { hasText: L('settings.userName') }).first(), d.name), 1.4);
-  await t.click(t.text(L('settings.tabNovel')), { after: 0.8 });
-  await t.focus([p.locator('input:visible').first(), p.locator('select:visible').first()], d.novel, { side: 'right' });
+  await t.settings('book');
+  await t.focus(p.locator('.settings .page .fields').first(), d.novel, { side: 'right' });
 
   await t.title(d.s3, d.s3b, () => t.nav('section.manuscript'));
   await t.wait(0.8);
