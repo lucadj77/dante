@@ -48,6 +48,8 @@ const D = {
     text: 'Il faro si accendeva ogni sera alle sei, anche quando nessuno guardava il mare.',
     text2: 'Quella sera, per la prima volta in trent’anni, rimase spento.',
     paragraphs: 'Invio inizia un nuovo paragrafo. Tra i paragrafi vedi solo un po’ di spazio, come in un libro',
+    gap: 'Quanto spazio lo decidi tu: in Impostazioni, Il testo nell’editor, Spazio tra i paragrafi',
+    gapShow: 'Una riga vuota, mezza riga o poco: l’esempio a destra cambia subito. Vale solo per lo schermo, il file e l’esportazione non cambiano',
     text3: 'Nessuno, in paese, se ne accorse.',
     poem1: 'Il mare chiama,',
     poem2: 'e il faro tace.',
@@ -91,6 +93,8 @@ const D = {
     text: 'The lighthouse came on every evening at six, even when nobody was watching the sea.',
     text2: 'That evening, for the first time in thirty years, it stayed dark.',
     paragraphs: 'Enter starts a new paragraph. Between paragraphs you only see a little space, as in a book',
+    gap: 'How much space is up to you: in Settings, The text in the editor, Space between paragraphs',
+    gapShow: 'A blank line, half a line or a little: the sample on the right changes at once. It only affects the screen, not the file or the export',
     text3: 'Nobody in the village noticed.',
     poem1: 'The sea is calling,',
     poem2: 'the light is still.',
@@ -178,6 +182,21 @@ export default async function (t) {
   await t.type(d.text2, 45);
   await t.wait(0.8);
   await t.zoom(text, () => t.focus(text, d.paragraphs, { side: 'below', pointer: false }), 1.4);
+  await t.settings('text', 1);
+  const gap = p.locator('.settings label', { hasText: L('appearance.gap') }).first();
+  await t.zoom(gap, () => t.focus(gap, d.gap, { side: 'below' }), 1.5);
+  const gapSelect = gap.locator('select');
+  const gapBefore = await gapSelect.inputValue();
+  await t.click(gapSelect, { after: 0.3 });
+  await gapSelect.selectOption('1');
+  await t.wait(0.8);
+  await t.focus(p.locator('.settings aside.preview').first(), d.gapShow, { side: 'left' });
+  await gapSelect.selectOption(gapBefore);
+  await t.wait(0.8);
+  await t.nav('section.manuscript');
+  await t.wait(0.8);
+  await t.click(text.locator('.cm-line').last(), { dx: 0.98, after: 0.2 });
+  await t.press('ControlOrMeta+End', 0.3);
   await t.press('Enter', 0.4);
   await t.press('Enter', 0.6);
   await t.type(d.text3, 45);
